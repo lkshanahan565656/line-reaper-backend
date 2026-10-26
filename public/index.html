@@ -11335,6 +11335,15 @@ function ortCard(title, r) {
     <div>${r.graded} of ${r.of} graded vs Pinnacle's close · CLV ${pct(r.clv)} (t ${r.clvT ?? '—'})${r.beatClose == null ? '' : ` · ${Math.round(r.beatClose * 100)}% beat it`} · EV at the flag ${pct(r.evAtFlag)}</div>
     <div>Results ${r.won}-${r.lost}${r.results ? ` · ${r.profit >= 0 ? '+' : ''}${r.profit.toFixed(2)}u vs ${r.expected >= 0 ? '+' : ''}${r.expected.toFixed(2)}u the close expects` : ''}</div></div>`;
 }
+// season futures record card (kind exchange-futures:{venue}): CLV vs Pinnacle's fair 24 h and 7 d after the flag
+function ortFutCard(title, r) {
+  if (!r) return '';
+  const pct = x => (x == null ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`);
+  return `<div class="nflm-card"><div><b>${escEs(title)}</b> <span class="nflm-tag">${escEs(String(r.verdict || 'lead').toUpperCase())}</span></div>
+    <div>${r.flagged} flagged · ${r.open} waiting on the 24 h or 7 d read · ${r.missing24} without a 24 h read</div>
+    <div>${r.graded} of ${r.of} graded at 24 h over ${r.markets} market${r.markets === 1 ? '' : 's'} · CLV ${pct(r.clv)} · by market ${pct(r.marketClv)} (t ${r.marketT ?? '—'})${r.beat == null ? '' : ` · ${Math.round(r.beat * 100)}% beat it`}</div>
+    <div>7 days: ${r.graded7} graded · CLV ${pct(r.clv7)} · EV at the flag ${pct(r.evAtFlag)}${r.settled ? ` · settled ${r.won}-${r.lost}` : ''}</div></div>`;
+}
 function ortRender() {
   ortModes();
   const el = document.getElementById('ortContent');
@@ -11345,31 +11354,41 @@ function ortRender() {
   if (ortUi.view === 'record') {
     const rows = (d.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(ortVenue(r.venue))}</div><div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: r.runner })}</div></td>
       <td>${ortPct(r.cost)}</td><td>${ortPct(r.fairAtFlag)}</td><td>${r.closeFair == null ? '—' : ortPct(r.closeFair)}</td><td>${escEs(r.outcome || (r.closeMissing ? 'no close' : r.status))}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
+    const fu = d.futures;
+    const futRows = (fu?.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(r.event)} · ${escEs(ortVenue(r.venue))}</div><div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: r.runner })}</div></td>
+      <td>${ortPct(r.cost)}</td><td>${ortPct(r.fairAtFlag)}</td><td>${r.h24 ? ortPct(r.h24.fair) : r.h24Missing ? 'no read' : '—'}</td><td>${r.clv24 == null ? '—' : nflPts(r.clv24) + '%'}</td><td>${r.clv7 == null ? (r.d7Missing ? 'no read' : '—') : nflPts(r.clv7) + '%'}</td><td>${escEs(r.outcome || r.status)}</td></tr>`).join('');
+    const futBlock = fu ? `<div class="shp-dim" style="margin:14px 0 8px"><b>SEASON FUTURES</b> · ${escEs(fu.note || '')}</div>
+      <div class="nflm-cards">${(fu.byVenue || []).map(x => ortFutCard(`${ortVenue(x.key)} (kind ${x.kind})`, x)).join('')}</div>
+      ${futRows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Bet</th><th>Cost at $200</th><th>Fair at flag</th><th>Fair 24 h on</th><th>CLV 24 h</th><th>CLV 7 d</th><th>Status</th></tr></thead><tbody>${futRows}</tbody></table></div>` : `<div class="empty-wrap"><div class="empty-sub">No season futures flag has its 24 hour read yet. A price is flagged when $200 fills at +${Math.round((fu.edge || 0.03) * 100)}% over Pinnacle's fair while Pinnacle is open on the market.</div></div>`}` : '';
     el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
       <div class="nflm-cards">${(d.bySport || []).map(x => ortCard(`${x.key === 'f1' ? 'F1' : 'Golf'} (kind ${x.kind})`, x)).join('')}</div>
       ${(d.byVenue || []).length ? `<div class="nflm-cards">${d.byVenue.map(x => ortCard(x.key.replace('polymarketus', 'Polymarket US').replace('kalshi', 'Kalshi').replace(/^f1/, 'F1').replace(/^golf/, 'Golf'), x)).join('')}</div>` : ''}
-      ${rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Cost at $50</th><th>Fair at flag</th><th>Pin close</th><th>Result</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">No flag has closed yet. A price is flagged when $50 fills at +3% over Pinnacle\'s fair (+2% on head-to-heads), 2 min to 7 days before Pinnacle\'s cutoff.</div></div>'}`;
+      ${rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Cost at $50</th><th>Fair at flag</th><th>Pin close</th><th>Result</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">No F1 or golf flag has closed yet. A price is flagged when $50 fills at +3% over Pinnacle\'s fair (+2% on head-to-heads), 2 min to 7 days before Pinnacle\'s cutoff.</div></div>'}${futBlock}`;
     return;
   }
   if (!d.kalshi && !d.polymarketus) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">EXCHANGES OFF</div><div class="empty-sub">Exchange prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
   const rows = d.board || [];
-  if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO MARKETS</div><div class="empty-sub">No F1 or golf market is priced by both Pinnacle and an exchange right now${d.boardAt ? '' : ' (the first pass runs two minutes after a restart)'}${ortUi.minSize || ortUi.minEv !== '' ? ', or none passes the filters' : ''}. Pinnacle posts each race and tournament a few days out.</div></div>`; return; }
+  if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO MARKETS</div><div class="empty-sub">No F1, golf or season futures market is priced by both Pinnacle and an exchange right now${d.boardAt ? '' : ' (the first pass runs two minutes after a restart)'}${ortUi.minSize || ortUi.minEv !== '' ? ', or none passes the filters' : ''}. Pinnacle posts each race and tournament a few days out.</div></div>`; return; }
   const flagEdge = r => (r.family === 'h2h' ? d.edge.h2h : d.edge.outright);
+  const fu = d.futures;
+  // the row clears its record's bar: F1/golf $50 at the edge; season futures $200 at +3%, fair 3%+
+  const clears = r => (r.season ? !!fu && r.fair >= fu.minFair && r.tiers?.[fu.tier]?.full && r.tiers[fu.tier].ev >= fu.edge - 1e-9
+    : r.fair >= d.minFair && r.tiers?.[d.flagTier]?.full && r.tiers[d.flagTier].ev >= flagEdge(r));
   const body = rows.map(r => {
     const t = r.tiers || {};
     const fill = n => (t[n] ? `${t[n].full ? '' : '<span class="shp-dim">part </span>'}${nflPts(t[n].ev)}%` : '<span class="shp-dim">—</span>');
     const ev = r.at ? r.at.ev : r.ev;
-    const hot = !r.season && r.fair >= d.minFair && t[d.flagTier]?.full && t[d.flagTier].ev >= flagEdge(r);
+    const hot = clears(r);
     const fillTop = [1000, 200, 50].find(n => t[n]?.full);
     const xp = xpA({ event: r.event, league: r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase(), start: r.cutoff, market: ortType(r.type), selection: `${r.runner} ${r.buy === 'yes' ? 'YES' : 'NO'}`, venue: r.venue, venueName: ortVenue(r.venue),
-      price: r.price, cost: r.cost, fair: r.fair, fairSrc: 'Pinnacle no-vig (lower of power and Shin)', ev, fill: fillTop || null, readAt: d.boardAt || d.pinAt, tag: `RESEARCH, NOT A BET${hot ? ", clears the record's bar" : ''}${r.sized ? '' : ', size unread'}` });
+      price: r.price, cost: r.cost, fair: r.fair, fairSrc: r.season ? 'Pinnacle no-vig (least favourable of multiplicative, power and Shin)' : 'Pinnacle no-vig (lower of power and Shin)', ev, fill: fillTop || null, readAt: d.boardAt || d.pinAt, tag: `RESEARCH, NOT A BET${hot ? ", clears the record's bar" : ''}${r.sized ? '' : ', size unread'}` });
     return `<tr class="${hot ? 'nflm-gap' : ''}"${xp} data-vrow="1"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
       <td>${escEs(ortVenue(r.venue))}<div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: `${r.runner}, ${ortType(r.type)}` })}</div></td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${afActive() ? afContract(r.venue, { price: r.price, cost: r.cost }) : `${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div>`}</td>
       <td><span class="${ev > 0 ? 'nflm-pos' : ''}">${nflPts(ev)}%</span></td><td>${fill(50)}</td><td>${fill(200)}</td><td>${fill(1000)}</td>
       <td class="shp-dim">${r.margin == null ? 'two-way' : `${(r.margin * 100).toFixed(0)}% margin`}${r.missing ? ` · ${(r.missing * 100).toFixed(0)}% held back` : ''}${r.pinLimit ? ` · limit $${r.pinLimit}` : ''}${r.sized ? '' : ' · size unread'}</td></tr>`;
   }).join('');
-  const flagged = rows.filter(r => !r.season && r.fair >= d.minFair && r.tiers?.[d.flagTier]?.full && r.tiers[d.flagTier].ev >= flagEdge(r)).length;
-  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} runner sides priced${flagged ? ` · ${flagged} clear the record's bar ($50 at +${Math.round(d.edge.outright * 100)}% over fair, +${Math.round(d.edge.h2h * 100)}% head-to-heads)` : ''}. Fair is the lower of the power and Shin no-vig prices for a YES. Pinnacle read ${escEs(d.pinAt ? new Date(d.pinAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—')}.</div>
+  const flagged = rows.filter(clears).length;
+  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} runner sides priced${flagged ? ` · ${flagged} clear the record's bar ($50 at +${Math.round(d.edge.outright * 100)}% over fair, +${Math.round(d.edge.h2h * 100)}% head-to-heads; season futures $200 at +${Math.round((fu?.edge || 0.03) * 100)}%)` : ''}. Fair is the lower of the power and Shin no-vig prices for a YES (season futures: the lowest of multiplicative, power and Shin). Pinnacle read ${escEs(d.pinAt ? new Date(d.pinAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Venue</th><th>Pinnacle fair</th><th>Ask</th><th>EV top${ortUi.minSize ? ` / $${ortUi.minSize}` : ''}</th><th>$50</th><th>$200</th><th>$1K</th><th>Pinnacle</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 // ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ───────────────────────────────

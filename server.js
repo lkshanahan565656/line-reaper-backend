@@ -5143,7 +5143,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.204.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.205.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7105,7 +7105,10 @@ app.get('/api/exchange-props', async (req, res) => {
 // lower), fees in, at a real fill size (ODDS SCREEN > OUTRIGHTS). The record
 // (kind exchange-outrights:f1 / :golf, judged at 50 graded) flags the first
 // $50 fill at +3% over fair (+2% head-to-heads) and grades it on Pinnacle's
-// close and the settlement. Season futures are shown, never flagged.
+// close and the settlement. Season futures (NFL/NBA/NHL/college titles,
+// conferences, divisions, playoff fields) have their own record, kind
+// exchange-futures:{venue}: $200 at +3% over a three-method fair, graded on
+// Pinnacle's own fair 24 h and 7 d later (checks/futures-2026-10-26).
 // Research: no alerts, no orders. EXCHANGE_OUTRIGHTS=off stops it.
 const outrights = require('./outrights');
 const outrightsOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_OUTRIGHTS || '').trim());
@@ -7129,13 +7132,15 @@ async function settleOutrights() {
   try { await outrightsTracker.settle(); } catch (e) { outrightsTracker.state.errors = [e.message, ...outrightsTracker.state.errors].slice(0, 5); }
 }
 const OUTRIGHTS_NOTE = 'Research, not a tip: each Kalshi and Polymarket US runner priced against Pinnacle\'s no-vig fair for the same market (the margin taken out by the power and Shin methods, the lower fair kept), fees in, at the size the book holds. Pinnacle takes small limits on these markets ($500 on an F1 race winner), so its fair is weaker here than on game lines. The record flags the first $50 fill at +3% over fair (+2% on head-to-heads) and grades it on Pinnacle\'s close and the settlement; it is proven only at 50 graded a sport with CLV t 2+.';
+const FUTURES_NOTE = 'Research, not a tip: season futures (titles, conferences, divisions, playoff fields) on Kalshi and Polymarket US against Pinnacle\'s no-vig fair, the margin taken out three ways (multiplicative, power, Shin) and the least favourable kept. A flag is the first $200 that fills at +3% over that fair, fee in, while Pinnacle is open on the market. These settle months out, so a flag is graded on Pinnacle\'s own fair 24 hours and 7 days later; it passes only at 50 graded on one exchange with CLV t 2+ counted over markets, not runners. Pinnacle takes $500 to $3,000 on these markets and carries a 20%+ margin, so its fair is a weak yardstick, and money sits until the season ends.';
 const outrightsSlim = b => { const { fairs, ...x } = b; return x; };
 app.get('/api/outrights', async (req, res) => {
   if (!outrightsOn()) return res.status(503).json({ error: 'The exchange outrights record is off on this server (EXCHANGE_OUTRIGHTS=off).' });
   try {
     const lic = licenceOf(req);
-    const all = await outrightsTracker.list();
-    const sport = typeof req.query.sport === 'string' && /^(f1|golf|nfl|nba|nhl|season)$/.test(req.query.sport) ? req.query.sport : null;
+    const rows = await outrightsTracker.list();
+    const all = rows.filter(b => b.kind !== outrights.FUTURES_KIND), fut = rows.filter(b => b.kind === outrights.FUTURES_KIND);
+    const sport = typeof req.query.sport === 'string' && /^(f1|golf|nfl|nba|nhl|cfb|cbb|season)$/.test(req.query.sport) ? req.query.sport : null;
     const minSize = [50, 200, 1000].includes(parseInt(req.query.minSize)) ? parseInt(req.query.minSize) : null;
     const minEv = Number.isFinite(parseFloat(req.query.minEv)) ? parseFloat(req.query.minEv) / 100 : null;
     const t = Date.now();
@@ -7150,11 +7155,17 @@ app.get('/api/outrights', async (req, res) => {
       .sort((a, b) => (b.at ? b.at.ev : b.ev) - (a.at ? a.at.ev : a.ev)).slice(0, Math.min(parseInt(req.query.limit) || 300, 600));
     const done = all.filter(b => b.status !== 'open');
     const recent = (hasPro(req) ? all : done).slice().sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt)).slice(0, Math.min(parseInt(req.query.recent) || 100, 500)).map(outrightsSlim);
+    // season futures: open flags are shown only to Pro (a flag is graded a day later, so a free view would show live calls)
+    const futRecent = (hasPro(req) ? fut : fut.filter(b => b.h24Done)).slice().sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt)).slice(0, 200).map(outrightsSlim);
+    const S = outrights.SEASON;
+    const futures = { kind: outrights.FUTURES_KIND, note: FUTURES_NOTE, edge: S.edge, tier: S.tier, minFair: S.minFair, maxMargin: S.maxMargin,
+      byVenue: ['kalshi', 'polymarketus'].map(v => ({ key: v, kind: `${outrights.FUTURES_KIND}:${v}`, ...outrights.summarizeFutures(fut.filter(b => b.venue === v)) })),
+      byMarket: outrights.summarizeBy(fut, b => `${b.venue} ${b.key || b.event}`).map(x => ({ key: x.key, flagged: x.flagged })), recent: futRecent };
     const fs0 = outrightsFeed.state;
     res.json({ label: 'research', kind: outrights.KIND, note: OUTRIGHTS_NOTE, edge: outrights.EDGE, flagTier: outrights.FLAG_TIER, minFair: outrights.MIN_FAIR, kalshi: !!lic.kalshi, polymarketus: !!lic.polymarket,
       record: outrights.summarize(all), bySport: outrights.SPORTS.map(sp => ({ key: sp, kind: `${outrights.KIND}:${sp}`, ...outrights.summarize(all.filter(b => b.sport === sp)) })),
       byVenue: outrights.summarizeBy(all, b => `${b.sport} ${b.venue}`), byType: outrights.summarizeBy(all, b => `${b.sport} ${b.type}`),
-      board, boardAt: outrightsTracker.state.boardAt, pinAt: outrightsTracker.state.pinAt,
+      futures, board, boardAt: outrightsTracker.state.boardAt, pinAt: outrightsTracker.state.pinAt,
       state: (({ board: _b, ...s }) => s)(outrightsTracker.state), feed: { pinAt: fs0.pinAt ? new Date(fs0.pinAt).toISOString() : null, kalshiAt: fs0.kalshiAt ? new Date(fs0.kalshiAt).toISOString() : null, pmusAt: fs0.pmusAt ? new Date(fs0.pmusAt).toISOString() : null, reads: fs0.reads, errors: fs0.errors, books: fs0.books.size },
       recent });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -8858,7 +8869,7 @@ app.get('/api/results', async (req, res) => {
     const board = await scoreboardMemo(`results|${days > 0 ? days : 0}`, async () => {
       const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows, kalshiMakerRows, outrightRows, exPropRows] = await Promise.all([
         tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list(),
-        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => []), outrightsTracker.list().catch(() => []), expropsTracker.list().catch(() => [])]);
+        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => []), outrightsTracker.list().then(xs => xs.filter(b => b.kind !== outrights.FUTURES_KIND)).catch(() => []), expropsTracker.list().catch(() => [])]);
       return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows, kalshiMaker: kalshiMakerRows, exchangeOutrights: outrightRows, exchangeProps: exPropRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
@@ -8961,7 +8972,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.204.0',
+  version: '3.205.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
