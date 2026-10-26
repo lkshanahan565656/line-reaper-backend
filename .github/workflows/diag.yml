@@ -16,6 +16,7 @@ jobs:
           curl -s --max-time 60 $B/api/health -o health.json || true
           curl -s --max-time 60 "$B/api/esports/rounds?limit=1" -o rounds.json || true
           curl -s --max-time 60 "$B/api/esports/share?limit=1" -o share.json || true
+          curl -s --max-time 90 "$B/api/esports/picks" -o picks.json || true
           date -u > at.txt
           git init -q && git checkout -q -b diag-mapunders-out && git add . && git -c user.name=diag -c user.email=diag@x commit -qm out
           git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-mapunders-out
