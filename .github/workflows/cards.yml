@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           want=$(sed -n 1p WANT)
-          for i in $(seq 1 75); do v=$(curl -s -H 'Accept: application/json' "$SITE/" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p'); echo "live $v"; [ "$v" = "$want" ] && break; sleep 20; done
+          for i in $(seq 1 75); do v=$(curl -s -H 'Accept: application/json' "$SITE/" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p'); echo "live $v"; [ "$v" = "$want" ] && break; sleep 20; done; sleep "$(sed -n 2p WANT)"
       - run: |
           mkdir -p /tmp/o && cd /tmp/o
           get() { curl -s -A 'Mozilla/5.0 (diag)' -o "$1" -w "$2 %{http_code} %{content_type} %{size_download} %{time_total}\n" "$SITE$2" >> log.txt; }
