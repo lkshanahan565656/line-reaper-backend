@@ -120,6 +120,122 @@ const FLOWS = {
     await settle(page, w, opts, 150);
   },
 
+  async 'every priced row links to its venue, and a tap is counted'(page, w, opts) {
+    // TEST DATA, not a recording, for the two views the recording has no rows
+    // for (MATCHUPS and the public record): labelled made-up rows, so the
+    // links are checked on real markup. Everything else reads the recording.
+    const TEST_MATCHUPS = { game: 'LOL', label: 'LoL', status: { ready: true, series: 100 }, matchups: [
+      { id: 'e2e-mu-1', game: 'LOL', league: 'LCK', start: new Date((opts.now || Date.now()) + 5 * 3600e3).toISOString(), bestOf: 3,
+        teams: [{ name: 'E2E Alpha', code: 'EA' }, { name: 'E2E Bravo', code: 'EB' }], teamViews: [], model: { priced: true, win: 0.55, confidence: 'ok' },
+        markets: { kalshi: { prob: 0.52, url: 'https://kalshi.com/markets/kxlolgame-26oct25eaeb', sides: [{ cost: 0.53 }, { cost: 0.49 }] },
+          pmus: { prob: 0.51, slug: 'aec-lol-ea-eb-2026-10-25', sides: [{ cost: 0.52 }, { cost: 0.5 }] } } }] };
+    const TEST_RECORD = { rule: { text: 'TEST DATA.' }, proven: 0, overall: { graded: 60, clv: 0.4 }, labels: [], columns: ['flaggedAt'], rows: [
+      { recorded: true, label: 'building', kind: 'e2e', kindLabel: 'E2E kind', book: 'kalshi', bookName: 'Kalshi', texas: true, graded: 12, target: 50, clv: 0.5, clvT: 0.4, beatPct: 55, wins: 6, losses: 6, units: -0.4 },
+      { recorded: true, label: 'too early', kind: 'e2e', kindLabel: 'E2E kind', book: 'prizepicks', bookName: 'PrizePicks', texas: true, graded: 3, target: 50, clv: null, wins: 1, losses: 2, units: -1 }] };
+    await page.route(/\/api\/esports\/matchups\?/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_MATCHUPS) }));
+    await page.route(/\/api\/record(\?|$)/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_RECORD) }));
+    const views = [];
+    const look = async label => {
+      await settle(page, w, opts, 300);
+      const r = await page.evaluate(() => {
+        const pg = document.querySelector('.page.active'), vis = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+        const rows = [...pg.querySelectorAll('[data-vrow]')].filter(vis), links = [...pg.querySelectorAll('a.vlink')].filter(vis);
+        const bad = links.filter(a => !window.LRVenue.validFor(a.dataset.venue, a.getAttribute('href')) || a.target !== '_blank').map(a => a.getAttribute('href'));
+        return { rows: rows.length, bare: rows.filter(x => !x.querySelector('a.vlink')).length, links: links.length, bad, hosts: [...new Set(links.map(a => new URL(a.href).hostname))] };
+      });
+      views.push({ label, ...r });
+      expect(r.rows > 0, `${label}: no priced row rendered`);
+      expect(!r.bare, `${label}: ${r.bare} of ${r.rows} priced rows have no venue link`);
+      expect(!r.bad.length, `${label}: venue links with a wrong host or window: ${r.bad.slice(0, 3).join(' ')}`);
+      expect(!r.hosts.some(h => /(^|\.)polymarket\.com$/.test(h)), `${label}: a link to polymarket.com`);
+    };
+    await openTab(page, 'odds', w, opts);
+    for (const m of ['lines', 'opps', 'markets', 'maker', 'outrights', 'nflmodel']) {
+      await page.evaluate(m => window.shpSet('mode', m), m);
+      await look(`ODDS SCREEN ${m}`);
+    }
+    // the tap: a new tab opens on the venue, and the count goes up (the live check sends no POST)
+    const before = (await (await page.request.get(`${opts.base}/api/ops`)).json()).venueTaps?.total || 0;
+    await page.evaluate(() => window.shpSet('mode', 'lines'));
+    await settle(page, w, opts, 200);
+    const link = page.locator('#page-odds a.vlink[data-venue="kalshi"]').first();
+    const [pop] = await Promise.all([page.waitForEvent('popup', { timeout: 4000 }).catch(() => null), link.click()]);
+    expect(pop, 'tapping a venue link opened no new tab');
+    await pop?.close().catch(() => {});
+    if (!opts.live) {
+      // a tap from an earlier crawl click can land late, so the count must rise by at least one
+      let after = null;
+      for (let i = 0; i < 15; i++) {
+        await settle(page, w, opts, 200);
+        after = (await (await page.request.get(`${opts.base}/api/ops`)).json()).venueTaps;
+        if (after && after.total > before) break;
+      }
+      expect(after && after.total > before && after.byVenue?.kalshi?.total >= 1, `the tap was not counted in /api/ops: ${JSON.stringify(after)}`);
+    }
+    await page.evaluate(() => window.shpSet('mode', 'lines'));
+    await openTab(page, 'esports', w, opts);
+    await page.evaluate(() => window.setEsMode('matches'));
+    await look('ESPORTS matches');
+    await page.evaluate(() => window.setEsMode('matchups'));
+    await look('MATCHUPS');
+    await openTab(page, 'props', w, opts);
+    for (const v of ['lines', 'shop']) { await page.evaluate(v => window.pbSet('view', v), v); await look(`PROPS ${v}`); }
+    await page.evaluate(() => window.pbSet('view', 'lines'));
+    await openTab(page, 'results', w, opts);
+    await page.evaluate(() => window.resultsView('record'));
+    await look('RESULTS record');
+    await page.unroute(/\/api\/esports\/matchups\?/); await page.unroute(/\/api\/record(\?|$)/);
+  },
+
+  async 'feeds down or empty: each view says what is happening'(page, w, opts) {
+    // Railway's answer while a deploy swaps in: a 502 with an HTML page
+    const DOWN = r => (r.request().method() === 'GET' && !/\/stream\b/.test(r.request().url()) ? r.fulfill({ status: 502, contentType: 'text/html', body: '<html><body>Application failed to respond</body></html>' }) : r.continue());
+    // every list in every answer emptied: the shape of a quiet board
+    const hollow = x => (Array.isArray(x) ? [] : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, hollow(v)])) : x);
+    const EMPTY = async r => {
+      if (r.request().method() !== 'GET' || /\/stream\b/.test(r.request().url())) return r.continue();
+      const res = await r.fetch(); let body = await res.text();
+      try { body = JSON.stringify(hollow(JSON.parse(body))); } catch { /* not JSON: as it came */ }
+      return r.fulfill({ status: res.status(), contentType: res.headers()['content-type'] || 'application/json', body });
+    };
+    const RAW = /\bHTTP \d{3}\b|Unexpected token|is not valid JSON|Failed to fetch|\[object|\bundefined\b|Railway logs|BACKEND_URL/;
+    const VIEWS = [['odds', null], ['odds', ['shpSet', 'mode', 'opps']], ['odds', ['shpSet', 'mode', 'maker']], ['odds', ['shpSet', 'mode', 'outrights']], ['odds', ['shpSet', 'mode', 'lines']],
+      ['best', null], ['tail', null], ['arb', null], ['big', null], ['gas', null], ['esports', ['setEsMode', 'matches']], ['esports', ['setEsMode', 'matchups']], ['esports', ['setEsMode', 'matches']],
+      ['results', null], ['props', ['pbSet', 'view', 'shop']], ['props', ['pbSet', 'view', 'model']], ['props', ['pbSet', 'view', 'lines']], ['ev', null], ['sharp', null]];
+    try {
+    for (const [mode, handler, want] of [['down', DOWN, /restarting for an update|Couldn't reach the server|Could not refresh/], ['empty', EMPTY, null]]) {
+      await page.route('**/api/**', handler);
+      w.forced5xx = mode === 'down';
+      try {
+      for (const [tab, call] of VIEWS) {
+        // only a view that asked the server and got the 502 owes a word about it (one on cached data may not ask)
+        const failed = [];
+        // background pollers that run on every tab (the sharp feed says so on its own view) don't count against this view
+        const onRes = r => { const p = new URL(r.url()).pathname; if (r.status() === 502 && r.url().startsWith(opts.base) && !/^\/api\/(sharp-moves|health|ops)\b/.test(p)) failed.push(p); };
+        page.on('response', onRes);
+        await openTab(page, tab, w, opts);
+        if (call) await page.evaluate(([f, ...a]) => window[f](...a), call);
+        await settle(page, w, opts, 400);
+        page.off('response', onRes);
+        const t = await page.evaluate(() => { const pg = document.querySelector('.page.active'); return pg ? pg.innerText.replace(/\s+/g, ' ') : ''; });
+        const where = `${mode}: ${tab}${call ? ' ' + call.slice(1).join(' ') : ''}`;
+        expect(t.trim().length > 80, `${where}: the view is blank`);
+        const raw = RAW.exec(t);
+        expect(!raw, `${where}: shows a raw error "${raw && t.slice(Math.max(0, raw.index - 60), raw.index + 60)}"`);
+        if (want && failed.length) expect(want.test(t), `${where}: no word on the server being down (${[...new Set(failed)].join(' ')} got 502): "${t.slice(-200)}"`);
+      }
+      } finally {
+        await page.unroute('**/api/**', handler);
+        w.forced5xx = false;
+      }
+    }
+    } finally {
+      // back to the recording: reload, so later flows see its data, not the emptied copy
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
   async 'read the weekly digest from RESULTS'(page, w, opts) {
     // TEST DATA, not a recording: digest.js run on a labelled made-up record
     // (one venue proven this week, one losing to the close), so the view is
@@ -881,6 +997,59 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     expect(await page.locator('#pushBtn').isVisible(), 'the Push alerts row is not in view in CUSTOMIZE');
     await page.keyboard.press('Escape');
     await settle(page, w, opts, 60);
+  },
+
+  async 'developers page and widgets: key, try it, fit the screen'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    const claimy = /guaranteed|risk[- ]free|sure thing|lock of|undefined|NaN/i;
+    try {
+      const res = await page.goto(`${opts.base}/developers`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/developers answered ${res && res.status()}`);
+      expect(/Public API and widgets/.test(await text(page, 'h1')), 'the developers page heading is missing');
+      expect(await fits(), 'the developers page scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!claimy.test(body), 'the developers page shows a claim or broken text');
+      expect(/GET \/api\/v1\/best-prices/.test(body) && /GET \/api\/v1\/record/.test(body), 'an endpoint is missing from the docs');
+      expect(await page.locator('iframe[data-lr-id]').count() === 3, 'the three widget previews are missing');
+      if (!opts.live) {
+        // TRY IT before a key says to make one, rather than doing nothing
+        const tryBtn = page.locator('[data-try]').first();
+        if (await tryBtn.count()) {
+          await tryBtn.click();
+          expect(/Make a key first/.test(await text(page, '[data-try-msg]')), 'TRY IT without a key gave no answer');
+        }
+        await page.locator('#kname').fill('e2e site');
+        await page.locator('#mk button[type=submit]').click();
+        await page.locator('#keyText').waitFor({ timeout: 6000 });
+        const key = (await text(page, '#keyText')).trim();
+        expect(/^lr_[\w-]{20,}$/.test(key), `the new key reads "${key}"`);
+        expect(await page.locator('#mine').isVisible(), 'the saved key panel did not show');
+        if (await tryBtn.count()) {
+          await tryBtn.click();
+          await page.waitForFunction(() => /^\d{3} ·/.test(document.querySelector('[data-try-msg]').textContent), null, { timeout: 6000 });
+          expect(/^200 ·/.test(await text(page, '[data-try-msg]')), `TRY IT answered "${await text(page, '[data-try-msg]')}"`);
+        }
+        await page.locator('#mineUse').click();
+        await page.waitForFunction(() => /Used \d+ of/.test(document.getElementById('mineInfo').textContent), null, { timeout: 6000 });
+        await page.locator('#mineRevoke').click();
+        await page.waitForFunction(() => /Revoked/.test(document.getElementById('mkOut').textContent), null, { timeout: 6000 });
+        const r = await page.request.get(`${opts.base}/api/v1/leagues`, { headers: { 'X-API-Key': key } });
+        expect(r.status() === 401, `a revoked key still answers ${r.status()}`);
+        expect(await fits(), 'the developers page scrolls sideways after making a key');
+      }
+      for (const u of ['/embed/best-price?league=nfl&n=3', '/embed/line-move', '/embed/record']) {
+        const wr = await page.goto(`${opts.base}${u}`, { waitUntil: 'domcontentloaded' });
+        expect(wr && wr.status() === 200, `${u} answered ${wr && wr.status()}`);
+        expect(await fits(), `${u} scrolls sideways at this size`);
+        const t = await page.evaluate(() => document.body.innerText);
+        expect(/LINE REAPER|FULL RECORD/.test(t), `${u} has no link back to the site`);
+        expect(!claimy.test(t), `${u} shows a claim or broken text`);
+        expect(!/[^ ]PROVEN|PROVEN/.test(t) || /graded|main lines|Proven here means|RESULTS/i.test(t), `${u} says PROVEN without the record behind it`);
+      }
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
   },
 
   async 'sales page and Learn claim only what the record proves'(page, w, opts) {

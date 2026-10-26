@@ -23,6 +23,7 @@
 
 const { devig, americanToDecimal, decimalToAmerican } = require('./ev');
 const venues = require('./venues');
+const venueLinks = require('./venuelinks');
 const { SOFT_BOOKS, TITLES: XTITLES } = require('./xbooks');
 
 const REFS = new Set(['pinnacle', 'matchbook']);
@@ -41,6 +42,16 @@ const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) /
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const probAmerican = p => (p > 0 && p < 1 ? decimalToAmerican(1 / p) : null);
 
+// an outcome's page at its venue: the feed's own link, else the exact market
+// page built from the outcome's exchange reference (a Polymarket US market
+// slug, a Kalshi ticker); a venue with only a board link gets none here (the
+// app links the board itself)
+function linkOf(bm, o) {
+  if (o.link || bm.link) return o.link || bm.link;
+  if (!o.ref?.id) return null;
+  const l = venueLinks.link(o.ref.venue || bm.key, { id: o.ref.id });
+  return l && l.exact ? l.href : null;
+}
 // a bookmaker's outcomes for one market at one point: { sideName: american }
 function pricesAt(bm, mkey, point, home) {
   const m = (bm.markets || []).find(x => x.key === mkey);
@@ -49,11 +60,11 @@ function pricesAt(bm, mkey, point, home) {
   for (const o of m.outcomes || []) {
     const a = num(o.price);
     if (a == null || Math.abs(a) < 100) continue;
-    if (mkey === 'h2h') out[o.name] = { american: a, url: o.link || bm.link || null };
+    if (mkey === 'h2h') out[o.name] = { american: a, url: linkOf(bm, o) };
     else if (mkey === 'spreads') {
       const hp = o.name === home ? num(o.point) : num(o.point) == null ? null : -num(o.point);
-      if (hp === point) out[o.name] = { american: a, url: o.link || bm.link || null };
-    } else if (num(o.point) === point) out[o.name] = { american: a, url: o.link || bm.link || null };
+      if (hp === point) out[o.name] = { american: a, url: linkOf(bm, o) };
+    } else if (num(o.point) === point) out[o.name] = { american: a, url: linkOf(bm, o) };
   }
   return Object.keys(out).length ? out : null;
 }
