@@ -5,6 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LINE REAPER</title>
 <link rel="manifest" href="/manifest.webmanifest">
+<!-- fonts load beside the page instead of holding up its first paint (display=swap shows system text until they land) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap"></noscript>
+<script>
+// Phone speed: when the app is about to open on ODDS SCREEN > GAME LINES (no
+// share link, last tab odds), ask for its prices now, while the page itself is
+// still loading. loadOdds() takes this answer once instead of asking again.
+(function () {
+  try {
+    if (!/^https?:$/.test(location.protocol) || location.hash.length > 1) return;
+    var tab = localStorage.getItem('lr_tab') || 'odds', shp = JSON.parse(localStorage.getItem('lr_shopper') || '{}'), os = JSON.parse(localStorage.getItem('lr_os') || '{}');
+    if (tab !== 'odds' || (shp.mode && shp.mode !== 'lines')) return;
+    var q = new URLSearchParams();
+    if (os.league) q.set('league', os.league);
+    if (os.state) q.set('state', os.state);
+    var key = '/api/odds-screen?' + q;
+    window.LR_EARLY = { key: key, res: fetch(key).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }) };
+  } catch (e) { /* the normal load asks for it */ }
+})();
+</script>
 <meta name="theme-color" content="#080b10">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +35,6 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   --bg: #080b10;
@@ -2164,6 +2185,18 @@ body::before { display:none !important; }
 
 <script>/*@@LRVENUE@@*/</script>
 <script>
+// /api/status, read once and shared: the account box, the welcome card, the
+// header counts and the tools all ask for it as the page opens. A fresh read
+// after 20 s; a failed read is not kept.
+let lrStatusP = null, lrStatusAt = 0;
+function lrStatus() {
+  if (!lrStatusP || Date.now() - lrStatusAt > 20e3) {
+    lrStatusAt = Date.now();
+    lrStatusP = fetch(`${BACKEND_URL}/api/status`).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    lrStatusP.catch(() => { lrStatusP = null; });
+  }
+  return lrStatusP;
+}
 // ─── TAP TO VENUE ────────────────────────────────────────────────────────────
 // Every priced row links to the venue that offers it (venuelinks.js, inlined
 // here by the server as window.LRVenue). Plain navigation: no stake, no slip,
@@ -2559,9 +2592,15 @@ async function loadOdds() {
   if (osUi.league) qs.set('league', osUi.league);
   if (osUi.state) qs.set('state', osUi.state);
   try {
-    const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    osUi.data = await r.json();
+    // the answer the page asked for while it loaded (head script), used once
+    const early = window.LR_EARLY && window.LR_EARLY.key === `/api/odds-screen?${qs}` ? await window.LR_EARLY.res : null;
+    window.LR_EARLY = null;
+    if (early) osUi.data = early;
+    else {
+      const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      osUi.data = await r.json();
+    }
     osUi.refreshErr = null;
   } catch (e) {
     osUi.refreshErr = lrErr(e);
@@ -3117,7 +3156,7 @@ try { Object.assign(tools.vals, JSON.parse(localStorage.getItem('lr_tools') || '
 try { tools.active = localStorage.getItem('lr_tool') || 'ev'; } catch {}
 
 function loadTools() {
-  if (!tools.p6Tried) { tools.p6Tried = true; fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(d => { const t = d?.pick6?.payouts; if (t && Object.keys(t).length) { tools.pick6Payouts = t; if (tools.ready) toolCompute(); } }).catch(() => {}); }
+  if (!tools.p6Tried) { tools.p6Tried = true; lrStatus().then(d => { const t = d?.pick6?.payouts; if (t && Object.keys(t).length) { tools.pick6Payouts = t; if (tools.ready) toolCompute(); } }).catch(() => {}); }
   if (window.LRCalc) { tools.ready = true; return renderTools(); }
   if (tools.loading) return;
   tools.loading = new Promise((resolve) => {
@@ -4643,7 +4682,7 @@ window.fetch = (url, opts = {}) => {
 
 async function acctInit() {
   try {
-    const s = await fetch(`${BACKEND_URL}/api/status`).then(r => r.json());
+    const s = await lrStatus();
     acct.paywall = !!s.accounts?.paywall;
     acct.billing = !!s.accounts?.billing;
     acct.paused = (s.dataLicences?.paused || []).map(p => (typeof p === 'string' ? p : p.key));
@@ -5206,12 +5245,12 @@ function welcomeInit() {
     history.replaceState(null, '', location.pathname + (qs.toString() ? `?${qs}` : '') + location.hash);
     try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
     if (!acct.token && (start === 'signup' || start === 'login')) {
-      fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => { if (s.accounts?.authSecretSet) acctOpen(start); }).catch(() => {});
+      lrStatus().then(s => { if (s.accounts?.authSecretSet) acctOpen(start); }).catch(() => {});
     }
     // "Get Pro": signed in goes to checkout; signed out signs up first, and a
     // new account goes on to checkout from acctSubmit
     if (start === 'pro') {
-      fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(async s => {
+      lrStatus().then(async s => {
         if (!s.accounts?.authSecretSet) return;
         if (!acct.token) return acctOpen('signup', s.accounts.billing ? 'Create your account, then checkout opens for Pro.' : '');
         if (!s.accounts.billing) return;
@@ -5242,7 +5281,7 @@ function welcomeInit() {
     document.getElementById('wlBeat').textContent = d.overall?.beatPct != null ? `${Math.round(d.overall.beatPct)}%` : '-';
     document.getElementById('wlProven').textContent = `${(d.proven || []).length} (Texas: ${(d.texas?.proven || []).length})`;
   }).catch(() => { ['wlGraded', 'wlBeat', 'wlProven'].forEach(id => { document.getElementById(id).textContent = '-'; }); });
-  fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => {
+  lrStatus().then(s => {
     if (s.accounts?.authSecretSet) {
       document.getElementById('wlCreate').style.display = 'block';
       document.getElementById('wlLogin').style.display = 'block';
@@ -5414,26 +5453,14 @@ function updateBackendStatus(online, pp = null, ud = null) {
   }
 }
 
-async function loadDFSLines(sport) {
+// The header's PP and UD line counts. They come from /api/status (a few KB)
+// rather than downloading both full line feeds (megabytes) just to count them.
+async function loadDFSLines() {
   if (!backendOnline) return;
   try {
-    // Load all UD lines without sport filter first
-    const r = await fetch(`${BACKEND_URL}/api/underdog`);
-    if (!r.ok) return;
-    const data = await r.json();
-    dfsCache.underdog = data.data || [];
-    dfsCache.updated = data.updated;
-    console.log(`UD loaded: ${dfsCache.underdog.length} lines`);
-
-    // Also try PP
-    const r2 = await fetch(`${BACKEND_URL}/api/prizepicks`);
-    if (r2.ok) {
-      const d2 = await r2.json();
-      dfsCache.prizepicks = d2.data || [];
-      console.log(`PP loaded: ${dfsCache.prizepicks.length} lines`);
-    }
-    updateBackendStatus(true, dfsCache.prizepicks?.length || 0, dfsCache.underdog?.length || 0);
-
+    const s = await lrStatus();
+    dfsCache.updated = s.underdog?.updated || null;
+    updateBackendStatus(true, s.prizepicks?.count || 0, s.underdog?.count || 0);
   } catch(e) {
     console.warn('DFS load error:', e.message);
   }
@@ -7605,7 +7632,7 @@ async function loadEsports() {
     // The track record doesn't depend on today's board, so it renders even when the board is empty
     if (!esportsState.picks.length && esportsState.view === 'record') { renderEsports(); return; }
     if (!esportsState.picks.length) {
-      const status = await fetch(`${BACKEND_URL}/api/status`).then(r=>r.json()).catch(()=>null);
+      const status = await lrStatus().catch(()=>null);
       const pp = status?.prizepicks?.count ?? null;
       const ud = status?.underdog?.count ?? null;
       const ppDead = pp === 0 && (ud || 0) > 0;
@@ -7637,7 +7664,7 @@ async function loadEsports() {
     renderEsports();
     renderSlipBar();
     // Engine self-diagnosis: which backend version is live, and is the LoL dataset loaded?
-    fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => {
+    lrStatus().then(s => {
       if (!s.version) {
         esportsState.engineHtml = `<span style="color:#f59e0b">ENGINE ≤v3.2 — model backend not deployed yet</span>`;
       } else {

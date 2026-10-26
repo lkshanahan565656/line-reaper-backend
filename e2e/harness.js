@@ -70,6 +70,8 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   const misses = new Map();
   const served = new Set();
   const outer = express();
+  // the recorded answers go out compressed, as the live server sends them
+  outer.use(require('../appbundle').compress());
   outer.use((req, res, next) => {
     if (req.method !== 'GET' || !req.path.startsWith('/api/')) return next();
     if (/\/stream$/.test(req.path)) {

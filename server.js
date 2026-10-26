@@ -14,6 +14,9 @@ const fees = require('./fees');
 const { runSteps, runStepsAsync, createSlicer } = require('./ops');
 ops.start();
 app.use(ops.middleware);
+// gzip/brotli on every answer but event streams (appbundle.js)
+const appBundle = require('./appbundle');
+app.use(appBundle.compress());
 // Answered before anything else is mounted, and from memory only: Railway's
 // health check and the uptime probe get an answer while feeds are still warming.
 app.get('/api/health', (req, res) => {
@@ -4812,10 +4815,27 @@ app.get('/api/push/selftest', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 app.get('/api/push/log', (req, res) => res.json({ deliveries: push.log(Math.min(200, parseInt(req.query.n) || 50)) }));
+// /app: the page with its big script split out to a cached /assets file, both
+// compressed once (appbundle.js). Until that is ready (a second or two after
+// boot) the page goes out whole, as it always did.
+let appBuilt = null;
+function buildApp() {
+  const html = loadApp();
+  if (!html) return;
+  appBundle.build(html).then(b => { appBuilt = b; }).catch(e => console.warn('App bundle failed, serving the page whole:', e.message));
+}
+setImmediate(buildApp);
 app.get('/app', (req, res) => {
+  if (appBuilt) return appBundle.send(req, res, appBuilt.page, 'no-cache');
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
   res.set('Cache-Control', 'no-cache').type('html').send(html);
+});
+// the app's script under a name that changes with its contents: cached for a year
+app.get('/assets/:name', (req, res) => {
+  const f = appBuilt && appBuilt.assets.get(`/assets/${req.params.name}`);
+  if (!f) return res.status(404).set('Cache-Control', 'no-store').type('text/plain').send('Not found');
+  appBundle.send(req, res, f, 'public, max-age=31536000, immutable');
 });
 // The calculator math the TOOLS tab runs in the browser (the same file the
 // tests check), so the page and the tests can't drift apart.
@@ -4884,7 +4904,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.197.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.200.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8615,7 +8635,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.197.0',
+  version: '3.200.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
