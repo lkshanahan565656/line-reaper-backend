@@ -10,13 +10,15 @@
 // Pure renderers: the server hands in the data.
 
 const learn = require('./learn');
+const oddsFmt = require('./oddsfmt');
 const { esc } = learn;
 
 const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e0b', kalshi: '#10b981', polymarketus: '#a78bfa', gemini: '#22d3ee', matchbook: '#f472b6',
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
 const colorOf = v => VENUE_COLOR[v] || '#64748b';
 const cleanOrigin = o => String(o || '').replace(/[^\w.:/-]/g, '').replace(/\/+$/, '');
-const am = a => (a == null || !Number.isFinite(Number(a)) ? '—' : `${a > 0 ? '+' : ''}${Math.round(a)}`);
+// American odds in the widget's format (data-odds: american, decimal, fractional or probability)
+const am = (a, fmt = 'american') => (a == null || !Number.isFinite(Number(a)) ? '—' : oddsFmt.fromAm(Number(a), fmt));
 const pct = (x, d = 1) => (x == null || !Number.isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
 const hhmm = t => { const d = new Date(t); return Number.isFinite(d.getTime()) ? `${d.toISOString().slice(11, 16)} UTC` : '—'; };
 const when = t => { const d = new Date(t); return Number.isFinite(d.getTime()) ? `${d.toISOString().slice(5, 10).replace('-', '/')} ${d.toISOString().slice(11, 16)} UTC` : ''; };
@@ -87,7 +89,7 @@ function fillText(f) {
 }
 
 // rows: publicapi.bestPrices(); ctx: { league, at, locked, origin, id }
-function bestPriceWidget(rows, { league = null, at = null, locked = false, origin = '', id = '', stale = false } = {}) {
+function bestPriceWidget(rows, { league = null, at = null, locked = false, origin = '', id = '', stale = false, fmt = 'american' } = {}) {
   const head = `<div class="hd"><b>Best price above fair${league ? ` · ${esc(String(league).toUpperCase())}` : ''}</b><i>${at ? `read ${esc(hhmm(at))}` : ''}</i></div>`;
   let list;
   if (locked) list = '<div class="empty">Fair prices and EV are for subscribers right now, so this widget has nothing to show.</div>';
@@ -97,7 +99,7 @@ function bestPriceWidget(rows, { league = null, at = null, locked = false, origi
     list = rows.map(r => `<div class="row">
 <div class="ev">${esc(r.selection)} <span class="tag ${r.label === 'proven' ? 'pv' : 'ld'}" title="${esc(r.labelText)}">${r.label === 'proven' ? 'PROVEN VENUE' : 'LEAD'}</span></div>
 <div class="sub">${esc(r.event)} · ${esc(r.marketName || r.marketType)} · ${esc(when(r.start))}</div>
-<div class="nums"><span><em>${esc(r.venueName)}</em>${esc(am(r.price.american))}</span><span><em>FAIR</em>${esc(am(r.fair.american))}</span><span class="pos"><em>EV</em>${esc(pct(r.evPct))}</span><span><em>SIZE</em>${esc(fillText(r.fill))}</span>${r.secondBest ? `<span><em>NEXT</em>${esc(r.secondBest.venueName)} ${esc(am(r.secondBest.american))}</span>` : ''}</div>
+<div class="nums"><span><em>${esc(r.venueName)}</em>${esc(am(r.price.american, fmt))}</span><span><em>FAIR</em>${esc(am(r.fair.american, fmt))}</span><span class="pos"><em>EV</em>${esc(pct(r.evPct))}</span><span><em>SIZE</em>${esc(fillText(r.fill))}</span>${r.secondBest ? `<span><em>NEXT</em>${esc(r.secondBest.venueName)} ${esc(am(r.secondBest.american, fmt))}</span>` : ''}</div>
 </div>`).join('');
   }
   const note = '<p class="note">EV is after the venue\'s fee, against Pinnacle\'s no-vig fair. LEAD means research: prices above the fair have not beaten the close at that venue yet. Check the price at the venue before you bet.</p>';
@@ -128,7 +130,7 @@ ${fair.length ? `<path d="${path(fair)}" fill="none" stroke="#e2e8f0" stroke-wid
 ${lines.map(l => `<path d="${path(l.pts)}" fill="none" stroke="${colorOf(l.v)}" stroke-width="2"/>`).join('')}
 </svg>`;
 }
-function lineMoveWidget({ game = null, series = [], market = null, sideIndex = 0, withFair = true, origin = '', id = '', venueName = v => v } = {}) {
+function lineMoveWidget({ game = null, series = [], market = null, sideIndex = 0, withFair = true, origin = '', id = '', venueName = v => v, fmt = 'american' } = {}) {
   const head = t => `<div class="hd"><b>Line move</b><i>${t}</i></div>`;
   const note = '<p class="note">Each venue\'s implied chance for this side as read, a step at each change; dashed is Pinnacle\'s no-vig fair. A move is information, not a proven edge.</p>';
   const foot = footer(origin, '/app?start=odds', 'LINE REAPER', 'History is kept until 6 hours after the start.');
@@ -140,7 +142,7 @@ function lineMoveWidget({ game = null, series = [], market = null, sideIndex = 0
   const svg = chartSvg(s.points, { withFair });
   const venues = [...new Set(s.points.flatMap(p => Object.keys(p.prices || {})))];
   const last = s.points[s.points.length - 1];
-  const legend = `<div class="legend">${venues.map(v => `<span><i style="background:${colorOf(v)}"></i>${esc(venueName(v))} ${esc(am(last?.prices?.[v]))}</span>`).join('')}${withFair && last?.fair != null ? `<span><i style="background:#e2e8f0"></i>FAIR ${esc((last.fair * 100).toFixed(1))}%</span>` : ''}</div>`;
+  const legend = `<div class="legend">${venues.map(v => `<span><i style="background:${colorOf(v)}"></i>${esc(venueName(v))} ${esc(am(last?.prices?.[v], fmt))}</span>`).join('')}${withFair && last?.fair != null ? `<span><i style="background:#e2e8f0"></i>FAIR ${esc((last.fair * 100).toFixed(1))}%</span>` : ''}</div>`;
   const body = `<div class="w">${head(last ? `read ${esc(hhmm(last.t))}` : '')}
 <div class="ev">${esc(game.event)}</div>
 <div class="sub">${esc(game.leagueLabel || '')} · ${esc({ ml: 'Moneyline', spread: 'Spread', total: 'Total' }[mk] || mk)} · ${esc(s.side)}${s.points.some(p => p.point != null) && mk !== 'ml' ? ` (now ${esc(last.point)})` : ''} · starts ${esc(when(game.start))}</div>
@@ -173,7 +175,7 @@ function embedScript(origin) {
 (function () {
   var base = ${JSON.stringify(o)};
   var KINDS = { 'best-price': 220, 'line-move': 330, 'record': 230 };
-  var ATTRS = ['league', 'market', 'venue', 'n', 'game', 'side'];
+  var ATTRS = ['league', 'market', 'venue', 'n', 'game', 'side', 'state', 'odds'];
   function mount(el) {
     if (el.getAttribute('data-lr-mounted')) return;
     var kind = el.getAttribute('data-line-reaper');
@@ -323,7 +325,7 @@ ${eps}
 <p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
 
 <h2 id="widgets">Widgets</h2>
-<p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-game</code> and <code>data-side</code>.</p>
+<p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-state</code> (a two-letter state: only venues a resident can use), <code>data-game</code>, <code>data-side</code> and <code>data-odds</code> (american, decimal, fractional or probability; American when none).</p>
 ${widget('best-price', 'Best price above the fair', 'The top price above Pinnacle\'s no-vig fair, after fees, with its EV and what the book fills. Pick a league with data-league.', ' data-league="nfl" data-n="3"', '?league=nfl&n=3', 330)}
 ${widget('line-move', 'Line move chart', 'One game\'s prices over time at each venue against the fair. Without data-game it charts today\'s biggest move.', '', '', 360)}
 ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: graded count, CLV against the close, record, and profit only where it clears chance.', '', '', 280)}

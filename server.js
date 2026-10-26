@@ -5051,6 +5051,7 @@ app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\
 // board and the strict public record, the same for everyone (the webhook's
 // licences and the paywall's free view, never the visitor's cookies).
 const leagues = require('./leagues');
+const oddsFmt = require('./oddsfmt');
 const leagueMemo = require('./ops').createMemo({ ttlMs: 60e3, max: 20 });
 const leagueRecordMemo = require('./ops').createMemo({ ttlMs: 5 * 60e3, max: 2 });
 // proven kinds only (claims.publicRecord, the RESULTS test), each with its
@@ -5132,8 +5133,9 @@ app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async 
     const slug = req.path === '/leagues' ? '' : leagues.byPath(req.path.replace(/\/+$/, '').toLowerCase());
     const origin = siteOrigin(req);
     const state = venues.stateOf(req.query.state) || 'TX';
-    const html = await leagueMemo(`${slug}|${origin}|${state}`, async () => {
-      const data = await leagueData(slug, state);
+    const fmt = oddsFmt.fmtOf(req.query.odds);
+    const html = await leagueMemo(`${slug}|${origin}|${state}|${fmt}`, async () => {
+      const data = { ...(await leagueData(slug, state)), fmt };
       return slug ? leagues.render(slug, data, { origin }) : leagues.index(data, { origin });
     });
     res.set('Cache-Control', 'public, max-age=60').type('html').send(html);
@@ -5152,7 +5154,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.208.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.208.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8999,7 +9001,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.208.0',
+  version: '3.208.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9409,8 +9411,8 @@ const widgetError = (res, e) => res.status(e instanceof V1Error ? e.status : 500
 app.get('/embed/best-price', widgetGate, (req, res) => {
   try {
     const n = v1Int(req.query.n, 1, 5, 1, 'n');
-    const body = v1Safe(v1.bestPrices({ league: req.query.league, market: req.query.market, venue: req.query.venue, limit: n }));
-    sendWidget(req, res, embeds.bestPriceWidget(body.rows, { league: v1Str(req.query.league, /^[a-z0-9]{1,20}$/, 'league'), at: body.builtAt, locked: body.locked, stale: body.stale, origin: siteOrigin(req), id: widgetId(req) }));
+    const body = v1Safe(v1.bestPrices({ league: req.query.league, market: req.query.market, venue: req.query.venue, state: req.query.state, limit: n }));
+    sendWidget(req, res, embeds.bestPriceWidget(body.rows, { league: v1Str(req.query.league, /^[a-z0-9]{1,20}$/, 'league'), at: body.builtAt, locked: body.locked, stale: body.stale, origin: siteOrigin(req), id: widgetId(req), fmt: oddsFmt.fmtOf(req.query.odds) }));
   } catch (e) { widgetError(res, e); }
 });
 app.get('/embed/line-move', widgetGate, (req, res) => {
@@ -9428,7 +9430,7 @@ app.get('/embed/line-move', widgetGate, (req, res) => {
     const g = hist?.game ? { ...hist.game } : null;
     const sideIndex = v1Int(req.query.side, 0, 2, 0, 'side');
     sendWidget(req, res, embeds.lineMoveWidget({ game: g || (hist ? { event: game, leagueLabel: '', start: hist.series[0]?.start } : (game ? { event: game } : null)), series: hist?.series || [], market, sideIndex,
-      withFair: v1FullTier(), origin: siteOrigin(req), id: widgetId(req), venueName: v => bigMoves.NAMES[v] || venues.NAMES[v] || v }));
+      withFair: v1FullTier(), origin: siteOrigin(req), id: widgetId(req), venueName: v => bigMoves.NAMES[v] || venues.NAMES[v] || v, fmt: oddsFmt.fmtOf(req.query.odds) }));
   } catch (e) { widgetError(res, e); }
 });
 app.get('/embed/record', widgetGate, async (req, res) => {
@@ -9448,6 +9450,7 @@ const cardStr = (v, re, max = 120) => { const s = String(v ?? '').slice(0, max);
 // the card's data and its words, from the query; never from numbers the browser sends
 async function shareCardFor(kind, q, origin) {
   const venueName = v => bigMoves.NAMES[v] || venues.NAMES[v] || v;
+  const fmt = oddsFmt.fmtOf(q.odds);
   // a bettor's own record (pubrecord.js), /card/record-<handle>.png
   const bettor = /^record-([a-z0-9_]{3,20})$/.exec(kind);
   if (bettor) {
@@ -9475,9 +9478,9 @@ async function shareCardFor(kind, q, origin) {
       d = { row, at: st.builtAt || at, gone: !!id && !row };
     }
     const r = d.row;
-    return { svg: shareCards.priceCard(r, { ...d, origin }), at: d.at,
-      title: r ? `${r.selection} ${r.price.american > 0 ? '+' : ''}${r.price.american ?? ''} at ${r.venueName}` : d.gone ? 'A price that has moved' : 'Best price above the fair',
-      description: r ? `${r.event}. Pinnacle's fair ${r.fair.american > 0 ? '+' : ''}${r.fair.american ?? '—'}, EV ${r.evPct > 0 ? '+' : ''}${r.evPct ?? '—'}% after the fee. ${r.label === 'proven' ? `${r.venueName} main lines are proven on RESULTS; this row is one price, not a result.` : 'LEAD: research, not a proven edge.'}` : 'Open the app for every price beside the fair.',
+    return { svg: shareCards.priceCard(r, { ...d, origin, fmt }), at: d.at,
+      title: r ? `${r.selection} ${r.price.american != null ? oddsFmt.fromAm(r.price.american, fmt) : ''} at ${r.venueName}` : d.gone ? 'A price that has moved' : 'Best price above the fair',
+      description: r ? `${r.event}. Pinnacle's fair ${oddsFmt.fromAm(r.fair.american, fmt)}, EV ${r.evPct > 0 ? '+' : ''}${r.evPct ?? '—'}% after the fee. ${r.label === 'proven' ? `${r.venueName} main lines are proven on RESULTS; this row is one price, not a result.` : 'LEAD: research, not a proven edge.'}` : 'Open the app for every price beside the fair.',
       open: '?start=odds' };
   }
   if (kind === 'move') {
@@ -9490,7 +9493,7 @@ async function shareCardFor(kind, q, origin) {
     const g = hist?.game || (hist ? { event: game, leagueLabel: '', start: hist.series[0]?.start } : null);
     const pick = hist ? shareCards.pickSeries(hist.series, { market, side, sideIndex }) : null;
     const last = pick?.s?.points[pick.s.points.length - 1];
-    return { svg: shareCards.moveCard({ game: g, series: hist?.series || [], market, side, sideIndex, withFair: v1FullTier(), origin, venueName }), at: last?.t || null,
+    return { svg: shareCards.moveCard({ game: g, series: hist?.series || [], market, side, sideIndex, withFair: v1FullTier(), origin, venueName, fmt }), at: last?.t || null,
       title: g ? `${g.event}: line move` : 'Line move', description: pick?.s ? `${g.leagueLabel ? g.leagueLabel + ' · ' : ''}${pick.s.side}: each venue's price over time against Pinnacle's fair. Information, not an edge.` : 'No saved prices for this game.',
       open: '?start=odds' };
   }
@@ -9499,6 +9502,8 @@ async function shareCardFor(kind, q, origin) {
     const cfg = slug && Object.prototype.hasOwnProperty.call(shareCards.LEAGUE_PAGES, slug) ? shareCards.LEAGUE_PAGES[slug] : null;
     if (!cfg) throw new V1Error(404, 'not_found', 'No such league page.');
     const lic = webhookLicence();
+    // the sharer's state (My state): only its venues are counted and priced; none = every venue, as before
+    const stCode = venues.stateOf(q.state) || null, inSt = stCode ? venues.legalIn(stCode) : () => true;
     let games = 0, markets = 0, withFair = 0, stale = false, at = null;
     const vs = new Set();
     for (const key of cfg.keys) {
@@ -9506,15 +9511,17 @@ async function shareCardFor(kind, q, origin) {
       stale = s.stale; at = s.updated;
       for (const gm of s.games) {
         games++;
-        for (const m of gm.markets) { markets++; if (m.sides.some(x => x.fair != null)) withFair++; for (const sd of m.sides) for (const v of sd.venues) if (!v.ref) vs.add(v.venue); }
+        for (const m of gm.markets) { markets++; if (m.sides.some(x => x.fair != null)) withFair++; for (const sd of m.sides) for (const v of sd.venues) if (!v.ref && inSt(v.venue)) vs.add(v.venue); }
       }
     }
-    const bp = cfg.keys.map(k => v1.bestPrices({ league: k, limit: 200 }));
+    const bp = cfg.keys.map(k => v1.bestPrices({ league: k, limit: 200, ...(stCode ? { state: stCode } : {}) }));
     const rows = bp.flatMap(b => b.rows).sort((a, b) => (b.evPct ?? -1e9) - (a.evPct ?? -1e9));
-    const d = { name: cfg.name, games, markets, withFair, venues: vs.size, aboveFair: rows.length, rows, at: at || new Date().toISOString(), stale: games ? stale : false, locked: bp.some(b => b.locked), esports: !!cfg.esports };
-    return { svg: shareCards.leagueCard(d, { origin }), at: d.at, title: `${cfg.name} odds: every venue beside Pinnacle's fair`,
-      description: games ? `${games} game${games === 1 ? '' : 's'} in the next 48 hours, ${vs.size} venues, ${d.locked ? 'fair prices for subscribers' : `${rows.length} price${rows.length === 1 ? '' : 's'} above the fair (research, not a record)`}.` : `No ${cfg.name} games on the board right now.`,
-      open: cfg.path };
+    const stName = stCode ? venues.stateInfo(stCode).name : null;
+    const d = { name: cfg.name, games, markets, withFair, venues: vs.size, aboveFair: rows.length, rows, at: at || new Date().toISOString(), stale: games ? stale : false, locked: bp.some(b => b.locked), esports: !!cfg.esports, stateName: stName };
+    const pageQs = new URLSearchParams([...(stCode ? [['state', stCode]] : []), ...(fmt !== 'american' ? [['odds', fmt]] : [])]).toString();
+    return { svg: shareCards.leagueCard(d, { origin, fmt }), at: d.at, title: `${cfg.name} odds: every venue beside Pinnacle's fair`,
+      description: games ? `${games} game${games === 1 ? '' : 's'} in the next 48 hours, ${vs.size} venues${stName ? ` a ${stName} resident can use` : ''}, ${d.locked ? 'fair prices for subscribers' : `${rows.length} price${rows.length === 1 ? '' : 's'} above the fair (research, not a record)`}.` : `No ${cfg.name} games on the board right now.`,
+      open: `${cfg.path}${pageQs ? `?${pageQs}` : ''}` };
   }
   if (kind === 'record') {
     const card = publicApi.recordCard(await v1.record({}));
@@ -9532,7 +9539,8 @@ async function shareCardFor(kind, q, origin) {
     description: digest.pushText(out.digest).split('\n').slice(0, 2).join(' '), open: `/digest/${week}`, page: `/digest/${week}` };
 }
 // the card's own query string: only the keys its kind reads, in a fixed order
-const SHARE_KEYS = { price: ['id'], move: ['game', 'market', 'side', 'i'], league: ['league'], record: [], digest: ['week'] };
+// odds: the sharer's odds format (oddsfmt.js); state: the sharer's My state, for a league's venues
+const SHARE_KEYS = { price: ['id', 'odds'], move: ['game', 'market', 'side', 'i', 'odds'], league: ['league', 'state', 'odds'], record: [], digest: ['week'] };
 function shareQuery(kind, q) {
   const p = new URLSearchParams();
   for (const k of SHARE_KEYS[kind] || []) if (q[k] != null && q[k] !== '') p.set(k, String(q[k]).slice(0, 300));

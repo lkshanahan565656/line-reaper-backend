@@ -1028,6 +1028,57 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     expect(!(await page.locator('#scSheet').count()), 'CLOSE left the sheet open');
   },
 
+  async 'odds format and My state reach the league pages, share cards and widgets'(page, w, opts) {
+    // eslint-disable-next-line no-undef
+    const st0 = await page.evaluate(() => { const s = lrState; window.lrSetState('TX'); return s; });
+    await settle(page, w, opts, 200);
+    // the viewer's format, set where a viewer sets it: CUSTOMIZE > Odds format
+    await page.evaluate(() => window.layOpen());
+    await settle(page, w, opts, 120);
+    await page.locator('#layOddsFmt').selectOption('decimal');
+    await settle(page, w, opts, 120);
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 80);
+    try {
+      // a share card from the odds screen carries the format, and a league card the state
+      await openTab(page, 'odds', w, opts);
+      await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+      await settle(page, w, opts, 300);
+      await page.locator('#page-odds > .xp-bar button', { hasText: 'SHARE CARD' }).click();
+      await settle(page, w, opts, 150);
+      // eslint-disable-next-line no-undef
+      const opt = await page.evaluate(() => scOptions().map(o => ({ k: o.k, img: scImg(o), link: scLink(o) })));
+      for (const o of opt.filter(x => x.k !== 'record')) expect(/[?&]odds=decimal(&|$)/.test(o.img), `a ${o.k} card does not carry the odds format: ${o.img}`);
+      for (const o of opt.filter(x => x.k === 'league')) expect(/[?&]state=TX(&|$)/.test(o.img) && /[?&]state=TX(&|$)/.test(o.link), `a league card does not carry My state: ${o.link}`);
+      await page.locator('#scSheet button', { hasText: 'CLOSE' }).click();
+      await settle(page, w, opts, 80);
+      const league = opt.find(x => x.k === 'league');
+      if (league) {
+        const html = await (await page.request.get(league.link.replace(/^https?:\/\/[^/]+/, new URL(opts.base).origin))).text();
+        expect(/OPEN THE LEAGUE PAGE/.test(html) && /href="\/[a-z/0-9]+\?state=TX&amp;odds=decimal"/.test(html), 'the league share page does not open the league page in the same state and format');
+      }
+      // a league page in a format and a state: prices, the picker and its links keep both
+      const lp = await page.context().newPage();
+      try {
+        await lp.goto(`${opts.base}/nfl?state=CA&odds=decimal`, { waitUntil: 'domcontentloaded' });
+        expect(await lp.locator('#sto').inputValue() === 'decimal' && await lp.locator('#stp').inputValue() === 'CA', 'the league page picker does not show the picked format and state');
+        const prices = await lp.locator('td[data-l="Price"], td[data-l="Fair"]').allInnerTexts();
+        expect(prices.every(t => !/^[+-]\d{3,}/.test(t.trim())), `a league page price is still American: ${prices.slice(0, 4)}`);
+        expect(await lp.locator('a[href="/nba?state=CA&odds=decimal"]').count() > 0, 'the league list does not keep the state and format');
+        expect(await lp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth) <= 0, 'the league page is wider than the screen');
+        await lp.locator('#sto').selectOption('fractional');
+        await Promise.all([lp.waitForNavigation({ timeout: 8000 }), lp.locator('.st-pick button[type="submit"]').click()]);
+        expect(/[?&]odds=fractional/.test(lp.url()) && /[?&]state=CA/.test(lp.url()), `SHOW did not keep the picks: ${lp.url()}`);
+        // a widget in a format
+        const wd = await (await page.request.get(`${opts.base}/embed/best-price?odds=decimal&n=3`)).text();
+        expect(!/<em>FAIR<\/em>[+-]\d{3}/.test(wd), 'the best-price widget ignores data-odds');
+      } finally { await lp.close(); }
+    } finally {
+      await page.evaluate(s => { window.oddsFmtSet('american'); window.lrSetState(s); }, st0);
+      await settle(page, w, opts, 120);
+    }
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');

@@ -19,6 +19,7 @@
 // Open Graph tags point link previews at it.
 
 const path = require('path');
+const oddsFmt = require('./oddsfmt');
 
 const W = 1200, H = 630;
 const FONT = 'JetBrains Mono';
@@ -41,7 +42,8 @@ function fit(s, size, maxPx) {
   return t.length <= n ? t : `${t.slice(0, Math.max(0, n - 1)).trimEnd()}…`;
 }
 const textW = (s, size) => clean(s).length * size * CHAR;
-const am = a => (a == null || !Number.isFinite(Number(a)) ? '—' : `${a > 0 ? '+' : ''}${Math.round(a)}`);
+// American odds in the sharer's format (?odds=, CUSTOMIZE > Odds format; American when none)
+const am = (a, fmt = 'american') => (a == null || !Number.isFinite(Number(a)) ? '—' : oddsFmt.fromAm(Number(a), fmt));
 const pct = (x, d = 1) => (x == null || !Number.isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
 const pctPlain = (p, d = 1) => (p == null || !Number.isFinite(p) ? '—' : `${(p * 100).toFixed(d)}%`);
 const usd = n => `$${Math.round(n).toLocaleString('en-US')}`;
@@ -134,7 +136,7 @@ function fillText(f) {
 
 // ── price: one row of publicapi.bestPrices() ──
 // row: the row, or null when it is gone; ctx: { at, locked, stale, origin }
-function priceCard(row, { at = null, locked = false, stale = false, origin = '', gone = false } = {}) {
+function priceCard(row, { at = null, locked = false, stale = false, origin = '', gone = false, fmt = 'american' } = {}) {
   const kind = !row || row.evPct > 0 ? 'Best price above the fair' : 'Best price';
   if (locked) return emptyCard({ kind, label: PRICE_LABEL.lead, title: 'Fair prices are for subscribers right now', why: 'While the paywall is on, the fair and the EV are not shown in public, so this card has no price to show.', readAt: at, origin });
   if (stale) return emptyCard({ kind, label: PRICE_LABEL.lead, title: 'The price feeds are behind', why: 'The feeds have not read in the last few minutes, so nothing is shown rather than an old price.', readAt: at, origin });
@@ -148,14 +150,14 @@ function priceCard(row, { at = null, locked = false, stale = false, origin = '',
   const body = `${txt(48, 168, row.selection, { size: 46, weight: 700, max: W - 96 })}
 ${txt(48, 210, sub, { size: 22, fill: C.text2, max: W - 96 })}
 ${tileRow(244, [
-    { name: `Price · ${row.venueName}`, value: am(shownAm), color: C.green2, size: 44, note: afterAm != null && shownAm !== afterAm ? `${am(afterAm)} after the fee` : 'after the fee' },
+    { name: `Price · ${row.venueName}`, value: am(shownAm, fmt), color: C.green2, size: 44, note: afterAm != null && shownAm !== afterAm ? `${am(afterAm, fmt)} after the fee` : 'after the fee' },
     { name: 'Break-even after fee', value: pctPlain(be), size: 40, note: 'the win chance it needs' },
-    { name: "Pinnacle's fair", value: row.fair?.american != null ? am(row.fair.american) : '—', size: 40, note: row.fair?.prob != null ? `no-vig ${pctPlain(row.fair.prob)}` : 'no fair' },
+    { name: "Pinnacle's fair", value: row.fair?.american != null ? am(row.fair.american, fmt) : '—', size: 40, note: row.fair?.prob != null ? `no-vig ${pctPlain(row.fair.prob)}` : 'no fair' },
   ])}
 ${tileRow(372, [
     { name: 'EV after fee', value: pct(row.evPct), color: row.evPct > 0 ? C.green2 : C.text, size: 32 },
     { name: 'Fill size', value: fillText(row.fill), size: 26 },
-    { name: 'Next best', value: row.secondBest ? `${am(row.secondBest.american)} ${row.secondBest.venueName}` : '—', size: 26 },
+    { name: 'Next best', value: row.secondBest ? `${am(row.secondBest.american, fmt)} ${row.secondBest.venueName}` : '—', size: 26 },
   ])}
 ${txt(48, 520, row.label === 'proven'
     ? `PROVEN VENUE: ${row.venueName} main lines beat Pinnacle's close on RESULTS. This row is one price, not a result.`
@@ -194,7 +196,7 @@ function pickSeries(series, { market = null, side = null, sideIndex = 0 } = {}) 
   const bySide = side ? sides.find(s => clean(s.side).toLowerCase() === clean(side).toLowerCase()) : null;
   return { market: mk, s: bySide || sides[Math.min(Math.max(0, sideIndex | 0), Math.max(0, sides.length - 1))] || null };
 }
-function moveCard({ game = null, series = [], market = null, side = null, sideIndex = 0, withFair = true, origin = '', venueName = v => v } = {}) {
+function moveCard({ game = null, series = [], market = null, side = null, sideIndex = 0, withFair = true, origin = '', venueName = v => v, fmt = 'american' } = {}) {
   const kind = 'Line move';
   const { market: mk, s } = pickSeries(series, { market, side, sideIndex });
   if (!game || !s) return emptyCard({ kind, label: MOVE_LABEL, title: game ? 'No saved prices for this game yet' : 'No game to chart', why: game ? 'Points are saved every few minutes from when a game first shows up on the board.' : 'The game started more than 6 hours ago, or it is not on the board.', origin });
@@ -205,7 +207,7 @@ function moveCard({ game = null, series = [], market = null, side = null, sideIn
   // the legend: each venue's last price, then the fair, on one line (cut to fit)
   let lx = 48;
   const legend = [];
-  const items = [...venues.map(v => ({ col: colorOf(v), t: `${venueName(v)} ${am(last?.prices?.[v])}`, dash: false })), ...(withFair && last?.fair != null ? [{ col: C.text, t: `FAIR ${pctPlain(last.fair)}`, dash: true }] : [])];
+  const items = [...venues.map(v => ({ col: colorOf(v), t: `${venueName(v)} ${am(last?.prices?.[v], fmt)}`, dash: false })), ...(withFair && last?.fair != null ? [{ col: C.text, t: `FAIR ${pctPlain(last.fair)}`, dash: true }] : [])];
   for (const it of items) {
     const w = 30 + textW(it.t, 18) + 26;
     if (lx + w > W - 48) break;
@@ -222,7 +224,7 @@ ${txt(48, 540, `Implied win chance at each venue${withFair ? "; dashed: Pinnacle
 
 // ── league: a league's board right now ──
 // d: { name, games, markets, withFair, venues, aboveFair, rows (publicapi.bestPrices), at, stale, locked, esports }
-function leagueCard(d, { origin = '' } = {}) {
+function leagueCard(d, { origin = '', fmt = 'american' } = {}) {
   const kind = `${d.name} · next 48 hours`;
   if (d.stale) return emptyCard({ kind, label: LEAGUE_LABEL, title: `${d.name}: the price feeds are behind`, why: 'The feeds have not read in the last few minutes, so nothing is shown rather than an old price.', readAt: d.at, origin });
   if (!d.games) return emptyCard({ kind, label: LEAGUE_LABEL, title: `No ${d.name} games on the board right now`, why: d.esports ? 'Esports prices and matchups are on the ESPORTS tab in the app; this card counts game lines on the odds screen.' : 'Nothing starts in the next 48 hours with a price we read. The board fills in as venues post lines.', readAt: d.at, origin });
@@ -230,7 +232,7 @@ function leagueCard(d, { origin = '' } = {}) {
   const rows = top.length ? top.map((r, i) => {
     const y = 316 + i * 62;
     const lab = chip(W - 48, y - 30, r.label === 'proven' ? 'PROVEN VENUE' : 'LEAD', r.label === 'proven' ? 'proven' : 'lead', { size: 14, right: true });
-    const right = `${am(r.price?.american ?? americanOfDec(r.price?.decimalAfterFees))} ${r.venueName} · fair ${am(r.fair?.american)} · EV ${pct(r.evPct)}`;
+    const right = `${am(r.price?.american ?? americanOfDec(r.price?.decimalAfterFees), fmt)} ${r.venueName} · fair ${am(r.fair?.american, fmt)} · EV ${pct(r.evPct)}`;
     const rw = textW(right, 20);
     return `<rect x="48" y="${y - 42}" width="${W - 96}" height="54" rx="8" fill="${C.card}" stroke="${C.border}" stroke-width="2"/>
 ${txt(64, y - 8, `${r.selection} · ${r.event}`, { size: 20, weight: 700, max: W - 96 - 32 - rw - lab.w - 40 })}
@@ -239,10 +241,10 @@ ${txt(W - 48 - lab.w - 20, y - 8, right, { size: 20, fill: C.green2, anchor: 'en
   const body = `${tileRow(124, [
     { name: 'Games', value: String(d.games) },
     { name: 'Markets with a fair', value: d.locked ? '—' : `${d.withFair}/${d.markets}` },
-    { name: 'Venues', value: String(d.venues) },
+    { name: d.stateName ? `${d.stateName} venues` : 'Venues', value: String(d.venues) },
     { name: 'Prices above fair', value: d.locked ? '—' : String(d.aboveFair), color: d.aboveFair ? C.green2 : C.text },
   ], { size: 36 })}
-${top.length ? txt(48, 256, 'BEST PRICES ABOVE THE FAIR, AFTER FEES', { size: 15, fill: C.muted, weight: 700, spacing: 1.5 }) : ''}
+${top.length ? txt(48, 256, d.stateName ? `BEST ${String(d.stateName).toUpperCase()} PRICES ABOVE THE FAIR, AFTER FEES` : 'BEST PRICES ABOVE THE FAIR, AFTER FEES', { size: 15, fill: C.muted, weight: 700, spacing: 1.5 }) : ''}
 ${rows}
 ${txt(48, 530, "Fair: Pinnacle's no-vig price. Above the fair is research (LEAD) until RESULTS proves the venue.", { size: 16, fill: C.violet, max: W - 96 })}`;
   return frame({ kind, label: LEAGUE_LABEL, readAt: d.at, origin, body });
