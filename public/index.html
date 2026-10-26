@@ -3005,6 +3005,7 @@ function xpPrintClose(quiet) {
 // the EXPORT and PRINT bar at the top of each data screen
 (() => {
   const go = () => {
+    if (!document.getElementById('scHost')) { const h = document.createElement('div'); h.id = 'scHost'; document.body.appendChild(h); }
     for (const id of XP_PAGES) {
       const pg = document.getElementById('page-' + id);
       if (!pg || pg.querySelector(':scope > .xp-bar')) continue;
@@ -3082,7 +3083,11 @@ function scOpen() {
     <div class="sc-s">Pick what to share. The card is drawn on our server from the live data, with the label the app gives it and the time it was read; the link's preview shows the card. No stake, slips or account details go in.</div>
     <div class="sc-list">${scUi.opts.map((o, i) => `<button class="sc-opt" data-sc="${i}" onclick="scPick(${i})"><b>${escAttr(o.kind)}</b>${escAttr(o.what)}</button>`).join('')}</div>
     <div id="scPrev"></div></div>`;
-  document.body.appendChild(w);
+  // its own holder, so the sheet's arrival is a change of its own and not lost
+  // among the toasts that come and go on <body>
+  let host = document.getElementById('scHost');
+  if (!host) { host = document.createElement('div'); host.id = 'scHost'; document.body.appendChild(host); }
+  host.appendChild(w);
 }
 function scPick(i) {
   const o = scUi.opts[i];
@@ -3117,6 +3122,11 @@ async function scShare() {
   }
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('scSheet')) scClose(); });
+// opening another tab closes the sheet
+(() => {
+  const st = window.showTab;
+  if (typeof st === 'function') window.showTab = function (...a) { scClose(); return st.apply(this, a); };
+})();
 
 // ─── GLOSSARY: ? BESIDE A LABEL, OR A LONG PRESS ON IT ───────────────────────
 // glossary.js (window.LRGlossary, the same list as the GLOSSARY on /learn)
