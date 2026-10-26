@@ -14,6 +14,7 @@ const geminibooks = require('../geminibooks');
 const pmusbooks = require('../pmusbooks');
 const xarb = require('../xarb');
 const lldepth = require('./lldepth');
+const llinplay = require('./llinplay');
 
 const RUN_MS = +(process.env.RUN_MIN || 330) * 60e3;
 const STOP_AT = Date.parse(process.env.STOP_AT || '') || Infinity;
@@ -49,6 +50,8 @@ function observe(src, entries, t) {
 }
 
 const depth = process.env.DEPTH === 'on' ? lldepth.createDepth({ http: axios, kget: (u, o) => kget(u, o), stats }) : null;
+// in-play add-on (diag/llinplay.js): its own ~20 s loop, started once kget exists
+let inplay = null;
 let pinMain = { games: [], at: 0 }, pinExtra = { games: [], at: 0 }, gem = { books: {}, at: 0 }, pm = { books: {}, at: 0 };
 let kseries = [], kseriesAt = 0, krows = [], krowsAt = 0;
 const pmReader = pmusbooks.createPolymarketUsBooks({ http: axios });
@@ -233,6 +236,7 @@ function pushOut() {
   fs.writeFileSync('out/stats.json', JSON.stringify({ ...stats, lines, at: new Date().toISOString() }));
 }
 (async () => {
+  if (process.env.INPLAY === 'on') { try { inplay = llinplay.createInplay({ http: axios, kget: (u, o) => kget(u, o), stats }); } catch (e) { stats.errors.inplay = String(e.stack || e).slice(0, 300); } }
   const t0 = Date.now();
   let lastPush = 0;
   while (Date.now() - t0 < RUN_MS && Date.now() < STOP_AT) {
@@ -245,6 +249,7 @@ function pushOut() {
   }
   await new Promise(r => log.end(r));
   if (depth) await depth.end();
+  if (inplay) { try { await inplay.end(); } catch (e) { stats.errors.inplayEnd = String(e).slice(0, 200); } }
   stats.endedAt = new Date().toISOString();
   pushOut();
   process.exit(0);
