@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<title>Status | Line Reaper</title>
+<meta name="description" content="Live feed health for every venue Line Reaper reads: last good read, staleness and uptime.">
+<link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/status">
+<meta name="theme-color" content="#080b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+main { max-width:960px; }
+.top-in { max-width:960px; }
+.st { font:700 11px var(--mono); letter-spacing:.06em; white-space:nowrap; }
+.sub { color:var(--muted); font-size:11px; font-family:inherit; }
+.sub.err { color:#fca5a5; overflow-wrap:anywhere; }
+td.n, th.n { text-align:right; white-space:nowrap; }
+.feeds { table-layout:fixed; }
+.feeds .c1 { width:34%; } .feeds .c2 { width:18%; } .feeds .c3 { width:16%; } .feeds .c4 { width:12%; } .feeds .c5 { width:20%; }
+.feeds td:first-child { overflow-wrap:anywhere; }
+.strip { display:inline-flex; gap:2px; }
+.strip i { display:block; width:5px; height:16px; border-radius:1px; }
+.tiles { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.tiles div { flex:1 1 160px; min-width:0; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.tiles span { display:block; font:600 10px var(--mono); letter-spacing:.1em; color:var(--muted); }
+.tiles b { display:block; font-size:20px; margin:2px 0; }
+.tiles i { font-style:normal; color:var(--text2); font-size:12px; overflow-wrap:anywhere; }
+@media (max-width:640px) { .hide-s { display:none; } .feeds .c1 { width:40%; } .feeds .c2 { width:24%; } .feeds .c3 { width:20%; } .feeds .c4 { width:16%; } .feeds th.n { white-space:normal; } th, td { padding:8px 6px; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app">OPEN THE APP</a></div></header>
+<main>
+<p class="kicker">Status</p>
+<h1 style="color:#fbbf24">2 of 21 feeds are not reading right now</h1>
+<p class="lead">Every venue and recorder this server reads, from its own state. Read 2026-10-26 05:37 UTC; this page reloads every minute.</p>
+<div class="tiles">
+<div><span>FEEDS UP NOW</span><b>19 / 21</b><i>1 stale · 1 down · 0 off here</i></div>
+<div><span>SITE UP 24H</span><b>100%</b><i>7d 100% · 1 sample since 2026-10-26</i></div>
+<div><span>VERSION</span><b>v3.187.1</b><i>running 7 min</i></div>
+<div><span>LAST LIVE CHECK</span><b style="color:#34d399">PASSED</b><i>v3.187.1 · 2026-10-26 05:30 UTC</i></div>
+</div>
+<h2>Sharp lines</h2><div class="scroll"><table class="feeds"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5 hide-s"></colgroup><thead><tr><th>Feed</th><th>Now</th><th class="n">Last read</th><th class="n">Up 24h</th><th class="hide-s">Last 24 hours</th></tr></thead><tbody><tr>
+<td><b>Pinnacle game lines</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 5 min</div></td>
+<td class="n">57s ago<div class="sub">301 games</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Pinnacle player props</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 10 min</div></td>
+<td class="n">2 min ago<div class="sub">123 props</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr></tbody></table></div><h2>Sportsbooks</h2><div class="scroll"><table class="feeds"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5 hide-s"></colgroup><thead><tr><th>Feed</th><th>Now</th><th class="n">Last read</th><th class="n">Up 24h</th><th class="hide-s">Last 24 hours</th></tr></thead><tbody><tr>
+<td><b>FanDuel</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 5 min</div></td>
+<td class="n">57s ago<div class="sub">73 games</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>BetRivers</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 5 min</div></td>
+<td class="n">57s ago<div class="sub">70 games</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Action Network (copied book prices)</b><div class="sub">Second-hand prices, never a play alone</div></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 6 min</div></td>
+<td class="n">68s ago<div class="sub">1,469 games</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr></tbody></table></div><h2>Exchanges</h2><div class="scroll"><table class="feeds"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5 hide-s"></colgroup><thead><tr><th>Feed</th><th>Now</th><th class="n">Last read</th><th class="n">Up 24h</th><th class="hide-s">Last 24 hours</th></tr></thead><tbody><tr>
+<td><b>Kalshi markets</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 5 min</div></td>
+<td class="n">35s ago<div class="sub">384 markets</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Kalshi player props</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 15 min</div></td>
+<td class="n">50s ago<div class="sub">42 games</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Polymarket US</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 6 min</div></td>
+<td class="n">61s ago<div class="sub">605 games</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Gemini Predictions</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 6 min</div></td>
+<td class="n">4s ago<div class="sub">420 events</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Matchbook</b><div class="sub">Reference price; not open to Texas</div></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 6 min</div></td>
+<td class="n">68s ago<div class="sub">27 markets</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Polymarket global</b><div class="sub">Reference price only; US users trade Polymarket US</div></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 5 min</div></td>
+<td class="n">35s ago<div class="sub">204 markets</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr></tbody></table></div><h2>Pick&#39;em apps</h2><div class="scroll"><table class="feeds"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5 hide-s"></colgroup><thead><tr><th>Feed</th><th>Now</th><th class="n">Last read</th><th class="n">Up 24h</th><th class="hide-s">Last 24 hours</th></tr></thead><tbody><tr>
+<td><b>PrizePicks</b><div class="sub">One league per read; a full pass takes about 20 min</div></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 45 min</div></td>
+<td class="n">2 min ago<div class="sub">1,728 lines</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Underdog</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 10 min</div></td>
+<td class="n">2 min ago<div class="sub">2,871 lines</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Sleeper</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 10 min</div></td>
+<td class="n">2 min ago<div class="sub">1,181 lines read</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>DK Pick6</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 30 min</div></td>
+<td class="n">6 min ago<div class="sub">326 lines</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr></tbody></table></div><h2>Stats and esports data</h2><div class="scroll"><table class="feeds"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5 hide-s"></colgroup><thead><tr><th>Feed</th><th>Now</th><th class="n">Last read</th><th class="n">Up 24h</th><th class="hide-s">Last 24 hours</th></tr></thead><tbody><tr>
+<td><b>League of Legends stats</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 36 h</div></td>
+<td class="n">7 min ago<div class="sub">2,181 players</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Valorant stats (VLR)</b><div class="sub err">na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402</div></td>
+<td><span class="st" style="color:#f87171">DOWN</span><div class="sub">stale after 36 h</div></td>
+<td class="n">never<div class="sub">0 players</div></td>
+<td class="n">0%<div class="sub">7d 0%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#f87171"></i></span></td></tr></tbody></table></div><h2>Recorders and graders</h2><div class="scroll"><table class="feeds"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5 hide-s"></colgroup><thead><tr><th>Feed</th><th>Now</th><th class="n">Last read</th><th class="n">Up 24h</th><th class="hide-s">Last 24 hours</th></tr></thead><tbody><tr>
+<td><b>Pick grader (results and closes)</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 15 min</div></td>
+<td class="n">65s ago<div class="sub"></div></td>
+<td class="n">0%<div class="sub">7d 0%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#f87171"></i></span></td></tr><tr>
+<td><b>Odds screen line history</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 5 min</div></td>
+<td class="n">11s ago<div class="sub">311 markets</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Prop line history</b></td>
+<td><span class="st" style="color:#34d399">UP</span><div class="sub">stale after 15 min</div></td>
+<td class="n">3 min ago<div class="sub">841 markets</div></td>
+<td class="n">100%<div class="sub">7d 100%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#34d399"></i></span></td></tr><tr>
+<td><b>Results backup (saved every 20 min)</b></td>
+<td><span class="st" style="color:#fbbf24">STALE</span><div class="sub">stale after 45 min</div></td>
+<td class="n">17 h ago<div class="sub"></div></td>
+<td class="n">0%<div class="sub">7d 0%</div></td>
+<td class="hide-s"><span class="strip" aria-hidden="true"><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:var(--border)"></i><i style="background:#fbbf24"></i></span></td></tr></tbody></table></div>
+<p class="note">How to read it: UP means the last good read is younger than the feed's stale limit; STALE means it read before but not inside the limit; DOWN means it is on but has not read since this server started; OFF means it is switched off on this server. Uptime is the share of 5-minute samples a feed was up, among the samples it was on, kept 7 days. Site uptime is the share of 5-minute slots with a sample since the first one; a slot with none means the server was not running, and samples taken in the minutes before a deploy can be lost before the backup saves them. Nothing here is a price or a pick.</p>
+<p><a class="go" href="/api/uptime">THE SAME AS JSON →</a></p>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/learn">Learn</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take bets. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>

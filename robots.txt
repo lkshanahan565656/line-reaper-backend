@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /$
+Allow: /app
+Allow: /learn
+Allow: /digest
+Allow: /status
+Disallow: /api/
+Sitemap: https://line-reaper-backend-production.up.railway.app/sitemap.xml
