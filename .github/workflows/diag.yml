@@ -1,5 +1,5 @@
-name: diag-whodata
-on: { push: { branches: [diag-whodata] }, workflow_dispatch: {} }
+name: diag-whodata2
+on: { push: { branches: [diag-whodata2] }, workflow_dispatch: {} }
 permissions: { contents: write }
 jobs:
   run:
@@ -7,4 +7,4 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - run: python3 fetch.py > log.txt 2>&1; cp log.txt out/; cd out && git init -q && git checkout -q -b diag-whodata-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-whodata-out
+      - run: python3 fetch.py > log.txt 2>&1; cp log.txt out/; cd out && git init -q && git checkout -q -b diag-whodata2-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-whodata2-out
