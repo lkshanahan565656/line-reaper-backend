@@ -1,0 +1,212 @@
+{
+  "cold": {
+    "fcp": 432,
+    "dcl": 2219,
+    "usable": 3624,
+    "wire": 522714,
+    "doc": 285874,
+    "scripts": 6080,
+    "api": 148801,
+    "apiRaw": 2340290,
+    "requests": 14,
+    "apis": [
+      {
+        "path": "/api/features",
+        "bytes": 116,
+        "raw": 17,
+        "enc": ""
+      },
+      {
+        "path": "/api/sharp-moves",
+        "bytes": 142,
+        "raw": 59,
+        "enc": ""
+      },
+      {
+        "path": "/api/odds-screen",
+        "bytes": 32257,
+        "raw": 397932,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/status",
+        "bytes": 10334,
+        "raw": 34311,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/claims",
+        "bytes": 1520,
+        "raw": 3360,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/underdog",
+        "bytes": 63124,
+        "raw": 1213727,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/status",
+        "bytes": 10317,
+        "raw": 34310,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/prizepicks",
+        "bytes": 30925,
+        "raw": 656574,
+        "enc": "gzip"
+      }
+    ],
+    "files": [
+      {
+        "path": "/app",
+        "bytes": 285862,
+        "raw": 1025881,
+        "enc": "gzip",
+        "cached": false
+      },
+      {
+        "path": "/css2",
+        "bytes": 1327,
+        "raw": 17577,
+        "enc": "gzip",
+        "cached": false
+      },
+      {
+        "path": "/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+        "bytes": 31467,
+        "raw": 31340,
+        "enc": "",
+        "cached": false
+      },
+      {
+        "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+        "bytes": 48983,
+        "raw": 48432,
+        "enc": "",
+        "cached": false
+      },
+      {
+        "path": "/",
+        "bytes": 228,
+        "raw": 97,
+        "enc": "",
+        "cached": false
+      },
+      {
+        "path": "/glossary.js",
+        "bytes": 6079,
+        "raw": 15088,
+        "enc": "gzip",
+        "cached": false
+      }
+    ]
+  },
+  "warm": {
+    "fcp": 372,
+    "dcl": 564,
+    "usable": 1653,
+    "wire": 21237,
+    "doc": 95,
+    "scripts": 0,
+    "api": 20965,
+    "apiRaw": 2340293,
+    "requests": 14,
+    "apis": [
+      {
+        "path": "/api/features",
+        "bytes": 0,
+        "raw": 17,
+        "enc": ""
+      },
+      {
+        "path": "/api/claims",
+        "bytes": 0,
+        "raw": 3360,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/sharp-moves",
+        "bytes": 143,
+        "raw": 59,
+        "enc": ""
+      },
+      {
+        "path": "/api/odds-screen",
+        "bytes": 70,
+        "raw": 397932,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/status",
+        "bytes": 10261,
+        "raw": 34312,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/underdog",
+        "bytes": 70,
+        "raw": 1213727,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/status",
+        "bytes": 10263,
+        "raw": 34312,
+        "enc": "gzip"
+      },
+      {
+        "path": "/api/prizepicks",
+        "bytes": 92,
+        "raw": 656574,
+        "enc": "gzip"
+      }
+    ],
+    "files": [
+      {
+        "path": "/app",
+        "bytes": 95,
+        "raw": 1025881,
+        "enc": "gzip",
+        "cached": false
+      },
+      {
+        "path": "/css2",
+        "bytes": 0,
+        "raw": 17577,
+        "enc": "gzip",
+        "cached": true
+      },
+      {
+        "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+        "bytes": 0,
+        "raw": 48432,
+        "enc": "",
+        "cached": true
+      },
+      {
+        "path": "/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+        "bytes": 0,
+        "raw": 31340,
+        "enc": "",
+        "cached": true
+      },
+      {
+        "path": "/glossary.js",
+        "bytes": 0,
+        "raw": 15088,
+        "enc": "gzip",
+        "cached": true
+      },
+      {
+        "path": "/",
+        "bytes": 204,
+        "raw": 97,
+        "enc": "",
+        "cached": false
+      }
+    ]
+  }
+}

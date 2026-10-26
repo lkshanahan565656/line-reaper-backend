@@ -1,0 +1,33 @@
+== /app
+cache-control: no-cache
+etag: W/"fa759-WMBmtXMWsWijDKrr7Ov2+fqoTyo"
+content-length: 1025881
+vary: accept-encoding
+size_download=1025881 ttfb=0.085524 total=0.138244
+== /api/odds-screen
+etag: W/"6127b-gZo+p0Yjyl5M6VU2Fh3Sc3K3Snk"
+content-length: 397947
+vary: accept-encoding
+size_download=397947 ttfb=0.082304 total=0.123431
+== /api/status
+etag: W/"85ca-1thKSAsOeKIE5ykR03Uce1/aUt0"
+content-length: 34250
+vary: accept-encoding
+size_download=34250 ttfb=0.273366 total=0.284477
+== /api/underdog
+etag: W/"12852c-AzL3I+nBGWRetDChwlEhF+Ex0LE"
+content-length: 1213740
+vary: accept-encoding
+size_download=1213740 ttfb=0.132865 total=0.184573
+== /api/claims
+cache-control: public, max-age=60
+etag: W/"d20-g75LmgPlanfEPP1N1fiOVmjDURc"
+content-length: 3360
+vary: accept-encoding
+size_download=3360 ttfb=0.428269 total=0.428366
+== /glossary.js
+cache-control: public, max-age=300
+etag: W/"3af0-1a178a5a4e0"
+content-length: 15088
+vary: accept-encoding
+size_download=15088 ttfb=0.118826 total=0.120642

@@ -1,0 +1,30 @@
+COLD (median of 3): first paint 432 ms, page ready 2219 ms, ODDS SCREEN usable 3624 ms; 510 KB over the wire in 14 requests (page 279 KB, scripts 6 KB, API 145 KB of 2285 KB raw)
+   /app                                 279 KB wire  1002 KB raw gzip
+   /css2                                  1 KB wire    17 KB raw gzip
+   /s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2    31 KB wire    31 KB raw 
+   /s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2    48 KB wire    47 KB raw 
+   /                                      0 KB wire     0 KB raw 
+   /glossary.js                           6 KB wire    15 KB raw gzip
+   /api/features                          0 KB wire     0 KB raw 
+   /api/sharp-moves                       0 KB wire     0 KB raw 
+   /api/odds-screen                      32 KB wire   389 KB raw gzip
+   /api/status                           10 KB wire    34 KB raw gzip
+   /api/claims                            1 KB wire     3 KB raw gzip
+   /api/underdog                         62 KB wire  1185 KB raw gzip
+   /api/status                           10 KB wire    34 KB raw gzip
+   /api/prizepicks                       30 KB wire   641 KB raw gzip
+WARM (median of 3): first paint 372 ms, page ready 564 ms, ODDS SCREEN usable 1653 ms; 21 KB over the wire in 14 requests (page 0 KB, scripts 0 KB, API 20 KB of 2285 KB raw)
+   /app                                   0 KB wire  1002 KB raw gzip
+   /css2                                  0 KB wire    17 KB raw gzip (cache)
+   /s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2     0 KB wire    47 KB raw  (cache)
+   /s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2     0 KB wire    31 KB raw  (cache)
+   /glossary.js                           0 KB wire    15 KB raw gzip (cache)
+   /                                      0 KB wire     0 KB raw 
+   /api/features                          0 KB wire     0 KB raw 
+   /api/claims                            0 KB wire     3 KB raw gzip
+   /api/sharp-moves                       0 KB wire     0 KB raw 
+   /api/odds-screen                       0 KB wire   389 KB raw gzip
+   /api/status                           10 KB wire    34 KB raw gzip
+   /api/underdog                          0 KB wire  1185 KB raw gzip
+   /api/status                           10 KB wire    34 KB raw gzip
+   /api/prizepicks                        0 KB wire   641 KB raw gzip
