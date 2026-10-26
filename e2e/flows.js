@@ -394,6 +394,58 @@ const FLOWS = {
     expect(/Josh Allen/.test(await text(page, '#msList')), 'the pasted slip is not listed');
   },
 
+  async 'PUBLISH RECORD: a public page of my slips, opened and unpublished'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    // TEST DATA: a made-up slip, so the record has something to show
+    await page.locator('#page-myslips .mb-actions button', { hasText: 'PASTE SLIPS' }).click();
+    await page.fill('#msText', 'PrizePicks\nJosh Allen Over 245.5 Pass Yds\nStefon Diggs Under 64.5 Rec Yds');
+    await page.getByRole('button', { name: 'ADD SLIPS' }).click();
+    await settle(page, w, opts, 200);
+    await page.locator('#msPubBtn').click();
+    await settle(page, w, opts, 100);
+    expect(await page.locator('#msPub').isVisible(), 'PUBLISH RECORD opened nothing');
+    const handle = `e2e_${opts.viewportName.slice(0, 4)}_${String(Date.now()).slice(-6)}`;
+    await page.fill('#msPubHandle', handle);
+    await page.locator('#msPub button', { hasText: /^PUBLISH$/ }).click();
+    await settle(page, w, opts, 600);
+    const pub = await ls(page, 'lr_pub_record');
+    const slips = await ls(page, 'lr_slips');
+    expect(pub?.handle === handle && /^lrr_/.test(pub.key || ''), `no record saved after PUBLISH: ${JSON.stringify(pub)?.slice(0, 120)}`);
+    expect((pub.sent || []).length === slips.length, `${(pub.sent || []).length} of ${slips.length} slips sent`);
+    const panel = await text(page, '#msPub');
+    expect(panel.includes(`/r/${handle}`) && /COPY KEY/.test(panel), `the panel does not show the page link and key: "${panel.slice(0, 160)}"`);
+    expect(/RECORD @/.test(await text(page, '#msPubBtn')), 'the button should name the published handle');
+    // the page: the same for everyone, the disclosure, every slip, nothing broken, fits a phone
+    const p2 = await page.context().newPage();
+    try {
+      await p2.setViewportSize(page.viewportSize());
+      const r = await p2.goto(`${opts.base}/r/${handle}`, { waitUntil: 'domcontentloaded' });
+      expect(r.status() === 200, `/r/${handle} answered ${r.status()}`);
+      const body = await p2.locator('body').innerText();
+      expect(/not placed through Line Reaper/.test(body) && /Josh Allen/.test(body), 'the record page lacks the disclosure or the slip');
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(body), 'the record page shows broken text or a claim');
+      const over = await p2.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over <= 0, `the record page is ${over} px too wide`);
+      const og = await p2.locator('meta[property="og:image"]').getAttribute('content');
+      expect(new RegExp(`/card/record-${handle}\\.png`).test(og || ''), `og:image is not the record card: ${og}`);
+      const csv = await p2.request.get(`${opts.base}/api/records/${handle}/slips.csv`);
+      const rows = csv.ok() ? (await csv.text()).split('\n').filter(Boolean) : [];
+      expect(/^slip_id,/.test(rows[0] || '') && rows.filter(x => /Josh Allen|Stefon Diggs/.test(x)).length >= 2, 'the CSV should hold the pasted legs');
+    } finally { await p2.close(); }
+    // unpublish: the first tap asks, the second removes the page
+    await page.locator('#msPub button', { hasText: 'UNPUBLISH' }).click();
+    await settle(page, w, opts, 80);
+    await page.locator('#msPub button', { hasText: 'TAP AGAIN TO UNPUBLISH' }).click();
+    await settle(page, w, opts, 300);
+    expect((await ls(page, 'lr_pub_record'))?.unpublished === true, 'UNPUBLISH did not take');
+    const gone = await (await page.request.get(`${opts.base}/r/${handle}`)).text();
+    expect(/unpublished/.test(gone) && !/Josh Allen/.test(gone), 'the unpublished page still shows slips');
+    // leave the next flow a browser with no record
+    await page.locator('#msPub button', { hasText: 'FORGET THIS HANDLE' }).click();
+    await page.locator('#msPub button', { hasText: 'CLOSE' }).click();
+    await settle(page, w, opts, 60);
+  },
+
   async 'import a Pikkit CSV'(page, w, opts) {
     await openTab(page, 'myslips', w, opts);
     const file = path.join(os.tmpdir(), `lr-e2e-pikkit-${process.pid}-${opts.viewportName}.csv`);

@@ -41,7 +41,7 @@ function offline() {
 async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {}) {
   const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-e2e-'));
   for (const k of Object.keys(process.env)) if (/^(DATABASE_URL|ODDS_API_KEY|OWLS_API_KEY|STRIPE_|TAIL_WEBHOOK|ALERT_WEBHOOK_URL|SHARP_WEBHOOK|VAPID_)/.test(k)) delete process.env[k];
-  Object.assign(process.env, { LR_DATA_DIR: DIR, UPSTREAM_GAP_MS: '0', ALERT_STARTUP: 'off', NODE_ENV: 'test' });
+  Object.assign(process.env, { LR_DATA_DIR: DIR, UPSTREAM_GAP_MS: '0', ALERT_STARTUP: 'off', NODE_ENV: 'test', PUB_RECORDS_PER_HOUR: '1000' });
   for (const f of ['TRACKER_FILE', 'USERS_FILE', 'EV_TRACK_FILE', 'TAIL_TRACK_FILE', 'TAIL_TRADERS_FILE', 'FRESH_TRACK_FILE', 'ESPORTS_EDGE_TRACK_FILE']) process.env[f] = path.join(DIR, f.toLowerCase() + '.json');
   offline();
   const express = require('express');

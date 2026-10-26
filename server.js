@@ -31,7 +31,7 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state() }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState } }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
 const profiler = require('./ops').createProfiler();
@@ -5152,7 +5152,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.207.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.208.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8439,7 +8439,12 @@ const slipFairAt = (row, book, line) => {
 app.post('/api/slips/grade', async (req, res) => {
   const legs = Array.isArray(req.body?.legs) ? req.body.legs.slice(0, 300) : null;
   if (!legs) return res.status(400).json({ error: 'legs needed' });
-  try {
+  try { res.json(await gradeSlipLegs(legs)); } catch (e) { sendErr(res, e); }
+});
+// legs (gradeRequest's shape, at most 300) → { results: { id: view }, at, tables }:
+// MY SLIPS and the public bettor records (pubrecord.js) grade the same way
+async function gradeSlipLegs(legs) {
+  {
     const { rows } = propsBoardRows();
     // esports legs (a league tag of CS, LoL, Valorant, Dota) go to the esports slip record
     const esMod = require('./esslips');
@@ -8459,9 +8464,9 @@ app.post('/api/slips/grade', async (req, res) => {
       }
     }
     await gradeSlipCloses(rest, out.results);
-    res.json({ ...out, tables: { pick6: pick6.state.payouts || null } });
-  } catch (e) { sendErr(res, e); }
-});
+    return { ...out, tables: { pick6: pick6.state.payouts || null } };
+  }
+}
 // After the slip log: every sports leg it followed gets Pinnacle's raw close
 // beside the sharp consensus, and every leg it couldn't follow (the game had
 // started, no app lists the player now, an old Pikkit bet) goes to the late
@@ -8994,7 +8999,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.207.0',
+  version: '3.208.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9443,6 +9448,13 @@ const cardStr = (v, re, max = 120) => { const s = String(v ?? '').slice(0, max);
 // the card's data and its words, from the query; never from numbers the browser sends
 async function shareCardFor(kind, q, origin) {
   const venueName = v => bigMoves.NAMES[v] || venues.NAMES[v] || v;
+  // a bettor's own record (pubrecord.js), /card/record-<handle>.png
+  const bettor = /^record-([a-z0-9_]{3,20})$/.exec(kind);
+  if (bettor) {
+    const v = await pubView(bettor[1], 1);
+    if (!v) throw new V1Error(404, 'not_found', 'No bettor record with that handle.');
+    return { svg: shareCards.bettorCard(v, { origin }), at: v.at, title: `@${v.handle}: verified pick'em record`, description: 'Slips logged before the start, graded against Pinnacle\'s close.', open: `/r/${v.handle}`, page: `/r/${v.handle}` };
+  }
   if (kind === 'price') {
     const id = cardStr(q.id, /^[^\u0000-\u001f<>]{1,300}$/, 300);
     const at = new Date().toISOString();
@@ -9546,7 +9558,7 @@ async function shareImage(kind, q, origin, ext) {
 }
 app.get('/card/:kind.:ext', widgetGate, async (req, res) => {
   const { kind, ext } = req.params;
-  if (!SHARE_KINDS.has(kind) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, digest (.png or .svg).');
+  if (!(SHARE_KINDS.has(kind) || /^record-[a-z0-9_]{3,20}$/.test(kind)) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, record-<handle>, digest (.png or .svg).');
   try {
     const img = await shareImage(kind, req.query, siteOrigin(req), ext);
     shareStats.served++;
@@ -9580,6 +9592,116 @@ app.get('/share/:kind', widgetGate, (req, res) => {
 });
 // /results: the record's share page (the app's RESULTS tab is one tap away)
 app.get('/results', widgetGate, (req, res) => sendSharePage(req, res, 'record', { to: '?start=results' }));
+
+// ─── PUBLIC BETTOR RECORDS (pubrecord.js) ────────────────────────────────────
+// MY SLIPS > PUBLISH RECORD: a bettor's own slips under a handle, at
+// /r/<handle>, graded server-side by the same slip graders as MY SLIPS and
+// labelled on the RESULTS rule. The key that manages a record is shown once;
+// only its SHA-256 is kept. Kept across deploys by the results backup.
+const pubRecord = require('./pubrecord');
+const pubRecords = pubRecord.createRecordStore({ store: resultsBackup.wrap('pubRecords', createEvStoreFromEnv(process.env, { table: 'pub_records', fileVar: 'PUB_RECORDS_FILE', file: 'pub-records.json' })),
+  perHour: parseInt(process.env.PUB_RECORDS_PER_HOUR, 10) || undefined });
+pubRecords.init().catch(e => console.warn('Public records: store failed to initialise:', e.message));
+const pubRecordState = { lastRun: null, lastMs: null, legs: 0, changed: 0, error: null, running: false };
+// every live record's legs not final yet, through the slip graders; one pass at a time
+// each record gets up to 300 legs a pass (its newest first), records taken in
+// turn from pass to pass so one big imported history can't starve the rest
+let pubRecordTurn = 0;
+async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
+  if (pubRecordState.running) return pubRecordState;
+  pubRecordState.running = true;
+  const t0 = Date.now();
+  let legsN = 0, changed = 0;
+  try {
+    await pubRecords.init();
+    const all = only ? [only] : pubRecords.liveHandles();
+    const start = all.length ? pubRecordTurn++ % all.length : 0;
+    for (const h of [...all.slice(start), ...all.slice(0, start)]) {
+      if (legsN >= maxLegs) break;
+      const chunk = pubRecords.pendingLegs(h).slice(0, Math.min(300, maxLegs - legsN));
+      if (!chunk.length) continue;
+      legsN += chunk.length;
+      const out = await gradeSlipLegs(chunk);
+      changed += await pubRecords.applyGrades(h, out.results);
+    }
+    Object.assign(pubRecordState, { lastRun: new Date().toISOString(), lastMs: Date.now() - t0, legs: legsN, changed, error: null });
+  } catch (e) { pubRecordState.error = e.message; console.warn('Public records: grading:', e.message); }
+  finally { pubRecordState.running = false; }
+  return pubRecordState;
+}
+schedule('7,17,27,37,47,57 * * * *', () => gradePubRecords().catch(() => {}));
+const recordKey = req => { const a = String(req.get('authorization') || ''); return /^Bearer\s+/i.test(a) ? a.replace(/^Bearer\s+/i, '').trim() : String(req.body?.key || ''); };
+const pubTables = () => ({ pick6: pick6.state.payouts || null });
+// the view, memoised a minute per handle and page (a shared link is opened by every previewer at once)
+const pubViewMemo = new Map();
+async function pubView(handle, page = 1) {
+  await pubRecords.init();
+  const c = pubRecord.cleanHandle(handle);
+  const meta = c.handle && pubRecords.get(c.handle);
+  if (!meta) return null;
+  const key = `${c.handle}|${page}`, hit = pubViewMemo.get(key);
+  if (hit && Date.now() - hit.at < 60e3) return hit.v;
+  const v = meta.status === 'live' ? pubRecord.recordView(meta, pubRecords.slipsOf(c.handle), { tables: pubTables(), page }) : { handle: meta.handle, status: meta.status, unpublishedAt: meta.unpublishedAt, at: new Date().toISOString() };
+  if (pubViewMemo.size > 200) pubViewMemo.clear();
+  pubViewMemo.set(key, { at: Date.now(), v });
+  return v;
+}
+const pubForget = h => { for (const k of [...pubViewMemo.keys()]) if (k.startsWith(`${h}|`)) pubViewMemo.delete(k); shareImgMemo.clear(); };
+app.post('/api/records', async (req, res) => {
+  try {
+    const out = await pubRecords.publish({ handle: req.body?.handle, token: recordKey(req) || null, who: publicApi.callerOf(req) });
+    pubForget(out.handle);
+    res.set('Cache-Control', 'no-store').status(out.already ? 200 : 201).json({ ...out, url: `${siteOrigin(req)}/r/${out.handle}`,
+      note: out.token && !out.already ? 'Keep this key: it is the only way to add slips to or unpublish this record, and it is shown once.' : undefined });
+  } catch (e) { if (e.retryAfter) res.set('Retry-After', String(e.retryAfter)); sendErr(res, e); }
+});
+app.post('/api/records/:handle/slips', async (req, res) => {
+  try {
+    const out = await pubRecords.addSlips(req.params.handle, recordKey(req), req.body?.slips);
+    const h = pubRecord.cleanHandle(req.params.handle).handle;
+    pubForget(h);
+    // the new legs go to the graders now, so a pre-game leg is read before its start
+    if (out.added) gradePubRecords({ only: h, maxLegs: 600 }).then(() => pubForget(h)).catch(() => {});
+    res.set('Cache-Control', 'no-store').json(out);
+  } catch (e) { sendErr(res, e); }
+});
+app.delete('/api/records/:handle', async (req, res) => {
+  try { const out = await pubRecords.unpublish(req.params.handle, recordKey(req)); pubForget(out.handle); res.set('Cache-Control', 'no-store').json(out); } catch (e) { sendErr(res, e); }
+});
+// whether a key manages a handle (the app checks its saved key on open)
+app.post('/api/records/:handle/check', async (req, res) => {
+  await pubRecords.init().catch(() => {});
+  const h = pubRecord.cleanHandle(req.params.handle).handle;
+  const r = h && pubRecords.get(h);
+  res.set('Cache-Control', 'no-store').json({ handle: h || null, exists: !!r, status: r?.status || null, owner: !!(h && pubRecords.owns(h, recordKey(req))), slips: r ? pubRecords.slipsOf(h).length : 0 });
+});
+app.get('/api/records/:handle', widgetGate, async (req, res) => {
+  try {
+    const v = await pubView(req.params.handle, parseInt(req.query.page, 10) || 1);
+    if (!v) return res.status(404).json({ error: 'No record with that handle.' });
+    res.set('Cache-Control', 'public, max-age=60').json(v);
+  } catch (e) { sendErr(res, e); }
+});
+app.get('/api/records/:handle/slips.:ext', widgetGate, async (req, res) => {
+  try {
+    if (!/^(csv|json)$/.test(req.params.ext)) return res.status(404).json({ error: 'csv or json' });
+    const v = await pubView(req.params.handle, 1);
+    if (!v || v.status !== 'live') return res.status(404).json({ error: 'No published record with that handle.' });
+    const all = pubRecord.recordView(pubRecords.get(v.handle), pubRecords.slipsOf(v.handle), { tables: pubTables(), perPage: 1e6 });
+    const name = `line-reaper-record-${v.handle}-${new Date().toISOString().slice(0, 10)}.${req.params.ext}`;
+    res.set({ 'Cache-Control': 'public, max-age=60', 'Content-Disposition': `attachment; filename="${name}"` });
+    if (req.params.ext === 'csv') return res.type('text/csv; charset=utf-8').send(pubRecord.csv(all));
+    res.json(all);
+  } catch (e) { sendErr(res, e); }
+});
+app.get('/r/:handle', widgetGate, async (req, res) => {
+  try {
+    const v = await pubView(req.params.handle, parseInt(req.query.page, 10) || 1);
+    const o = siteOrigin(req);
+    if (!v) return res.status(404).set('Cache-Control', 'no-store').type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Line Reaper</title><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">No bettor record with that handle. <a style="color:#34d399" href="/app?start=myslips">Publish your own from MY SLIPS</a>.</body>`);
+    res.set('Cache-Control', 'public, max-age=60').type('html').send(pubRecord.pageHtml(v, { origin: o, url: `${o}/r/${v.handle}`, image: shareImageUrl(o, `record-${v.handle}`, '') }));
+  } catch (e) { res.status(500).set('Cache-Control', 'no-store').type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">This record could not be read just now. Try again in a minute.</body>'); console.warn('Public record page:', e.message); }
+});
 
 // ── /developers: the docs, with each endpoint's live answer cut to its first rows ──
 const trimArrays = (x, n = 3, depth = 0) => {
