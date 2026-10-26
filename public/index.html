@@ -1208,7 +1208,6 @@ body::before { background:none; }
 .lay-name { flex:1; }
 .lay-b { background:#161c28; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 10px 'Inter',sans-serif; letter-spacing:.8px; padding:5px 8px; cursor:pointer; min-width:34px; }
 .lay-b:hover { color:var(--text); }
-.lay-sel { background:#161c28; border:1px solid var(--border2); color:var(--text); border-radius:6px; font:600 11px 'Inter',sans-serif; padding:5px 6px; max-width:130px; }
 .lay-b.on { color:#10b981; border-color:rgba(16,185,129,.45); }
 .lay-foot { display:flex; gap:8px; margin-top:16px; }
 .lay-foot button { flex:1; padding:11px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--text); font:700 12px 'Inter',sans-serif; letter-spacing:1px; cursor:pointer; }
@@ -2434,76 +2433,6 @@ const LR_SHARED = (() => {
   try { localStorage.setItem('lr_tab', s.tab); } catch {}
   return s;
 })();
-// ─── ODDS FORMAT (CUSTOMIZE > Odds format) ───────────────────────────────────
-// One setting for every price the app draws: American (a new device), decimal,
-// fractional or implied chance, plus Hong Kong, Indonesian and Malay. Kept on
-// this device like Compact rows, never in a share link and never on the
-// server. It changes what is shown, never a calculation: every screen keeps
-// working in decimal odds and turns them into text at the last step. Exchange
-// contracts stay in cents (the price you type on Kalshi or Polymarket) and
-// pick'em payouts stay multipliers. The same conversions as oddsschema.js.
-// Pure: the tests run this block on its own (LR_ODDSFMT_BEGIN to LR_ODDSFMT_END).
-// LR_ODDSFMT_BEGIN
-const LROddsFmt = (() => {
-  const FORMATS = ['american', 'decimal', 'fractional', 'probability', 'hongkong', 'indonesian', 'malay'];
-  const LABELS = { american: 'American', decimal: 'Decimal', fractional: 'Fractional', probability: 'Implied %', hongkong: 'Hong Kong', indonesian: 'Indonesian', malay: 'Malay' };
-  const MAIN = ['american', 'decimal', 'fractional', 'probability'];
-  const decOfAm = a => (typeof a === 'number' && isFinite(a) && Math.abs(a) >= 100 ? (a > 0 ? 1 + a / 100 : 1 + 100 / -a) : null);
-  const amTxt = a => (a > 0 ? `+${a}` : `${a}`);
-  function gcd(a, b) { return b ? gcd(b, a % b) : a; }
-  // decimal odds -> text in a format ('—' when there is no price)
-  function fromDec(d, fmt = 'american') {
-    if (!(typeof d === 'number' && isFinite(d) && d > 1)) return '—';
-    switch (fmt) {
-      case 'decimal': return d.toFixed(2);
-      case 'probability': return `${(100 / d).toFixed(1)}%`;
-      case 'hongkong': return (d - 1).toFixed(2);
-      case 'indonesian': return (d >= 2 ? d - 1 : -1 / (d - 1)).toFixed(2);
-      case 'malay': return (d <= 2 ? d - 1 : -1 / (d - 1)).toFixed(2);
-      case 'fractional': {
-        let best = [Math.round(d - 1), 1], err = Infinity;
-        for (let den = 1; den <= 100; den++) { const nu = Math.round((d - 1) * den), e = Math.abs(nu / den - (d - 1)); if (nu > 0 && e < err - 1e-12) { err = e; best = [nu, den]; } }
-        const k = gcd(best[0], best[1]);
-        return `${best[0] / k}/${best[1] / k}`;
-      }
-      default: return amTxt(d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)));
-    }
-  }
-  // American odds -> text. American stays exactly as the venue posted it; a
-  // number that is not American odds (under 100) is shown as it came
-  function fromAm(a, fmt = 'american') {
-    if (a == null || a === '' || !isFinite(Number(a))) return '—';
-    const n = Number(a);
-    if (fmt === 'american' || Math.abs(n) < 100) return amTxt(n);
-    return fromDec(decOfAm(n), fmt);
-  }
-  // a win chance (0..1) -> the odds that pay it back exactly, in a format
-  const fromProb = (p, fmt = 'american') => (p > 0 && p < 1 ? fromDec(1 / p, fmt) : '—');
-  const valid = f => FORMATS.includes(f);
-  return { FORMATS, LABELS, MAIN, fromDec, fromAm, fromProb, decOfAm, valid };
-})();
-// LR_ODDSFMT_END
-let oddsFmtCur = 'american';
-try { const v = localStorage.getItem('lr_odds_fmt'); if (LROddsFmt.valid(v)) oddsFmtCur = v; } catch {}
-// the viewer's format: oA for American odds, oD for decimal, oP for a win chance
-const oA = a => LROddsFmt.fromAm(a, oddsFmtCur);
-const oD = d => LROddsFmt.fromDec(d, oddsFmtCur);
-const oP = p => LROddsFmt.fromProb(p, oddsFmtCur);
-function oddsFmtSet(v) {
-  if (!LROddsFmt.valid(v) || v === oddsFmtCur) return;
-  oddsFmtCur = v;
-  try { localStorage.setItem('lr_odds_fmt', v); } catch {}
-  if (window.shpUi?.opts && shpUi.opts.fmt !== v) { shpUi.opts.fmt = v; try { shpSave(); } catch {} }
-  if (typeof layRenderList === 'function' && document.getElementById('layOddsFmt')) layRenderList();
-  oddsFmtRerender();
-}
-// draw the open screen again in the new format
-function oddsFmtRerender() {
-  const page = document.querySelector('.page.active')?.id?.replace(/^page-/, '') || '';
-  if (['odds', 'props', 'esports'].includes(page)) { afRerender(); return; }
-  const tab = [...document.querySelectorAll('.tab')].find(t => (t.getAttribute('onclick') || '').startsWith(`showTab('${page}'`));
-  try { if (page) showTab(page, tab || document.querySelector('.tab.active')); } catch (e) { console.warn('odds format:', e.message); }
-}
 // ─── BOOK MAP ────────────────────────────────────────────────────────────────
 const BOOK_MAP = {
   draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM',
@@ -2635,7 +2564,7 @@ if (LR_SHARED?.os) {
   osSave();
   const box = document.getElementById('osSearch'); if (box) box.value = osUi.q;
 }
-const osAm = oA;
+const osAm = a => (a == null ? '—' : a > 0 ? '+' + a : String(a));
 const osPct = x => (x == null ? '' : (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%');
 const osWhen = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
 function osSet(k, v) { osUi[k] = v; osSave(); if (k === 'state' || k === 'league') loadOdds(); else renderOdds(); }
@@ -2972,6 +2901,7 @@ function xpWhere(page) {
   return { tab, view, filters: filters.join(' · ') };
 }
 const xpPct = x => (x == null || !isFinite(x) ? '' : `${(x * 100).toFixed(2)}%`);
+const xpAmTxt = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
 const xpDecOfAm = a => (a == null || Math.abs(a) < 100 ? null : a > 0 ? 1 + a / 100 : 1 + 100 / -a);
 // the break-even after the venue's fee: an exchange's all-in cost, a book's
 // implied chance, a pick'em leg's share of its slip (fees.js)
@@ -2988,11 +2918,11 @@ function xpBreakeven(r) {
     return LRFees.afterFee({ venue: r.venue, decimal: d, inPrice: r.feeIn !== false })?.breakeven ?? null;
   } catch { return null; }
 }
-const XP_COLS = ['screen', 'view', 'filters', 'event', 'league', 'starts', 'market', 'selection', 'line', 'venue', 'price', 'decimal_odds', 'after_fee_breakeven', 'prices_shown', 'odds_format', 'fair', 'fair_source', 'close', 'ev', 'fill_size_usd', 'label', 'read_at', 'loaded_at', 'exported_at'];
+const XP_COLS = ['screen', 'view', 'filters', 'event', 'league', 'starts', 'market', 'selection', 'line', 'venue', 'price', 'decimal_odds', 'after_fee_breakeven', 'prices_shown', 'fair', 'fair_source', 'close', 'ev', 'fill_size_usd', 'label', 'read_at', 'loaded_at', 'exported_at'];
 function xpRowOut(r, base) {
   const be = xpBreakeven(r);
   const dec = r.decimal ?? xpDecOfAm(r.american);
-  const raw = r.american != null ? oA(r.american) : r.decimal > 1 && r.price == null && r.multiplier == null ? oD(r.decimal) : r.price != null ? `${(r.price * 100).toFixed(1)}c` : r.multiplier != null ? `${r.multiplier}x` : r.shown || (dec ? dec.toFixed(3) : '');
+  const raw = r.american != null ? xpAmTxt(r.american) : r.price != null ? `${(r.price * 100).toFixed(1)}c` : r.multiplier != null ? `${r.multiplier}x` : r.shown || (dec ? dec.toFixed(3) : '');
   return { ...base, event: r.event, league: r.league, starts: r.start, market: r.market, selection: r.selection, line: r.line, venue: r.venueName || r.venue,
     price: afUi.on && be != null ? xpPct(be) : raw, decimal_odds: dec ? dec.toFixed(4) : '', after_fee_breakeven: xpPct(be),
     fair: xpPct(r.fair), fair_source: r.fair != null || r.close != null ? r.fairSrc || 'Pinnacle no-vig' : '', close: xpPct(r.close), ev: r.ev == null ? '' : `${(r.ev * 100).toFixed(2)}%`,
@@ -3003,14 +2933,14 @@ function xpCollect() {
   const page = document.querySelector('.page.active');
   if (!page) return null;
   const w = xpWhere(page);
-  const base = { screen: w.tab, view: w.view, filters: w.filters, prices_shown: afUi.on ? 'after fees' : 'as listed', odds_format: LROddsFmt.LABELS[oddsFmtCur], loaded_at: xpUi.loaded[page.id.replace(/^page-/, '')] || '', exported_at: new Date().toISOString() };
+  const base = { screen: w.tab, view: w.view, filters: w.filters, prices_shown: afUi.on ? 'after fees' : 'as listed', loaded_at: xpUi.loaded[page.id.replace(/^page-/, '')] || '', exported_at: new Date().toISOString() };
   const tagged = [...page.querySelectorAll('[data-xp]')].filter(xpVis);
   if (tagged.length) {
     const rows = [];
     for (const el of tagged) { try { rows.push(xpRowOut(JSON.parse(el.dataset.xp), base)); } catch {} }
     return { w, cols: XP_COLS, rows };
   }
-  const meta = ['screen', 'view', 'filters'], tail = ['prices_shown', 'odds_format', 'loaded_at', 'exported_at'];
+  const meta = ['screen', 'view', 'filters'], tail = ['prices_shown', 'loaded_at', 'exported_at'];
   const tables = [...page.querySelectorAll('table')].filter(t => xpVis(t) && !t.parentElement.closest('table'));
   if (tables.length) {
     const cols = [...meta], rows = [];
@@ -3330,7 +3260,7 @@ const tlPct = (x, d = 2) => (x == null || !isFinite(x) ? '—' : (x > 0 ? '+' : 
 const tlProb = (x, d = 1) => (x == null || !isFinite(x) ? '—' : (x * 100).toFixed(d) + '%');
 const tlUsd = x => (x == null || !isFinite(x) ? '—' : (x < 0 ? '-$' : '$') + Math.abs(x).toFixed(2));
 const tlSgn = x => (x == null || !isFinite(x) ? '' : x > 1e-9 ? 'pos' : x < -1e-9 ? 'neg' : '');
-const tlAm = d => (d ? oD(d) : '—');
+const tlAm = d => (window.LRCalc && d ? LRCalc.fmtAmerican(d) : '—');
 const tlList = s => String(s || '').split(/[,;\s]+/).filter(Boolean).map(x => LRCalc.parseOdds(x));
 const tlNum = s => { const v = parseFloat(String(s ?? '').replace(/[$,%]/g, '')); return isFinite(v) ? v : null; };
 const tlOptPct = s => { const v = tlNum(s); return v == null ? null : v > 1 ? v / 100 : v; };
@@ -3388,7 +3318,7 @@ const TOOL_DEFS = [
       const p = tlOptPct(v.p), n = parseInt(v.n), stake = tlNum(v.stake) || 10;
       const s = LRCalc.pickemSlip(v.type, n, { p: p > 0 && p < 1 ? p : null, shown: tlNum(String(v.shown).replace(/x$/i, '')), tables });
       if (!s) return { stats: [['Not offered', `${n}-pick`]], note: `${LRCalc.PICKEM[v.type]?.label || 'This slip'} has no ${n}-pick table. Pick another size.` };
-      const st = [['Top payout', s.top + 'x'], ['Break-even per pick', tlProb(s.breakeven, 1)], ['Same as odds of', oA(s.breakevenAmerican)], ['Pays if all hit', tlUsd(stake * s.top)]];
+      const st = [['Top payout', s.top + 'x'], ['Break-even per pick', tlProb(s.breakeven, 1)], ['Same as odds of', s.breakevenAmerican > 0 ? '+' + s.breakevenAmerican : String(s.breakevenAmerican)], ['Pays if all hit', tlUsd(stake * s.top)]];
       if (s.ev != null) st.push(['EV at your chance', tlPct(s.ev), tlSgn(s.ev)], ['EV in dollars', tlUsd(stake * s.ev), tlSgn(s.ev)]);
       const rows = s.outcomes.map(o => `<tr><td>${o.hits} of ${n}</td><td>${o.pays}x</td><td>${tlUsd(stake * o.pays)}</td><td>${o.chance == null ? '—' : tlProb(o.chance, 1)}</td></tr>`).join('');
       // every slip at this size, side by side
@@ -3457,7 +3387,7 @@ const TOOL_DEFS = [
       const venue = v.venue === 'polymarket' ? 'polymarketus' : v.venue;
       const rate = venue === 'polymarketus' ? (tlNum(v.rate) ?? 0.0695) : venue === 'kalshi_maker' ? 0.0175 : 0.07;
       const x = LRCalc.exchangeBuy(pr, tlNum(v.contracts) || 100, venue, { rate, myProb: tlOptPct(v.mine) }); if (!x) return null;
-      const st = [['Total cost', tlUsd(x.cost)], ['Fee', tlUsd(x.fee)], ['All-in per contract', (x.perContract * 100).toFixed(2) + 'c'], ['As odds', oA(x.american)],
+      const st = [['Total cost', tlUsd(x.cost)], ['Fee', tlUsd(x.fee)], ['All-in per contract', (x.perContract * 100).toFixed(2) + 'c'], ['As odds', x.american],
         ['Break-even', tlProb(x.breakeven, 2)], ['Profit if it wins', tlUsd(x.profitIfWin), tlSgn(x.profitIfWin)]];
       if (x.ev != null) st.push(['EV', tlPct(x.ev), tlSgn(x.ev)], ['Quarter Kelly', tlProb(x.kelly, 2)]);
       return { stats: st };
@@ -3720,7 +3650,7 @@ function checkArb(books) {
 
 function fmt(odds) {
   if (odds === null || odds === undefined) return '—';
-  return oA(odds);
+  return odds > 0 ? `+${odds}` : `${odds}`;
 }
 
 function bestBook(books, side) {
@@ -4231,9 +4161,7 @@ function mybSave() { lsSet(MYB_KEY, JSON.stringify(myb.list)); }
 function mybSaveUi() { const { shown, q, ...ui } = myb.ui; lsSet('lr_bets_ui', JSON.stringify(ui)); }
 const mybUnit = () => (typeof bank === 'function' ? bank() : { unit: 10, set: false });
 const mybAm = d => (window.LRCalc ? LRCalc.fmtAmerican(d) : '—');
-// MY BETS shows prices in the viewer's format; the form's odds box keeps American, which it reads
-const mybShow = d => (d > 1 ? oD(d) : '—');
-const mybPrice = b => (b.cents ? `${(100 / b.odds).toFixed(1).replace(/\.0$/, '')}c` : mybShow(b.odds));
+const mybPrice = b => (b.cents ? `${(100 / b.odds).toFixed(1).replace(/\.0$/, '')}c` : mybAm(b.odds));
 const mybUsd = (x, sign) => (x == null || !isFinite(x) ? '—' : `${sign && x > 0 ? '+' : x < 0 ? '-' : ''}$${Math.abs(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 const mybPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(d)}%`);
 const mybCls = x => (x == null ? '' : x > 1e-9 ? 'pos' : x < -1e-9 ? 'neg' : '');
@@ -4456,7 +4384,7 @@ function mybFormHint() {
   const el = document.getElementById('mbHint');
   if (!el) return;
   const parts = [];
-  if (d) parts.push(`${mybShow(d)} · ${(100 / d).toFixed(1)}% implied`);
+  if (d) parts.push(`${mybAm(d)} · ${(100 / d).toFixed(1)}% implied`);
   if (stake > 0) parts.push(`${(stake / unit.unit).toFixed(2)}u at your $${unit.unit} unit`);
   if (d && stake > 0) parts.push(`to win ${mybUsd(stake * (d - 1))}`);
   el.textContent = parts.join(' · ');
@@ -4548,7 +4476,7 @@ function renderCLV() {
     const c = LRBets.clv(b);
     return `<div class="bet-row">
       <div class="bet-info"><div class="bet-pick">${escAttr(b.pick)}</div>
-        <div class="bet-meta">Yours ${escAttr(mybPrice(b))} · close ${escAttr(mybShow(b.closeOdds))} · ${escAttr(b.book || '')} · ${escAttr(mybDate(b.placedAt))}</div></div>
+        <div class="bet-meta">Yours ${escAttr(mybPrice(b))} · close ${escAttr(mybAm(b.closeOdds))} · ${escAttr(b.book || '')} · ${escAttr(mybDate(b.placedAt))}</div></div>
       <div class="bet-right"><div class="bet-clv ${c > 0 ? 'good' : 'bad'}" style="font-size:16px;font-weight:700">${mybPct(c)}</div>
         <div style="font-size:9px;color:var(--muted2)">${c > 0 ? 'BEAT THE CLOSE' : 'MISSED THE CLOSE'}</div></div>
     </div>`;
@@ -5325,8 +5253,6 @@ function layRenderList() {
   const h = document.getElementById('layHelp'); h.textContent = layout.help ? 'SHOWN' : 'HIDDEN'; h.classList.toggle('on', layout.help);
   const c = document.getElementById('layCompact'); c.textContent = layout.compact ? 'ON' : 'OFF'; c.classList.toggle('on', !!layout.compact);
   const af = document.getElementById('layAfterFees'); if (af) { af.textContent = afUi.on ? 'ON' : 'OFF'; af.classList.toggle('on', afUi.on); }
-  const of = document.getElementById('layOddsFmt');
-  if (of) of.innerHTML = LROddsFmt.FORMATS.map(v => `<option value="${v}"${v === oddsFmtCur ? ' selected' : ''}>${LROddsFmt.LABELS[v]}${LROddsFmt.MAIN.includes(v) ? '' : ' (more)'}</option>`).join('');
 }
 function layMove(n, d) {
   const names = layNames(), i = names.indexOf(n), j = i + d;
@@ -6489,7 +6415,7 @@ function renderMlb() {
   const rec = `<div class="pb-dim" style="margin:0 0 10px">Gap legs record · PrizePicks: ${mlbRecTxt(R['mlb-pin'], 0.5503)} · Pick6: ${mlbRecTxt(R['p6-mlb-pin'], 0.567)} · Underdog: ${mlbRecTxt(R['ud-mlb-pin'], null)} · Sleeper: ${mlbRecTxt(R['sl-mlb-pin'], null)}<br>Same-number legs (control) · PrizePicks: ${mlbRecTxt(R['mlb-even'], 0.5503)} · Underdog: ${mlbRecTxt(R['ud-mlb-even'], null)} · Sleeper: ${mlbRecTxt(R['sl-mlb-even'], null)}</div>`;
   const bt = d.backtest?.lines?.length ? `<div class="mlb-bt"><b style="color:#e8e8e8">BACKTEST</b> ${escAttr(d.backtest.asOf || '')} · ${escAttr(d.backtest.verdict || '')}\n${d.backtest.lines.map(escAttr).join('\n')}</div>` : '';
   const pc = p => (p == null ? '' : `${(p * 100).toFixed(1)}%`);
-  const am = a => (a == null ? '' : oA(a));
+  const am = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
   const stk = (d.stacks || []).slice(0, 6);
   const stTxt = !stk.length ? `<div class="pb-dim" style="margin:0 0 10px">Same-game stacks (a starter's strikeouts More with the other team's hitters' H+R+RBI Less or strikeouts More): none priced right now. Every leg needs a price at its own number, and Pinnacle doesn't hang hitters' H+R+RBI or strikeouts; FanDuel or BetRivers price them when they post them.</div>` : `<div class="mlb-bt"><b style="color:#e8e8e8">SAME-GAME STACKS</b> ${d.stacksClearing ? `${d.stacksClearing} clear at the repriced payout` : 'none clears at the repriced payout'} (a starter's strikeouts More with the other team's hitters, each leg priced at its own number)\n${stk.map(x => `${escAttr(PB_BOOKS.find(b => b[0] === x.app)?.[1] || x.app)} ${x.players.length}-pick: ${x.players.map(escAttr).join(' + ')}${x.evRep != null ? ` · all hit ${pc(x.pLinked)} · ${x.standard}x standard ${x.evStd > 0 ? '+' : ''}${x.evStd}% · repriced ${x.repriced}x ${x.evRep > 0 ? '+' : ''}${x.evRep}%` : ''}`).join('\n')}</div>`;
   const rows = d.rows || [];
@@ -6602,7 +6528,7 @@ function renderPropsBoard() {
     const gapTxt = b && !b.locked && b.gap ? `<div class="pb-dim">vs ${b.gap.vs.map(v => `${PBN[v.book] || v.book} ${v.line}`).join(', ')}</div>` : '';
     const bestTxt = !b ? (r.noSharp && !r.esports ? '<div class="pb-dim" title="No sharp book or exchange lists this stat, so it is not priced and is never a play">no sharp market</div>' : '<div class="pb-dim">no price</div>') : b.locked ? '<div class="pb-dim">Pro</div>'
       : `<div class="pb-big" style="color:${b.source === 'books' ? (b.ev > 0 ? '#94a3b8' : '#64748b') : b.ev > 0 && (b.source !== 'h2h' || b.clears) ? 'var(--green)' : b.ev > 0 && !(b.source === 'h2h' && pbH2hFailed()) ? '#fbbf24' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'books' ? `${pbSrcTxt(b.sources)} alone, not sharp` : b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? (r.model?.share?.rounds ? 'Pinnacle rounds' : 'Pinnacle kill share') : b.source === 'h2h' ? (b.clears ? 'matchup model + Pinnacle' : pbH2hFailed() ? 'matchup model only (failed its record)' : 'matchup model only') : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${PB_LEAD[b.book] ? `<div class="pb-dim" title="${PB_LEAD[b.book]}">new app, not graded yet</div>` : ''}${b.source === 'books' ? `<div class="pb-dim" title="No sharp book posts this prop. The books' own price is a lead with its own record, judged at about 50 graded legs.">BOOK FAIR · lead, not graded yet</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
-    const am = v => oA(v);
+    const am = v => (v > 0 ? `+${v}` : `${v}`);
     const proj = r.model?.h2h ? ` · proj ${r.model.proj} (matchup: ${r.model.h2h.share}% of ${r.model.h2h.teamKills} team kills a map${r.model.h2h.vs ? ` vs ${escAttr(r.model.h2h.vs)}` : ''}${r.model.pin ? `; Pinnacle ${r.model.pin.proj}` : ''})` : r.model?.share?.rounds ? ` · proj ${r.model.proj} (Pinnacle rounds × ${(+r.model.share.kpr).toFixed(2)} kills a round)` : r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${pbBooksTxt(r.consensus.sources)}` : r.pinnacle ? (r.pinnacle.over != null ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : ` · Pinnacle ${r.pinnacle.line}${r.pinnacle.rounds ? ` (${r.pinnacle.rounds} rounds)` : ''}: ${r.pinnacle.pOver}% over`) : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
     // Pinnacle and two more sharps at this app's number, each past break-even: a lead, grey
@@ -8195,7 +8121,7 @@ const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace
 // each book's own no-vig chance of the row's side: the cross-comparison behind the fair
 const evSrcTxt = r => 'No-vig chance of this side: ' + Object.entries(r.srcP || {}).sort((a, b) => b[1] - a[1]).map(([b, p]) => `${evBookName(b)} ${p}%${(r.sharpBooks || []).includes(b) ? ' (in the fair)' : ''}`).join(' · ');
 const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions', pass_comp:'Completions', pass_att:'Pass Att', pass_ints:'INTs', rush_att:'Rush Att', saves:'Saves', earned_runs:'Earned Runs', hits_allowed:'Hits Allowed', anytime_td:'TDs', rush_rec_yds:'Rush+Rec Yds', pass_rush_yds:'Pass+Rush Yds' };
-const fmtAm = a => (a == null ? '—' : oA(a));
+const fmtAm = a => a == null ? '—' : (a > 0 ? '+' + a : String(a));
 
 function evSave() { try { localStorage.setItem('lr_ev', JSON.stringify({ sport: evState.sport, kind: evState.kind, minEv: evState.minEv, sharpOnly: evState.sharpOnly, agreeOnly: evState.agreeOnly, books: [...evState.books] })); } catch {} }
 function evSet(k, v) { evState[k] = v; evSave(); renderEv(); }
@@ -9158,7 +9084,7 @@ function tailWhalesHTML() {
       : e.gradeLocked ? `<span class="tail-tag warn" title="Graded and fresh-wallet tags show 30 minutes late on the free plan"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> grade</span>`
       : e.fresh ? `<span class="tail-tag warn" title="This wallet's first trade was ${e.fresh.ageDays < 1 ? 'today' : e.fresh.ageDays + ' days ago'} and it has traded ${e.fresh.markets} market${e.fresh.markets === 1 ? '' : 's'} (${e.fresh.trades} trades). New money this size on one side is how inside information tends to show up.">🆕 fresh wallet · ${e.fresh.ageDays < 1 ? 'today' : e.fresh.ageDays + 'd'} · ${e.fresh.markets} mkt</span>${e.wallet ? ` <span style="font-size:11px;color:#94a3b8">${tailWho(e)}</span>` : ''}`
       : `<span class="tail-tag">unknown whale</span>${e.wallet ? ` <span style="font-size:11px;color:#94a3b8">${tailWho(e)}</span>` : ''}`;
-    const follow = e.fresh && e.venue ? ` · <span style="color:#10b981">${escAttr(e.venue.name)}${e.venue.buy ? ': ' + escAttr(e.venue.buy) : ''} ${e.venue.american != null ? oA(e.venue.american) : tailC(e.venue.price)}</span>` : '';
+    const follow = e.fresh && e.venue ? ` · <span style="color:#10b981">${escAttr(e.venue.name)}${e.venue.buy ? ': ' + escAttr(e.venue.buy) : ''} ${e.venue.american != null ? (e.venue.american > 0 ? '+' : '') + e.venue.american : tailC(e.venue.price)}</span>` : '';
     return `<div class="tail-row">
       <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#475569;min-width:34px">${tailAgo(e.at)}</span>
       <span class="tail-tag">${escAttr(e.exchange)}</span>
@@ -9230,7 +9156,7 @@ function xcomboHTML() {
   const legs = c.map(l => `<div class="xa-nrow" style="padding:6px 10px"><div class="xa-ntitle"><b>${escAttr(l.pick)}</b><div class="xa-sub">${escAttr(l.title)}</div></div>
     <div class="xa-ncost">${tailC(l.fair)}<span>fair</span></div><button class="xa-more" style="margin:0;width:auto;padding:4px 10px" onclick="xcomboToggle('${escAttr(l.id)}',${l.i})">REMOVE</button></div>`).join('');
   const sum = !f ? `<div class="xa-sub" style="margin-top:8px">${c.length < 2 ? 'Add at least one more leg.' : 'Loading the math...'}</div>`
-    : `<div class="xa-foot">Fair price <b>${tailC(f.fair)}</b> (${oA(f.american)}, pays ${f.decimal}x). Request this combo on Kalshi and <b class="xa-pos">take a quote at ${tailC(f.maxAsk)} or less</b> (2% edge after the fee). At ${tailC(f.breakEven)} it only breaks even; above that, pass.</div>
+    : `<div class="xa-foot">Fair price <b>${tailC(f.fair)}</b> (${f.american > 0 ? '+' : ''}${f.american}, pays ${f.decimal}x). Request this combo on Kalshi and <b class="xa-pos">take a quote at ${tailC(f.maxAsk)} or less</b> (2% edge after the fee). At ${tailC(f.breakEven)} it only breaks even; above that, pass.</div>
       ${f.sameGame ? '<div class="xa-warn">Two legs are from the same game. They move together, so the fair price here is only a rough guide.</div>' : ''}`;
   return `<div class="xa-sec"><div class="xa-sec-head">YOUR COMBO<span>${c.length} leg${c.length === 1 ? '' : 's'} · <a href="#" onclick="xscreenUi.combo=[];renderXscreen();return false" style="color:var(--text2)">clear</a></span></div><div class="xa-near">${legs}</div>${sum}</div>`;
 }
@@ -9310,7 +9236,7 @@ function renderBig() {
   if (!d) return;
   const pct = x => x == null ? '—' : `${x >= 0 ? '+' : ''}${(Math.round(x * 10) / 10).toFixed(1)}%`;
   const c = p => p == null ? '—' : `${Math.round(p * 1000) / 10}¢`;
-  const am = a => a == null ? '' : oA(a);
+  const am = a => a == null ? '' : a > 0 ? `+${a}` : `${a}`;
   const usd = x => `$${Math.round(x).toLocaleString()}`;
   const ago = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.floor(m / 60)}h ${m % 60}m ago`; };
   const until = t => { const m = Math.round((Date.parse(t) - Date.now()) / 60000); return m <= 0 ? 'starting' : m < 60 ? `in ${m} min` : m < 1440 ? `in ${Math.floor(m / 60)}h ${m % 60}m` : new Date(t).toLocaleDateString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
@@ -11337,7 +11263,7 @@ function mvControls() {
   fb.innerHTML = sel('league', opts(f.leagues, mvUi.league, 'Every league'), 'LEAGUE') + sel('venue', opts(f.venues, mvUi.venue, 'Every venue (biggest per market)'), 'MOVED AT') +
     sel('sort', [['move', 'Biggest move'], ['old', 'Most venues still at old number'], ['start', 'Starting soonest']], 'SORT');
 }
-const mvAm = a => (a == null ? '—' : oA(a));
+const mvAm = a => (a == null ? '—' : a > 0 ? `+${a}` : `${a}`);
 const mvPt = (x, mkt) => (x == null ? '—' : mkt === 'spread' && x > 0 ? `+${x}` : `${x}`);
 const mvChance = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
 // a price as the row shows it: American on game lines, the chance on props
@@ -11430,9 +11356,6 @@ async function mvDraw(i) {
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
 var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', minSize: '', method: 'power', fmt: 'american', excluded: [], favLeagues: [], favVenues: [], favOnly: false } };
 try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
-// the shopper's own ODDS choice from before CUSTOMIZE > Odds format becomes the one setting
-try { if (localStorage.getItem('lr_odds_fmt') == null && LROddsFmt.valid(shpUi.opts.fmt) && shpUi.opts.fmt !== 'american') { oddsFmtCur = shpUi.opts.fmt; localStorage.setItem('lr_odds_fmt', oddsFmtCur); } } catch {}
-shpUi.opts.fmt = oddsFmtCur;
 // phones open with the filters folded away
 try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.removeAttribute('open'); } catch {}
 // a saved shopper view comes back when the odds screen is already open
@@ -11507,8 +11430,24 @@ async function shpLoad() {
   shpRender();
   if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights' && shpUi.opts.mode !== 'moves') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
-// decimal → the viewer's odds format (CUSTOMIZE > Odds format, oD above)
-function shpOdds(d) { return d > 1 ? oD(d) : '—'; }
+// decimal → the chosen format (the same conversions as oddsschema.js)
+function shpOdds(d) {
+  if (!(d > 1)) return '—';
+  switch (shpUi.opts.fmt) {
+    case 'decimal': return d.toFixed(2);
+    case 'probability': return `${(100 / d).toFixed(1)}%`;
+    case 'hongkong': return (d - 1).toFixed(2);
+    case 'indonesian': return (d >= 2 ? d - 1 : -1 / (d - 1)).toFixed(2);
+    case 'malay': return (d <= 2 ? d - 1 : -1 / (d - 1)).toFixed(2);
+    case 'fractional': {
+      let best = [Math.round(d - 1), 1], err = Infinity;
+      for (let den = 1; den <= 100; den++) { const nu = Math.round((d - 1) * den), e = Math.abs(nu / den - (d - 1)); if (nu > 0 && e < err - 1e-12) { err = e; best = [nu, den]; } }
+      const g = (a, b) => (b ? g(b, a % b) : a), k = g(best[0], best[1]);
+      return `${best[0] / k}/${best[1] / k}`;
+    }
+    default: { const a = d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); return a > 0 ? `+${a}` : `${a}`; }
+  }
+}
 const shpPct = x => (x == null ? '—' : `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}%`);
 const shpUsd = x => (x == null ? '—' : `${x >= 0 ? '+' : '−'}$${Math.abs(x).toFixed(2)}`);
 const shpWhen = t => { const m = Math.round((Date.parse(t) - Date.now()) / 60000); return m <= 0 ? 'starting' : m < 60 ? `in ${m}m` : m < 1440 ? `in ${Math.floor(m / 60)}h ${m % 60}m` : new Date(t).toLocaleDateString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
@@ -11538,7 +11477,7 @@ function shpControls() {
     sel('minSize', [['', 'Any size'], ['50', '$50'], ['200', '$200'], ['1000', '$1,000']], 'MIN BET SIZE'),
     sel('method', [['power', 'Power'], ['multiplicative', 'Multiplicative'], ['additive', 'Additive'], ['shin', 'Shin']], 'DEVIG'),
     shpPresetBar(),
-    `<label>ODDS<select onchange="oddsFmtSet(this.value)" title="The odds format for every screen (also under CUSTOMIZE)">${LROddsFmt.FORMATS.map(v => `<option value="${v}"${oddsFmtCur === v ? ' selected' : ''}>${LROddsFmt.LABELS[v]}</option>`).join('')}</select></label>`,
+    `<label>ODDS<select onchange="shpSet('fmt',this.value,false)">${[['american', 'American'], ['decimal', 'Decimal'], ['fractional', 'Fractional'], ['probability', 'Implied %'], ['hongkong', 'Hong Kong'], ['indonesian', 'Indonesian'], ['malay', 'Malay']].map(([v, l]) => `<option value="${v}"${o.fmt === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`,
   ].join('');
   const provs = d?.providers || [];
   const ex = new Set(o.excluded || []);
@@ -11759,7 +11698,6 @@ function shpArbSize(a) {
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
     <div class="lay-row"><span class="lay-name">App tour</span><button class="lay-b" id="layTour" onclick="layClose();tourStart()">SHOW</button></div>
     <div class="lay-row"><span class="lay-name">Compact rows<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Tighter rows and smaller text on screens 1100 px and wider</span></span><button class="lay-b" id="layCompact" onclick="layToggleCompact()"></button></div>
-    <div class="lay-row"><span class="lay-name">Odds format<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">How every screen and EXPORT show prices. Exchange contracts stay in cents and pick'em payouts stay multipliers</span></span><select class="lay-sel" id="layOddsFmt" aria-label="Odds format" onchange="oddsFmtSet(this.value)"></select></div>
     <div class="lay-row"><span class="lay-name">After fees<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Every price as the chance you need to win after the venue's fee, with the fee or the pick'em break-even beside it. Sources under FEES at the bottom</span></span><button class="lay-b" id="layAfterFees" onclick="afToggle()"></button></div>
     <div class="lay-row"><span class="lay-name">Keyboard shortcuts</span><button class="lay-b" id="layKbd" onclick="layClose();kbdOpen()">SHOW</button></div>
     <div class="lay-row"><span class="lay-name">Public API and widgets<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Make an API key, read the docs, and copy a widget for your own site. The same data for everyone</span></span><a class="lay-b" id="layDev" href="/developers" target="_blank" rel="noopener" style="text-decoration:none">OPEN</a></div>
