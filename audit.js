@@ -231,12 +231,13 @@ async function staticShots(browser) {
 
 (async () => {
   const t0 = Date.now();
-  for (const [n, f] of [['api', apiPart], ['pages', pagesPart], ['v1', v1Part]]) { try { await f(); } catch (e) { note(n, 'crash', e.stack); } }
+  const only = (process.env.PARTS || 'api,pages,v1,static,share,matrix,crawl').split(',');
+  for (const [n, f] of [['api', apiPart], ['pages', pagesPart], ['v1', v1Part]]) { if (!only.includes(n)) continue; try { await f(); } catch (e) { note(n, 'crash', e.stack); } }
   const browser = await chromium.launch();
-  for (const [n, f] of [['static', staticShots], ['share', sharePart], ['matrix', matrixPart], ['crawl', crawlPart]]) { try { await f(browser); } catch (e) { note(n, 'crash', e.stack); } }
+  for (const [n, f] of [['static', staticShots], ['share', sharePart], ['matrix', matrixPart], ['crawl', crawlPart]]) { if (!only.includes(n)) continue; try { await f(browser); } catch (e) { note(n, 'crash', e.stack); } }
   await browser.close();
   const st2 = await get('/api/status');
   try { note('resultsBackup at end', JSON.stringify(JSON.parse(st2.body.toString()).resultsBackup).slice(0, 300)); } catch {}
   note('done in', Math.round((Date.now() - t0) / 1000), 's');
-  save('log.txt', log.join('\n'));
+  save(`log-${process.env.PARTS || 'all'}.txt`, log.join('\n'));
 })();
