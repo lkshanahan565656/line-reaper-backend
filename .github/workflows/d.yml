@@ -1,0 +1,11 @@
+name: diag-espnsun
+on: { push: { branches: [diag-espnsun] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 f.py
+          cd o && git init -q && git checkout -q -b diag-espnsun-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-espnsun-out
