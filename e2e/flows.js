@@ -31,6 +31,38 @@ async function openPanel(page, w, opts, id) {
   await settle(page, w, opts, 60);
 }
 
+// open a share link in a fresh browser (no storage, no welcome yet) and check what it restored
+async function openCold(opts, link, check) {
+  const local = new URL(opts.base).origin;
+  const ctx = await opts.coldContext();
+  const p2 = await newAppPage(ctx, opts);
+  const r2 = { issues: [], requests: 0 };
+  const w2 = watch(p2, r2, opts);
+  try {
+    await p2.goto(link.replace(/^https?:\/\/[^/]+/, local), { waitUntil: 'domcontentloaded' });
+    await settle(p2, w2, opts, 400);
+    const st = await p2.evaluate(() => ({
+      welcome: document.getElementById('welcome')?.classList.contains('open'), tour: document.getElementById('tour')?.classList.contains('open'),
+      page: document.querySelector('.page.active')?.id, hash: location.hash, toast: [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '),
+      // eslint-disable-next-line no-undef
+      shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
+      chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
+      osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
+      // eslint-disable-next-line no-undef
+      pb: { ...pbState, data: null, record: null, shopRecord: null, card: null, nbm: null, cbm: null, cfm: null }, es: { ...esmState, data: null, open: null }, emu: { game: emuState.game, league: emuState.league },
+      pbInputs: ['pbSearch', 'pbSort', 'pbShow', 'pbMarket'].map(id => document.getElementById(id)?.value),
+      socShown: document.getElementById('socPane')?.style.display === '',
+      esChips: [...document.querySelectorAll('#esModeMatches.active, #esModeProps.active, #esModeMatchups.active')].map(b => b.textContent),
+    }));
+    expect(!st.welcome && !st.tour, `the welcome screen or tour covered the shared screen (${link})`);
+    expect(st.hash === '', `the link stayed in the address bar: ${st.hash}`);
+    expect(st.overflow <= 0, `the shared screen is ${st.overflow} px too wide`);
+    await checkOverflow(p2, r2, 'odds', `share link ${link}`, opts);
+    check(st);
+    if (r2.issues.length) throw new Error(`opening ${link}: ${r2.issues[0].kind} ${JSON.stringify(r2.issues[0]).slice(0, 200)}`);
+  } finally { await ctx.close(); }
+}
+
 const FLOWS = {
   async 'log a bet by hand, edit it, settle it'(page, w, opts) {
     await openTab(page, 'betlog', w, opts);
@@ -329,30 +361,7 @@ const FLOWS = {
 
     // a fresh device: no welcome screen or tour on top, the exact view, nothing of the sender's
     const local = new URL(opts.base).origin;
-    const cold = async (link, check) => {
-      const ctx = await opts.coldContext();
-      const p2 = await newAppPage(ctx, opts);
-      const r2 = { issues: [], requests: 0 };
-      const w2 = watch(p2, r2, opts);
-      try {
-        await p2.goto(link.replace(/^https?:\/\/[^/]+/, local), { waitUntil: 'domcontentloaded' });
-        await settle(p2, w2, opts, 400);
-        const st = await p2.evaluate(() => ({
-          welcome: document.getElementById('welcome')?.classList.contains('open'), tour: document.getElementById('tour')?.classList.contains('open'),
-          page: document.querySelector('.page.active')?.id, hash: location.hash, toast: [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '),
-          // eslint-disable-next-line no-undef
-          shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
-          chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
-          osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
-        }));
-        expect(!st.welcome && !st.tour, `the welcome screen or tour covered the shared screen (${link})`);
-        expect(st.hash === '', `the link stayed in the address bar: ${st.hash}`);
-        expect(st.overflow <= 0, `the shared screen is ${st.overflow} px too wide`);
-        await checkOverflow(p2, r2, 'odds', `share link ${link}`, opts);
-        check(st);
-        if (r2.issues.length) throw new Error(`opening ${link}: ${r2.issues[0].kind} ${JSON.stringify(r2.issues[0]).slice(0, 200)}`);
-      } finally { await ctx.close(); }
-    };
+    const cold = (link, check) => openCold(opts, link, check);
     await cold(viewLink, st => {
       expect(st.page === 'page-odds', `opened on ${st.page}`);
       expect(st.shp.mode === 'opps' && st.shp.state === '' && st.shp.markets === 'spread' && st.shp.sort === 'ev', `shopper: ${JSON.stringify(st.shp).slice(0, 200)}`);
@@ -369,6 +378,51 @@ const FLOWS = {
     await cold(`${local}/app#lr&t=results`, st => {
       expect(st.page === 'page-results', `opened on ${st.page}`);
       expect(/Opened a shared screen/.test(st.toast), `toast: ${st.toast}`);
+    });
+  },
+
+  async 'share PROPS and ESPORTS views and open them cold'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    // the LINK button on PROPS writes the view, app, sport and search
+    await openTab(page, 'props', w, opts);
+    await page.evaluate(() => pbSet('q', 'a')); // eslint-disable-line no-undef
+    await settle(page, w, opts, 250);
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const propsLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    const pv = await page.evaluate(() => pbState.view); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=props/.test(propsLink) && /[&]q=a(&|$)/.test(propsLink), `PROPS link: ${propsLink}`);
+    expect(pv === 'lines' ? !/pv=/.test(propsLink) : propsLink.includes(`pv=${pv}`), `PROPS link misses the ${pv} view: ${propsLink}`);
+    await page.evaluate(() => pbSet('q', '')); // eslint-disable-line no-undef
+    await settle(page, w, opts, 200);
+    const local = new URL(opts.base).origin;
+    // Lines view on Underdog with a prop picked
+    await openCold(opts, `${local}/app#lr&t=props&mk=Receptions&q=a`, st => {
+      expect(st.page === 'page-props', `opened on ${st.page}`);
+      expect(st.pb.view === 'lines' && st.pb.lineBook === 'underdog' && st.pb.market === 'Receptions' && st.pb.q === 'a', `props: ${JSON.stringify(st.pb).slice(0, 200)}`);
+      expect(st.pbInputs[0] === 'a' && st.pbInputs[3] === 'Receptions', `PROPS boxes: ${st.pbInputs}`);
+    });
+    // the every-app view with a sport, sort and show picked
+    await openCold(opts, `${local}/app#lr&t=props&pv=cards&sp=TENNIS&so=gap&sh=multi&q=a`, st => {
+      expect(st.pb.view === 'cards' && st.pb.sport === 'TENNIS' && st.pb.sort === 'gap' && st.pb.show === 'multi', `props: ${JSON.stringify(st.pb).slice(0, 200)}`);
+      expect(st.pbInputs[1] === 'gap' && st.pbInputs[2] === 'multi', `PROPS selects: ${st.pbInputs}`);
+    });
+    // ESPORTS: LINK on MATCHUPS, then matchups for one game and SOCCER cold
+    await openTab(page, 'esports', w, opts);
+    await page.locator('#esModeMatchups').click();
+    await settle(page, w, opts, 250);
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const esLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=esports&em=matchups/.test(esLink), `ESPORTS link: ${esLink}`);
+    await page.locator('#esModeMatches').click();
+    await settle(page, w, opts, 150);
+    await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=CS2`, st => {
+      expect(st.page === 'page-esports' && st.es.mode === 'matchups' && st.emu.game === 'CS2', `esports: ${JSON.stringify({ es: st.es, emu: st.emu })}`);
+      expect(st.esChips.join() === 'MATCHUPS', `ESPORTS chips: ${st.esChips}`);
+    });
+    await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=SOCCER`, st => {
+      expect(st.emu.game === 'SOCCER' && st.socShown, `soccer: ${JSON.stringify(st.emu)} shown ${st.socShown}`);
     });
   },
 
