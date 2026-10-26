@@ -144,10 +144,17 @@ function eventHasTeam(ev, words) {
 // The pick's game on a scoreboard: the event starting within 3 hours of the
 // pick's start that names its team (or any word of its match title)
 function findEvent(events, pick) {
+  return findEvents(events, pick)[0] || null;
+}
+// Every such event, the nearest start first. College slates hold 150 games a
+// night and schools whose names contain each other ("Kansas", "Kansas State"),
+// so the grader tries each until one box score lists the player.
+function findEvents(events, pick) {
   const t = Date.parse(pick.startTime || '');
   const words = [pick.team, ...String(pick.matchTitle || '').split(/\s+(?:@|vs\.?|at|v)\s+/i)].filter(Boolean).map(s => s.trim());
   const near = (events || []).filter(e => !t || Math.abs(Date.parse(e.date) - t) < 3 * 3600e3);
-  return near.find(e => eventHasTeam(e, words)) || null;
+  const hits = near.filter(e => eventHasTeam(e, words));
+  return t ? hits.sort((a, b) => Math.abs(Date.parse(a.date) - t) - Math.abs(Date.parse(b.date) - t)) : hits;
 }
 
 // Grade one leg from a parsed box: { result, outcome } or null (not found)
@@ -163,6 +170,14 @@ function gradeLeg(pick, players) {
 
 // Fetch side. ymd(t) in US Eastern so a 9pm ET game sits on its own date.
 const ymd = t => new Date(t - 4 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+// The scoreboard dates that can hold a game starting at t: its Eastern date in
+// daylight time and in standard time (ESPN files an 11pm EST tip, 04:00Z, on
+// the day before: UAPB at Washington, 2025-11-03), then the next day.
+const espnDays = t => [...new Set([ymd(t), ymd(t - 3600e3), ymd(t + 6 * 3600e3)])];
+// ESPN's college scoreboards list only featured games unless asked for the
+// whole division: 19 of 169 D1 games on 2025-11-03 without groups=50
+// (checked 2026-10-26). groups 50 is men's D1 basketball, 80 FBS football.
+const BOARD_PARAMS = { CBB: { groups: 50, limit: 500 }, CFB: { groups: 80, limit: 300 } };
 function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } = {}) {
   const boards = new Map(), boxes = new Map();
   const cached = async (map, key, fn) => {
@@ -172,7 +187,7 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
     map.set(key, { at: now(), v });
     return v;
   };
-  const board = (league, d) => cached(boards, `${league}|${d}`, async () => (await http.get(`${ESPN}/${LEAGUES[league]}/scoreboard`, { params: { dates: d }, timeout: 20000 }))?.data?.events || []);
+  const board = (league, d) => cached(boards, `${league}|${d}`, async () => (await http.get(`${ESPN}/${LEAGUES[league]}/scoreboard`, { params: { dates: d, ...(BOARD_PARAMS[league] || {}) }, timeout: 20000 }))?.data?.events || []);
   const box = (league, id) => cached(boxes, `${league}|${id}`, async () => parseBox((await http.get(`${ESPN}/${LEAGUES[league]}/summary`, { params: { event: id }, timeout: 20000 }))?.data?.boxscore));
   // MLB: the MLB Stats API first (its box has total bases, singles, doubles,
   // stolen bases), ESPN when it has no answer. A game: within 3 hours of the
@@ -211,12 +226,20 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
     if (!LEAGUES[pick.sport]) return null;
     const t = Date.parse(pick.startTime || '');
     if (!t) return null;
-    let ev = null;
-    for (const d of new Set([ymd(t), ymd(t + 6 * 3600e3)])) { ev = findEvent(await board(pick.sport, d), pick); if (ev) break; }
-    if (!ev) return null;
-    if (!ev.status?.type?.completed) return { pending: true };
-    const g = gradeLeg(pick, await box(pick.sport, ev.id));
-    return g ? { ...g, eventId: ev.id } : null;
+    // every game on those dates that names the pick's team; the first final
+    // one whose box lists the player grades it
+    const seen = new Set();
+    let pending = false;
+    for (const d of espnDays(t)) {
+      for (const ev of findEvents(await board(pick.sport, d), pick)) {
+        if (seen.has(ev.id)) continue;
+        seen.add(ev.id);
+        if (!ev.status?.type?.completed) { pending = true; continue; }
+        const g = gradeLeg(pick, await box(pick.sport, ev.id));
+        if (g) return { ...g, eventId: ev.id };
+      }
+    }
+    return pending ? { pending: true } : null;
   }
   // a game's final score: game { league (board key: NFL, CFB, ...), home,
   // away, start } → { home, away } (points) | { pending: true } | null
@@ -226,7 +249,7 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
     if (!t) return null;
     const pick = { startTime: game.start, team: game.home, matchTitle: `${game.away} @ ${game.home}` };
     let ev = null;
-    for (const d of new Set([ymd(t), ymd(t + 6 * 3600e3)])) { ev = findEvent(await board(game.league, d), pick); if (ev) break; }
+    for (const d of espnDays(t)) { ev = findEvent(await board(game.league, d), pick); if (ev) break; }
     if (!ev) return null;
     if (!ev.status?.type?.completed) return { pending: true };
     return scoreOf(ev, game);
@@ -245,4 +268,4 @@ function scoreOf(ev, game) {
   return Number.isFinite(hp) && Number.isFinite(ap) ? { home: hp, away: ap } : null;
 }
 
-module.exports = { MLB_API, LEAGUES, MARKETS, canGrade, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };
+module.exports = { MLB_API, LEAGUES, MARKETS, canGrade, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, espnDays, findEvents, BOARD_PARAMS, scoreOf };

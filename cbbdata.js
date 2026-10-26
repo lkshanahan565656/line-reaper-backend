@@ -21,19 +21,19 @@ const VERSION_NOTE = 'v1 from 2026-10-25: the NBA v2 model on college box scores
 const KINDS = { prizepicks: 'cbb-model', pick6: 'p6-cbb-model', underdog: 'ud-cbb-model' };
 
 // a schedule team that matches the props row's team text exactly: the
-// school's abbreviation or its full name (no nickname matching: dozens of
-// schools share "Wildcats")
-function teamMatch(key, name, s, abbr) {
+// school's abbreviation, its full name, or its short name or place ("Duke",
+// "Kansas St") (no nickname matching: dozens of schools share "Wildcats")
+function teamMatch(key, name, s, abbr, alt = []) {
   const t = String(s || '').trim().toLowerCase();
   if (!t) return false;
-  return t === String(abbr || '').toLowerCase() || t === String(name || '').toLowerCase();
+  return [abbr, name, ...(alt || [])].some(x => x && t === String(x).trim().toLowerCase());
 }
 
 const CBB = {
   sport: 'CBB', label: 'college basketball', espn: 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball',
   scoreParams: { groups: 50, limit: 500 }, seed: path.join(__dirname, 'seeds', 'cbb-games.json.gz'),
   backtest: path.join(__dirname, 'seeds', 'cbb-model-backtest.json'), injuries: false, kinds: KINDS, version: MODEL_VERSION,
-  indexNames: true, schedOpts: { teamKey: C.teamOf, minTotal: C.COMPACT.minTotal }, compactOpts: C.COMPACT, fixTeam: x => String(x), teamMatch,
+  indexNames: true, preferRowTeam: true, schedOpts: { teamKey: C.teamOf, minTotal: C.COMPACT.minTotal }, compactOpts: C.COMPACT, fixTeam: x => String(x), teamMatch,
 };
 
 function createCbbModel(opts = {}) {
