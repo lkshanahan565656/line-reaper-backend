@@ -7,10 +7,10 @@ def get(u,t=40):
     print('ERR',u,err,flush=True); return None
 L={'NBA':'basketball/nba','NFL':'football/nfl','CFB':'football/college-football','NHL':'hockey/nhl','MLB':'baseball/mlb','WNBA':'basketball/wnba'}
 D=datetime.date
-R={'NFL':[(D(2026,9,9),D(2026,10,24))],'CFB':[(D(2026,8,27),D(2026,10,24))],
-   'NHL':[(D(2026,3,1),D(2026,4,18)),(D(2026,10,6),D(2026,10,24))],
-   'NBA':[(D(2026,1,10),D(2026,4,14)),(D(2026,10,20),D(2026,10,24))],
-   'WNBA':[(D(2026,7,15),D(2026,10,24))],'MLB':[(D(2026,9,1),D(2026,10,24))]}
+R={'NFL':[(D(2026,9,9),D(2026,10,26))],'CFB':[(D(2026,8,27),D(2026,10,26))],
+   'NHL':[(D(2026,3,1),D(2026,4,18)),(D(2026,10,6),D(2026,10,26))],
+   'NBA':[(D(2026,1,10),D(2026,4,14)),(D(2026,10,20),D(2026,10,26))],
+   'WNBA':[(D(2026,7,15),D(2026,10,26))],'MLB':[(D(2026,9,1),D(2026,10,26))]}
 os.makedirs('out/box',exist_ok=True)
 jobs=[]
 for s,rs in R.items():
