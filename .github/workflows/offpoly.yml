@@ -1,0 +1,32 @@
+name: offpoly
+on:
+  push:
+    branches: [diag-offpoly]
+concurrency:
+  group: offpoly
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          set +e
+          SCRIPT=$(cat diag/RUN)
+          { date -u; node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
+          true
+      - if: always()
+        run: |
+          set +e
+          OUT=$(cat diag/OUT 2>/dev/null || echo diag-offpoly-out)
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B "$OUT"
+          git add -f out.txt data 2>/dev/null
+          git commit -qm "offpoly output" ; git push -f origin "$OUT"
