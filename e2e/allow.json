@@ -37,6 +37,10 @@
   ],
   "misses": [
     {
+      "key": "^/api/v1(/|\\?|$)",
+      "why": "new in v3.197.0 (the public API): the recording predates it, so the offline server answers from its own empty state; publicapi tests check the shapes, and the developers flow makes a key and calls it"
+    },
+    {
       "key": "^/api/claims$",
       "why": "new in v3.184.0 (claims.js): the recording predates it, so the offline server answers from its own empty record (\"nothing proven yet\"); the sales-page flow also checks the page against a labelled test body"
     },
@@ -47,6 +51,10 @@
     {
       "key": "^/api/digest(/[\\d-]+)?$",
       "why": "new in v3.186.0 (the weekly digest on RESULTS): the recording predates it, so the offline server answers from its own empty record; the digest flow checks the view against a labelled test body built by digest.js, and digest tests check the numbers"
+    },
+    {
+      "key": "^/api/ops$",
+      "why": "the server's own ops counters (venue link taps since boot), read live from the offline server by the venue-link flow; never recorded"
     },
     {
       "key": "^/api/moves(\\?|$)",

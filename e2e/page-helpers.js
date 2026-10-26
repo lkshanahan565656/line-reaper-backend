@@ -243,8 +243,28 @@ module.exports = function installE2E() {
     });
     return out;
   }
+  // tap-to-venue: every priced row (data-vrow) carries a venue link (a.vlink)
+  // whose host belongs to that venue (venuelinks.js, window.LRVenue), opens in
+  // a new tab and carries nothing a bet slip could use (no stake or amount)
+  function venueLinkIssues() {
+    var out = [], V = window.LRVenue;
+    if (!V) return [{ what: 'window.LRVenue missing: venuelinks.js was not inlined' }];
+    document.querySelectorAll('.page.active [data-vrow]').forEach(function (row) {
+      if (out.length > 8 || !visible(row)) return;
+      if (!row.querySelector('a.vlink')) out.push({ what: 'priced row without a venue link', where: where(row), text: norm(row.innerText).slice(0, 80) });
+    });
+    document.querySelectorAll('a.vlink').forEach(function (a) {
+      if (out.length > 8) return;
+      var href = a.getAttribute('href') || '', v = a.getAttribute('data-venue');
+      if (!V.validFor(v, href)) out.push({ what: 'venue link host does not belong to ' + v, href: href, where: where(a) });
+      else if (a.getAttribute('target') !== '_blank') out.push({ what: 'venue link opens in the same window', href: href });
+      else if (/[?&](stake|amount|wager|size|qty|quantity)=/i.test(href)) out.push({ what: 'venue link carries a stake', href: href });
+    });
+    return out;
+  }
   window.__e2e = {
     overflow: overflowIssues,
+    venueLinks: venueLinkIssues,
     cands: cands, state: state, textIssues: textIssues, provenClaims: provenClaims, empties: empties, overlay: function () { var o = overlay(); return o ? (o.id || String(o.className)) : null; },
     learn: function () { mode = 'learn'; },
     off: function () { mode = 'off'; },

@@ -1,6 +1,6 @@
 {
   "name": "line-reaper-backend",
-  "version": "3.192.0",
+  "version": "3.199.0",
   "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
   "main": "server.js",
   "scripts": {
@@ -17,6 +17,7 @@
     "live-check": "node e2e/live-check.js"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -32,7 +33,8 @@
   "bin": "desktop/launcher.js",
   "pkg": {
     "assets": [
-      "public/**/*"
+      "public/**/*",
+      "fonts/**/*"
     ],
     "scripts": [
       "*.js"

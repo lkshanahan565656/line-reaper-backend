@@ -31,7 +31,7 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state() }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
 const profiler = require('./ops').createProfiler();
@@ -814,6 +814,14 @@ const altTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.
 const esBookTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel and BetRivers still on the number Pinnacle just left (stalelines.js): a record of their own
 const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evStale', createEvStoreFromEnv(process.env, { table: 'ev_stale_bets', fileVar: 'EV_STALE_TRACK_FILE', file: 'ev-stale-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// Kalshi moved, Polymarket US still at the old price (leadlag.js): a lead with
+// its own record, every flag logged, graded on Pinnacle's close and the ESPN
+// final, judged at 50 graded. Never an alert, never in Best Plays. LEAD_LAG=off stops it.
+const leadLag = require('./leadlag');
+const leadLagOn = () => !/^(off|0|false|no)$/i.test(String(process.env.LEAD_LAG || '').trim());
+const leadLagEngine = leadLag.createLeadLag();
+const leadLagTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evLeadLag', createEvStoreFromEnv(process.env, { table: 'ev_leadlag_bets', fileVar: 'EV_LEADLAG_TRACK_FILE', file: 'ev-leadlag-bets.json' })), minEv: -Infinity });
+let leadLagPending = [];
 // Sports pick'em props flagged off the books' consensus and Kalshi, graded on
 // ESPN box scores; tennis, UFC, NASCAR and soccer on ESPN's tennis and UFC
 // scoreboards and Kalshi's settled markets (extragrade.js, EXTRA_RESULTS=off stops them)
@@ -3434,6 +3442,8 @@ function* evScreenSteps() {
   evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   // Pinnacle's own price at each number rides along: the exchanges' rows close on it
   evTracker.recordBoard(rows, fairs, { costs, pinFairs }).catch(e => console.warn('EV tracker:', e.message));
+  // the lead-lag flags since the last screen, and every open one's closing prices
+  leadLagTracker.recordBoard(leadLagPending.splice(0), fairs, { costs, pinFairs }).catch(e => console.warn('Lead-lag tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     // DK Pick6 is a lead: on the board and in the record, never an alert
@@ -4424,8 +4434,10 @@ const esmatchupdata = require('./esmatchupdata');
 const MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_MATCHUPS || '').trim());
 // CS2 and VALORANT run on the same engine (esgames.js): the venues list the
 // matches, the ratings refresh's bo3.gg / vlr.gg reads give the results.
-// ESPORTS_MATCHUPS_GAMES picks the games (default LOL,CS2,VAL).
-const matchupStore = MATCHUPS_ON ? resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))) : null;
+// ESPORTS_MATCHUPS_GAMES picks the games (default LOL,CS2,VAL). Its store is a
+// rolling cache that drops finished series, so the backup never counts it as a
+// record (10-25: its 9 → 0 made the backup refuse every snapshot for a day).
+const matchupStore = MATCHUPS_ON ? resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json')), { appendOnly: false }) : null;
 const MATCHUP_GAMES = String(process.env.ESPORTS_MATCHUPS_GAMES || 'LOL,CS2,VAL').toUpperCase().split(/[\s,]+/).filter(g => ['LOL', 'CS2', 'VAL'].includes(g));
 const RAW_OF = { CS2: 'CS', VAL: 'VAL' };
 const matchupEngines = Object.fromEntries((MATCHUPS_ON ? MATCHUP_GAMES : []).map(game => [game, esmatchupdata.createMatchupEngine({
@@ -4733,7 +4745,8 @@ function loadApp() {
   try {
     appHtml = fs.readFileSync(APP_FILE, 'utf8')
       .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;')
-      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`);
+      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`)
+      .replace('/*@@LRVENUE@@*/', () => fs.readFileSync(path.join(__dirname, 'venuelinks.js'), 'utf8').replace(/<\/script/gi, '<\\/script'));
   } catch { appHtml = null; }
   return appHtml;
 }
@@ -4799,6 +4812,29 @@ app.get('/api/push/selftest', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 app.get('/api/push/log', (req, res) => res.json({ deliveries: push.log(Math.min(200, parseInt(req.query.n) || 50)) }));
+// Link previews: the app, the league pages, /leagues and each digest week carry
+// Open Graph and Twitter tags pointing at their share card (sharecards.js), so
+// a pasted link unfurls with the card on X, Discord and iMessage. The page's
+// own title and description stay; only the image tags are swapped.
+function cardMetaFor(p, req) {
+  const o = siteOrigin(req);
+  if (!/^https?:\/\//.test(o)) return null;
+  const lg = shareCards.leagueOfPath(p);
+  if (lg) return { image: shareImageUrl(o, 'league', `league=${lg}`), title: `${shareCards.LEAGUE_PAGES[lg].name} odds | Line Reaper`, description: "Every venue beside Pinnacle's fair.", alt: `${shareCards.LEAGUE_PAGES[lg].name} board on Line Reaper` };
+  const wk = p.match(/^\/digest\/(\d{4}-\d{2}-\d{2})\/?$/);
+  if (wk && digest.validWeek(wk[1])) return { image: shareImageUrl(o, 'digest', `week=${wk[1]}`), title: 'Line Reaper weekly record', description: 'One week of the public record.', alt: 'The weekly record card' };
+  if (p === '/app' || p === '/leagues') return { image: shareImageUrl(o, 'record', ''), title: 'Line Reaper: odds screen and public record', url: `${o}${p}`,
+    description: "Every venue beside Pinnacle's fair, exchanges, pick'em apps and esports, and a public record graded against the close. Only what the record proves is called proven.", alt: 'The Line Reaper public record card' };
+  return null;
+}
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const meta = cardMetaFor(req.path, req);
+  if (!meta) return next();
+  const send = res.send.bind(res);
+  res.send = body => send(typeof body === 'string' && /^\s*<!doctype html/i.test(body) ? shareCards.injectMeta(body, meta) : body);
+  next();
+});
 app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
@@ -4857,7 +4893,7 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /leagues\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /leagues\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 // ── LEAGUE PAGES (leagues.js) ──
 // /nfl ... /esports/dota2 and /leagues: public, server-rendered from the live
 // board and the strict public record, the same for everyone (the webhook's
@@ -4944,7 +4980,7 @@ app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async 
 });
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/learn', '/status', '/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/learn', '/status', '/developers', '/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -4955,7 +4991,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.192.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.199.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5101,6 +5137,8 @@ app.get('/api/ev/record', async (req, res) => {
   out.esports = await esBookTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   // stale lines: the books' rows here, the apps' legs from the props record
   out.stale = await staleTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
+  // Kalshi moved first, Polymarket US still at the old price: a lead, judged at 50 graded
+  out.leadLag = await leadLagTracker.summary({ sport: q.sport, book: q.book, sinceDays: parseFloat(q.days) || undefined });
   // the props record has no sport cut: with one asked for, the apps' lines stay off
   const kinds = q.sport ? {} : (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
   out.staleApps = q.sport ? null : { stale: kinds.stale || null, single: kinds['stale-single'] || null };
@@ -5234,22 +5272,23 @@ async function publishDigest(now = Date.now()) {
   digestState.error = null;
   return digestState.last;
 }
+// the weeks the digest covers (newest first, at most 13): /api/digest and /api/v1/digest
+async function digestIndex(now = Date.now()) {
+  const frozen = await frozenDigests();
+  const lists = await closeBoardLists(webhookLicence(), null);
+  const first = Math.min(...Object.values(lists).flat().map(digest.startOf).filter(t => t > 0), now);
+  const cur = digest.weekOf(now);
+  const weeks = [];
+  for (let t = cur.from, i = 0; t >= digest.weekStart(first) && i < 13; t -= digest.WEEK, i++) {
+    const id = digest.weekOf(t).id, f = frozen.find(d => d.week === id);
+    weeks.push({ week: id, name: digest.weekName(id), partial: t === cur.from, frozen: !!f, sentAt: f ? f.pushedAt || f.builtAt : null,
+      graded: f ? f.digest.summary.graded : null, share: `/digest/${id}` });
+  }
+  return { at: new Date(now).toISOString(), current: cur.id, sendsAt: 'Monday 13:00 UTC', nextSend: new Date(digest.sendAt(cur.id)).toISOString(), weeks };
+}
 app.get('/api/digest', async (req, res) => {
-  try {
-    const now = Date.now();
-    const frozen = await frozenDigests();
-    const lists = await closeBoardLists(webhookLicence(), null);
-    const first = Math.min(...Object.values(lists).flat().map(digest.startOf).filter(t => t > 0), now);
-    const cur = digest.weekOf(now);
-    const weeks = [];
-    for (let t = cur.from, i = 0; t >= digest.weekStart(first) && i < 13; t -= digest.WEEK, i++) {
-      const id = digest.weekOf(t).id, f = frozen.find(d => d.week === id);
-      weeks.push({ week: id, name: digest.weekName(id), partial: t === cur.from, frozen: !!f, sentAt: f ? f.pushedAt || f.builtAt : null,
-        graded: f ? f.digest.summary.graded : null, share: `/digest/${id}` });
-    }
-    res.set('Cache-Control', 'public, max-age=60').json({ at: new Date(now).toISOString(), current: cur.id, sendsAt: 'Monday 13:00 UTC',
-      nextSend: new Date(digest.sendAt(cur.id)).toISOString(), weeks });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.set('Cache-Control', 'public, max-age=60').json(await digestIndex()); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/digest/:week', async (req, res) => {
   try {
@@ -5276,7 +5315,7 @@ app.get('/api/ev/record/bets', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
   // ?book=fanduel&source=alt&sport=nhl narrow the list; ?before=<flaggedAt> pages back
   const q = k => (typeof req.query[k] === 'string' && req.query[k]) || undefined;
-  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : evTracker)
+  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : req.query.leadlag === '1' ? leadLagTracker : evTracker)
     .list({ status, limit: limit * 2, book: q('book'), source: q('source'), sport: q('sport'), before: q('before') })).filter(evRowOk(licenceOf(req))).slice(0, limit);
   res.json({ bets });
 });
@@ -6701,20 +6740,23 @@ async function gradeEvResults() {
   if (evResultsRunning) return;
   evResultsRunning = true;
   try {
-    const due = await evTracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
-    const done = [];
     let graded = 0, pending = 0, notFound = 0;
-    for (const b of due) {
-      const [away, home] = String(b.event || '').split(' @ ');
-      let sc = null;
-      try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
-      catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
-      if (sc?.pending) { pending++; continue; }
-      if (!sc) notFound++;
-      if (await evTracker.setResult(b, sc, { save: false })) graded++;
-      done.push(b);
+    // the main lines' record, then the lead-lag record's (same games, same grader)
+    for (const tracker of [evTracker, leadLagTracker]) {
+      const due = await tracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
+      const done = [];
+      for (const b of due) {
+        const [away, home] = String(b.event || '').split(' @ ');
+        let sc = null;
+        try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
+        catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
+        if (sc?.pending) { pending++; continue; }
+        if (!sc) notFound++;
+        if (await tracker.setResult(b, sc, { save: false })) graded++;
+        done.push(b);
+      }
+      if (done.length) await tracker.saveMany(done);
     }
-    if (done.length) await evTracker.saveMany(done);
     Object.assign(evResultsState, { runs: evResultsState.runs + 1, graded: evResultsState.graded + graded, lastGraded: graded, pending, notFound, lastRun: new Date().toISOString() });
   } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
   finally { evResultsRunning = false; }
@@ -7010,6 +7052,24 @@ const oddsHistoryStore = resultsBackup.wrap('oddsHistory', {
   put: async d => { oddsHistory.load([d]); }, putMany: async ds => { oddsHistory.load(ds); },
 }, { appendOnly: false });
 oddsHistoryStore.init().catch(e => console.warn('Odds history: restore failed:', e.message)).finally(() => { oddsHistoryBooted = true; });
+// Venue link taps (venuelinks.js): a count per venue, link kind and day, for
+// /api/ops. Product telemetry only: no user, IP or stake is kept. Capped at
+// 300 a minute across everyone so a script can't inflate it much.
+const venueTaps = require('./venuelinks').createTapCounter();
+let venueTapsBooted = false;
+const venueTapsStore = resultsBackup.wrap('venueTaps', {
+  init: async () => {}, all: async () => (venueTapsBooted ? venueTaps.dump() : []),
+  put: async d => { venueTaps.load([d]); }, putMany: async ds => { venueTaps.load(ds); },
+}, { appendOnly: false });
+venueTapsStore.init().catch(e => console.warn('Venue taps: restore failed:', e.message)).finally(() => { venueTapsBooted = true; });
+const tapWindow = { at: 0, n: 0 };
+app.post('/api/ops/tap', (req, res) => {
+  const t = Date.now();
+  if (t - tapWindow.at > 60e3) { tapWindow.at = t; tapWindow.n = 0; }
+  if (++tapWindow.n > 300) return res.status(429).end();
+  const ok = venueTaps.tap(req.body?.venue, req.body?.exact === true);
+  res.status(ok ? 204 : 400).end();
+});
 const oddsScreenState = { at: 0, observedAt: null, errors: [] };
 function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } = {}) {
   const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
@@ -7020,8 +7080,11 @@ function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } 
 }
 function observeOddsHistory() {
   if (!freeBooksState.gamesAt || Date.now() - Date.parse(freeBooksState.gamesAt) >= FREE_BOOKS_MAX_AGE_MS) return;
-  try { oddsHistory.observe(oddsScreenFor({ kalshiOk: true })); oddsScreenState.observedAt = new Date().toISOString(); }
-  catch (e) { oddsScreenState.errors = [e.message]; }
+  try {
+    const screen = oddsScreenFor({ kalshiOk: true });
+    oddsHistory.observe(screen); oddsScreenState.observedAt = new Date().toISOString();
+    if (leadLagOn()) leadLagPending.push(...leadLagEngine.observe(screen));
+  } catch (e) { oddsScreenState.errors = [e.message]; }
   lineBets.observe(freeBooksState.games || {}).catch(e => console.warn('Line bets: observe:', e.message));
 }
 // MY BETS' game-line bets (linebets.js): a moneyline, spread or total logged
@@ -8659,7 +8722,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.192.0',
+  version: '3.199.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8690,6 +8753,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
     paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'polymarketus')).length]).filter(([, n]) => n)) },
   pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
   evResults: evResultsState,
+  leadLag: { on: leadLagOn(), ...leadLagEngine.stats() },
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null, propsBoardBuild: { ...propsBoardStats, builtAt: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null }, evScreenBuild: { ...evScreenStats },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
@@ -8839,6 +8903,422 @@ schedule('*/5 * * * *', () => { if (statusBooted) statusBoard.sample(); });
 const statusView = () => statusBoard.view({ liveCheck: liveCheck.state, uptimeS: Math.round(process.uptime()) });
 app.get('/api/uptime', (req, res) => res.set('Cache-Control', 'no-store').json(statusView()));
 app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html').send(statusPage.renderPage(statusView(), { origin: siteOrigin(req) })));
+// ─── PUBLIC API v1, WIDGETS AND /developers (publicapi.js, embeds.js) ────────
+// A read-only, versioned copy of what the app shows, the same for every
+// caller: the public licences (the webhook's: Kalshi and Polymarket only where
+// their display flag allows), no polymarket.com links, hidden wallets dropped.
+// Fair prices and EV ride the free tier: shown while the paywall is off, held
+// back (with a note) once it is on. Keyed: 60 calls a minute and 5,000 a day.
+// Widgets need no key (per-address limit) and say no more than the API does.
+const publicApi = require('./publicapi');
+const embeds = require('./embeds');
+const shareCards = require('./sharecards');
+const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json' })) });
+apiKeys.init().catch(e => console.warn('API keys: store failed to initialise:', e.message));
+const apiLimiter = publicApi.createLimiter();
+const widgetLimiter = publicApi.createLimiter({ perMinute: publicApi.WIDGET_PER_MINUTE, perDay: 0 });
+const v1Safe = x => hideWallets(stripPolymarketLinks(x));
+const v1FullTier = () => !PAYWALL;
+const v1Stale = () => Date.now() - Date.parse(freeBooksState.gamesAt || 0) >= FREE_BOOKS_MAX_AGE_MS;
+class V1Error extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; } }
+const v1Str = (v, re, name) => {
+  if (v == null || v === '') return null;
+  const s = String(v).toLowerCase();
+  if (!re.test(s)) throw new V1Error(400, 'bad_parameter', `${name} is not valid.`);
+  return s;
+};
+const v1Int = (v, lo, hi, def, name) => {
+  if (v == null || v === '') return def;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < lo || n > hi) throw new V1Error(400, 'bad_parameter', `${name} must be a whole number from ${lo} to ${hi}.`);
+  return n;
+};
+const v1Num = (v, lo, hi, name) => {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < lo || n > hi) throw new V1Error(400, 'bad_parameter', `${name} must be a number from ${lo} to ${hi}.`);
+  return n;
+};
+const V1_MARKETS = new Set(['moneyline', 'spread', 'total', 'player_prop']);
+// each endpoint's body from its query and path values; the routes, the
+// widgets and the /developers examples all call these
+const v1 = {
+  bestPrices(q) {
+    const league = v1Str(q.league, /^[a-z0-9]{1,20}$/, 'league');
+    const markets = q.market ? String(q.market).toLowerCase().split(',').map(x => x.trim()).filter(Boolean) : null;
+    if (markets && (markets.length > 4 || markets.some(m => !V1_MARKETS.has(m)))) throw new V1Error(400, 'bad_parameter', 'market is one or more of moneyline, spread, total, player_prop.');
+    const venue = v1Str(q.venue, /^[a-z0-9]{1,20}$/, 'venue');
+    const minEv = v1Num(q.minEv, -100, 1000, 'minEv') ?? 0;
+    const minSize = v1Num(q.minSize, 0, 100000, 'minSize');
+    const hours = v1Num(q.hours, 0.1, 336, 'hours') ?? 48;
+    const limit = v1Int(q.limit, 1, 200, 50, 'limit');
+    const lic = webhookLicence();
+    const at = new Date().toISOString();
+    const head = { at, builtAt: shopState.builtAt || null, stale: v1Stale(), fairFrom: "Pinnacle's no-vig price (power method); EV is after each venue's fee",
+      labels: { proven: "PROVEN: the venue's main lines are proven on RESULTS", lead: 'LEAD: research, not a proven edge' } };
+    if (!v1FullTier()) return { ...head, locked: true, note: 'Fair prices and EV are for subscribers while the paywall is on, so no rows are listed here.', count: 0, rows: [] };
+    const st = shopQuotes();
+    const key = `bp|${lic.kalshi ? 1 : 0}${lic.polymarket ? 1 : 0}|${st.builtAt}|${league}|${markets}|${venue}|${minEv}|${minSize}|${hours}`;
+    const rows = v1MemoSync(key, () => {
+      let quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+      if (!lic.polymarket) quotes = quotes.filter(x => !String(x.providerId).startsWith('polymarket'));
+      const view = shopper.build(quotes, { league, marketTypes: markets, providers: venue ? [venue] : null, toMs: Date.now() + hours * 3600e3,
+        minEv: minEv / 100, minSize: minSize || null, sort: 'ev', stake: 100, method: 'power', limit: 200, proven: evBookProven, depth: shopDepth.forQuote });
+      return publicApi.bestPrices(view, { limit: 200 });
+    });
+    return { ...head, locked: false, count: Math.min(rows.length, limit), rows: rows.slice(0, limit) };
+  },
+  moves(q) {
+    const window = v1Str(q.window, /^(open|3h|1h)$/, 'window') || 'open';
+    const type = v1Str(q.type, /^(price|line)$/, 'type') || 'price';
+    const league = v1Str(q.league, /^[a-z0-9]{1,20}$/, 'league');
+    const kind = v1Str(q.kind, /^(game|prop)$/, 'kind');
+    const limit = v1Int(q.limit, 1, 200, 50, 'limit');
+    const base = movesFor({ window, kalshiOk: !!webhookLicence().kalshi });
+    const rows = bigMoves.rank(base.rows.filter(r => !kind || r.kind === kind), { league, type, sort: 'move' });
+    return { at: base.updated, window, type, league, kind, linesAt: base.linesAt, stale: !!base.stale, total: rows.length, rows: rows.slice(0, limit).map(publicApi.moveRow),
+      note: 'A move is information, not a proven edge. Venues still at the old number have graded as no edge against the close.' };
+  },
+  moveHistory(gameId, q) {
+    const id = String(gameId || '').slice(0, 80);
+    const market = v1Str(q.market, /^(ml|spread|total)$/, 'market');
+    const lic = webhookLicence();
+    let series = oddsHistory.forGame(id).filter(x => !market || x.market === market);
+    if (!lic.kalshi) series = series.map(x => ({ ...x, pts: x.pts.map(([t, p, f, px]) => [t, p, f, Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
+    if (!series.length) throw new V1Error(404, 'not_found', 'No saved prices for that game: an id comes from /api/v1/moves or /api/v1/leagues/{league}, and history is kept until 6 hours after the start.');
+    const g = oddsScreenFor({ kalshiOk: !!lic.kalshi }).games.find(x => x.id === id);
+    return { gameId: id, game: g ? { event: `${g.away} @ ${g.home}`, league: g.league, leagueLabel: g.leagueLabel, start: g.start } : null, fairShown: v1FullTier(),
+      series: publicApi.historySeries(series, { withFair: v1FullTier() }) };
+  },
+  leagues() {
+    const s = oddsScreenFor({ kalshiOk: !!webhookLicence().kalshi });
+    return { at: new Date().toISOString(), linesAt: s.updated, stale: !!s.stale, leagues: s.leagues.map(l => ({ ...l, board: `/api/v1/leagues/${l.key}` })) };
+  },
+  league(lg, q) {
+    const league = v1Str(lg, /^[a-z0-9]{1,20}$/, 'league');
+    const search = String(q.q || '').slice(0, 60);
+    const s = oddsScreenFor({ league, q: search, kalshiOk: !!webhookLicence().kalshi });
+    if (!s.games.length && !s.leagues.some(l => l.key === league)) throw new V1Error(404, 'not_found', `No ${league} games in the next 48 hours. /api/v1/leagues lists the leagues on the board.`);
+    const full = v1FullTier();
+    return { at: new Date().toISOString(), league, linesAt: s.updated, stale: !!s.stale, fairShown: full, venues: s.venues, count: s.games.length,
+      games: (full ? s : oddsScreen.stripPro(s)).games.map(g => publicApi.boardGame(g, { withFair: full })),
+      note: 'Fair is Pinnacle\'s no-vig price. Reference venues (Pinnacle, Matchbook, Polymarket global) are prices to read, not places to bet from the US; second-hand prices are copies, never a play alone.' };
+  },
+  async record(q) {
+    const days = v1Num(q.days, 0, 3650, 'days') || 0;
+    const rec = claims.publicRecord({ board: await closeBoardFor(webhookLicence(), days, null) });
+    return { ...rec, days: days || null, flags: '/api/v1/record/flags' };
+  },
+  async flags(q) {
+    const days = v1Num(q.days, 0, 3650, 'days') || 0;
+    const kind = v1Str(q.kind, /^[\w-]{1,40}$/, 'kind'), book = v1Str(q.book, /^[\w-]{1,40}$/, 'book');
+    const limit = v1Int(q.limit, 1, 1000, 200, 'limit'), offset = v1Int(q.offset, 0, 1e7, 0, 'offset');
+    const { rows } = await recordFlags({ query: { days: days || undefined, kind: kind || undefined, book: book || undefined } });
+    return { at: new Date().toISOString(), days: days || null, kind, book, columns: closeBoard.FLAG_COLUMNS, total: rows.length, offset, limit, flags: rows.slice(offset, offset + limit) };
+  },
+  digests: () => digestIndex(),
+  async digest(week) {
+    const w = String(week || '');
+    if (!digest.validWeek(w)) throw new V1Error(400, 'bad_parameter', 'A week is the date of its Monday, like 2026-10-19.');
+    const out = await digestFor(w);
+    if (!out) throw new V1Error(404, 'not_found', 'That week has not started.');
+    return { ...out, share: `/digest/${w}` };
+  },
+  status: () => statusView(),
+};
+// a short synchronous memo for the shopper's per-query build
+const v1Sync = new Map();
+function v1MemoSync(key, fn) {
+  const hit = v1Sync.get(key);
+  if (hit && Date.now() - hit.at < 30e3) return hit.v;
+  const v = fn();
+  if (v1Sync.size > 200) v1Sync.clear();
+  v1Sync.set(key, { at: Date.now(), v });
+  return v;
+}
+function v1Fail(res, e) {
+  if (!(e instanceof V1Error)) console.warn('API v1:', e.message);
+  const status = e instanceof V1Error ? e.status : 500;
+  return res.status(status).set('Cache-Control', 'no-store').json({ error: { code: e instanceof V1Error ? e.code : 'server_error', message: e instanceof V1Error ? e.message : 'Something went wrong on our side. Try again in a minute.' } });
+}
+// every /api/v1 answer: the headers a browser caller may read
+app.use('/api/v1', (req, res, next) => {
+  res.set({ 'Access-Control-Expose-Headers': 'ETag, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-RateLimit-Daily-Limit, X-RateLimit-Daily-Remaining, Retry-After', 'X-Robots-Tag': 'noindex' });
+  next();
+});
+const v1KeyOf = req => req.get('x-api-key') || (typeof req.query.key === 'string' ? req.query.key : '');
+function v1Auth(req, res, next) {
+  const key = v1KeyOf(req);
+  const doc = apiKeys.check(key);
+  if (!doc) return v1Fail(res, new V1Error(401, key ? 'bad_key' : 'no_key', key ? 'That key is not known or was revoked. Make a new one at /developers.' : 'Send your key in an X-API-Key header. Make one free at /developers.'));
+  const lim = apiLimiter.take(doc.id);
+  publicApi.limitHeaders(res, lim);
+  if (!lim.ok) return v1Fail(res, new V1Error(429, 'rate_limited', lim.over === 'day' ? `Over ${lim.dayLimit} calls today (UTC). Try again tomorrow.` : `Over ${lim.limit} calls this minute. Try again in ${lim.retryAfter} s.`));
+  req.apiKey = doc;
+  next();
+}
+const v1Route = fn => async (req, res) => {
+  try { publicApi.sendCached(req, res, v1Safe(await fn(req))); } catch (e) { v1Fail(res, e); }
+};
+app.get('/api/v1', (req, res) => publicApi.sendCached(req, res, { version: publicApi.VERSION, docs: '/developers', auth: 'X-API-Key header (or ?key=)', limits: publicApi.LIMITS,
+  endpoints: publicApi.ENDPOINTS.map(e => ({ path: e.path, title: e.title, params: Object.fromEntries(e.params) })), widgets: ['/embed/best-price', '/embed/line-move', '/embed/record', '/embed.js'] }, { scope: 'public', maxAge: 300 }));
+app.post('/api/v1/keys', async (req, res) => {
+  try {
+    const out = await apiKeys.create({ name: req.body?.name, userId: req.user?.id || null, who: publicApi.callerOf(req) });
+    res.status(201).set('Cache-Control', 'no-store').json({ ...out, note: 'Shown once: keep it somewhere safe. Only a hash of it is stored.', limits: publicApi.LIMITS });
+  } catch (e) {
+    if (e.retryAfter) res.set('Retry-After', String(e.retryAfter));
+    v1Fail(res, e.status ? new V1Error(e.status, e.status === 429 ? 'rate_limited' : 'unavailable', e.message) : e);
+  }
+});
+// a signed-in account's keys (never the keys themselves)
+app.get('/api/v1/keys', async (req, res) => {
+  if (!req.user) return v1Fail(res, new V1Error(401, 'not_signed_in', 'Sign in to list the keys made from your account.'));
+  await apiKeys.init().catch(() => {});
+  res.set('Cache-Control', 'no-store').json({ keys: apiKeys.listFor(req.user.id) });
+});
+app.get('/api/v1/key', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ key: publicApi.publicKey(req.apiKey), usage: apiLimiter.usage(req.apiKey.id), limits: publicApi.LIMITS }));
+app.delete('/api/v1/key', v1Auth, async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json({ revoked: await apiKeys.revoke(v1KeyOf(req)) }); } catch (e) { v1Fail(res, e); }
+});
+app.get('/api/v1/best-prices', v1Auth, v1Route(req => v1.bestPrices(req.query)));
+app.get('/api/v1/moves', v1Auth, v1Route(req => v1.moves(req.query)));
+app.get('/api/v1/moves/:gameId', v1Auth, v1Route(req => v1.moveHistory(req.params.gameId, req.query)));
+app.get('/api/v1/leagues', v1Auth, v1Route(() => v1.leagues()));
+app.get('/api/v1/leagues/:league', v1Auth, v1Route(req => v1.league(req.params.league, req.query)));
+app.get('/api/v1/record', v1Auth, v1Route(req => v1.record(req.query)));
+app.get('/api/v1/record/flags', v1Auth, v1Route(req => v1.flags(req.query)));
+app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
+app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
+app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
+app.use('/api/v1', (req, res) => v1Fail(res, new V1Error(404, 'not_found', 'No such endpoint. /api/v1 lists them.')));
+
+// ── widgets: no key, a per-address limit, the same bodies as the API ──
+function widgetGate(req, res, next) {
+  const lim = widgetLimiter.take(publicApi.callerOf(req));
+  if (!lim.ok) return res.status(429).set({ 'Retry-After': String(lim.retryAfter), 'Cache-Control': 'no-store' }).type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#94a3b8;font:13px system-ui;margin:8px">Too many widget loads from this address. It will load again in a minute.</body>');
+  next();
+}
+const widgetId = req => String(req.query._id || '').replace(/[^\w-]/g, '').slice(0, 40);
+const sendWidget = (req, res, html) => publicApi.sendCached(req, res, html, { type: 'text/html; charset=utf-8', maxAge: 60, scope: 'public' });
+const widgetError = (res, e) => res.status(e instanceof V1Error ? e.status : 500).set('Cache-Control', 'no-store').type('html')
+  .send(`<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#94a3b8;font:13px system-ui;margin:8px">${learn.esc(e instanceof V1Error ? e.message : 'This widget could not load. It tries again in a minute.')}</body>`);
+app.get('/embed/best-price', widgetGate, (req, res) => {
+  try {
+    const n = v1Int(req.query.n, 1, 5, 1, 'n');
+    const body = v1Safe(v1.bestPrices({ league: req.query.league, market: req.query.market, venue: req.query.venue, limit: n }));
+    sendWidget(req, res, embeds.bestPriceWidget(body.rows, { league: v1Str(req.query.league, /^[a-z0-9]{1,20}$/, 'league'), at: body.builtAt, locked: body.locked, stale: body.stale, origin: siteOrigin(req), id: widgetId(req) }));
+  } catch (e) { widgetError(res, e); }
+});
+app.get('/embed/line-move', widgetGate, (req, res) => {
+  try {
+    let game = String(req.query.game || '').slice(0, 80), market = v1Str(req.query.market, /^(ml|spread|total)$/, 'market');
+    if (!game) {
+      // today's biggest game-line move, price first
+      const base = movesFor({ window: 'open', kalshiOk: !!webhookLicence().kalshi });
+      const games = base.rows.filter(r => r.kind === 'game');
+      const top = bigMoves.rank(games, { type: 'price', sort: 'move' })[0] || bigMoves.rank(games, { type: 'line', sort: 'move' })[0];
+      if (top) { game = top.gameId; market = market || top.market; }
+    }
+    let hist = null;
+    if (game) { try { hist = v1Safe(v1.moveHistory(game, {})); } catch (e) { if (!(e instanceof V1Error)) throw e; } }
+    const g = hist?.game ? { ...hist.game } : null;
+    const sideIndex = v1Int(req.query.side, 0, 2, 0, 'side');
+    sendWidget(req, res, embeds.lineMoveWidget({ game: g || (hist ? { event: game, leagueLabel: '', start: hist.series[0]?.start } : (game ? { event: game } : null)), series: hist?.series || [], market, sideIndex,
+      withFair: v1FullTier(), origin: siteOrigin(req), id: widgetId(req), venueName: v => bigMoves.NAMES[v] || venues.NAMES[v] || v }));
+  } catch (e) { widgetError(res, e); }
+});
+app.get('/embed/record', widgetGate, async (req, res) => {
+  try { sendWidget(req, res, embeds.recordWidget(publicApi.recordCard(await v1.record({})), { origin: siteOrigin(req), id: widgetId(req) })); }
+  catch (e) { widgetError(res, e); }
+});
+app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/javascript').send(embeds.embedScript(siteOrigin(req))));
+
+// ── SHARE CARDS: a PNG of a price row, a line chart, a league or the record ──
+// sharecards.js draws each one from the same bodies as the API and widgets
+// (so a card never says more than RESULTS), and resvg turns it into a PNG.
+// /card/<kind>.png (or .svg) is the image; /share/<kind> is the page a pasted
+// link opens, with Open Graph and Twitter tags pointing at the image. Same
+// card for everyone: nothing from an account, no stake, no slips.
+const SHARE_KINDS = new Set(['price', 'move', 'league', 'record', 'digest']);
+const cardStr = (v, re, max = 120) => { const s = String(v ?? '').slice(0, max); return re.test(s) ? s : null; };
+// the card's data and its words, from the query; never from numbers the browser sends
+async function shareCardFor(kind, q, origin) {
+  const venueName = v => bigMoves.NAMES[v] || venues.NAMES[v] || v;
+  if (kind === 'price') {
+    const id = cardStr(q.id, /^[^\u0000-\u001f<>]{1,300}$/, 300);
+    const at = new Date().toISOString();
+    let d;
+    if (!v1FullTier()) d = { locked: true, at };
+    else if (v1Stale()) d = { stale: true, at };
+    else {
+      const st = shopQuotes(), lic = webhookLicence();
+      const rows = v1MemoSync(`card|${lic.kalshi ? 1 : 0}${lic.polymarket ? 1 : 0}|${st.builtAt}`, () => {
+        let quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+        if (!lic.polymarket) quotes = quotes.filter(x => !String(x.providerId).startsWith('polymarket'));
+        // every side's best price, above the fair or not, so a row shared from a
+        // screen set to show both is found
+        const view = shopper.build(quotes, { sort: 'ev', stake: 100, method: 'power', limit: 1000, minEv: -1, proven: evBookProven, depth: shopDepth.forQuote });
+        return publicApi.bestPrices(view, { limit: 1000 });
+      });
+      const row = id ? rows.find(r => r.id === id) || null : rows.find(r => r.evPct > 0) || null;
+      d = { row, at: st.builtAt || at, gone: !!id && !row };
+    }
+    const r = d.row;
+    return { svg: shareCards.priceCard(r, { ...d, origin }), at: d.at,
+      title: r ? `${r.selection} ${r.price.american > 0 ? '+' : ''}${r.price.american ?? ''} at ${r.venueName}` : d.gone ? 'A price that has moved' : 'Best price above the fair',
+      description: r ? `${r.event}. Pinnacle's fair ${r.fair.american > 0 ? '+' : ''}${r.fair.american ?? '—'}, EV ${r.evPct > 0 ? '+' : ''}${r.evPct ?? '—'}% after the fee. ${r.label === 'proven' ? `${r.venueName} main lines are proven on RESULTS; this row is one price, not a result.` : 'LEAD: research, not a proven edge.'}` : 'Open the app for every price beside the fair.',
+      open: '?start=odds' };
+  }
+  if (kind === 'move') {
+    const game = cardStr(q.game, /^[\w:.|@ -]{1,80}$/, 80);
+    const market = cardStr(q.market, /^(ml|spread|total)$/);
+    const side = cardStr(q.side, /^[^\u0000-\u001f<>]{1,80}$/, 80);
+    const sideIndex = Math.min(2, Math.max(0, parseInt(q.i, 10) || 0));
+    let hist = null;
+    if (game) { try { hist = v1.moveHistory(game, {}); } catch (e) { if (!(e instanceof V1Error)) throw e; } }
+    const g = hist?.game || (hist ? { event: game, leagueLabel: '', start: hist.series[0]?.start } : null);
+    const pick = hist ? shareCards.pickSeries(hist.series, { market, side, sideIndex }) : null;
+    const last = pick?.s?.points[pick.s.points.length - 1];
+    return { svg: shareCards.moveCard({ game: g, series: hist?.series || [], market, side, sideIndex, withFair: v1FullTier(), origin, venueName }), at: last?.t || null,
+      title: g ? `${g.event}: line move` : 'Line move', description: pick?.s ? `${g.leagueLabel ? g.leagueLabel + ' · ' : ''}${pick.s.side}: each venue's price over time against Pinnacle's fair. Information, not an edge.` : 'No saved prices for this game.',
+      open: '?start=odds' };
+  }
+  if (kind === 'league') {
+    const slug = cardStr(q.league, /^[a-z0-9]{2,12}$/);
+    const cfg = slug && Object.prototype.hasOwnProperty.call(shareCards.LEAGUE_PAGES, slug) ? shareCards.LEAGUE_PAGES[slug] : null;
+    if (!cfg) throw new V1Error(404, 'not_found', 'No such league page.');
+    const lic = webhookLicence();
+    let games = 0, markets = 0, withFair = 0, stale = false, at = null;
+    const vs = new Set();
+    for (const key of cfg.keys) {
+      const s = oddsScreenFor({ league: key, kalshiOk: !!lic.kalshi });
+      stale = s.stale; at = s.updated;
+      for (const gm of s.games) {
+        games++;
+        for (const m of gm.markets) { markets++; if (m.sides.some(x => x.fair != null)) withFair++; for (const sd of m.sides) for (const v of sd.venues) if (!v.ref) vs.add(v.venue); }
+      }
+    }
+    const bp = cfg.keys.map(k => v1.bestPrices({ league: k, limit: 200 }));
+    const rows = bp.flatMap(b => b.rows).sort((a, b) => (b.evPct ?? -1e9) - (a.evPct ?? -1e9));
+    const d = { name: cfg.name, games, markets, withFair, venues: vs.size, aboveFair: rows.length, rows, at: at || new Date().toISOString(), stale: games ? stale : false, locked: bp.some(b => b.locked), esports: !!cfg.esports };
+    return { svg: shareCards.leagueCard(d, { origin }), at: d.at, title: `${cfg.name} odds: every venue beside Pinnacle's fair`,
+      description: games ? `${games} game${games === 1 ? '' : 's'} in the next 48 hours, ${vs.size} venues, ${d.locked ? 'fair prices for subscribers' : `${rows.length} price${rows.length === 1 ? '' : 's'} above the fair (research, not a record)`}.` : `No ${cfg.name} games on the board right now.`,
+      open: cfg.path };
+  }
+  if (kind === 'record') {
+    const card = publicApi.recordCard(await v1.record({}));
+    const p = card.proven;
+    return { svg: shareCards.recordCardSvg(card, { origin }), at: card.at, title: 'Line Reaper: the public record',
+      description: p.length ? `Proven on the strict rule: ${p.map(r => `${r.venueName} ${r.kindLabel || r.kind} (${r.graded} graded, CLV ${r.clvPct > 0 ? '+' : ''}${r.clvPct?.toFixed(1)}% vs the close${r.profitShown ? '' : ', profit not shown'})`).join('; ')}. ${card.notProven} other kinds are not proven.`
+        : `Nothing is proven yet on the strict rule. ${card.notProven} kinds on the record are building or losing to the close.`,
+      open: '?start=results' };
+  }
+  // digest
+  const week = cardStr(q.week, /^\d{4}-\d{2}-\d{2}$/) || digest.dueWeek(Date.now());
+  const out = digest.validWeek(week) ? await digestFor(week) : null;
+  if (!out) throw new V1Error(404, 'not_found', 'That week has no digest.');
+  return { svg: shareCards.digestCard(out.digest, { origin, frozen: out.frozen }), at: out.digest.builtAt, title: `Line Reaper record: week of ${out.digest.name}`,
+    description: digest.pushText(out.digest).split('\n').slice(0, 2).join(' '), open: `/digest/${week}`, page: `/digest/${week}` };
+}
+// the card's own query string: only the keys its kind reads, in a fixed order
+const SHARE_KEYS = { price: ['id'], move: ['game', 'market', 'side', 'i'], league: ['league'], record: [], digest: ['week'] };
+function shareQuery(kind, q) {
+  const p = new URLSearchParams();
+  for (const k of SHARE_KEYS[kind] || []) if (q[k] != null && q[k] !== '') p.set(k, String(q[k]).slice(0, 300));
+  return p.toString();
+}
+// PNGs drawn in the last minute are served again (a pasted link is fetched by
+// every app that previews it at once)
+const shareImgMemo = new Map();
+const shareStats = { drawn: 0, served: 0, errors: 0, lastError: null, png: null };
+async function shareImage(kind, q, origin, ext) {
+  const key = `${kind}|${shareQuery(kind, q)}|${origin}|${ext}|${v1FullTier() ? 1 : 0}`;
+  const hit = shareImgMemo.get(key);
+  if (hit && Date.now() - hit.at < 60e3) return hit.v;
+  const c = await shareCardFor(kind, q, origin);
+  let body = null, type = 'image/svg+xml';
+  if (ext === 'png') { body = await shareCards.renderPng(c.svg); if (body) type = 'image/png'; }
+  if (!body) body = Buffer.from(c.svg);
+  shareStats.drawn++;
+  const v = { body, type };
+  if (shareImgMemo.size > 80) shareImgMemo.clear();
+  shareImgMemo.set(key, { at: Date.now(), v });
+  return v;
+}
+app.get('/card/:kind.:ext', widgetGate, async (req, res) => {
+  const { kind, ext } = req.params;
+  if (!SHARE_KINDS.has(kind) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, digest (.png or .svg).');
+  try {
+    const img = await shareImage(kind, req.query, siteOrigin(req), ext);
+    shareStats.served++;
+    res.set({ 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' });
+    if (req.query.download === '1') res.set('Content-Disposition', `attachment; filename="line-reaper-${kind}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.${img.type === 'image/png' ? 'png' : 'svg'}"`);
+    res.type(img.type).send(img.body);
+  } catch (e) {
+    if (!(e instanceof V1Error)) { shareStats.errors++; shareStats.lastError = e.message; console.warn('Share card:', e.message); }
+    res.status(e instanceof V1Error ? e.status : 500).set('Cache-Control', 'no-store').type('text/plain').send(e instanceof V1Error ? e.message : 'This card could not be drawn. Try again in a minute.');
+  }
+});
+// the image URL a preview reads: absolute, and new every 10 minutes so an app
+// that keeps a preview for days shows a recent read when it fetches again
+const shareImageUrl = (origin, kind, qs) => `${origin}/card/${kind}.png?${qs ? `${qs}&` : ''}v=${Math.floor(Date.now() / 600e3).toString(36)}`;
+async function sendSharePage(req, res, kind, q) {
+  try {
+    const origin = siteOrigin(req), qs = shareQuery(kind, q);
+    const c = await shareCardFor(kind, q, origin);
+    const open = /^(#lr&|\?start=)/.test(String(q.to || '')) ? shareCards.safeOpen(q.to) : c.open.startsWith('/') ? c.open : shareCards.safeOpen(c.open);
+    res.set({ 'Cache-Control': 'public, max-age=60' }).type('html').send(shareCards.sharePage({ title: c.title, description: c.description, image: shareImageUrl(origin, kind, qs),
+      url: `${origin}${req.path}${qs ? `?${qs}` : ''}`, open, openLabel: kind === 'league' ? 'OPEN THE LEAGUE PAGE' : kind === 'digest' ? 'OPEN THE WEEK' : 'OPEN IN LINE REAPER',
+      note: c.at ? `Read ${String(c.at).slice(0, 16).replace('T', ' ')} UTC.` : '' }));
+  } catch (e) {
+    res.status(e instanceof V1Error ? e.status : 500).set('Cache-Control', 'no-store').type('html')
+      .send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Line Reaper</title><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">${learn.esc(e instanceof V1Error ? e.message : 'This card could not be drawn just now.')} <a style="color:#34d399" href="/app">Open the app</a>.</body>`);
+  }
+}
+app.get('/share/:kind', widgetGate, (req, res) => {
+  if (!SHARE_KINDS.has(req.params.kind)) return res.status(404).type('text/plain').send('No such share page.');
+  return sendSharePage(req, res, req.params.kind, req.query);
+});
+// /results: the record's share page (the app's RESULTS tab is one tap away)
+app.get('/results', widgetGate, (req, res) => sendSharePage(req, res, 'record', { to: '?start=results' }));
+
+// ── /developers: the docs, with each endpoint's live answer cut to its first rows ──
+const trimArrays = (x, n = 3, depth = 0) => {
+  if (Array.isArray(x)) return x.slice(0, n).map(v => trimArrays(v, n, depth + 1));
+  if (!x || typeof x !== 'object' || depth > 8) return x;
+  return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, trimArrays(v, n, depth + 1)]));
+};
+async function developerExamples() {
+  const ex = {};
+  const add = async (path, url, fn, n = 2) => {
+    try { ex[path] = { url, at: new Date().toISOString(), body: trimArrays(v1Safe(await fn()), n) }; } catch { /* left out: the page says why */ }
+  };
+  await add('/api/v1/best-prices', '/api/v1/best-prices?limit=2', () => v1.bestPrices({ limit: 2 }));
+  let moves = null;
+  await add('/api/v1/moves', '/api/v1/moves?limit=2', () => (moves = v1.moves({ limit: 20 })));
+  const gid = moves?.rows.find(r => r.gameId)?.gameId;
+  if (gid) await add('/api/v1/moves/{gameId}', `/api/v1/moves/${encodeURIComponent(gid)}?market=ml`, () => v1.moveHistory(gid, { market: 'ml' }));
+  let lgs = null;
+  await add('/api/v1/leagues', '/api/v1/leagues', () => (lgs = v1.leagues()), 4);
+  const lg = lgs?.leagues[0]?.key;
+  if (lg) await add('/api/v1/leagues/{league}', `/api/v1/leagues/${lg}`, () => v1.league(lg, {}), 1);
+  await add('/api/v1/record', '/api/v1/record', () => v1.record({}));
+  await add('/api/v1/record/flags', '/api/v1/record/flags?limit=2', () => v1.flags({ limit: 2 }));
+  let weeks = null;
+  await add('/api/v1/digest', '/api/v1/digest', async () => (weeks = await v1.digests()));
+  if (weeks?.current) await add('/api/v1/digest/{week}', `/api/v1/digest/${weeks.current}`, () => v1.digest(weeks.current));
+  await add('/api/v1/status', '/api/v1/status', () => v1.status());
+  return ex;
+}
+const devMemo = require('./ops').createMemo({ ttlMs: 60e3 });
+app.get('/developers', async (req, res) => {
+  try {
+    const examples = await devMemo('examples', developerExamples);
+    res.set('Cache-Control', 'public, max-age=60').type('html').send(embeds.developersPage({ origin: siteOrigin(req), endpoints: publicApi.ENDPOINTS, examples,
+      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence() }));
+  } catch (e) { console.warn('Developers page:', e.message); res.status(500).type('text').send('The developers page could not be built. Try again in a minute.'); }
+});
 // NBA model: finished box scores, tonight's schedule and the injury list every 30 minutes (first read 2 minutes after boot)
 if (nbaModel) {
   schedule('11,41 * * * *', () => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)));

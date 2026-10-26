@@ -219,3 +219,13 @@ test('server: push store rides the results backup; every push route is mounted',
   assert.match(sw, /\/api\/push\/ack/);
   assert.match(sw, /pushsubscriptionchange/);
 });
+
+test('a subscription the push service dropped reads as expired, so the app can renew it', async () => {
+  const gone = createPush({ store: memStore(), webpush: fakeWebpush({ [sub(7).endpoint]: 410 }), env: {}, sleep: async () => {} });
+  await gone.subscribe(sub(7));
+  await gone.test(sub(7).endpoint).catch(() => {});
+  const d = await gone.device(sub(7).endpoint);
+  assert.equal(d.active, false);
+  assert.equal(d.expired, true);
+  assert.match(d.reason, /^gone/);
+});
