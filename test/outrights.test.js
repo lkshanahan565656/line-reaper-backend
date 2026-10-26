@@ -184,3 +184,110 @@ test('Results: exchange outrights are judged one sport on one exchange, never po
   assert.ok(src, 'the source is on the scoreboard');
   assert.notEqual(src.overall.verdict, 'proven');
 });
+
+// ── season futures (kind exchange-futures:{venue}), real reads of 2026-10-26 ──
+const fu = require('./fixtures/futures-2026-10-26.json');
+const execcheck = require('../execcheck');
+const FNOW = Date.parse('2026-10-26T20:30:00Z');
+function futBoard() {
+  const pins = [...o.parsePinLeague('nba', fu.pinNbaEast.matchups, fu.pinNbaEast.markets, FNOW), ...o.parsePinLeague('nba', fu.pinNbaChamp.matchups, fu.pinNbaChamp.markets, FNOW),
+    ...o.parsePinLeague('cfb', fu.pinCfbPlayoffs.matchups, fu.pinCfbPlayoffs.markets, FNOW), ...o.parsePinLeague('cbb', fu.pinCbb.matchups, fu.pinCbb.markets, FNOW)];
+  const exch = [o.parseKalshiEvent(fu.kalshiNbaEast), o.parseKalshiEvent(fu.kalshiCfbPlayoffs), o.parsePmusSeasonEvent(fu.pmusNbaEast)].filter(Boolean);
+  const books = new Map();
+  for (const [t, b] of Object.entries(fu.kalshiBooks)) for (const buy of ['yes', 'no']) books.set(`kalshi|${t}|${buy}`, execcheck.kalshiAsks({ orderbook_fp: b }, buy));
+  return { pins, exch, books, board: o.boardOf({ pins, exch, books }) };
+}
+
+test('season futures: Pinnacle title, conference and make-the-playoffs markets parse; Polymarket US slugs map to the same keys', () => {
+  const { pins } = futBoard();
+  const east = pins.find(p => p.key === 'nba-east');
+  assert.ok(east && east.runners.length === 15 && east.limit === 1000);
+  const cfb = pins.find(p => p.key === 'cfb-playoffs');
+  assert.ok(cfb.twoWay && cfb.runners.length >= 4 && cfb.runners.every(r => r.american != null && r.no != null && r.cutoff));
+  assert.equal(o.pmusSeasonOf('nba-eastconf-2027-05-19-w').key, 'nba-east');
+  assert.equal(o.pmusSeasonOf('nfl-afcnorth-2027-01-10-w').key, 'nfl-afc-north');
+  assert.equal(o.pmusSeasonOf('nfl-2027-01-10-playoffq').key, 'nfl-playoffs');
+  assert.equal(o.pmusSeasonOf('nfl-afc1seed-2027-01-10'), null);
+  assert.equal(o.pmusSeasonOf('nba-cup-2026-12-11-w'), null);
+  assert.equal(o.parseKalshiEvent(fu.kalshiNbaEast).key, 'nba-east');
+  assert.equal(o.KALSHI_SERIES.KXNFLAFCNORTH.key, 'nfl-afc-north');
+  const pin = o.pinTypeOf('nfl', 'AFC North Winner', 'Futures');
+  assert.equal(pin.key, 'nfl-afc-north');
+  assert.equal(o.pinTypeOf('nfl', 'AFC Conference Winner', 'Futures').key, 'nfl-afc');
+});
+
+test('season futures: three-method fair, the 40% margin cap, names that pick each other', () => {
+  const { board } = futBoard();
+  const season = board.filter(x => x.season);
+  assert.ok(season.some(x => x.venue === 'kalshi') && season.some(x => x.venue === 'polymarketus'));
+  // the NCAA tournament field carries 57% margin: skipped
+  assert.ok(!season.some(x => x.sport === 'cbb'));
+  // "Mississippi St." on Kalshi never takes Pinnacle's "Mississippi" (Ole Miss)
+  assert.ok(!season.some(x => x.runner === 'Mississippi St.'));
+  // "Miami" (Kalshi) is Pinnacle's "Miami Heat"
+  const mia = season.find(x => x.venue === 'kalshi' && x.key === 'nba-east' && x.runner === 'Miami' && x.buy === 'yes');
+  assert.equal(mia.pinRunner, 'Miami Heat');
+  // a YES fair is the lowest of the three methods
+  const fs = o.fairsOf([{ name: 'A', american: 200 }, { name: 'B', american: 300 }, { name: 'C', american: 900 }, { name: 'D', american: 1500 }], 1, { withMult: true });
+  for (const r of fs) { assert.equal(r.fairYes, Math.min(r.power, r.shin, r.mult)); assert.ok(r.fairNo <= 1 - r.mult + 1e-4); }
+  assert.equal(o.mutualRunner([{ name: 'Mississippi' }], 'Mississippi St.', ['Mississippi St.', 'Ole Miss']), null);
+  assert.equal(o.mutualRunner([{ name: 'Florida State' }, { name: 'Florida' }], 'Florida St.', ['Florida St.', 'Florida']).name, 'Florida State');
+});
+
+test('season futures: flag at $200 +3% while Pinnacle is open; 24 h and 7 d grades; one flag a side a week; kept out of the F1/golf record', async () => {
+  const { pins, exch, books, board } = futBoard();
+  const x = board.find(r => r.season && o.flagSeasonOf(r, FNOW, FNOW));
+  assert.ok(x, 'a real side clears the season bar on 10-26');
+  assert.equal(o.flagSeasonOf(x, FNOW, FNOW - 6 * 60e3), null, 'Pinnacle read over 5 min ago');
+  assert.equal(o.flagSeasonOf({ ...x, cutoff: '2026-10-26T20:00:00Z' }, FNOW, FNOW), null, 'Pinnacle closed on the market');
+  assert.equal(o.flagSeasonOf({ ...x, tiers: { ...x.tiers, 200: { ...x.tiers[200], full: false } } }, FNOW, FNOW), null);
+  const rows = new Map();
+  const store = { all: async () => [...rows.values()].map(b => JSON.parse(JSON.stringify(b))), put: async b => { rows.set(b.id, JSON.parse(JSON.stringify(b))); } };
+  let t = FNOW;
+  const tr = o.createOutrightsTracker({ store, http: { get: async () => ({ data: { market: { result: 'no', status: 'settled' } } }) }, now: () => t });
+  // the board as read at each pass; Pinnacle's season cutoffs roll forward (shifted a month on for the later passes)
+  const later = pins.map(p => ({ ...p, cutoff: new Date(Date.parse(p.cutoff) + 30 * 86400e3).toISOString(), runners: p.runners.map(r => (r.cutoff ? { ...r, cutoff: new Date(Date.parse(r.cutoff) + 30 * 86400e3).toISOString() } : r)) }));
+  const at = () => ({ pins: t === FNOW ? pins : later, pinReadAt: t, exch, books });
+  await tr.scan(at());
+  const flags = (await store.all()).filter(b => b.kind === o.FUTURES_KIND);
+  assert.ok(flags.length >= 1 && flags.every(b => b.status === 'open' && b.cost > 0 && b.evAtFlag >= 0.03 - 1e-9));
+  const n0 = flags.length;
+  // an hour later: no second flag for the same sides
+  t += 3600e3; await tr.scan(at());
+  assert.equal((await store.all()).filter(b => b.kind === o.FUTURES_KIND).length, n0);
+  // 24 h after: the read is kept, graded once the 2 h window passes
+  t = FNOW + 24 * 3600e3; await tr.scan(at());
+  t = FNOW + 26.5 * 3600e3; await tr.scan({ pins: [], pinReadAt: t, exch, books });
+  let f = (await store.all()).filter(b => b.kind === o.FUTURES_KIND);
+  assert.ok(f.every(b => b.h24Done && b.h24 && b.clv24 != null && b.clv === b.clv24 && b.status === 'open'));
+  // same prices a day later: CLV at 24 h is the flag's EV
+  assert.ok(f.every(b => Math.abs(b.clv24 - b.evAtFlag) < 1e-3));
+  // 7 days with no Pinnacle read near the horizon: no 7 d grade, closed, then settled on Kalshi
+  t = FNOW + 7.2 * 86400e3; await tr.scan({ pins: [], pinReadAt: t, exch, books });
+  f = (await store.all()).filter(b => b.kind === o.FUTURES_KIND);
+  assert.ok(f.every(b => b.d7Missing && b.clv7 == null && b.status === 'closed'));
+  // a week on the same sides may flag again
+  await tr.scan(at());
+  assert.equal((await store.all()).filter(b => b.kind === o.FUTURES_KIND).length, 2 * n0);
+  await tr.settle();
+  f = (await store.all()).filter(b => b.kind === o.FUTURES_KIND && b.status === 'settled');
+  assert.equal(f.length, n0);
+  assert.ok(f.every(b => b.outcome === (b.buy === 'no' ? 'win' : 'loss')));
+  const s = o.summarizeFutures((await store.all()).filter(b => b.kind === o.FUTURES_KIND && b.venue === 'kalshi'));
+  assert.equal(s.graded, f.filter(b => b.venue === 'kalshi').length);
+  assert.ok(s.markets >= 1 && s.verdict === 'lead');
+  // the F1/golf record never counts season rows
+  assert.equal(o.kindOf(f[0]), `exchange-futures:${f[0].venue}`);
+});
+
+test('season futures verdict: 50 graded, t over markets, a negative 7 d mean holds a pass', () => {
+  const mk = (n, clv, markets, clv7 = 0.01) => Array.from({ length: n }, (_, i) => ({ kind: o.FUTURES_KIND, venue: 'kalshi', pinMarket: `m${i % markets}`, status: 'closed', clv24: clv + (i % 5) * 0.002, clv7 }));
+  assert.equal(o.summarizeFutures(mk(49, 0.05, 10)).verdict, 'lead');
+  assert.equal(o.summarizeFutures(mk(50, 0.05, 10)).verdict, 'passes the record');
+  assert.equal(o.summarizeFutures(mk(50, 0.05, 10, -0.01)).verdict, 'lead');
+  assert.equal(o.summarizeFutures(mk(50, -0.01, 10)).verdict, 'fail');
+  // fifty runners of ONE market is one market: no t, no pass
+  const one = o.summarizeFutures(mk(50, 0.05, 1));
+  assert.equal(one.markets, 1);
+  assert.equal(one.verdict, 'lead');
+});

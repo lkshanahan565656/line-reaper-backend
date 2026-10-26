@@ -18,7 +18,7 @@
 //           +3% or better over that fair (+2% on head-to-heads), the side's
 //           fair is 2% or more, 2 min to 7 days before Pinnacle's cutoff, and
 //           Pinnacle's market was read in the last 5 minutes. One flag per
-//           venue × market × side. Season futures are shown, never flagged.
+//           venue × market × side. Season futures have their own rule (below).
 //   close   Pinnacle's fair for the side at its last read <= 20 min before
 //           its cutoff (no such read: no close, not graded)
 //   result  Kalshi's settlement (a Polymarket US flag settles on the same
@@ -26,6 +26,21 @@
 //   verdict per sport (kind exchange-outrights:f1, :golf), 50 graded: CLV t>=2
 //           and results not 1.5 sd short of what the close expects → passes
 //           the record (then a raw re-check); CLV <= 0 or 1.5 sd short → fails
+//
+// SEASON FUTURES (kind exchange-futures:{venue}, checks/futures-2026-10-26/PREREGISTERED.md):
+// title, conference, division and make-the-playoffs markets in the NFL, NBA,
+// NHL, college football and college basketball. These settle months out, so
+// a flag is graded on Pinnacle's own fair 24 hours (primary) and 7 days later.
+//   fair    multiplicative, power and Shin no-vig; YES = the lowest, NO = 1 − the
+//           highest. Skipped over 40% margin or under 4 runners. Names must
+//           match both ways. Pinnacle open on the market and read in 5 min.
+//   flag    $200 fills fully, fee in, at +3% or better, fair 3%+; again for
+//           the same side only 7 days after its last flag
+//   grade   CLV = Pinnacle's fair at the read nearest 24 h (and 7 d) after the
+//           flag, within 2 h, over the $200 cost. 50 graded at 24 h a venue:
+//           mean > 0 with t >= 2 over MARKETS (one mean a futures market) and
+//           the 7 d mean not negative → passes the record; mean <= 0 → fails.
+//           Settlement on Kalshi is kept as an anecdote.
 //
 // Research, not a tip sheet: alerts off, no orders, no sizing. EXCHANGE_OUTRIGHTS=off stops it.
 
@@ -45,6 +60,9 @@ const MIN_N = 50;
 const fees = require('./fees');
 const KALSHI_RATE = fees.SCHEDULES.kalshi.taker.rate;
 const PMUS_RATE = fees.SCHEDULES.polymarketus.taker.rate;
+const FUTURES_KIND = 'exchange-futures';
+const SEASON = { edge: 0.03, tier: 200, minFair: 0.03, maxMargin: 0.4, minRunners: 4, horizons: [['h24', 24 * 3600e3], ['d7', 7 * 86400e3]], slackMs: 2 * 3600e3, reflagMs: 7 * 86400e3 };
+const SEASON_SPORTS = new Set(['nfl', 'nba', 'nhl', 'cfb', 'cbb']);
 
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
 const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
@@ -101,19 +119,46 @@ function devigShin(qs, target = 1) {
 }
 // one market's Pinnacle runners [{ name, american }] → [{ name, american, q, power, shin, fairYes, fairNo }]
 // target: the share of the field Pinnacle's listed runners cover
-function fairsOf(runners, target = 1) {
+// withMult (season futures): the multiplicative no-vig is a third method a price must beat
+function fairsOf(runners, target = 1, { withMult = false } = {}) {
   const qs = runners.map(r => toProb(r.american));
   const pw = devigPower(qs, target), sh = devigShin(qs, target);
   if (!pw || !sh) return null;
-  return runners.map((r, i) => ({ ...r, q: r4(qs[i]), power: r4(pw[i]), shin: r4(sh[i]),
-    fairYes: r4(Math.min(pw[i], sh[i])), fairNo: r4(1 - Math.max(pw[i], sh[i])) }));
+  const S = qs.reduce((a, b) => a + b, 0);
+  return runners.map((r, i) => {
+    const xs = withMult ? [pw[i], sh[i], qs[i] * target / S] : [pw[i], sh[i]];
+    return { ...r, q: r4(qs[i]), power: r4(pw[i]), shin: r4(sh[i]), ...(withMult ? { mult: r4(qs[i] * target / S) } : {}),
+      fairYes: r4(Math.min(...xs)), fairNo: r4(1 - Math.max(...xs)) };
+  });
+}
+// a two-way Yes/No price → the same three-method fair (season) or two (top N)
+function twoWayFair(yes, no, withMult = false) {
+  const q = [toProb(yes), toProb(no)];
+  const pw = devigPower(q, 1), sh = devigShin(q, 1);
+  if (!pw || !sh) return null;
+  const xs = withMult ? [pw[0], sh[0], q[0] / (q[0] + q[1])] : [pw[0], sh[0]];
+  return { power: r4(pw[0]), shin: r4(sh[0]), fairYes: r4(Math.min(...xs)), fairNo: r4(1 - Math.max(...xs)) };
+}
+// season futures: an exchange name and a Pinnacle name must pick each other
+// ("Mississippi" alone never takes "Mississippi St."); "St." reads as "State"
+const stName = n => String(n || '').replace(/\bSt\.?(?=\s|$)/g, 'State');
+function mutualRunner(list, name, names) {
+  const r = findRunner(list, stName(name), x => stName(x.name));
+  if (!r) return null;
+  // the exchange's name may be the shorter one ("Miami" for "Miami Heat"), never the longer
+  const ours = nameWords(stName(r.name));
+  if (!nameWords(stName(name)).every(w => ours.includes(w))) return null;
+  const back = findRunner(names.map(n => ({ name: n })), stName(r.name), x => stName(x.name));
+  return back && back.name === name ? r : null;
 }
 const overround = runners => r4(runners.reduce((s, r) => s + toProb(r.american), 0) - 1);
 
 // ── Pinnacle ──
 // Pinnacle sports read: 44 Formula 1, 17 Golf. Season futures sit in these leagues.
 const PIN_SPORTS = { f1: 44, golf: 17 };
-const PIN_SEASON_LEAGUES = { nfl: 889, nba: 487, nhl: 1456 };
+const PIN_SEASON_LEAGUES = { nfl: 889, nba: 487, nhl: 1456, cfb: 880, cbb: 493 };
+// the season specials a league read keeps: futures and the make-the-playoffs Yes/No
+const pinSeasonSpecial = m => m.type === 'special' && (/futures/i.test(m.special?.category || '') || /to make the playoffs$/i.test(m.special?.description || ''));
 // a futures special's description → { type, scope?, key? }
 function pinTypeOf(sport, desc, category) {
   const d = String(desc || '');
@@ -139,6 +184,10 @@ const SEASON_PIN = [
   ['nba', /NBA Champion$/i, 'nba-champ'], ['nba', /NBA Eastern Conference Winner/i, 'nba-east'], ['nba', /NBA Western Conference Winner/i, 'nba-west'],
   ['nba', /NBA Regular Season MVP/i, 'nba-mvp'], ['nfl', /Super Bowl|NFL Champion/i, 'nfl-champ'], ['nfl', /AFC (Champion|Winner)/i, 'nfl-afc'],
   ['nfl', /NFC (Champion|Winner)/i, 'nfl-nfc'], ['nfl', /NFL (Regular Season )?MVP/i, 'nfl-mvp'], ['nhl', /Stanley Cup|NHL Champion/i, 'nhl-champ'],
+  ['nfl', /^AFC Conference (Champion|Winner)/i, 'nfl-afc'], ['nfl', /^NFC Conference (Champion|Winner)/i, 'nfl-nfc'],
+  ...['afc', 'nfc'].flatMap(c => ['east', 'north', 'south', 'west'].map(d => ['nfl', new RegExp(`^${c} ${d} (Division )?Winner$`, 'i'), `nfl-${c}-${d}`])),
+  ['nhl', /NHL Eastern Conference Winner/i, 'nhl-east'], ['nhl', /NHL Western Conference Winner/i, 'nhl-west'],
+  ['cbb', /Men's NCAA Tournament Winner/i, 'cbb-champ'],
 ];
 
 // one league's matchups + straight markets → Pinnacle markets:
@@ -168,6 +217,19 @@ function parsePinLeague(sport, matchups = [], markets = [], now = Date.now()) {
         if (!tops.has(gk)) tops.set(gk, { ...base, id: `${league}|top${n}`, type: `top${n}`, title: `${league} Top ${n}`, runners: [], twoWay: true });
         const g = tops.get(gk);
         g.runners.push({ name: tm[1].trim(), american: yes, no, pinId: String(mu.id) });
+        if (Date.parse(g.cutoff) > cutoff) g.cutoff = base.cutoff;
+        continue;
+      }
+      // "Dallas Cowboys To Make the Playoffs" Yes/No → one two-way season market a league
+      const pm = SEASON_SPORTS.has(sport) && /^(.+?)\s+to Make the Playoffs$/i.exec(desc);
+      if (pm) {
+        const yesId = (mu.participants || []).find(p => /^yes$/i.test(p.name))?.id, noId = (mu.participants || []).find(p => /^no$/i.test(p.name))?.id;
+        const yes = mk.prices?.find(p => p.participantId === yesId)?.price, no = mk.prices?.find(p => p.participantId === noId)?.price;
+        if (yes == null || no == null) continue;
+        const gk = `${league}|playoffs`;
+        if (!tops.has(gk)) tops.set(gk, { ...base, id: `${league}|playoffs`, type: 'season', key: `${sport}-playoffs`, title: `${league} to make the playoffs`, runners: [], twoWay: true });
+        const g = tops.get(gk);
+        g.runners.push({ name: pm[1].trim(), american: yes, no, pinId: String(mu.id), cutoff: base.cutoff, limit });
         if (Date.parse(g.cutoff) > cutoff) g.cutoff = base.cutoff;
         continue;
       }
@@ -206,6 +268,9 @@ const KALSHI_SERIES = {
   KXSB: { sport: 'nfl', type: 'season', key: 'nfl-champ' }, KXNFLAFCCHAMP: { sport: 'nfl', type: 'season', key: 'nfl-afc' }, KXNFLNFCCHAMP: { sport: 'nfl', type: 'season', key: 'nfl-nfc' },
   KXNFLMVP: { sport: 'nfl', type: 'season', key: 'nfl-mvp' }, KXNBA: { sport: 'nba', type: 'season', key: 'nba-champ' }, KXNBAEAST: { sport: 'nba', type: 'season', key: 'nba-east' },
   KXNBAWEST: { sport: 'nba', type: 'season', key: 'nba-west' }, KXNBAMVP: { sport: 'nba', type: 'season', key: 'nba-mvp' }, KXNHL: { sport: 'nhl', type: 'season', key: 'nhl-champ' },
+  KXNHLEAST: { sport: 'nhl', type: 'season', key: 'nhl-east' }, KXNHLWEST: { sport: 'nhl', type: 'season', key: 'nhl-west' }, KXMARMAD: { sport: 'cbb', type: 'season', key: 'cbb-champ' },
+  KXNFLPLAYOFF: { sport: 'nfl', type: 'season', key: 'nfl-playoffs' }, KXNBAPLAYOFF: { sport: 'nba', type: 'season', key: 'nba-playoffs' }, KXNCAAFPLAYOFF: { sport: 'cfb', type: 'season', key: 'cfb-playoffs' },
+  ...Object.fromEntries(['afc', 'nfc'].flatMap(c => ['east', 'north', 'south', 'west'].map(d => [`KXNFL${c}${d}`.toUpperCase(), { sport: 'nfl', type: 'season', key: `nfl-${c}-${d}` }]))),
 };
 const KALSHI_SERIES_LIST = Object.keys(KALSHI_SERIES);
 const kalshiPrice = (m, f) => num(m[`${f}_dollars`] ?? (m[f] != null ? Number(m[f]) / 100 : null));
@@ -237,6 +302,33 @@ function pmusTypeOf(slug, sport) {
   if (/-w$/.test(s)) return { type: 'winner' };
   const t = /-top(\d+)$/.exec(s);
   return t ? { type: `top${t[1]}` } : null;
+}
+// Polymarket US season futures event slug → { sport, key } ("nba-eastconf-2027-05-19-w", "nfl-2027-01-10-playoffq")
+const PMUS_SEASON = [
+  [/^nba-champ-.*-w$/, 'nba', 'nba-champ'], [/^nba-eastconf-.*-w$/, 'nba', 'nba-east'], [/^nba-westconf-.*-w$/, 'nba', 'nba-west'], [/^nba-playoffs-.*-q$/, 'nba', 'nba-playoffs'],
+  [/^nhl-champ-.*-w$/, 'nhl', 'nhl-champ'], [/^nhl-eastconf-.*-w$/, 'nhl', 'nhl-east'], [/^nhl-westconf-.*-w$/, 'nhl', 'nhl-west'],
+  [/^nfl-champ-.*-w$/, 'nfl', 'nfl-champ'], [/^nfl-afcchamp-.*-w$/, 'nfl', 'nfl-afc'], [/^nfl-nfcchamp-.*-w$/, 'nfl', 'nfl-nfc'], [/^nfl-\d{4}-\d\d-\d\d-playoffq$/, 'nfl', 'nfl-playoffs'],
+  [/^nfl-(afc|nfc)(east|north|south|west)-.*-w$/, 'nfl', m => `nfl-${m[1]}-${m[2]}`], [/^cbb-champ-.*-w$/, 'cbb', 'cbb-champ'], [/^cfb-cfp-.*-playoffq$/, 'cfb', 'cfb-playoffs'],
+];
+const PMUS_SEASON_LEAGUES = ['nfl', 'nba', 'nhl', 'cbb', 'cfb'];
+function pmusSeasonOf(slug) {
+  for (const [re, sport, key] of PMUS_SEASON) { const m = re.exec(String(slug || '')); if (m) return { sport, key: typeof key === 'function' ? key(m) : key }; }
+  return null;
+}
+// one Polymarket US season futures event → an exchange market | null; a runner is named by its team (full name) when the market carries one
+function parsePmusSeasonEvent(e) {
+  const t = pmusSeasonOf(e?.slug);
+  if (!t || !Array.isArray(e.markets) || e.closed) return null;
+  const runners = [];
+  for (const m of e.markets) {
+    if (m.closed || (m.status && m.status !== 'MARKET_STATUS_OPEN')) continue;
+    const ask = amount(m.bestAskQuote), bid = amount(m.bestBidQuote), fr = num(m.feeCoefficient);
+    const team = (m.marketSides || []).find(x => x.long)?.team?.name;
+    runners.push({ name: String(team || m.titleShort || m.title || '').trim(), marketId: m.slug, yesAsk: inUnit(ask) ? ask : null, yesBid: inUnit(bid) ? bid : null,
+      noAsk: inUnit(bid) ? r4(1 - bid) : null, yesAskSize: null, noAskSize: null, feeRate: fr != null && fr >= 0 && fr < 1 ? fr : PMUS_RATE });
+  }
+  if (!runners.length) return null;
+  return { venue: 'polymarketus', id: e.slug, sport: t.sport, type: 'season', key: t.key, scope: null, title: e.title || e.slug, end: e.endDate || null, runners };
 }
 // one /v2/leagues/{slug}/events?type=futures event → an exchange market | null.
 // Buy YES at the best offer, NO at 1 − the best bid (no sizes here: a book read sizes it).
@@ -295,25 +387,27 @@ function boardOf({ pins = [], exch = [], books = new Map() } = {}) {
     const p = matchPin(x, pins);
     if (!p) continue;
     let fairs;
+    const season = x.type === 'season', names = x.runners.map(r => r.name);
+    const pinOf = (list, name) => (season ? mutualRunner(list, name, names) : findRunner(list, name));
     if (p.twoWay) {
-      fairs = p.runners.map(r => { const pw = devigPower([toProb(r.american), toProb(r.no)], 1), sh = devigShin([toProb(r.american), toProb(r.no)], 1);
-        return pw && sh ? { ...r, power: r4(pw[0]), shin: r4(sh[0]), fairYes: r4(Math.min(pw[0], sh[0])), fairNo: r4(1 - Math.max(pw[0], sh[0])) } : null; }).filter(Boolean);
+      fairs = p.runners.map(r => { const f = twoWayFair(r.american, r.no, season); return f ? { ...r, ...f } : null; }).filter(Boolean);
     } else {
+      if (season && (p.runners.length < SEASON.minRunners || overround(p.runners) > SEASON.maxMargin + 1e-9)) continue;
       // runners the exchange lists and Pinnacle doesn't: their exchange mid is held back
-      const missing = x.type === 'h2h' ? 0 : x.runners.filter(r => !findRunner(p.runners, r.name)).reduce((s, r) => {
+      const missing = x.type === 'h2h' ? 0 : x.runners.filter(r => !pinOf(p.runners, r.name)).reduce((s, r) => {
         // the mid where the spread is 10c or less, else the bid (an empty book's 0/100 says nothing)
         const mid = r.yesBid != null && r.yesAsk != null && r.yesAsk - r.yesBid <= 0.1 + 1e-9 ? (r.yesBid + r.yesAsk) / 2 : (r.yesBid || 0);
         return s + Math.max(0, mid);
       }, 0);
       if (missing > MAX_MISSING) continue;
-      fairs = fairsOf(p.runners, 1 - missing);
+      fairs = fairsOf(p.runners, 1 - missing, { withMult: season });
       if (!fairs) continue;
       fairs.missing = r4(missing);
     }
     const margin = p.twoWay ? null : overround(p.runners);
     const family = x.type === 'h2h' ? 'h2h' : x.type === 'season' ? 'season' : 'outright';
     for (const r of x.runners) {
-      const f = findRunner(fairs, r.name);
+      const f = pinOf(fairs, r.name);
       if (!f) continue;
       for (const buy of ['yes', 'no']) {
         const ask = buy === 'yes' ? r.yesAsk : r.noAsk;
@@ -326,9 +420,9 @@ function boardOf({ pins = [], exch = [], books = new Map() } = {}) {
         const topSize = buy === 'yes' ? r.yesAskSize : r.noAskSize;
         const asks = books.get(sideKey) || (topSize > 0 ? [[ask, topSize]] : null);
         const tiers = asks ? tiersOf(x.venue, asks, fair, r.feeRate) : null;
-        out.push({ sideKey, venue: x.venue, sport: x.sport, type: x.type, scope: x.scope, family, season: family === 'season', event: x.title, exchangeEvent: x.id,
+        out.push({ sideKey, venue: x.venue, sport: x.sport, type: x.type, key: x.key || null, scope: x.scope, family, season: family === 'season', event: x.title, exchangeEvent: x.id,
           runner: r.name, buy, marketId: r.marketId, pinId: f.pinId || p.id, pinMarket: p.id, pinRunner: f.name, pinAmerican: buy === 'yes' ? f.american : (f.no ?? null),
-          cutoff: p.cutoff, pinLimit: p.limit, margin, missing: fairs.missing ?? 0, fair, fairPower: buy === 'yes' ? f.power : r4(1 - f.power), fairShin: buy === 'yes' ? f.shin : r4(1 - f.shin),
+          cutoff: f.cutoff || p.cutoff, pinLimit: f.limit ?? p.limit, margin, missing: fairs.missing ?? 0, fair, fairPower: buy === 'yes' ? f.power : r4(1 - f.power), fairShin: buy === 'yes' ? f.shin : r4(1 - f.shin),
           price: ask, cost, ev: fees.edge(fair, cost), tiers, sized: books.has(sideKey) ? 'book' : asks ? 'top' : null, feeRate: r.feeRate });
       }
     }
@@ -337,7 +431,15 @@ function boardOf({ pins = [], exch = [], books = new Map() } = {}) {
 }
 
 // a board row worth a book read: the top price clears the edge before size is known
-const candidate = x => !x.season && x.fair >= MIN_FAIR && x.ev >= EDGE[x.family] - 1e-9;
+const candidate = x => (x.season ? x.fair >= SEASON.minFair && x.ev >= SEASON.edge - 1e-9 : x.fair >= MIN_FAIR && x.ev >= EDGE[x.family] - 1e-9);
+// the pre-registered season futures flag: $200 full at +3%, fair 3%+, Pinnacle open and read in the last 5 min
+function flagSeasonOf(x, t, pinReadAt) {
+  if (!x.season || !(x.fair >= SEASON.minFair)) return null;
+  if (!(t - pinReadAt <= PIN_FRESH_MS) || !(Date.parse(x.cutoff) > t)) return null;
+  const tier = x.tiers?.[SEASON.tier];
+  if (!tier || !tier.full || !(tier.ev >= SEASON.edge - 1e-9)) return null;
+  return { tier };
+}
 // the pre-registered flag for one board row at time t
 function flagOf(x, t, pinReadAt) {
   if (x.season || !(x.fair >= MIN_FAIR)) return null;
@@ -393,8 +495,27 @@ function summarizeBy(rows, keyOf, o) {
   for (const b of rows) { const k = keyOf(b); if (!m.has(k)) m.set(k, []); m.get(k).push(b); }
   return [...m].map(([key, xs]) => ({ key, ...summarize(xs, o) })).sort((a, b) => b.flagged - a.flagged);
 }
-// the judged kinds: one per sport
-const kindOf = b => `${KIND}:${b.sport}`;
+// the judged kinds: one per sport; season futures one per venue
+const kindOf = b => (b.kind === FUTURES_KIND ? `${FUTURES_KIND}:${b.venue}` : `${KIND}:${b.sport}`);
+
+// season futures flags → the record: CLV at 24 h (primary) and 7 d vs Pinnacle's own fair,
+// the t-stat over markets (one mean a futures market: its runners move together)
+function summarizeFutures(rows = [], { minN = MIN_N } = {}) {
+  const g = rows.filter(b => b.clv24 != null);
+  const byMarket = new Map();
+  for (const b of g) { const k = `${b.venue}|${b.pinMarket}`; if (!byMarket.has(k)) byMarket.set(k, []); byMarket.get(k).push(b.clv24); }
+  const all = stat(g.map(b => b.clv24)), mk = stat([...byMarket.values()].map(xs => xs.reduce((s, x) => s + x, 0) / xs.length));
+  const d7 = stat(rows.filter(b => b.clv7 != null).map(b => b.clv7));
+  const res = rows.filter(b => b.outcome === 'win' || b.outcome === 'loss');
+  let verdict = 'lead';
+  if (all.n >= minN) verdict = all.mean <= 0 || !(mk.mean > 0) ? 'fail' : mk.t >= 2 && !(d7.mean < 0) ? 'passes the record' : 'lead';
+  return {
+    flagged: rows.length, open: rows.filter(b => b.status === 'open').length, missing24: rows.filter(b => b.h24Missing).length,
+    graded: all.n, of: minN, markets: byMarket.size, clv: all.mean, clvT: all.t, marketClv: mk.mean, marketT: mk.t,
+    beat: g.length ? r4(g.filter(b => b.clv24 > 0).length / g.length) : null, graded7: d7.n, clv7: d7.mean, clv7T: d7.t,
+    evAtFlag: stat(rows.map(b => b.evAtFlag).filter(x => x != null)).mean, settled: res.length, won: res.filter(b => b.outcome === 'win').length, lost: res.filter(b => b.outcome === 'loss').length, verdict,
+  };
+}
 
 // ── the live record ──
 const KALSHI_API = 'https://api.elections.kalshi.com/trade-api/v2';
@@ -412,7 +533,7 @@ function pmusResultOf(event, slug) {
 // store: { init?, all, put }; http.get(url, cfg) axios-style.
 function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
   const loaded = (async () => { if (store.init) await store.init(); })();
-  const state = { scans: 0, lastScan: null, sides: 0, candidates: 0, flagged: 0, settled: 0, errors: [], board: [], boardAt: null, pinAt: null, counts: null };
+  const state = { scans: 0, lastScan: null, sides: 0, candidates: 0, flagged: 0, futuresFlagged: 0, settled: 0, errors: [], board: [], boardAt: null, pinAt: null, counts: null };
   const err = e => { state.errors = [String(e?.response?.status || e?.message || e).slice(0, 160), ...state.errors].slice(0, 5); };
 
   // one pass: input { pins, pinReadAt, exch, books } → the board, new flags, open flags followed and closed
@@ -430,8 +551,14 @@ function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
     const have = new Map(all.map(b => [b.id, b]));
     const changed = new Map();
     const fresh = t - pinReadAt <= PIN_FRESH_MS;
+    const lastSeason = new Map();
     for (const b of all) {
+      if (b.kind === FUTURES_KIND && !(lastSeason.get(b.sideKey) >= b.flaggedAt)) lastSeason.set(b.sideKey, b.flaggedAt);
       if (b.status !== 'open') continue;
+      if (b.kind === FUTURES_KIND) {
+        if (followSeason(b, bySide.get(b.sideKey) || byPin.get(`${b.pinMarket}|${b.pinRunner}|${b.buy}`), t, fresh ? pinReadAt : null)) changed.set(b.id, b);
+        continue;
+      }
       if (Date.parse(b.cutoff) <= t) { closeFlag(b); changed.set(b.id, b); continue; }
       const x = bySide.get(b.sideKey) || byPin.get(`${b.pinMarket}|${b.pinRunner}|${b.buy}`);
       if (!x || !fresh) continue;
@@ -441,6 +568,23 @@ function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
       if (moved || t - (b.savedAt || 0) >= 10 * 60e3) { b.savedAt = t; changed.set(b.id, b); }
     }
     for (const x of board) {
+      if (x.season) {
+        const last = lastSeason.get(x.sideKey);
+        if (last && t - Date.parse(last) < SEASON.reflagMs) continue;
+        const f = flagSeasonOf(x, t, pinReadAt);
+        if (!f) continue;
+        const at = new Date(t).toISOString();
+        const b = { id: `${x.sideKey}|${at}`, kind: FUTURES_KIND, sideKey: x.sideKey, venue: x.venue, sport: x.sport, type: x.type, key: x.key || null, family: 'season',
+          event: x.event, exchangeEvent: x.exchangeEvent, runner: x.runner, buy: x.buy, marketId: x.marketId,
+          kalshiTwin: x.venue === 'polymarketus' ? board.find(y => y.venue === 'kalshi' && y.pinMarket === x.pinMarket && y.pinRunner === x.pinRunner && y.buy === x.buy)?.marketId || null : null,
+          pinMarket: x.pinMarket, pinId: x.pinId, pinRunner: x.pinRunner, pinAmerican: x.pinAmerican, pinLimit: x.pinLimit, margin: x.margin, missing: x.missing,
+          cutoff: x.cutoff, flaggedAt: at, price: x.price, cost: f.tier.cost, contracts: f.tier.contracts, sized: x.sized, evAtFlag: f.tier.ev,
+          fairAtFlag: x.fair, fairPower: x.fairPower, fairShin: x.fairShin,
+          tiers: Object.fromEntries(TIERS.map(n => [n, x.tiers?.[n] ? { cost: x.tiers[n].cost, ev: x.tiers[n].ev, full: x.tiers[n].full } : null])),
+          fairLast: x.fair, fairLastAt: new Date(pinReadAt).toISOString(), status: 'open' };
+        lastSeason.set(x.sideKey, at); changed.set(b.id, b); state.futuresFlagged++;
+        continue;
+      }
       if (have.has(x.sideKey)) continue;
       const f = flagOf(x, t, pinReadAt);
       if (!f) continue;
@@ -459,6 +603,33 @@ function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
     return { sides: board.length, changed: changed.size };
   }
 
+  // an open season flag: follow Pinnacle's fair, keep the read nearest 24 h and 7 d
+  // after the flag (within 2 h, Pinnacle open), grade each once its window is past
+  function followSeason(b, x, t, readAt) {
+    let ch = false;
+    if (x && readAt != null && Date.parse(x.cutoff) > readAt) {
+      if (x.fair !== b.fairLast) { b.fairLast = x.fair; b.fairLastAt = new Date(readAt).toISOString(); ch = true; }
+      if (x.cutoff !== b.cutoff) { b.cutoff = x.cutoff; ch = true; }
+    }
+    const t0 = Date.parse(b.flaggedAt);
+    for (const [h, ms] of SEASON.horizons) {
+      if (b[`${h}Done`]) continue;
+      const target = t0 + ms;
+      if (x && readAt != null && Date.parse(x.cutoff) > readAt && Math.abs(readAt - target) <= SEASON.slackMs) {
+        const cur = b[h];
+        if (!cur || Math.abs(readAt - target) < Math.abs(Date.parse(cur.at) - target)) { b[h] = { fair: x.fair, at: new Date(readAt).toISOString() }; ch = true; }
+      }
+      if (t > target + SEASON.slackMs) {
+        b[`${h}Done`] = true; ch = true;
+        if (!b[h]) b[`${h}Missing`] = true;
+        else if (h === 'h24') { b.clv24 = fees.edge(b.h24.fair, b.cost); b.clv = b.clv24; }
+        else b.clv7 = fees.edge(b.d7.fair, b.cost);
+      }
+    }
+    if (b.d7Done && b.status === 'open') { b.status = 'closed'; b.nextTryAt = t; ch = true; }
+    return ch;
+  }
+
   function closeFlag(b) {
     b.status = 'closed';
     const age = Date.parse(b.cutoff) - Date.parse(b.fairLastAt || 0);
@@ -471,7 +642,7 @@ function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
   async function settle({ limit = 20, minAgeMs = 30 * 60e3 } = {}) {
     await loaded;
     const t = now();
-    const due = (await store.all()).filter(b => b.status === 'closed' && t - Date.parse(b.cutoff) >= minAgeMs && !(b.resultTries >= 200))
+    const due = (await store.all()).filter(b => b.status === 'closed' && (b.kind === FUTURES_KIND ? t >= (b.nextTryAt || 0) : t - Date.parse(b.cutoff) >= minAgeMs && !(b.resultTries >= 200)))
       .sort((a, b) => Date.parse(a.cutoff) - Date.parse(b.cutoff)).slice(0, limit);
     let n = 0;
     for (const b of due) {
@@ -488,9 +659,9 @@ function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
           res = pmusResultOf(r?.data?.event || r?.data, b.marketId);
         }
         if (res) { b.result = res; Object.assign(b, grade(b)); b.status = 'settled'; b.settledVia = ticker ? (b.venue === 'kalshi' ? 'kalshi' : 'kalshi twin') : 'polymarketus'; n++; }
-        else b.resultTries = (b.resultTries || 0) + 1;
+        else { b.resultTries = (b.resultTries || 0) + 1; if (b.kind === FUTURES_KIND) b.nextTryAt = t + 86400e3; }
         await store.put(b);
-      } catch (e) { err(e); b.resultTries = (b.resultTries || 0) + 1; }
+      } catch (e) { err(e); b.resultTries = (b.resultTries || 0) + 1; if (b.kind === FUTURES_KIND) b.nextTryAt = t + 86400e3; }
     }
     state.settled += n;
     return { due: due.length, settled: n };
@@ -510,7 +681,7 @@ function createOutrightsTracker({ store, http, now = () => Date.now() } = {}) {
 const PIN_API = 'https://guest.api.arcadia.pinnacle.com/0.1';
 function createOutrightsFeed({ http, key = '', now = () => Date.now(), kalshiBooks = 10, pmusBooks = 2, kalshiAsks, pmusParseBook, pmusAsks } = {}) {
   const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0', ...(key ? { 'X-API-Key': key } : {}) };
-  const st = { pinAt: 0, pins: [], kalshiAt: 0, kalshi: [], pmusAt: 0, pmus: [], pmLeagues: null, pmLeaguesAt: 0, books: new Map(), hold: {}, errors: [], reads: { pinnacle: 0, kalshi: 0, polymarketus: 0, books: 0 } };
+  const st = { pinAt: 0, pins: [], kalshiAt: 0, kalshi: [], pmusAt: 0, pmus: [], pmSeason: [], pmSeasonAt: 0, pmLeagues: null, pmLeaguesAt: 0, books: new Map(), hold: {}, errors: [], reads: { pinnacle: 0, kalshi: 0, polymarketus: 0, books: 0 } };
   const err = (w, e) => { st.errors = [`${w}: ${String(e?.response?.status || e?.message || e).slice(0, 120)}`, ...st.errors].slice(0, 8); };
   const get = async (venue, url, cfg = {}) => { st.reads[venue]++; return (await http.get(url, { timeout: 15000, ...cfg }))?.data; };
 
@@ -531,7 +702,7 @@ function createOutrightsFeed({ http, key = '', now = () => Date.now(), kalshiBoo
     for (const [sport, id] of Object.entries(PIN_SEASON_LEAGUES)) {
       try {
         const [mu, mk] = await Promise.all([get('pinnacle', `${PIN_API}/leagues/${id}/matchups`, { headers }), get('pinnacle', `${PIN_API}/leagues/${id}/markets/straight`, { headers })]);
-        pins.push(...parsePinLeague(sport, (mu || []).filter(m => m.type === 'special' && /futures/i.test(m.special?.category || '')), mk, t)); ok++;
+        pins.push(...parsePinLeague(sport, (mu || []).filter(pinSeasonSpecial), mk, t)); ok++;
       } catch (e) { err(`pinnacle ${sport}`, e); }
     }
     if (ok) { st.pins = pins; st.pinAt = t; }
@@ -563,7 +734,19 @@ function createOutrightsFeed({ http, key = '', now = () => Date.now(), kalshiBoo
           evs.push(...(d?.events || []).map(e => parsePmusEvent(e, l.sport)).filter(Boolean));
         } catch (e) { err(`polymarketus ${l.slug}`, e); if (e?.response?.status === 429) break; }
       }
-      st.pmus = evs; st.pmusAt = now();
+      // season futures move slowly and Polymarket US turns away extra reads: every 10 minutes
+      if (t - st.pmSeasonAt >= 10 * 60e3) {
+        const season = [];
+        let ok = 0;
+        for (const lg of PMUS_SEASON_LEAGUES) {
+          try {
+            const d = await get('polymarketus', `${PMUS_API}/v2/leagues/${lg}/events`, { params: { type: 'futures', limit: 100 } });
+            season.push(...(d?.events || []).map(parsePmusSeasonEvent).filter(Boolean)); ok++;
+          } catch (e) { err(`polymarketus ${lg}`, e); if (e?.response?.status === 429) break; }
+        }
+        if (ok) { st.pmSeason = season; st.pmSeasonAt = t; }
+      }
+      st.pmus = [...evs, ...st.pmSeason]; st.pmusAt = now();
     } catch (e) { err('polymarketus sports', e); }
   }
   // books for the candidates of a first board
@@ -597,9 +780,9 @@ function createOutrightsFeed({ http, key = '', now = () => Date.now(), kalshiBoo
 }
 
 module.exports = {
-  KIND, SPORTS, EDGE, FLAG_TIER, TIERS, MIN_FAIR, MAX_MISSING, PIN_FRESH_MS, CLOSE_MAX_AGE_MS, WINDOW_MIN, MIN_N, KALSHI_RATE, PMUS_RATE,
+  KIND, FUTURES_KIND, SEASON, SEASON_SPORTS, PMUS_SEASON_LEAGUES, SPORTS, EDGE, FLAG_TIER, TIERS, MIN_FAIR, MAX_MISSING, PIN_FRESH_MS, CLOSE_MAX_AGE_MS, WINDOW_MIN, MIN_N, KALSHI_RATE, PMUS_RATE,
   PIN_SPORTS, PIN_SEASON_LEAGUES, KALSHI_SERIES, KALSHI_SERIES_LIST,
-  nameWords, sameName, findRunner, devigPower, devigShin, fairsOf, overround, toProb,
+  nameWords, sameName, findRunner, mutualRunner, devigPower, devigShin, fairsOf, twoWayFair, overround, toProb, pmusSeasonOf, parsePmusSeasonEvent, flagSeasonOf, summarizeFutures,
   pinTypeOf, parsePinLeague, parseKalshiEvent, pmusTypeOf, parsePmusEvent, matchPin, tiersOf, boardOf, candidate, flagOf, grade, summarize, summarizeBy, kindOf,
   pmusResultOf, createOutrightsTracker, createOutrightsFeed,
 };
