@@ -1,0 +1,13 @@
+name: diag-pubapi
+on: { push: { branches: [diag-pubapi] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: node check.js > out.txt 2>&1 || true
+      - run: |
+          git config user.email d@x; git config user.name diag
+          git checkout --orphan diag-pubapi-out; git rm -rqf --cached . ; git add out.txt; git commit -qm out; git push -f origin diag-pubapi-out
