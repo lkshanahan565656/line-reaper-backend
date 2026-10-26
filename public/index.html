@@ -2263,7 +2263,7 @@ const LRShare = (() => {
   };
   // PROPS and ESPORTS: the sub-view, venue, sport or game, and their filters
   const PROPS_DEF = { view: 'lines', book: '', sport: 'ALL', q: '', market: '', sort: 'ev', show: 'all', shopShow: 'all', anchor: '' };
-  const PROPS_VIEWS = ['lines', 'cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb', 'injury'];
+  const PROPS_VIEWS = ['lines', 'cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb', 'injury', 'exprops'];
   const PROPS_BOOKS = ['underdog', 'prizepicks', 'sleeper', 'pick6'];
   const PROPS_SPORTS = ['ALL', 'SPORTS', 'ESPORTS', 'NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
   const PROPS_PICK = { sort: ['ev', 'gap', 'books', 'start', 'player'], show: ['all', 'multi', 'priced', 'sharp', 'gaps'], shopShow: ['all', 'middles', 'scorecard'] };
@@ -5670,7 +5670,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', anchor: '', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb', 'injury'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, nbmFar: false, cbmStat: '', cbm: null, cfmStat: '', cfm: null, cfmFar: false, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', cardSport: 'NFL', cardSort: 'edge', card: null, shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb', 'injury', 'exprops'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, nbmFar: false, cbmStat: '', cbm: null, cfmStat: '', cfm: null, cfmFar: false, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', cardSport: 'NFL', cardSort: 'edge', card: null, shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -5704,9 +5704,10 @@ async function loadPropsBoard() {
   if (pbState.view === 'model' || pbState.view === 'cbbmodel') return loadNbaModel(seq);
   document.getElementById('page-props')?.classList.toggle('cfbm', pbState.view === 'cfbmodel');
   if (pbState.view === 'cfbmodel') return loadCfbModel(seq);
-  document.getElementById('page-props')?.classList.toggle('mlbv', pbState.view === 'mlb' || pbState.view === 'injury');
+  document.getElementById('page-props')?.classList.toggle('mlbv', pbState.view === 'mlb' || pbState.view === 'injury' || pbState.view === 'exprops');
   if (pbState.view === 'mlb') return loadMlb(seq);
   if (pbState.view === 'injury') return loadInjury(seq);
+  if (pbState.view === 'exprops') return loadExprops(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
   // NO SHARP LINE: every leg no sharp book lists; most carry no price, so the Lines view drops its priced-only filter
   if (pbState.anchor) qs.set('anchor', pbState.anchor);
@@ -5768,7 +5769,7 @@ function pbChips() {
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
-  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cbbmodel', 'CBB MODEL', null, "pbSet('view','cbbmodel')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')"), chip(pbState.view === 'mlb', 'MLB VS PINNACLE', null, "pbSet('view','mlb')"), chip(pbState.view === 'injury', 'INJURY NEWS', null, "pbSet('view','injury')")].join('');
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cbbmodel', 'CBB MODEL', null, "pbSet('view','cbbmodel')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')"), chip(pbState.view === 'mlb', 'MLB VS PINNACLE', null, "pbSet('view','mlb')"), chip(pbState.view === 'injury', 'INJURY NEWS', null, "pbSet('view','injury')"), chip(pbState.view === 'exprops', 'EXCHANGE PROPS', null, "pbSet('view','exprops')")].join('');
   pbCoverage();
   pbAnchorBar();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
@@ -6581,6 +6582,81 @@ function renderInjury() {
   }).join('');
   el.innerHTML = note + rec + bt + feed + evTxt + sum + `<div class="pb-list">${body}</div>` + logTxt;
 }
+// ─── EXCHANGE PROPS (/api/exchange-props): Kalshi player-prop rungs on Pinnacle's line ──
+// Research: each Kalshi rung N+ where Pinnacle's main line is exactly N-0.5,
+// Pinnacle's no-vig fair against Kalshi's ask (take) and a resting bid under
+// fair (maker), fees in. Every league x stat x role is its own record, judged
+// at 50 graded. No alerts, no orders.
+const XPR_STAT = { rec_yds: 'receiving yards', receptions: 'receptions', rush_yds: 'rushing yards', pass_yds: 'passing yards', pass_tds: 'passing TDs', pass_comp: 'completions', pass_att: 'pass attempts', pass_ints: 'interceptions', rush_att: 'rush attempts', anytime_td: 'touchdowns', points: 'points', rebounds: 'rebounds', assists: 'assists', threes: 'threes', pra: 'pts+reb+ast', goals: 'goals', saves: 'saves', strikeouts: 'strikeouts', hits: 'hits', total_bases: 'total bases' };
+const xprStat = k => XPR_STAT[k] || String(k || '').replace(/_/g, ' ');
+const xprC = p => (p == null ? '—' : `${Math.round(p * 100)}¢`);
+const xprPct = x => (x == null ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`);
+async function loadExprops(seq) {
+  pbChips();
+  const lg = pbState.xpLeague || '';
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/exchange-props${lg ? `?league=${lg}` : ''}`);
+    if (!r.ok) { const j = await r.json().catch(() => null); const e = new Error(j?.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.data = d;
+    renderExprops();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO EXCHANGE PROPS</div><div class="empty-sub">Couldn't load the exchange props view. ${escAttr(lrErr(e))}</div></div>`;
+  }
+}
+function xprSet(k, v) { pbState[k] = v; if (k === 'xpLeague') { pbState.seq++; loadExprops(pbState.seq); } else renderExprops(); }
+function xprKindName(r) { return `${r.league} ${xprStat(r.mkey)}, ${r.role === 'maker' ? 'resting bid' : 'taken at the ask'}`; }
+function xprCard(title, r) {
+  if (!r) return '';
+  const res = r.results ? ` · ${r.profit >= 0 ? '+' : ''}${(+r.profit).toFixed(2)}u vs ${r.expected >= 0 ? '+' : ''}${(+r.expected).toFixed(2)}u the close expects` : '';
+  return `<div class="nflm-card"><div><b>${escAttr(title)}</b> <span class="nflm-tag">${escAttr(String(r.verdict || 'lead').toUpperCase())}</span></div>
+    <div>${r.graded} of ${r.of ?? 50} graded vs Pinnacle's close · CLV ${xprPct(r.clv)} (t ${r.clvT ?? '—'})${r.beatClose == null ? '' : ` · ${Math.round(r.beatClose * 100)}% beat it`}</div>
+    <div>Results ${r.won ?? 0}-${r.lost ?? 0}${res}</div>
+    ${r.posted != null ? `<div class="shp-dim">${r.posted} bids posted · ${r.decided ?? 0} decided · ${r.fillRate == null ? '—' : Math.round(r.fillRate * 100) + '%'} filled through the bid</div>` : ''}
+    ${r.medianUsdAtEdge != null ? `<div class="shp-dim">Median $${r.medianUsdAtEdge} on Kalshi's book at 2%+ when flagged (${r.sized} read)</div>` : r.medSize != null ? `<div class="shp-dim">Contracts traded at the price in the next 10 min (median): ${r.medSize}</div>` : ''}</div>`;
+}
+function renderExprops() {
+  const el = document.getElementById('pbContent'), d = pbState.data;
+  if (!el || !d || !Array.isArray(d.kinds)) return;
+  const mode = pbState.xpMode === 'record' ? 'record' : 'board';
+  const chip = (on, label, js) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${js}">${label}</button>`;
+  const lg = pbState.xpLeague || '';
+  const bar = `<div class="sport-bar" style="margin:0 0 10px;flex-wrap:wrap">${chip(mode === 'board', 'PRICES NOW', "xprSet('xpMode','board')")}${chip(mode === 'record', 'RECORD', "xprSet('xpMode','record')")}<span style="width:10px"></span>${mode === 'board' ? ['', 'NFL', 'NBA', 'NHL', 'MLB'].map(x => chip(lg === x, x || 'ALL', `xprSet('xpLeague','${x}')`)).join('') : ''}</div>`;
+  const byKind = new Map(d.kinds.map(k => [k.kind, k]));
+  const nOf = (role, x) => { const k = byKind.get(`kxprop-${role}-${String(x.league).toLowerCase()}-${x.mkey}`); return `${k ? k.graded : 0} of ${d.of ?? 50}`; };
+  const note = `<div class="mlb-note"><b>RESEARCH, NOT AN EDGE.</b> Kalshi lists player stat ladders: a rung "25+ points" is the same bet as Pinnacle's Over 24.5, and its NO is the Under. Where Pinnacle hangs its main line exactly on a rung, Pinnacle's no-vig chance is a fair for the rung. TAKE buys at Kalshi's ask with the 7% taker fee in; BID is a resting order 2%+ under fair with Kalshi's maker fee in, counted only when a trade prints through it. Each league, stat and way of playing keeps its own record, graded on Pinnacle's close and Kalshi's settlement, and none is an edge until 50 graded beat the close. No alerts; nothing here places an order.</div>`;
+  if (mode === 'record') {
+    const bt = d.backtest;
+    const live = d.kinds.length ? `<div class="nflm-cards">${d.kinds.map(k => xprCard(`Live, ${xprKindName(k)}`, k)).join('')}</div>` : `<div class="empty-wrap"><div class="empty-sub">No flag or bid has closed yet. A rung is flagged 2 min to 24 h before the start and graded after Kalshi settles it.</div></div>`;
+    const btCards = bt && Array.isArray(bt.kinds) ? `<div class="nflm-bt">${escAttr(bt.summary || '')}</div><div class="nflm-cards">${bt.kinds.map(k => xprCard(`Backtest, ${xprKindName(k)}`, k)).join('')}</div>` : '';
+    const q = String(pbState.q || '').trim().toLowerCase();
+    const rows = (d.recent || []).filter(r => !q || `${r.player} ${r.league} ${xprStat(r.mkey)}`.toLowerCase().includes(q)).map(r => `<tr data-vrow="1"><td>${escAttr(r.league)}</td><td>${escAttr(r.player)} ${escAttr(r.side === 'yes' ? 'over' : 'under')} ${r.line} ${escAttr(xprStat(r.mkey))}<div class="shp-dim">${r.role === 'maker' ? 'resting bid' : 'taken'} · ${pbFmtStart(r.start)}</div><div>${vLink('kalshi', { url: r.url, ticker: r.ticker, what: `${r.player} ${r.line} ${xprStat(r.mkey)}` })}</div></td><td>${afContract('kalshi', r.role === 'maker' ? { price: r.bid, fee: r.fee ?? null, maker: true } : { price: r.price }, xprC(r.role === 'maker' ? r.bid : r.price))}</td><td>${xprC(r.fairAtPost)}</td><td>${r.closeFair == null ? escAttr(r.closeMissing || '—') : xprC(r.closeFair)}</td><td>${escAttr(r.status === 'graded' ? r.outcome : r.status)}</td><td>${r.clv == null ? '—' : xprPct(r.clv)}</td></tr>`).join('');
+    el.innerHTML = note + bar + live + btCards + (rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Play</th><th>Price</th><th>Fair at flag</th><th>Pin close</th><th>Status</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '');
+    return;
+  }
+  if (!(d.kalshi && d.pinnacle)) { el.innerHTML = note + bar + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">PRICES OFF</div><div class="empty-sub">Kalshi's and Pinnacle's prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
+  const q = String(pbState.q || '').trim().toLowerCase();
+  const hit = x => !q || `${x.player} ${x.league} ${xprStat(x.mkey)}`.toLowerCase().includes(q);
+  const rows = (d.board || []).filter(hit);
+  if (!rows.length && q) { el.innerHTML = note + bar + `<div class="empty-wrap"><div class="empty-sub">No rung matches "${escAttr(pbState.q)}".</div></div>`; return; }
+  if (!rows.length) { el.innerHTML = note + bar + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO RUNGS ON PINNACLE'S LINE</div><div class="empty-sub">No Kalshi player-prop rung${lg ? ` in ${lg}` : ''} sits exactly on Pinnacle's main line for a game in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a few minutes after a restart)'}. Yardage rungs come in 10-yard steps, so most miss Pinnacle's number.</div></div>`; return; }
+  const side = (x, s) => {
+    const v = x.sides[s];
+    const take = v.ev == null ? '—' : `<span class="${v.ev >= (d.edge ?? 0.02) ? 'nflm-pos' : 'shp-dim'}">${xprPct(v.ev)}</span>`;
+    const bid = v.bid == null ? '<span class="shp-dim">no room</span>' : `${afContract('kalshi', { price: v.bid, fee: v.bidFee, maker: true }, xprC(v.bid))} <span class="nflm-pos">${xprPct(v.bidEdge)}</span>`;
+    return `<td>${xprC(v.fair)}</td><td>${v.ask == null ? '—' : afContract('kalshi', { price: v.ask }, xprC(v.ask))}</td><td>${take}<div class="shp-dim">${nOf('taker', x)}</div></td><td>${bid}<div class="shp-dim">${nOf('maker', x)}</div></td>`;
+  };
+  const body = rows.map(x => {
+    const best = x.sides.yes.ev >= x.sides.no.ev ? 'yes' : 'no', v = x.sides[best];
+    return `<tr class="${Math.max(x.sides.yes.ev ?? -1, x.sides.no.ev ?? -1) >= (d.edge ?? 0.02) ? 'nflm-gap' : ''}"${xpA({ event: x.event, league: x.league, start: x.start, market: xprStat(x.mkey), selection: `${x.player} ${best === 'yes' ? 'over' : 'under'} ${x.line}`, venue: 'kalshi', venueName: 'Kalshi', price: v.ask, fair: v.fair, ev: v.ev, readAt: d.boardAt, tag: `RESEARCH, NOT AN EDGE, ${nOf('taker', x)} graded` })} data-vrow="1">
+      <td>${escAttr(x.league)}</td><td><b>${escAttr(x.player)}</b> ${x.line} ${escAttr(xprStat(x.mkey))}<div class="shp-dim">YES = over · ${pbFmtStart(x.start)}</div><div>${vLink('kalshi', { url: x.url, ticker: x.ticker, what: `${x.player} ${x.line} ${xprStat(x.mkey)}` })}</div></td>${side(x, 'yes')}${side(x, 'no')}</tr>`;
+  }).join('');
+  const nTake = rows.filter(x => Math.max(x.sides.yes.ev ?? -1, x.sides.no.ev ?? -1) >= (d.edge ?? 0.02)).length;
+  el.innerHTML = note + bar + `<div class="shp-dim" style="margin-bottom:8px">${rows.length} rungs on Pinnacle's line · ${nTake} take 2%+ over fair after the fee · read ${escAttr(d.boardAt ? pbFmtStart(d.boardAt) : '—')}. Each TAKE and BID shows its own record's graded count.</div>
+    <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Rung</th><th>Fair over</th><th>YES ask</th><th>Take over</th><th>Bid over</th><th>Fair under</th><th>NO ask</th><th>Take under</th><th>Bid under</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
 function renderPropsBoard() {
   renderPkTray();
   pbChips();
@@ -6588,6 +6664,7 @@ function renderPropsBoard() {
   if (pbState.view === 'shop') return renderShop();
   if (pbState.view === 'mlb') return renderMlb();
   if (pbState.view === 'injury') return renderInjury();
+  if (pbState.view === 'exprops') return renderExprops();
   const el = document.getElementById('pbContent'), d = pbState.data;
   const rows = d?.rows || [];
   if (!rows.length) {
