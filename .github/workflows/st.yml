@@ -8,8 +8,8 @@ jobs:
     env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
     steps:
       - run: |
-          for i in $(seq 1 60); do v=$(curl -s "$SITE/api/health" | grep -o '"version":"[^"]*"' || true); echo "$v"; case "$v" in *3.187.0*) break;; esac; sleep 30; done
-          sleep 60
+          for i in $(seq 1 60); do v=$(curl -s "$SITE/api/health" | grep -o '"version":"[^"]*"' || true); echo "$v"; case "$v" in *3.187.1*) break;; esac; sleep 30; done
+          sleep 420
           mkdir -p /tmp/o
           curl -s "$SITE/api/uptime" > /tmp/o/uptime.json
           curl -s -o /tmp/o/status.html -w '%{http_code}\n' "$SITE/status" > /tmp/o/status-code.txt
