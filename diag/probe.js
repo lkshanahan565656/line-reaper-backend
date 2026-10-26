@@ -5,7 +5,8 @@ const strip = h => h.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g,
 (async () => {
   const t0 = Date.now();
   let v = '';
-  while (Date.now() - t0 < 40 * 60e3) { try { v = (await (await fetch(B + '/api/status')).json()).version; if (v === '3.199.0') break; } catch {} await sleep(30e3); }
+  for (const u of ['/api/status', '/api/ops', '/api/health']) { try { const r = await fetch(B + u); fs.writeFileSync('out/' + u.replace(/\//g, '_') + '.json', `${r.status} ${r.headers.get('date')}\n` + await r.text()); } catch (e) { fs.writeFileSync('out/' + u.replace(/\//g, '_') + '.json', 'ERR ' + e.message); } }
+  while (Date.now() - t0 < 1 * 60e3) { try { v = (await (await fetch(B + '/api/status')).json()).version; if (v === '3.199.0') break; } catch {} await sleep(30e3); }
   const st = await (await fetch(B + '/api/status')).json().catch(() => ({})); const out = [`version ${v} started ${st.startedAt || st.started || ''} uptime ${st.uptime || ''}`];
   for (const p of ['/leagues', '/nfl', '/nba', '/nhl', '/cfb', '/cbb', '/mlb', '/soccer', '/tennis', '/esports/lol', '/esports/cs2', '/esports/valorant', '/esports/dota2']) {
     try {
