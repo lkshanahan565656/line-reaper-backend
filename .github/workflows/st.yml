@@ -1,0 +1,19 @@
+name: diag-status
+on: { push: { branches: [diag-status] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - run: |
+          for i in $(seq 1 60); do v=$(curl -s "$SITE/api/health" | grep -o '"version":"[^"]*"' || true); echo "$v"; case "$v" in *3.187.0*) break;; esac; sleep 30; done
+          sleep 60
+          mkdir -p /tmp/o
+          curl -s "$SITE/api/uptime" > /tmp/o/uptime.json
+          curl -s -o /tmp/o/status.html -w '%{http_code}\n' "$SITE/status" > /tmp/o/status-code.txt
+          curl -s "$SITE/robots.txt" > /tmp/o/robots.txt
+          git init -q o2 && cd o2 && cp /tmp/o/* . && git config user.email d@x && git config user.name d
+          git checkout -q --orphan diag-status-out && git add -A && git commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-status-out
