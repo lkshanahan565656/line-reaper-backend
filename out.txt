@@ -1,0 +1,33 @@
+Mon Oct 26 19:20:06 UTC 2026
+19:20:07 pmus offset 0 kept 47
+19:20:11 pmus offset 2000 kept 1420
+19:20:16 pmus offset 4000 kept 1513
+19:20:16 pmus non-sports events 1541
+19:20:17 series 15402
+19:20:22 kalshi open pages 50 kept 6797
+19:20:27 kalshi open done pages 71 kept 7287
+19:20:39 kalshi settled pages 50 kept 8350
+19:20:52 kalshi settled pages 100 kept 8566
+19:21:04 kalshi settled pages 150 kept 8888
+19:21:17 kalshi settled pages 200 kept 9141
+19:21:30 kalshi settled pages 250 kept 9417
+19:21:42 kalshi settled pages 300 kept 9667
+19:21:55 kalshi settled pages 350 kept 9983
+19:22:07 kalshi settled pages 400 kept 10350
+19:22:20 kalshi settled pages 450 kept 10561
+19:22:33 kalshi settled pages 500 kept 10849
+19:22:44 kalshi settled pages 550 kept 11163
+19:22:57 kalshi settled pages 600 kept 11507
+19:23:10 kalshi settled pages 650 kept 11744
+19:23:21 kalshi settled pages 700 kept 12208
+19:23:34 kalshi settled pages 750 kept 12469
+19:23:47 kalshi settled pages 800 kept 12611
+19:23:54 kalshi settled done pages 829 kept 12611
+19:23:55 gamma closed false offset 0 kept 48
+19:24:04 gamma closed false offset 2000 kept 1447
+19:24:05 gamma closed false kept 1447
+19:24:05 gamma closed true offset 0 kept 1542
+19:24:11 gamma closed true offset 2000 kept 2035
+19:24:11 gamma closed true kept 2035
+19:24:12 done calls 1035 errs 8
+Mon Oct 26 19:24:12 UTC 2026
