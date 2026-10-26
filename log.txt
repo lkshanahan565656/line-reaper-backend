@@ -1,0 +1,6 @@
+games 94
+20 {"req":1304,"r429":107,"err":0,"events":60,"markets":785,"trades":422616}
+40 {"req":2519,"r429":212,"err":0,"events":120,"markets":1801,"trades":486868}
+60 {"req":3705,"r429":315,"err":0,"events":180,"markets":2793,"trades":553391}
+80 {"req":4867,"r429":418,"err":0,"events":240,"markets":3792,"trades":556405}
+done {"req":5656,"r429":487,"err":0,"events":280,"markets":4469,"trades":566074}
