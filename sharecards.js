@@ -280,6 +280,29 @@ ${txt(48, y + (proven.length === 1 ? 26 : 0), `${card.notProven} other kind${car
   return frame({ kind, label, readAt: card.at, origin, body, foot: 'Every graded flag is downloadable on RESULTS. Information, not betting advice. 21+.' });
 }
 
+// ── a bettor's own record (pubrecord.recordView): proven only where its app is ──
+function bettorCard(v, { origin = '' } = {}) {
+  const kind = `@${v.handle} · bettor record`;
+  if (!v || v.status !== 'live') return emptyCard({ kind, label: { text: 'UNPUBLISHED', tone: 'plain' }, title: 'This record was unpublished', why: 'Its slips were removed by the bettor.', readAt: v?.at, origin });
+  const p = v.pooled;
+  const top = (v.apps || []).find(a => a.label === 'proven') || (v.apps || [])[0] || null;
+  const label = v.proven.length ? { text: `PROVEN · ${v.proven[0]}`, tone: 'proven' } : { text: 'NOT PROVEN YET', tone: 'plain' };
+  const units = (u, shown) => (u == null ? '—' : `${u > 0 ? '+' : ''}${u.toFixed(1)}u${shown ? '' : '*'}`);
+  const body = `${txt(48, 168, `@${v.handle}`, { size: 44, weight: 700, max: W - 96 })}
+${txt(48, 206, "Pick'em slips logged before the start, graded against Pinnacle's close", { size: 20, fill: C.text2, max: W - 96 })}
+${tileRow(232, [
+    { name: 'Legs vs Pinnacle', value: `${p.pinN}/${v.rule?.graded || 50}` },
+    { name: 'CLV vs close', value: pct(p.clv), color: p.clv > 0 ? C.green2 : p.clv < 0 ? C.red : C.text },
+    { name: 'Legs hit', value: p.hitRate == null ? '—' : `${Math.round(p.hitRate * 100)}%`, note: p.be != null ? `needs ${(p.be * 100).toFixed(1)}%` : '' },
+    { name: 'Slips W-L', value: p.record },
+    { name: top && top.profitShown ? 'Profit' : 'Units', value: top && top.profitShown ? units(top.units, true) : units(p.units, false), color: C.text2, size: 30 },
+  ])}
+${txt(48, 390, top ? `${top.appName}: ${top.label}${top.why ? `. ${top.why}` : ''}` : 'No slips logged yet.', { size: 20, fill: top?.label === 'proven' ? C.green2 : C.text2, max: W - 96 })}
+${wrap(`${v.counts.onTime} slips on time, ${v.counts.late} late (logged after the start, not counted). * Units are 1u a slip at the app's table, not called a profit unless proven.`, 18, W - 96, 2).map((l, i) => txt(48, 432 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}
+${wrap('Rule: 50 legs at one app against Pinnacle\'s close at their own line, CLV t of 2 or more, never pooled.', 18, W - 96, 2).map((l, i) => txt(48, 500 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'Imported by the bettor, not placed through Line Reaper. Information, not betting advice. 21+.' });
+}
+
 // ── digest: one week (digest.build()) ──
 function digestCard(d, { origin = '', frozen = false } = {}) {
   const s = d.summary;
@@ -424,5 +447,5 @@ function safeOpen(to) {
   return '/app';
 }
 
-module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, digestCard, emptyCard, pickSeries, chartSvg,
+module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, digestCard, emptyCard, pickSeries, chartSvg,
   renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };
