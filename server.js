@@ -814,6 +814,14 @@ const altTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.
 const esBookTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel and BetRivers still on the number Pinnacle just left (stalelines.js): a record of their own
 const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evStale', createEvStoreFromEnv(process.env, { table: 'ev_stale_bets', fileVar: 'EV_STALE_TRACK_FILE', file: 'ev-stale-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// Kalshi moved, Polymarket US still at the old price (leadlag.js): a lead with
+// its own record, every flag logged, graded on Pinnacle's close and the ESPN
+// final, judged at 50 graded. Never an alert, never in Best Plays. LEAD_LAG=off stops it.
+const leadLag = require('./leadlag');
+const leadLagOn = () => !/^(off|0|false|no)$/i.test(String(process.env.LEAD_LAG || '').trim());
+const leadLagEngine = leadLag.createLeadLag();
+const leadLagTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evLeadLag', createEvStoreFromEnv(process.env, { table: 'ev_leadlag_bets', fileVar: 'EV_LEADLAG_TRACK_FILE', file: 'ev-leadlag-bets.json' })), minEv: -Infinity });
+let leadLagPending = [];
 // Sports pick'em props flagged off the books' consensus and Kalshi, graded on
 // ESPN box scores; tennis, UFC, NASCAR and soccer on ESPN's tennis and UFC
 // scoreboards and Kalshi's settled markets (extragrade.js, EXTRA_RESULTS=off stops them)
@@ -3434,6 +3442,8 @@ function* evScreenSteps() {
   evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   // Pinnacle's own price at each number rides along: the exchanges' rows close on it
   evTracker.recordBoard(rows, fairs, { costs, pinFairs }).catch(e => console.warn('EV tracker:', e.message));
+  // the lead-lag flags since the last screen, and every open one's closing prices
+  leadLagTracker.recordBoard(leadLagPending.splice(0), fairs, { costs, pinFairs }).catch(e => console.warn('Lead-lag tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     // DK Pick6 is a lead: on the board and in the record, never an alert
@@ -4879,7 +4889,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.192.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.196.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5025,6 +5035,8 @@ app.get('/api/ev/record', async (req, res) => {
   out.esports = await esBookTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   // stale lines: the books' rows here, the apps' legs from the props record
   out.stale = await staleTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
+  // Kalshi moved first, Polymarket US still at the old price: a lead, judged at 50 graded
+  out.leadLag = await leadLagTracker.summary({ sport: q.sport, book: q.book, sinceDays: parseFloat(q.days) || undefined });
   // the props record has no sport cut: with one asked for, the apps' lines stay off
   const kinds = q.sport ? {} : (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
   out.staleApps = q.sport ? null : { stale: kinds.stale || null, single: kinds['stale-single'] || null };
@@ -5200,7 +5212,7 @@ app.get('/api/ev/record/bets', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
   // ?book=fanduel&source=alt&sport=nhl narrow the list; ?before=<flaggedAt> pages back
   const q = k => (typeof req.query[k] === 'string' && req.query[k]) || undefined;
-  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : evTracker)
+  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : req.query.leadlag === '1' ? leadLagTracker : evTracker)
     .list({ status, limit: limit * 2, book: q('book'), source: q('source'), sport: q('sport'), before: q('before') })).filter(evRowOk(licenceOf(req))).slice(0, limit);
   res.json({ bets });
 });
@@ -6625,20 +6637,23 @@ async function gradeEvResults() {
   if (evResultsRunning) return;
   evResultsRunning = true;
   try {
-    const due = await evTracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
-    const done = [];
     let graded = 0, pending = 0, notFound = 0;
-    for (const b of due) {
-      const [away, home] = String(b.event || '').split(' @ ');
-      let sc = null;
-      try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
-      catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
-      if (sc?.pending) { pending++; continue; }
-      if (!sc) notFound++;
-      if (await evTracker.setResult(b, sc, { save: false })) graded++;
-      done.push(b);
+    // the main lines' record, then the lead-lag record's (same games, same grader)
+    for (const tracker of [evTracker, leadLagTracker]) {
+      const due = await tracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
+      const done = [];
+      for (const b of due) {
+        const [away, home] = String(b.event || '').split(' @ ');
+        let sc = null;
+        try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
+        catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
+        if (sc?.pending) { pending++; continue; }
+        if (!sc) notFound++;
+        if (await tracker.setResult(b, sc, { save: false })) graded++;
+        done.push(b);
+      }
+      if (done.length) await tracker.saveMany(done);
     }
-    if (done.length) await evTracker.saveMany(done);
     Object.assign(evResultsState, { runs: evResultsState.runs + 1, graded: evResultsState.graded + graded, lastGraded: graded, pending, notFound, lastRun: new Date().toISOString() });
   } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
   finally { evResultsRunning = false; }
@@ -6944,8 +6959,11 @@ function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } 
 }
 function observeOddsHistory() {
   if (!freeBooksState.gamesAt || Date.now() - Date.parse(freeBooksState.gamesAt) >= FREE_BOOKS_MAX_AGE_MS) return;
-  try { oddsHistory.observe(oddsScreenFor({ kalshiOk: true })); oddsScreenState.observedAt = new Date().toISOString(); }
-  catch (e) { oddsScreenState.errors = [e.message]; }
+  try {
+    const screen = oddsScreenFor({ kalshiOk: true });
+    oddsHistory.observe(screen); oddsScreenState.observedAt = new Date().toISOString();
+    if (leadLagOn()) leadLagPending.push(...leadLagEngine.observe(screen));
+  } catch (e) { oddsScreenState.errors = [e.message]; }
   lineBets.observe(freeBooksState.games || {}).catch(e => console.warn('Line bets: observe:', e.message));
 }
 // MY BETS' game-line bets (linebets.js): a moneyline, spread or total logged
@@ -8583,7 +8601,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.192.0',
+  version: '3.196.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8614,6 +8632,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
     paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'polymarketus')).length]).filter(([, n]) => n)) },
   pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
   evResults: evResultsState,
+  leadLag: { on: leadLagOn(), ...leadLagEngine.stats() },
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null, propsBoardBuild: { ...propsBoardStats, builtAt: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null }, evScreenBuild: { ...evScreenStats },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },

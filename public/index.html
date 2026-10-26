@@ -1374,6 +1374,20 @@ body.no-help .clv-info { display:none; }
 .ms-res button { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text2); border-radius:5px; font:700 9.5px 'JetBrains Mono',monospace; padding:2px 6px; }
 .ms-res button.on { color:#06110d; background:#94a3b8; }
 .ms-sg { color:#fbbf24; font-size:10.5px; margin-top:3px; }
+.ms-imp { border:1px solid var(--border); border-radius:8px; background:var(--card); margin:0 0 10px; overflow:hidden; }
+.ms-imp .ms-imp-head { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:rgba(0,0,0,.15); font-size:12px; }
+.ms-imp .ms-imp-head .ms-meta { color:var(--muted2); font:11px 'JetBrains Mono',monospace; }
+.ms-imp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:1px; background:var(--border); }
+.ms-imp-grid > div { background:var(--card); padding:7px 10px; min-width:0; }
+.ms-imp-grid .k { color:var(--muted2); font:10px 'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.04em; }
+.ms-imp-grid .v { font:700 13px 'JetBrains Mono',monospace; margin-top:2px; overflow-wrap:anywhere; }
+.ms-imp-grid small { display:block; color:var(--muted2); font-size:10px; overflow-wrap:anywhere; }
+.ms-imp details { padding:6px 12px 9px; font-size:11.5px; }
+.ms-imp summary { cursor:pointer; color:var(--text2); font:700 10.5px 'JetBrains Mono',monospace; padding:3px 0; }
+.ms-imp ol { margin:6px 0 0; padding-left:18px; color:var(--text2); }
+.ms-imp li { margin:3px 0; overflow-wrap:anywhere; }
+.ms-imp li small { display:block; color:var(--muted2); }
+.ms-imp .ms-imp-foot { padding:0 12px 9px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
 .mb-auto { display:inline-block; margin-left:6px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:#7dd3fc; border:1px solid rgba(125,211,252,.35); border-radius:4px; padding:1px 4px; vertical-align:1px; }
 .mb-act { display:flex; gap:6px; justify-content:flex-end; align-items:center; }
 .mb-quick { display:inline-flex; border:1px solid var(--border2); border-radius:6px; overflow:hidden; }
@@ -1967,15 +1981,15 @@ body::before { display:none !important; }
 <div class="page" id="page-myslips">
   <div class="mb-head">
     <div><div class="tl-title">MY SLIPS</div>
-      <div class="tl-blurb">Paste a pick'em slip, or import your Pikkit export, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.</div></div>
+      <div class="tl-blurb">Paste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.</div></div>
     <div class="mb-actions">
       <button class="mb-btn primary" onclick="msPasteToggle()">PASTE SLIPS</button>
-      <label class="mb-btn">IMPORT PIKKIT CSV<input type="file" accept=".csv,text/csv,text/plain" hidden onchange="msImport(this)"></label>
+      <label class="mb-btn" title="A CSV from Pikkit, Juice Reel or Bettor IQ, or the history file PrizePicks, Underdog or Sleeper gives you">IMPORT CSV<input type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden onchange="msImport(this)"></label>
     </div>
   </div>
   <div class="ms-paste" id="msPaste" style="display:none">
     <textarea id="msText" placeholder="PrizePicks $10 to win $60&#10;Josh Allen Over 245.5 Pass Yds&#10;Stefon Diggs Under 64.5 Rec Yds&#10;Bo Nix More 220.5 Pass Yards&#10;&#10;Underdog $5 flex&#10;Aaron Judge Under 1.5 Total Bases"></textarea>
-    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start. For CS2, LoL, Valorant and Dota kills, headshots and assists add the league (<code>CS</code>) and, if the player has two matches that day, the opponent: <code>Chr1zn Over 24.5 Maps 1-2 Kills CS (vs G2)</code>. Esports legs are priced on the books' consensus, since no sharp book posts player kills there.</div>
+    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start. For CS2, LoL, Valorant and Dota kills, headshots and assists add the league (<code>CS</code>) and, if the player has two matches that day, the opponent: <code>Chr1zn Over 24.5 Maps 1-2 Kills CS (vs G2)</code>. Esports legs are priced on the books' consensus, since no sharp book posts player kills there. You can also paste your history as copied from PrizePicks, Underdog or Sleeper (the player's name on one line, <code>More 245.5 Pass Yards</code> or <code>Higher 245.5 Passing Yards</code> under it), or rows copied from a tracker's spreadsheet with its header line: every import gets a summary below, with any line we couldn't read.</div>
     <div class="mb-actions"><button class="mb-btn primary" onclick="msPasteSave()">ADD SLIPS</button><button class="mb-btn" onclick="msPasteToggle(false)">CANCEL</button></div>
     <div class="mb-hint" id="msHint"></div>
   </div>
@@ -1984,6 +1998,7 @@ body::before { display:none !important; }
   <div id="msSlipTot"></div>
   <div class="mb-bar" id="msBar"></div>
   <div id="msTotals"></div>
+  <div id="msImports"></div>
   <div class="section-head" style="margin-top:18px">Slips</div>
   <div id="msList"></div>
   <div id="msPikkit"></div>
@@ -3666,8 +3681,8 @@ function renderArb(games) {
 // POST /api/slips/grade, which follows each one to the close the way the
 // props record follows our own plays. The parsing and math are slips.js on
 // the backend (tested there).
-const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades';
-const ms = { slips: [], grades: {}, tables: null, pikkit: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
+const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades', MS_IMP = 'lr_slip_imports';
+const ms = { slips: [], grades: {}, tables: null, pikkit: null, imports: [], impOpen: null, impDrop: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
 const MS_REASON = { before: 'no line history: the game started before this leg reached us', player: 'no line history: no app on our board lists this player near that time',
   market: 'no line history: that stat isn\'t on our board for this player', sport: 'can\'t grade: add the league to this leg (like NFL) so we know which box scores to read',
   game: 'can\'t grade: no finished game with this player in the week after the bet', queued: 'in the queue for the box scores, back on the next pass', match: 'no line history: this player has two matches on the board and nothing tells them apart. Add the opponent, like (vs G2)', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
@@ -3678,13 +3693,16 @@ function msReady() {
     try { ms.slips = JSON.parse(lsGet(MS_KEY) || '[]').filter(s => s && s.id && Array.isArray(s.legs)); } catch { ms.slips = []; }
     try { ms.grades = JSON.parse(lsGet(MS_GRADES) || '{}') || {}; } catch { ms.grades = {}; }
     try { ms.pikkit = JSON.parse(lsGet(MS_PK) || 'null'); } catch { ms.pikkit = null; }
+    try { ms.imports = (JSON.parse(lsGet(MS_IMP) || '[]') || []).filter(x => x && x.id); } catch { ms.imports = []; }
+    // a Pikkit file imported before imports were kept: its own summary card
+    if (ms.pikkit?.bets?.length && !ms.imports.some(x => x.format === 'pikkit')) ms.imports.push({ id: 'pikkit-legacy', legacy: true, at: ms.pikkit.at, file: ms.pikkit.file, format: 'pikkit', label: 'Pikkit CSV', kind: 'csv', rows: null, unread: [] });
     try { ms.tables = JSON.parse(lsGet('lr_slip_tables') || 'null'); } catch { ms.tables = null; }
     ms.ready = true;
     return true;
   })().catch(() => { ms.loading = null; return false; });
   return ms.loading;
 }
-function msSave() { lsSet(MS_KEY, JSON.stringify(ms.slips)); lsSet(MS_GRADES, JSON.stringify(ms.grades)); }
+function msSave() { lsSet(MS_KEY, JSON.stringify(ms.slips)); lsSet(MS_GRADES, JSON.stringify(ms.grades)); lsSet(MS_IMP, JSON.stringify(ms.imports)); }
 async function msOpen() {
   const el = document.getElementById('msList');
   if (!ms.ready && el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading your slips...</div></div>`;
@@ -3721,22 +3739,25 @@ function msPasteToggle(on) {
 }
 async function msPasteSave() {
   if (!(await msReady())) return;
-  const { slips, skipped } = LRSlips.parseSlips(document.getElementById('msText').value);
+  const text = document.getElementById('msText').value;
   const hint = document.getElementById('msHint');
-  if (!slips.length) { hint.textContent = 'No legs found. Write each leg as: Player Over 24.5 Stat'; return; }
-  ms.slips = [...slips, ...ms.slips];
-  msSave();
+  const r = LRSlips.importText(text, { name: 'pasted text' });
+  if (r.error) { hint.textContent = r.error; return; }
+  if (!r.slips.length && !r.bets.length) { hint.textContent = 'No legs found. Write each leg as: Player Over 24.5 Stat'; return; }
+  const added = msAddImport(r, 'pasted text');
   document.getElementById('msText').value = '';
-  hint.textContent = skipped.length ? `Added ${slips.length} slip${slips.length === 1 ? '' : 's'}. Skipped: ${skipped.slice(0, 3).join(' / ')}` : '';
-  if (!skipped.length) msPasteToggle(false);
-  showToast(`${slips.length} slip${slips.length === 1 ? '' : 's'} added, ${slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
+  hint.textContent = r.unread.length ? `Added ${added} slip${added === 1 ? '' : 's'}. Not read: ${r.unread.slice(0, 3).map(u => u.text).join(' / ')}${r.unread.length > 3 ? ` and ${r.unread.length - 3} more, listed under Imports` : ''}` : '';
+  if (!r.unread.length) msPasteToggle(false);
+  showToast(`${added} slip${added === 1 ? '' : 's'} added, ${r.slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
   renderMySlips();
   msGrade(true);
 }
 function msMark(id, r) {
   const sl = ms.slips.find(x => x.id === id);
   if (!sl) return;
-  sl.result = sl.result === r ? null : r;
+  // your own mark; tap it again and the result the file gave (if any) comes back
+  if (sl.resultBy === 'user' && sl.result === r) { sl.result = sl.fileResult ?? null; delete sl.resultBy; delete sl.fileResult; }
+  else { if (sl.resultBy !== 'user') sl.fileResult = sl.result ?? null; sl.result = r; sl.resultBy = 'user'; }
   msSave(); renderMySlips();
 }
 function msDelete(id) {
@@ -3744,24 +3765,104 @@ function msDelete(id) {
   ms.slips = ms.slips.filter(s => s.id !== id);
   msSave(); renderMySlips();
 }
-// Pikkit's export: every bet into the breakdown; the last week's bets with
-// legs we can read also become slips to grade (older ones predate our history)
+// An import, from a file or the paste box: the format from its header (or
+// its name), bets into the history breakdown, slips to grade. A CSV adds the
+// last week's bets as slips (older ones predate our line history; GRADE N
+// MORE FROM BOX SCORES adds them); copied text adds every slip in it.
 async function msImport(input) {
   const f = input.files?.[0];
   input.value = '';
   if (!f || !(await msReady())) return;
-  const r = LRSlips.parsePikkitCsv(await f.text());
+  const r = LRSlips.importText(await f.text(), { name: f.name });
   if (r.error) { showToast(r.error, 'error'); return; }
-  const bets = r.bets.map(b => ({ id: b.id, app: b.app, bookName: b.bookName, type: b.type, league: b.league, market: b.market, placedAt: b.placedAt, stake: b.stake, profit: b.profit, payout: b.payout, odds: b.odds, closeOdds: b.closeOdds, status: b.status, legs: b.legs }));
-  ms.pikkit = { at: new Date().toISOString(), file: f.name, bets, legsRead: bets.filter(b => b.legs.length).length };
-  lsSet(MS_PK, JSON.stringify(ms.pikkit));
-  const have = new Set(ms.slips.map(s => s.id));
-  const recent = bets.filter(b => b.legs.length && Date.parse(b.placedAt) > Date.now() - 7 * 86400e3 && !have.has(b.id)).map(LRSlips.slipFromPikkit);
-  ms.slips = [...recent, ...ms.slips];
-  msSave();
-  showToast(`${bets.length} Pikkit bets read${recent.length ? `, ${recent.length} recent slips added` : ''}`);
+  if (!r.slips.length && !r.bets.length) { showToast(`Nothing read from ${f.name}: ${r.unread.length} lines, none a bet`, 'error'); return; }
+  const added = msAddImport(r, f.name);
+  showToast(`${r.label}: ${r.bets.length || r.slips.length} bets read${added ? `, ${added} slips added` : ''}${r.unread.length ? `, ${r.unread.length} rows not read (listed under Imports)` : ''}`);
   renderMySlips();
   msGrade(true);
+}
+// keep the import's record (re-importing the same file replaces it) and add its slips
+const msCompactBet = b => ({ id: b.id, app: b.app, bookName: b.bookName, type: b.type, league: b.league, market: b.market, placedAt: b.placedAt, stake: b.stake, profit: b.profit, payout: b.payout, odds: b.odds, closeOdds: b.closeOdds, status: b.status, legs: b.legs, ...(b.flex ? { flex: true } : {}), source: b.source, format: b.format });
+function msAddImport(r, file) {
+  const prev = ms.imports.find(x => x.format === r.format && x.file === file && file !== 'pasted text');
+  const id = prev?.id && !prev.legacy ? prev.id : r.id;
+  const bets = r.bets.map(msCompactBet);
+  const rec = { id, at: new Date().toISOString(), file, format: r.format, label: r.label, kind: r.kind, rows: r.rows, unread: r.unread.slice(0, 500), ...(bets.length ? { bets } : {}) };
+  ms.imports = [rec, ...ms.imports.filter(x => x !== prev && !(r.format === 'pikkit' && x.legacy))].slice(0, 20);
+  // the latest tracker file is the history breakdown (lr_pikkit, as before)
+  if (bets.length) { ms.pikkit = { at: rec.at, file, label: r.label, format: r.format, bets, legsRead: bets.filter(b => b.legs.length).length }; lsSet(MS_PK, JSON.stringify(ms.pikkit)); }
+  const have = new Set(ms.slips.map(s => s.id));
+  const fresh = r.kind === 'csv'
+    ? r.bets.filter(b => b.legs.length && Date.parse(b.placedAt) > Date.now() - 7 * 86400e3 && !have.has(b.id)).map(b => LRSlips.slipFromBet(b, id))
+    : r.slips.filter(sl => !have.has(sl.id)).map(sl => ({ ...sl, importId: id }));
+  ms.slips = [...fresh, ...ms.slips];
+  msSave();
+  return fresh.length;
+}
+// this import's slips: by its id (and a Pikkit file from before imports were kept)
+const msImpSlips = imp => ms.slips.filter(s => s.importId === imp.id || (imp.legacy && s.source === 'pikkit' && !s.importId));
+// every bet of an import with legs we can read becomes a slip, graded from the box scores
+function msImpAll(id) {
+  const imp = ms.imports.find(x => x.id === id);
+  const bets = imp?.legacy ? ms.pikkit?.bets : imp?.bets;
+  if (!bets?.length) return;
+  const have = new Set(ms.slips.map(x => x.id));
+  const add = bets.filter(b => b.legs?.length && !have.has(b.id)).map(b => LRSlips.slipFromBet(b, imp.legacy ? null : imp.id));
+  if (!add.length) return;
+  ms.slips = [...add, ...ms.slips];
+  msSave();
+  showToast(`${add.length} bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
+  renderMySlips();
+  msGrade(true);
+}
+// remove an import and its slips: the first tap asks, the second removes
+function msImpDrop(id) {
+  if (ms.impDrop !== id) { ms.impDrop = id; renderMySlips(); return; }
+  const imp = ms.imports.find(x => x.id === id);
+  if (!imp) return;
+  const gone = new Set(msImpSlips(imp).map(s => s.id));
+  ms.slips = ms.slips.filter(s => !gone.has(s.id));
+  ms.imports = ms.imports.filter(x => x.id !== id);
+  if (ms.pikkit && imp.bets?.length && ms.pikkit.file === imp.file && ms.pikkit.format === imp.format) { ms.pikkit = null; lsSet(MS_PK, 'null'); }
+  if (imp.legacy) { ms.pikkit = null; lsSet(MS_PK, 'null'); }
+  ms.impDrop = null;
+  msSave();
+  showToast(`Import removed with its ${gone.size} slips`);
+  renderMySlips();
+}
+function msRenderImports() {
+  const el = document.getElementById('msImports');
+  if (!el) return;
+  if (!ms.imports.length) { el.innerHTML = ''; return; }
+  const L = LRSlips;
+  const unit = mybUnit();
+  const cell = (k, v, sub, cls = '') => `<div><div class="k">${k}</div><div class="v ${cls}">${v}</div>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const cards = ms.imports.map(imp => {
+    const views = msImpSlips(imp).map(x => L.slipView(x, ms.grades, ms.tables));
+    const bets = imp.legacy ? ms.pikkit?.bets || [] : imp.bets || [];
+    const t = L.importSummary({ ...imp, bets }, views, { unitUsd: unit.set ? unit.unit : null, reasons: MS_REASON });
+    const left = bets.filter(b => b.legs?.length && !views.some(v => v.id === b.id)).length;
+    const when = new Date(imp.at);
+    const um = t.unmatched;
+    const head = `<div class="ms-imp-head"><div><b>${escAttr(imp.label || imp.format)}</b><div class="ms-meta">${escAttr(imp.file || '')}${isFinite(when) ? ` · imported ${when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}${t.rows != null ? ` · ${t.rows} ${imp.kind === 'csv' ? 'rows' : 'lines'}` : ''}</div></div>
+      <button class="mb-btn" onclick="msImpDrop('${escAttr(imp.id)}')">${ms.impDrop === imp.id ? 'TAP AGAIN TO REMOVE' : 'REMOVE'}</button></div>`;
+    const grid = `<div class="ms-imp-grid">
+      ${cell('Bets read', `${t.bets}`, `${t.slips} slips, ${t.legs} legs to grade`)}
+      ${cell('Legs matched', t.checked ? `${t.matched}/${t.checked}` : '—', t.waiting ? `${t.waiting} still checking` : t.noHistory ? `${t.noHistory} no line history` : t.legs ? 'every leg checked' : 'no legs')}
+      ${cell('With a close', `${t.withClose}`, t.pinN ? `${t.pinN} with Pinnacle's own` : 'legs read before the start')}
+      ${cell('Leg CLV', msPct(t.closeEv), t.withClose ? `beat ${msShare(t.beatShare)} of ${t.withClose}` : 'no closes yet', msCls(t.closeEv))}
+      ${cell('vs Pinnacle', msPct(t.pinEv), t.pinN ? `beat ${msShare(t.pinBeatShare)} of ${t.pinN}` : 'no Pinnacle close', msCls(t.pinEv))}
+      ${cell('Legs hit', msShare(t.hitRate), t.beN ? `vs ${(t.be * 100).toFixed(1)}% break-even, ${t.beN} graded` : t.graded ? `${t.graded} graded` : 'no results yet', t.overBe == null ? '' : msCls(t.overBe))}
+      ${cell('Record', t.won + t.lost + t.push ? t.record : '—', t.recordBy === 'file' ? `the file's own results` : 'slips settled from box scores')}
+      ${cell('Units', t.units != null ? `${t.units > 0 ? '+' : ''}${t.units.toFixed(2)}u` : '—', t.settled ? `${mybUsd(t.profit, true)} on ${mybUsd(t.staked)}, ROI ${mybPct(t.roi)}` : unit.set ? 'no stakes settled' : 'set your unit in MY BETS', msCls(t.units ?? t.profit))}
+    </div>`;
+    const list = um.length ? `<details${ms.impOpen === imp.id ? ' open' : ''} ontoggle="if(this.open)ms.impOpen='${escAttr(imp.id)}';else if(ms.impOpen==='${escAttr(imp.id)}')ms.impOpen=null"><summary>${um.length} NOT MATCHED${um.some(u => u.stage === 'read') ? ` (${um.filter(u => u.stage === 'read').length} not read)` : ''}</summary><ol>${
+      um.slice(0, 200).map(u => `<li>${u.row != null ? `<b>${imp.kind === 'csv' ? 'Row' : 'Line'} ${u.row}:</b> ` : ''}${escAttr(u.text)}<small>${escAttr(u.why)}</small></li>`).join('')}</ol>${um.length > 200 ? `<div class="tl-note">and ${um.length - 200} more</div>` : ''}</details>` : '<div class="tl-note" style="margin:6px 12px 8px">Every row read and every leg matched.</div>';
+    // the latest tracker file's own button sits under its history below
+    const foot = left && !(ms.pikkit?.file === imp.file && (ms.pikkit?.format || 'pikkit') === imp.format) ? `<div class="ms-imp-foot"><button class="mb-btn" onclick="msImpAll('${escAttr(imp.id)}')">GRADE ${left} MORE FROM BOX SCORES</button><span class="tl-note" style="margin:0">older bets, from before the last week</span></div>` : '';
+    return `<div class="ms-imp">${head}${grid}${list}${foot}</div>`;
+  }).join('');
+  el.innerHTML = `<div class="section-head" style="margin-top:18px">Imports</div>${cards}<div class="tl-note">Legs matched: found on our board or in the box scores. A close needs the leg read before the start, so bets older than our line history have results but no close. CLV is against the app's break-even; vs Pinnacle against Pinnacle's own last number. Record and units are the file's own results when it has them.</div>`;
 }
 
 const msPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
@@ -3803,6 +3904,7 @@ function renderMySlips() {
   } else {
     list.innerHTML = views.slice(0, ms.shown).map(msSlipHtml).join('') + (views.length > ms.shown ? `<button class="mb-btn mb-moreall" onclick="ms.shown+=30;renderMySlips()">SHOW MORE (${views.length - ms.shown})</button>` : '');
   }
+  msRenderImports();
   msRenderPikkit();
 }
 function msSlipHtml(v) {
@@ -3814,12 +3916,12 @@ function msSlipHtml(v) {
   // the user's own result, for legs we can't grade (no line history) or a payout the app changed
   const mark = `<span class="ms-res" title="Mark the result yourself (tap again to undo)">${[['win', 'W'], ['loss', 'L'], ['void', 'VOID']].map(([r, l]) => `<button class="${v.by === 'user' && v.result === r ? 'on' : ''}" onclick="msMark('${escAttr(v.id)}','${r}')">${l}</button>`).join('')}</span>`;
   // a result Pikkit (or you) gave, against what our own box scores say
-  const who = v.by === 'pikkit' ? 'Result from Pikkit' : v.by === 'user' ? 'Result marked by you' : v.by === 'legs' ? 'Result from our box scores' : '';
+  const who = v.by === 'pikkit' ? 'Result from Pikkit' : v.by === 'import' ? `Result from ${escAttr(LRSlips.FORMATS[v.format] || 'your file')}` : v.by === 'user' ? 'Result marked by you' : v.by === 'legs' ? 'Result from our box scores' : '';
   const chk = v.agree === true ? '<span class="pos"> · our box scores agree</span>' : v.agree === false ? `<span class="neg"> · our box scores say ${escAttr(v.ours.result === 'paid' ? `paid ${v.ours.multiple}x` : v.ours.result)}</span>` : '';
   const sg = (who ? `<div class="ms-meta">${who}${chk}${v.be ? ` · break-even ${(v.be * 100).toFixed(1)}% a leg` : ''}</div>` : '') + (v.reprice ? `<div class="ms-sg">Linked picks from one game: payout taken as our repriced estimate ${v.reprice.mult}x (standard ${v.reprice.standard}x). Paste the slip with the app's real payout (to win $X) if it differs. Slip CLV prices legs independently, a rough guide here.</div>`
     : v.sameGame > 1 ? `<div class="ms-sg">${v.sameGame} legs from one game: the slip CLV (legs priced independently) is a rough guide and the app may pay less than its table.</div>` : '');
   const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
-  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
+  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'import' ? ` · from ${escAttr(LRSlips.FORMATS[v.format] || 'an import')}` : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
   const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
   return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l, v)).join('')}</div>`;
 }
@@ -3848,20 +3950,22 @@ function msRenderPikkit() {
   const el = document.getElementById('msPikkit');
   const pk = ms.pikkit;
   if (!pk?.bets?.length) { el.innerHTML = ''; return; }
+  const who = pk.format && pk.format !== 'pikkit' ? (LRSlips.FORMATS[pk.format] || 'your tracker') : 'Pikkit';
   const rows = LRSlips.pikkitBreakdown(pk.bets, ms.pkBy);
   const have = new Set(ms.slips.map(x => x.id));
   const left = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).length;
-  const pv = ms.slips.filter(x => x.source === 'pikkit').map(x => LRSlips.slipView(x, ms.grades, ms.tables));
+  const ids = new Set(pk.bets.map(b => b.id));
+  const pv = ms.slips.filter(x => ids.has(x.id)).map(x => LRSlips.slipView(x, ms.grades, ms.tables));
   const chk = pv.filter(v => v.agree != null), agreed = chk.filter(v => v.agree).length;
-  const regrade = `<div class="tl-note" style="margin-top:6px">${pv.length ? `${pv.length} Pikkit bets are graded here leg by leg from the box scores${chk.length ? `: on the ${chk.length} we could settle, our result agrees with Pikkit's on <b>${agreed}</b>${chk.length - agreed ? ` and differs on <b class="neg">${chk.length - agreed}</b>` : ''}` : ''}.` : 'None of these bets is graded leg by leg yet.'}${left ? ` <button class="mb-btn" onclick="msPikkitAll()">GRADE ${left} MORE FROM BOX SCORES</button>` : ''}</div>`;
+  const regrade = `<div class="tl-note" style="margin-top:6px">${pv.length ? `${pv.length} ${escAttr(who)} bets are graded here leg by leg from the box scores${chk.length ? `: on the ${chk.length} we could settle, our result agrees with ${escAttr(who)}'s on <b>${agreed}</b>${chk.length - agreed ? ` and differs on <b class="neg">${chk.length - agreed}</b>` : ''}` : ''}.` : 'None of these bets is graded leg by leg yet.'}${left ? ` <button class="mb-btn" onclick="msPikkitAll()">GRADE ${left} MORE FROM BOX SCORES</button>` : ''}</div>`;
   const seg = `<div class="mb-seg">${[['app', 'App'], ['league', 'League'], ['market', 'Market'], ['type', 'Bet type'], ['month', 'Month']].map(([v, l]) => `<button class="${ms.pkBy === v ? 'on' : ''}" onclick="msSet('pkBy','${v}')">${l}</button>`).join('')}</div>`;
-  el.innerHTML = `<div class="section-head" style="margin-top:22px">Your Pikkit history</div>
-    <div class="tl-note" style="margin-top:0">${pk.bets.length} bets from ${escAttr(pk.file)}, Pikkit's own profit and results. Legs read on ${pk.legsRead} of them. Bets from before our line history can't be graded against the close; this is what they tell us about where you win.</div>
+  el.innerHTML = `<div class="section-head" style="margin-top:22px">Your ${escAttr(who)} history</div>
+    <div class="tl-note" style="margin-top:0">${pk.bets.length} bets from ${escAttr(pk.file)}, ${escAttr(who)}'s own profit and results. Legs read on ${pk.legsRead} of them. Bets from before our line history can't be graded against the close; this is what they tell us about where you win.</div>
     ${regrade}
     <div class="mb-bar" style="margin-top:8px">${seg}</div>
     <div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Market', type: 'Bet type', month: 'Month' }[ms.pkBy]}</th><th class="r">Bets</th><th class="r">W-L-P</th><th class="r">Won</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">ROI</th><th class="r">Beat close</th><th class="r">CLV</th></tr></thead><tbody>${
       rows.map(r => `<tr><td>${escAttr(r.key)}</td><td class="r">${r.bets}</td><td class="r">${r.won}-${r.lost}-${r.push}</td><td class="r">${msShare(r.winRate)}</td><td class="r">${mybUsd(r.staked)}</td><td class="r ${msCls(r.profit)}">${mybUsd(r.profit, true)}</td><td class="r ${msCls(r.roi)}">${mybPct(r.roi)}</td><td class="r">${r.clvN ? `${msShare(r.beatShare)} <small>of ${r.clvN}</small>` : '—'}</td><td class="r ${msCls(r.clv)}">${mybPct(r.clv)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="tl-note">Beat close and CLV use the closing line Pikkit kept for each bet (the book's own close, not Pinnacle's). Bets you log here from now on are graded on the sharp close; legs of games from the last two weeks also get Pinnacle's close where our board saw the prop.</div>`;
+    <div class="tl-note">Beat close and CLV use the closing line ${escAttr(who)} kept for each bet, where the file has one (the book's own close, not Pinnacle's). Bets you log here from now on are graded on the sharp close; legs of games from the last two weeks also get Pinnacle's close where our board saw the prop.</div>`;
 }
 // every Pikkit bet with legs we can read becomes a slip, graded from the box
 // scores (the import adds only the last week's on its own)
@@ -3869,11 +3973,12 @@ function msPikkitAll() {
   const pk = ms.pikkit;
   if (!pk?.bets?.length) return;
   const have = new Set(ms.slips.map(x => x.id));
-  const add = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).map(LRSlips.slipFromPikkit);
+  const imp = ms.imports.find(x => x.file === pk.file && x.format === (pk.format || 'pikkit') && !x.legacy);
+  const add = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).map(b => LRSlips.slipFromBet(b, imp?.id || null));
   if (!add.length) return;
   ms.slips = [...add, ...ms.slips];
   msSave();
-  showToast(`${add.length} Pikkit bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
+  showToast(`${add.length} bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
   renderMySlips();
   msGrade(true);
 }
@@ -5277,7 +5382,7 @@ const TOUR_STEPS = [
   { tab: 'props', target: () => tourTabBtn('props'), title: 'PROPS',
     text: () => `<p>PrizePicks, Underdog, Sleeper and DK Pick6 lines next to the sharp number where a book prices the prop, with every slip\'s payout and break-even. The NBA, CFB and CBB model tabs are tagged <b>model, not an edge</b>.</p>${tourInMore('props') ? '<p>It sits under <b>MORE</b>; CUSTOMIZE can pin it to the bar.</p>' : ''}` },
   { tab: 'betlog', target: () => tourTabBtn('betlog'), title: 'BET TRACKER AND MY SLIPS',
-    text: '<p>Tap <b>LOG</b> on an odds screen row, or ADD BET here, and MY BETS grades your closing line value for you.</p><p><b>MY SLIPS</b> grades pick\'em slips leg by leg from the box scores, and takes a Pikkit CSV. Your bets stay on this device unless you sign in.</p>' },
+    text: '<p>Tap <b>LOG</b> on an odds screen row, or ADD BET here, and MY BETS grades your closing line value for you.</p><p><b>MY SLIPS</b> grades pick\'em slips leg by leg from the box scores, and takes a CSV from Pikkit, Juice Reel or Bettor IQ, or your PrizePicks, Underdog or Sleeper history. Your bets stay on this device unless you sign in.</p>' },
   { tab: 'results', target: () => tourTabBtn('results'), title: 'RESULTS',
     text: '<p>Every flag the app makes, graded against Pinnacle\'s close, losers included. A kind of bet is called proven only after 50 graded games at one venue with its CLV well clear of chance; the rest say promising, early or avoid.</p><p>Check here before you trust any tool.</p>' },
   { tab: null, target: () => document.querySelector('.tab-row .tab-end'), title: 'PUSH ALERTS',
