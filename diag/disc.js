@@ -4,7 +4,7 @@ const fs = require('fs'), zlib = require('zlib');
 const K = 'https://api.elections.kalshi.com/trade-api/v2';
 const G = 'https://gamma-api.polymarket.com';
 const U = 'https://gateway.polymarket.us';
-const DAYS = Number(process.env.DAYS || 60);
+const DAYS = Number(process.env.DAYS || 30);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 let calls = 0, errs = 0;
@@ -28,11 +28,24 @@ const cut = s => (s == null ? s : String(s).slice(0, 1500));
   fs.mkdirSync('data', { recursive: true });
   // PM US probes
   const probes = {};
-  for (const p of ['/v1/events?limit=5', '/v1/events?limit=5&active=true', '/v2/events?limit=5', '/v1/markets?limit=5', '/v2/leagues', '/v1/leagues', '/v2/categories', '/v1/categories', '/v1/series?limit=5', '/v2/series?limit=5', '/v1/events?limit=5&category=politics', '/v2/events?limit=5&category=politics', '/v1/search?query=fed', '/v2/search?q=fed']) {
+  for (const p of [] && ['/v1/events?limit=5', '/v1/events?limit=5&active=true', '/v2/events?limit=5', '/v1/markets?limit=5', '/v2/leagues', '/v1/leagues', '/v2/categories', '/v1/categories', '/v1/series?limit=5', '/v2/series?limit=5', '/v1/events?limit=5&category=politics', '/v2/events?limit=5&category=politics', '/v1/search?query=fed', '/v2/search?q=fed']) {
     probes[p] = await get(U + p, 2, true);
   }
   fs.writeFileSync('data/pmus-probes.json', JSON.stringify(probes, null, 1));
-  log('pmus probes done');
+  const uev = [];
+  for (let off = 0; off < 40000; off += 100) {
+    const d = await get(q(U + '/v1/events', { limit: 100, offset: off, active: true, closed: false }));
+    const l = d?.events || []; if (!l.length) break;
+    for (const e of l) {
+      const cat = e.category || (e.markets || [])[0]?.category;
+      if (/sport/i.test(String(cat)) || e.gameId || e.sportradarGameId) continue;
+      uev.push({ id: e.id, slug: e.slug, title: e.title, cat, sub: e.subcategory, series: e.seriesSlug, tags: (e.tags || []).map(t => t.slug || t.label), end: e.endDate, desc: cut(e.description), rs: e.resolutionSource,
+        ms: (e.markets || []).map(m => ({ id: m.id, slug: m.slug, q: m.question, cat: m.category, end: m.endDate, desc: cut(m.description), sides: (m.marketSides || []).map(x => ({ id: x.identifier, d: x.description, long: x.long, px: x.price })), bb: m.bestBidQuote, ba: m.bestAskQuote, fee: m.feeCoefficient, vol: m.volume, liq: m.liquidity, outcomes: m.outcomes, git: m.groupItemTitle, closed: m.closed, active: m.active })) });
+    }
+    if (off % 2000 === 0) log('pmus offset', off, 'kept', uev.length);
+  }
+  fs.writeFileSync('data/pmus-events.json.gz', zlib.gzipSync(JSON.stringify(uev)));
+  log('pmus non-sports events', uev.length);
   // Kalshi series
   const ser = (await get(K + '/series'))?.series || [];
   const sMeta = {}; for (const s of ser) sMeta[s.ticker] = { cat: s.category, ft: s.fee_type, fm: s.fee_multiplier, freq: s.frequency, title: s.title, src: (s.settlement_sources || []).map(x => x.name || x.url).join('|'), tags: s.tags };
@@ -50,13 +63,16 @@ const cut = s => (s == null ? s : String(s).slice(0, 1500));
         if (/^KXMVE/.test(e.event_ticker)) continue;
         const cat = e.category || sMeta[e.series_ticker]?.cat;
         if (cat === 'Sports') continue;
-        const ms = e.markets || [];
+        if (/fifteen|hour|minute/i.test(String(sMeta[e.series_ticker]?.freq || ''))) continue;
+        let ms = e.markets || [];
+        if (status === 'settled') ms = ms.filter(m => Number(m.volume_fp ?? m.volume ?? 0) >= 100);
+        if (!ms.length) continue;
         if (status === 'settled') {
-          const ct = Math.max(...ms.map(m => Date.parse(m.close_time) || 0));
+          const ct = Math.max(...(e.markets || []).map(m => Date.parse(m.close_time) || 0));
           if (ct < Date.now() - DAYS * 86400e3) continue;
           fresh++;
         }
-        kev.push({ ev: e.event_ticker, s: e.series_ticker, cat, title: e.title, sub: e.sub_title, me: !!e.mutually_exclusive, status, ft: e.fee_type_override, fm: e.fee_multiplier_override, ms: ms.map(slimK) });
+        kev.push({ ev: e.event_ticker, s: e.series_ticker, cat, title: e.title, sub: e.sub_title, me: !!e.mutually_exclusive, status, ft: e.fee_type_override, fm: e.fee_multiplier_override, ms: ms.map(m => { const x = slimK(m); if (status === 'settled') { delete x.rules2; x.rules = x.rules && x.rules.slice(0, 300); } return x; }) });
       }
       if (status === 'settled') { staleP = fresh ? 0 : staleP + 1; if (staleP >= 40) break; }
       cursor = d.cursor; if (!cursor || !(d.events || []).length) break;
