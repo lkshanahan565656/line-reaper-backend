@@ -27,9 +27,23 @@ test('a shopper view comes back exactly, defaults filled in', () => {
 
 test('game lines filters come back, and other tabs carry only the tab', () => {
   const back = round({ tab: 'odds', mode: 'lines', os: { state: 'TX', league: 'nba', market: 'spread', sort: 'ev', q: 'celtics' } });
-  assert.deepEqual(back, { tab: 'odds', mode: 'lines', os: { state: 'TX', league: 'nba', market: 'spread', sort: 'ev', q: 'celtics' } });
+  assert.deepEqual(back, { tab: 'odds', mode: 'lines', st: 'TX', os: { state: 'TX', league: 'nba', market: 'spread', sort: 'ev', q: 'celtics' } });
   assert.deepEqual(round({ tab: 'results', mode: 'opps', shop: { sort: 'hold' } }), { tab: 'results' });
   assert.deepEqual(round({ tab: 'odds', mode: 'maker' }), { tab: 'odds', mode: 'maker' });
+});
+
+test('the viewer\'s state (CUSTOMIZE > My state) rides along on every tab, and a bad code is dropped', () => {
+  assert.equal(round({ tab: 'results', st: 'NJ' }).st, 'NJ');
+  assert.equal(round({ tab: 'props', st: '', props: { view: 'lines' } }).st, '', 'all states is said out loud');
+  assert.equal(round({ tab: 'esports', st: 'OH', es: { mode: 'matchups' } }).st, 'OH');
+  const shop = round({ tab: 'odds', mode: 'opps', st: 'TX', shop: { ...S.SHOP_DEF, state: 'NV' } });
+  assert.equal(shop.st, 'TX');
+  assert.equal(shop.shop.state, 'TX', 'the tab-wide state wins over the shopper\'s old one');
+  assert.equal(round({ tab: 'odds', mode: 'maker', st: 'CA' }).st, 'CA');
+  assert.equal(S.STATES.length, 51);
+  assert.ok(!('st' in round({ tab: 'results' })), 'no state in the link: the viewer keeps their own');
+  assert.ok(!('st' in plain(S.decode('#lr&t=results&st=zz', TABS))));
+  assert.ok(!('st' in round({ tab: 'results', st: 'ZZ' })));
 });
 
 test('links stay short: a busy view with every venue but one left out is under 200 characters', () => {

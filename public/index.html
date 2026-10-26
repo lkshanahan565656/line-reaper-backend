@@ -1545,6 +1545,23 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .help-btn { white-space:nowrap; background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
 .help-btn:hover { color:var(--text); border-color:var(--text2); }
 @media (max-width:640px) { .tour-card { left:16px !important; right:16px; bottom:16px; top:auto !important; width:auto; } }
+/* My state (CUSTOMIZE > My state): legal venues get a thin green rule, unsure ones are greyed with a dotted amber rule, not legal ones are faint and struck */
+.lr-v-yes { box-shadow:inset 0 -1px 0 rgba(52,211,153,.7); }
+.lr-v-unk { opacity:.6; box-shadow:inset 0 -1px 0 rgba(251,191,36,.6); }
+.lr-v-no { opacity:.35; text-decoration:line-through; }
+.os-tbl th.lr-v-unk, .os-tbl td.lr-v-unk { box-shadow:none; }
+.lr-sbar { display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; font-size:11px; color:#94a3b8; margin:0 0 10px; padding:7px 10px; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,.2); }
+.lr-sbar > span { flex:1 1 220px; min-width:0; }
+.lr-sbar b { color:#e2e8f0; letter-spacing:.06em; }
+.lr-sbar i { font-style:normal; }
+.lr-sbar .lr-ok { color:#34d399; } .lr-sbar .lr-unk { color:#fbbf24; }
+.lr-sbar-b { background:transparent; color:#cbd5e1; border:1px solid var(--border); border-radius:4px; padding:3px 8px; font:inherit; font-size:10px; letter-spacing:.06em; cursor:pointer; }
+.lr-sbar-b:hover { border-color:#34d399; color:#34d399; }
+.lr-sbar-list { flex-basis:100%; list-style:none; margin:4px 0 0; padding:0; display:grid; gap:3px; }
+.lr-sbar-list li { overflow-wrap:anywhere; }
+.lr-sbar-list a { color:#60a5fa; }
+.lr-sl-yes { color:#34d399; font-weight:700; } .lr-sl-unknown { color:#fbbf24; font-weight:700; } .lr-sl-no { color:#64748b; font-weight:700; }
+.lr-sbar-note { flex-basis:100%; color:#64748b; }
 /* After fees (CUSTOMIZE > After fees): the after-fee chance, the fee or break-even under it */
 .af-v { font-variant-numeric:tabular-nums; }
 .af-sub { display:block; font-size:9px; font-weight:500; color:var(--muted2); letter-spacing:.3px; white-space:nowrap; }
@@ -1719,15 +1736,16 @@ body::before { display:none !important; }
 
 <!-- ODDS SCREEN PAGE -->
 <div class="page" id="page-odds">
+  <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair. <a href="/learn/no-vig-fair-odds" target="_blank" rel="noopener" style="color:var(--green)">How the fair works</a>.
-    <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. Pick "Texas" to see only venues you can use there. A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
+    <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. The strip on top shows the venues legal in your state (CUSTOMIZE &gt; My state). A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
   </div>
   <div class="sport-row" id="oddsModes"></div>
   <div id="osView">
   <div class="pb-chips" id="osLeagues" style="margin:12px 0 8px"></div>
   <div class="os-ctrl">
-    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Betting from</span><select id="osState" onchange="osSet('state',this.value)"><option value="">Anywhere (every venue)</option><option value="TX">Texas</option></select></label>
+    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Betting from</span><select id="osState" class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label>
     <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Market</span><select id="osMarket" onchange="osSet('market',this.value)"><option value="">Every market</option><option value="ml">Moneyline</option><option value="spread">Spread</option><option value="total">Total</option></select></label>
     <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Sort games by</span><select id="osSort" onchange="osSet('sort',this.value)"><option value="start">Starting soonest</option><option value="ev">Best EV</option><option value="venues">Most venues</option><option value="hold">Lowest hold</option></select></label>
     <input class="key-input" id="osSearch" placeholder="Search a team" oninput="osSearchInput(this.value)"/>
@@ -1837,6 +1855,7 @@ body::before { display:none !important; }
 
 <!-- ARB PAGE -->
 <div class="page" id="page-best">
+  <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">BEST PLAYS RIGHT NOW</strong> — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, and exchange arbs in one list, ranked by what the RESULTS tab says is working.
     <span style="color:#94a3b8;font-size:11px">Play types the record marks <b style="color:#f87171">avoid</b> are left off. <b style="color:#34d399">Proven</b> types and arbs come first, then <b style="color:#fbbf24">promising</b>, then ones too early to judge, biggest edge first. Units are the same for everyone (1u = 1% of bankroll).</span>
@@ -1856,7 +1875,7 @@ body::before { display:none !important; }
   <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center">
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sportsbook</span><select id="bestBookSel" onchange="bestSet('book',this.value)"><option value="all">All books</option></select></label>
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sort by</span><select id="bestSortSel" onchange="bestSet('sort',this.value)"><option value="rank">Best ranked</option><option value="edge">Biggest edge</option><option value="start">Starting soonest</option><option value="book">Sportsbook</option></select></label>
-    <label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="Show only the venues legal where you bet"><option value="">All states</option><option value="TX">Texas</option></select></label>
+    <label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label>
     <button class="sport-chip" onclick="myBooksToggle('bestMyBooks')">MY BOOKS</button>
   </div>
   <div class="lr-state-note" data-state-note="best"></div>
@@ -1865,6 +1884,7 @@ body::before { display:none !important; }
 </div>
 
 <div class="page" id="page-results">
+  <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">THE PUBLIC RECORD</strong> — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it, the close, the CLV and the result) and check it yourself.
     <span style="color:#94a3b8;font-size:11px" id="recRule">Proven needs 50 graded games of one kind at one venue we read ourselves and a CLV t of 2 or more against Pinnacle's close. The sales page reads the same rule, so the two always agree.</span>
@@ -1989,6 +2009,7 @@ body::before { display:none !important; }
 <!-- PROPS PAGE -->
 <div class="page" id="page-props">
   <div id="pkTray" style="display:none"></div>
+  <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
@@ -2030,6 +2051,7 @@ body::before { display:none !important; }
 
 <!-- +EV PAGE -->
 <div class="page" id="page-ev">
+  <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid #10b981">
     <strong style="color:#e8e8e8">+EV SCREENER</strong> — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds.<br>
     <span style="color:#94a3b8;font-size:11px">Fair price = vig removed from each sharp book, then averaged. "Consensus" rows had no sharp book, so the fair price is the median of all books: weaker evidence. Kelly shown at quarter stake.</span>
@@ -2050,7 +2072,7 @@ body::before { display:none !important; }
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center" title="Two sharp prices (Pinnacle and Kalshi) within 5 points of each other"><input type="checkbox" id="evAgreeOnly" onchange="evSet('agreeOnly', this.checked)"> two sharp sources agree</label>
     <input id="evSearch" placeholder="Search team, player or book" style="flex:1;min-width:160px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('search', this.value.trim().toLowerCase())">
   </div>
-  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center"><label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="Show only the venues legal where you bet"><option value="">All states</option><option value="TX">Texas</option></select></label></div>
+  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center"><label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label></div>
   <div class="lr-state-note" data-state-note="ev"></div>
   <div id="evBookRow" class="row" style="margin:0 0 12px;flex-wrap:wrap;gap:6px"></div>
   <div id="evContent"></div>
@@ -2071,6 +2093,7 @@ body::before { display:none !important; }
 
 <!-- ESPORTS PAGE -->
 <div class="page" id="page-esports">
+  <div data-state-bar></div>
   <div class="esm-bar" style="margin:4px 0 12px">
     <button class="sport-chip" id="esModeMatches" onclick="setEsMode('matches')">MATCHES</button>
     <button class="sport-chip" id="esModeProps" onclick="setEsMode('props')">PLAYER PROPS</button>
@@ -2184,6 +2207,73 @@ body::before { display:none !important; }
 
 <script>/*@@LRVENUE@@*/</script>
 <script>
+// ─── MY STATE (CUSTOMIZE > My state) ─────────────────────────────────────────
+// One setting for every screen: the state the viewer bets from, Texas on a new
+// device. It is a view filter only. Prices, the record and alerts are the same
+// for everyone (CFTC 4.14(a)(9)); nothing is sized or sent per user. The table
+// of who can use which venue is the server's (venuestates.js, a source and a
+// date per entry, /api/states/XX): a venue legal there is marked, one no
+// source vouches for is greyed with "check with the venue", one not legal there
+// is greyed out or dropped. '' shows every venue. Kept on this device like the
+// odds format; a share link can carry the sharer's state for that visit only.
+const LR_STATE_NAMES = { AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming' };
+let lrState = 'TX';
+try { const v = localStorage.getItem('lr_state'); if (v !== null) lrState = LR_STATE_NAMES[v] ? v : ''; } catch { /* private window: Texas */ }
+let lrStateInfo = null, lrStateMap = {}, lrStateLast = lrState || 'TX', lrStateOpen = false;
+const stateQ = (sep = '&') => (lrState ? `${sep}state=${encodeURIComponent(lrState)}` : '');
+const lrStateName = (st = lrState) => LR_STATE_NAMES[st] || 'All states';
+// the picker's options: the state list, then every venue
+const lrStateOptions = (cur = lrState) => `<option value=""${!cur ? ' selected' : ''}>All states (every venue)</option>` + Object.entries(LR_STATE_NAMES).sort((a, b) => a[1].localeCompare(b[1])).map(([k, n]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${n}</option>`).join('');
+function lrStateSyncPickers() { document.querySelectorAll('select.lr-state').forEach(x => { x.innerHTML = lrStateOptions(); x.value = lrState; }); }
+// a venue key as the feeds spell it → the key the state table uses
+const LR_V_ALIAS = { pp: 'prizepicks', ud: 'underdog', sl: 'sleeper', p6: 'pick6', 'dk pick6': 'pick6', kalshi_mid: 'kalshi', kalshi_props: 'kalshi', polymarket_us: 'polymarketus', pmus: 'polymarketus', 'polymarket us': 'polymarketus', 'gemini predictions': 'gemini' };
+const LR_BOOKS = new Set(['draftkings', 'betmgm', 'caesars', 'williamhill_us', 'bet365', 'fanatics', 'hardrock', 'hard_rock_bet', 'hardrockbet', 'thescore', 'espnbet', 'ballybet', 'betparx', 'circa']);
+// a venue's status where the viewer bets: 'yes' | 'unknown' | 'no', or null with no state picked
+function lrVStatus(v) {
+  if (!lrState || !lrStateInfo) return null;
+  const k0 = String(v || '').trim().toLowerCase(), k = LR_V_ALIAS[k0] || k0;
+  if (lrStateMap[k]) return lrStateMap[k].status;
+  if (lrStateInfo.noBooks && LR_BOOKS.has(k)) return 'no';
+  return null;
+}
+// the class and tooltip that mark a venue: a thin green rule when legal, greyed with ? when no source says, struck when not legal
+function lrVMark(v) {
+  const s = lrVStatus(v);
+  if (!s) return null;
+  const e = lrStateMap[LR_V_ALIAS[String(v).toLowerCase()] || String(v).toLowerCase()];
+  const nm = lrStateName();
+  const title = s === 'yes' ? `Legal in ${nm}` : s === 'no' ? `Not open to ${nm} residents${e?.note ? `: ${e.note}` : ''}` : `Not sure in ${nm}${e?.note ? `: ${e.note}` : ''}. Check with the venue`;
+  return { cls: `lr-v-${s === 'unknown' ? 'unk' : s}`, title };
+}
+async function lrStateLoad() {
+  if (!lrState) { lrStateInfo = null; lrStateMap = {}; lrStateBars(); return null; }
+  const want = lrState;
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/states/${encodeURIComponent(want)}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (want !== lrState) return null;
+    lrStateInfo = d; lrStateMap = {};
+    for (const v of [...(d.venues || []), ...(d.unknown || []), ...(d.notLegal || [])]) lrStateMap[v.key] = v;
+  } catch { if (want === lrState) { lrStateInfo = null; lrStateMap = {}; } }
+  lrStateBars();
+  return lrStateInfo;
+}
+// the strip at the top of each screen: the state, what is legal there, and the list with sources
+function lrStateBarHTML() {
+  if (!lrState) return `<div class="lr-sbar"><span><b>ALL STATES</b> · every venue shown, legal or not where you live.</span><button class="lr-sbar-b" onclick="lrStatePick()">SET MY STATE</button></div>`;
+  const nm = escAttr(lrStateName());
+  const d = lrStateInfo;
+  if (!d) return `<div class="lr-sbar"><span><b>BETTING FROM ${nm.toUpperCase()}</b> · the venue list did not load, so nothing is marked yet.</span><button class="lr-sbar-b" onclick="lrStatePick()">CHANGE</button></div>`;
+  const nY = d.venues.length, nU = d.unknown.length;
+  const row = v => `<li class="lr-v-${v.status === 'unknown' ? 'unk' : v.status}-li"><b>${escAttr(v.name)}</b> <span class="lr-sl-${v.status}">${v.status === 'yes' ? 'LEGAL' : v.status === 'no' ? 'NOT LEGAL' : 'NOT SURE'}</span>${v.note ? ` · ${escAttr(v.note)}` : ''}${v.read === false && v.status === 'yes' ? ` · not priced here: ${escAttr(v.why)}` : ''}${v.source ? ` · <span class="lr-src">${v.source.url ? `<a href="${escAttr(v.source.url)}" target="_blank" rel="noopener">${escAttr(v.source.title)}</a>` : escAttr(v.source.title)}, ${escAttr(v.source.dated)}</span>` : ''}</li>`;
+  const list = lrStateOpen ? `<ul class="lr-sbar-list">${[...d.venues, ...d.unknown, ...d.notLegal].map(row).join('')}</ul><div class="lr-sbar-note">${escAttr(d.check)} Table read ${escAttr(d.asOf)}.</div>` : '';
+  return `<div class="lr-sbar"><span><b>BETTING FROM ${nm.toUpperCase()}</b> · <i class="lr-ok">${nY} legal</i>${nU ? ` · <i class="lr-unk">${nU} not sure, check with the venue</i>` : ''} · others greyed or hidden. ${escAttr(d.note)}</span>`
+    + `<button class="lr-sbar-b" onclick="lrStateOpen=!lrStateOpen;lrStateBars()" aria-expanded="${lrStateOpen}">${lrStateOpen ? 'HIDE LIST' : 'VENUES'}</button><button class="lr-sbar-b" onclick="lrStatePick()">CHANGE</button>${list}</div>`;
+}
+// CHANGE: CUSTOMIZE opens with My state (its first row) in focus
+function lrStatePick() { layOpen(); setTimeout(() => document.getElementById('layState')?.focus(), 50); }
+function lrStateBars() { const h = lrStateBarHTML(); document.querySelectorAll('[data-state-bar]').forEach(el => { el.innerHTML = h; }); }
 // ─── TAP TO VENUE ────────────────────────────────────────────────────────────
 // Every priced row links to the venue that offers it (venuelinks.js, inlined
 // here by the server as window.LRVenue). Plain navigation: no stake, no slip,
@@ -2193,9 +2283,11 @@ body::before { display:none !important; }
 // /api/ops, with nothing about who tapped.
 function vLink(venue, ctx, inner, cls = '') {
   const L = window.LRVenue ? window.LRVenue.link(venue, ctx || {}) : null;
-  if (!L) return inner || '';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  return `<a class="vlink${inner ? ' vwrap' : ''}${L.exact ? '' : ' vboard'}${cls ? ' ' + cls : ''}" data-venue="${L.venue}" data-exact="${L.exact ? 1 : 0}" href="${esc(L.href)}" target="_blank" rel="noopener" title="${esc(L.title)}">${inner || esc(L.label)}</a>`;
+  // CUSTOMIZE > My state marks the venue: legal, not sure, or not legal there
+  const mk = lrVMark(L ? L.venue : venue);
+  if (!L) return inner && mk ? `<span class="${mk.cls}" title="${esc(mk.title)}">${inner}</span>` : inner || '';
+  return `<a class="vlink${inner ? ' vwrap' : ''}${L.exact ? '' : ' vboard'}${cls ? ' ' + cls : ''}${mk ? ' ' + mk.cls : ''}" data-venue="${L.venue}" data-exact="${L.exact ? 1 : 0}" href="${esc(L.href)}" target="_blank" rel="noopener" title="${esc(mk ? `${L.title} · ${mk.title}` : L.title)}">${inner || esc(L.label)}</a>`;
 }
 // What a failed load says on screen: what is happening and what to do, never
 // a raw error. A 502/503/504, an HTML page where JSON should be, or a dropped
@@ -2248,16 +2340,19 @@ const LRShare = (() => {
   // the shopper and game-lines filters a link restores, with the value a new device starts on
   const SHOP_DEF = { state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', minSize: '', method: 'power', excluded: [] };
   const OS_DEF = { state: '', league: '', market: '', sort: 'start', q: '' };
+  // CUSTOMIZE > My state: every state and DC, as its lower-case code
+  const ST = 'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
+  const stCodes = blank => Object.fromEntries([['', blank], ...ST.map(c => [c, c.toLowerCase()])]);
   // value <-> short code; anything not listed is refused on the way in
   const CODES = {
-    state: { TX: 'tx', '': 'all' },
+    state: stCodes('all'),
     markets: { '': '', moneyline: 'ml', spread: 'sp', total: 'to', player_prop: 'pp' },
     sort: { ev: 'ev', start: 'st', hold: 'ho', gap: 'gp', venues: 've' },
     hours: { 6: '6', 24: '24', 48: '48', 168: '168' },
     maxAge: { '': '', 180: '180', 600: '600' },
     minSize: { '': '', 50: '50', 200: '200', 1000: '1000' },
     method: { power: 'pw', multiplicative: 'mu', additive: 'ad', shin: 'sh' },
-    osState: { '': '', TX: 'tx' },
+    osState: stCodes(''),
     osMarket: { '': '', ml: 'ml', spread: 'sp', total: 'to' },
     osSort: { start: 'st', ev: 'ev', venues: 've', hold: 'ho' },
   };
@@ -2311,20 +2406,27 @@ const LRShare = (() => {
   // { tab, mode, os, shop } -> the text after #. Values a new device starts on are left out.
   function encode(s) {
     const p = [['t', s.tab]];
+    // the viewer's state (CUSTOMIZE > My state) rides along on every tab; '' is all states
+    const st = s.st !== undefined && code('state', s.st) !== undefined ? code('state', s.st) : null;
+    if (st && s.tab !== 'odds') p.push(['st', st]);
     if (s.tab === 'odds') {
       const m = MODES.includes(s.mode) ? s.mode : 'lines';
       if (m !== 'lines') p.push(['m', m]);
+      if (st && m !== 'lines' && !SHOP_MODES.includes(m)) p.push(['st', st]);
       if (m === 'lines') {
         const o = { ...OS_DEF, ...(s.os || {}) };
-        if (o.state && code('osState', o.state)) p.push(['st', code('osState', o.state)]);
+        if (st) p.push(['st', st]);
+        else if (o.state && code('osState', o.state)) p.push(['st', code('osState', o.state)]);
         if (cleanLeague(o.league)) p.push(['lg', o.league]);
         if (o.market && code('osMarket', o.market)) p.push(['mk', code('osMarket', o.market)]);
         if (o.sort !== 'start' && code('osSort', o.sort)) p.push(['so', code('osSort', o.sort)]);
         if (cleanQ(o.q)) p.push(['q', cleanQ(o.q)]);
       } else if (SHOP_MODES.includes(m)) {
         const o = { ...SHOP_DEF, ...(s.shop || {}) };
+        if (st) p.push(['st', st]);
         for (const k of Object.keys(SHOP_DEF)) {
           const v = o[k];
+          if (k === 'state' && st) continue;
           if (k === 'excluded') { if ((v || []).length) p.push([KEY[k], venuesOut(v)]); continue; }
           if (String(v ?? '') === String(SHOP_DEF[k])) continue;
           if (k === 'league') { if (cleanLeague(v)) p.push([KEY[k], v]); continue; }
@@ -2373,6 +2475,9 @@ const LRShare = (() => {
     const tab = p.get('t') || '';
     if (!/^[a-z]{2,20}$/.test(tab) || (tabs && !tabs.includes(tab))) return null;
     const name = cleanName(p.get('n'));
+    // the sharer's state, when the link has one ('' is all states)
+    const st = p.has('st') ? uncode('state', p.get('st')) : undefined;
+    const withSt = o => (st !== undefined ? { ...o, st } : o);
     if (tab === 'props') {
       const o = { ...PROPS_DEF };
       if (PROPS_VIEWS.includes(p.get('pv'))) o.view = p.get('pv');
@@ -2383,7 +2488,7 @@ const LRShare = (() => {
       if (o.view === 'lines' && p.has('mk')) o.market = cleanLabel(p.get('mk'));
       for (const [k, c] of [['sort', 'so'], ['show', 'sh'], ['shopShow', 'ss']]) if (PROPS_PICK[k].includes(p.get(c))) o[k] = p.get(c);
       if (p.get('an') === '1') o.anchor = 'none';
-      return name ? { tab, props: o, name } : { tab, props: o };
+      return withSt(name ? { tab, props: o, name } : { tab, props: o });
     }
     if (tab === 'esports') {
       const o = { ...ES_DEF };
@@ -2393,11 +2498,11 @@ const LRShare = (() => {
         if (ES_EMU.includes(p.get('eg'))) o.emuGame = p.get('eg');
         if (o.emuGame !== 'SOCCER' && cleanLabel(p.get('lg'))) o.league = cleanLabel(p.get('lg'));
       }
-      return name ? { tab, es: o, name } : { tab, es: o };
+      return withSt(name ? { tab, es: o, name } : { tab, es: o });
     }
-    if (tab !== 'odds') return name ? { tab, name } : { tab };
+    if (tab !== 'odds') return withSt(name ? { tab, name } : { tab });
     const mode = MODES.includes(p.get('m')) ? p.get('m') : 'lines';
-    const s = { tab, mode };
+    const s = withSt({ tab, mode });
     if (name) s.name = name;
     if (mode === 'lines') {
       s.os = { ...OS_DEF };
@@ -2420,7 +2525,7 @@ const LRShare = (() => {
     }
     return s;
   }
-  return { encode, decode, resolveFavorites, SHOP_DEF, OS_DEF, PROPS_DEF, ES_DEF, VENUES, MAX_Q };
+  return { encode, decode, resolveFavorites, SHOP_DEF, OS_DEF, PROPS_DEF, ES_DEF, VENUES, MAX_Q, STATES: ST };
 })();
 // LR_SHARE_END
 // a share link opened: read it once, then take it off the address bar so a
@@ -2434,6 +2539,8 @@ const LR_SHARED = (() => {
   try { localStorage.setItem('lr_tab', s.tab); } catch {}
   return s;
 })();
+// a link's state is shown for this visit; the viewer's own setting stays saved
+if (LR_SHARED && 'st' in LR_SHARED) lrState = LR_SHARED.st;
 // ─── ODDS FORMAT (CUSTOMIZE > Odds format) ───────────────────────────────────
 // One setting for every price the app draws: American (a new device), decimal,
 // fractional or implied chance, plus Hong Kong, Indonesian and Malay. Kept on
@@ -2629,7 +2736,7 @@ const osUi = { league: '', state: '', market: '', sort: 'start', q: '', data: nu
 try { Object.assign(osUi, JSON.parse(localStorage.getItem('lr_os') || '{}'), { data: null, timer: null, open: {}, hist: {}, side: {} }); } catch {}
 // chart colours follow the venue (fixed, never by rank); venues past these stay in the table
 const OS_COLORS = { kalshi: '#3987e5', polymarketus: '#d95926', gemini: '#199e70', fanduel: '#c98500', betrivers: '#d55181', draftkings: '#008300', matchbook: '#9085e9', betmgm: '#e66767' };
-const osSave = () => { try { localStorage.setItem('lr_os', JSON.stringify({ league: osUi.league, state: osUi.state, market: osUi.market, sort: osUi.sort, hidden: osUi.hidden })); } catch {} };
+const osSave = () => { try { localStorage.setItem('lr_os', JSON.stringify({ league: osUi.league, state: lrState, market: osUi.market, sort: osUi.sort, hidden: osUi.hidden })); } catch {} };
 if (LR_SHARED?.os) {
   Object.assign(osUi, LR_SHARED.os);
   osSave();
@@ -2643,11 +2750,10 @@ let osSearchT = null;
 function osSearchInput(v) { clearTimeout(osSearchT); osSearchT = setTimeout(() => { osUi.q = v.trim().toLowerCase(); renderOdds(); }, 200); }
 async function loadOdds() {
   clearTimeout(osUi.timer);
-  const st = document.getElementById('osState'); if (st) st.value = osUi.state;
   ['osMarket', 'osSort'].forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = [osUi.market, osUi.sort][i]; });
   const qs = new URLSearchParams();
   if (osUi.league) qs.set('league', osUi.league);
-  if (osUi.state) qs.set('state', osUi.state);
+  if (lrState) qs.set('state', lrState);
   try {
     const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -2678,7 +2784,7 @@ function renderOdds() {
     `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '') + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
   const box = document.getElementById('osContent');
   if (!games.length) {
-    box.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">${d.stale ? 'The price feeds have not answered in the last few minutes.' : osUi.state ? 'No game in the next two days has a venue legal in this state priced yet.' : 'No game in the next two days is priced yet.'}</div></div>`;
+    box.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">${d.stale ? 'The price feeds have not answered in the last few minutes.' : lrState ? `No game in the next two days has a venue legal in ${escAttr(lrStateName())} priced yet.` : 'No game in the next two days is priced yet.'}</div></div>`;
     return;
   }
   const cols = (d.venues || []).filter(v => games.some(g => g.markets.some(m => m.sides.some(s => s.venues.some(x => x.venue === v.key)))));
@@ -2687,7 +2793,7 @@ function renderOdds() {
   for (const id of Object.keys(osUi.open)) if (osUi.open[id]) osDrawChart(id);
 }
 function osGame(g, cols, pro) {
-  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.tx ? 'tx' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.tx ? 'Legal in Texas' : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}</th>`).join('')}</tr>`;
+  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.legal === 'yes' ? 'tx' : v.legal === 'unknown' ? 'lr-v-unk' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.legal === 'yes' ? `Legal in ${escAttr(lrStateName())}` : v.legal === 'unknown' ? `Not sure in ${escAttr(lrStateName())}: check with the venue. Never marked best` : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}${v.legal === 'unknown' ? '<span class="os-copy">?</span>' : ''}</th>`).join('')}</tr>`;
   const rows = g.markets.map(m => {
     const hold = m.bestHold == null ? '' : m.bestHold < 0 ? `<span style="color:#34d399">arb ${osPct(-m.bestHold)}</span>` : `hold at the best prices ${(m.bestHold * 100).toFixed(1)}%`;
     const mk = `<tr class="mk"><td class="side">${g.markets.length > 1 ? escAttr(m.label) : ''}</td><td colspan="${cols.length + (pro ? 1 : 0)}">${hold}</td></tr>`;
@@ -2700,7 +2806,7 @@ function osGame(g, cols, pro) {
         const vctx = { url: x.url, league: g.league, what: `${g.away} @ ${g.home}, ${s.label}` };
         if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
         const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : x.legal === 'unknown' ? 'lr-v-unk' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -4576,16 +4682,17 @@ function showToast(msg, type='', ms = 3500) {
 // the screen as it is now: the tab, and on ODDS SCREEN its view and filters
 function lrShareState() {
   const tab = (document.querySelector('.page.active')?.id || 'page-odds').replace(/^page-/, '');
+  const st = lrState;
   if (tab === 'props') {
     const b = pbState;
-    return { tab, props: { view: b.view, book: b.view === 'lines' ? b.lineBook : b.book, sport: b.sport, q: b.q, market: b.market, sort: b.sort, show: b.show, shopShow: b.shopShow, anchor: b.anchor } };
+    return { tab, st, props: { view: b.view, book: b.view === 'lines' ? b.lineBook : b.book, sport: b.sport, q: b.q, market: b.market, sort: b.sort, show: b.show, shopShow: b.shopShow, anchor: b.anchor } };
   }
-  if (tab === 'esports') return { tab, es: { mode: esmState.mode, game: esmState.game, hideLive: esmState.hideLive, emuGame: emuState.game, league: emuState.league } };
-  if (tab !== 'odds' || !window.shpUi) return { tab };
+  if (tab === 'esports') return { tab, st, es: { mode: esmState.mode, game: esmState.game, hideLive: esmState.hideLive, emuGame: emuState.game, league: emuState.league } };
+  if (tab !== 'odds' || !window.shpUi) return { tab, st };
   return {
-    tab, mode: shpUi.opts.mode || 'lines',
-    os: { state: osUi.state, league: osUi.league, market: osUi.market, sort: osUi.sort, q: osUi.q },
-    shop: LRShare.resolveFavorites(shpUi.opts, (shpUi.data?.providers || []).map(x => x.id)),
+    tab, st, mode: shpUi.opts.mode || 'lines',
+    os: { state: lrState, league: osUi.league, market: osUi.market, sort: osUi.sort, q: osUi.q },
+    shop: LRShare.resolveFavorites({ ...shpUi.opts, state: lrState }, (shpUi.data?.providers || []).map(x => x.id)),
   };
 }
 function lrShareUrl(state) {
@@ -5488,7 +5595,7 @@ document.addEventListener('DOMContentLoaded', welcomeInit);
 const TOUR_KEY = 'lr_tour';
 const TOUR_STEPS = [
   { tab: 'odds', target: () => layTabs.odds, title: 'ODDS SCREEN',
-    text: '<p>Every venue we read on one row per game, beside <b>Pinnacle\'s price with the margin taken out</b> (the fair). The best price on each side is outlined in green; exchange prices already include their fees.</p><p>Betting from Texas? Pick <b>Texas</b> in "Betting from" to see only the venues you can use there.</p>' },
+    text: '<p>Every venue we read on one row per game, beside <b>Pinnacle\'s price with the margin taken out</b> (the fair). The best price on each side is outlined in green; exchange prices already include their fees.</p><p>Not in Texas? Set your state in <b>CUSTOMIZE &gt; My state</b>: every screen then greys or hides the venues not legal there.</p>' },
   { tab: 'odds', target: () => [...document.querySelectorAll('#oddsModes .sport-chip')].find(b => /ABOVE FAIR/.test(b.textContent)) || document.getElementById('oddsModes'), title: 'EXCHANGE SHOPPER',
     text: '<p><b>BEST PRICES ABOVE FAIR</b> ranks every price that beats the fair, with what the exchange\'s order book fills. Set <b>MIN BET SIZE</b> to hide prices that would not fill your stake.</p><p>A price above the fair is a price, not a proven edge: each view wears its tag.</p>' },
   { tab: 'props', target: () => tourTabBtn('props'), title: 'PROPS',
@@ -8234,17 +8341,24 @@ function renderEsports() {
 // ── BETTING FROM: one state for the +EV board, its record and Best Plays ────
 // The backend (venues.js) keeps only the venues a resident of that state can
 // use; no state shows everything. Alerts are the same for everyone.
-let lrState = '';
-try { lrState = localStorage.getItem('lr_state') || ''; } catch { /* private window */ }
-const stateQ = (sep = '&') => (lrState ? `${sep}state=${encodeURIComponent(lrState)}` : '');
-function lrSetState(v) {
-  lrState = v || '';
-  try { localStorage.setItem('lr_state', lrState); } catch { /* fine */ }
-  document.querySelectorAll('select.lr-state').forEach(x => { x.value = lrState; });
-  evState.rows = []; bestUi.data = null;
+// CUSTOMIZE > My state, or any "Betting from" picker: saved, then every open screen re-reads
+function lrSetState(v, { save = true } = {}) {
+  lrState = LR_STATE_NAMES[v] ? v : '';
+  if (lrState) lrStateLast = lrState;
+  if (save) { try { localStorage.setItem('lr_state', lrState); } catch { /* fine */ } }
+  lrStateSyncPickers();
+  evState.rows = []; bestUi.data = null; osUi.data = null;
+  if (window.shpUi) { shpUi.data = null; shpUi.opts.state = lrState; shpSave(); }
   lrStateNotes(null);
-  if (document.getElementById('page-ev')?.classList.contains('active')) loadEv();
-  if (document.getElementById('page-best')?.classList.contains('active')) loadBest();
+  lrStateLoad().then(() => {
+    const on = id => document.getElementById(id)?.classList.contains('active');
+    if (on('page-ev')) loadEv();
+    if (on('page-best')) loadBest();
+    if (on('page-odds')) oddsModeShow();
+    if (on('page-results')) loadResults();
+    if (on('page-props') && typeof renderPropsBoard === 'function') renderPropsBoard();
+    if (on('page-esports') && typeof renderEsports === 'function') renderEsports();
+  });
 }
 // the line under the picker: what the state allows and what we can't read there
 function lrStateNotes(info, which) {
@@ -8257,7 +8371,7 @@ function lrStateNotes(info, which) {
       ${unread.length ? `<span title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal there, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</span>` : ''} <span style="color:#64748b">As of ${escAttr(info.asOf)}.</span></div>`;
   });
 }
-document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('select.lr-state').forEach(x => { x.value = lrState; }));
+document.addEventListener('DOMContentLoaded', () => { lrStateSyncPickers(); lrStateLoad(); });
 
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
@@ -9619,7 +9733,7 @@ function renderRecord(d) {
   };
   const body = rows.map(r => { const [lab, c] = REC_LABEL[r.label] || [String(r.label || '').toUpperCase(), '#94a3b8']; const vl = vLink(r.book, { what: r.kindLabel }); return `<tr${vl ? ' data-vrow="1"' : ''}>
       <td><span class="rec-lab" style="color:${c}">${escAttr(lab)}</span></td>
-      <td><b>${escAttr(r.kindLabel)}</b> · ${escAttr(r.bookName)} ${vl}${r.texas ? ' <span class="rec-lab" style="color:#60a5fa" title="A Texas resident can bet here">TX</span>' : ''}${r.why ? `<div class="why">${escAttr(r.why)}</div>` : ''}</td>
+      <td><b>${escAttr(r.kindLabel)}</b> · ${escAttr(r.bookName)} ${vl}${lrState && lrVStatus(r.book) === 'yes' ? ` <span class="rec-lab" style="color:#60a5fa" title="A ${escAttr(lrStateName())} resident can bet here">${escAttr(lrState)}</span>` : lrState && lrVStatus(r.book) === 'unknown' ? ` <span class="rec-lab" style="color:#fbbf24" title="Not sure in ${escAttr(lrStateName())}: check with the venue">${escAttr(lrState)} ?</span>` : ''}${r.why ? `<div class="why">${escAttr(r.why)}</div>` : ''}</td>
       <td style="text-align:right">${r.graded}/${r.target}<div class="rec-bar50"><i style="width:${Math.min(100, Math.round(100 * r.graded / (r.target || 50)))}%"></i></div></td>
       <td style="text-align:right;color:${col(r.clv)}">${pc(r.clv)}${r.clvT != null ? `<div style="font-size:10px;color:var(--text2)">t ${r.clvT > 0 ? '+' : ''}${Number(r.clvT).toFixed(1)}</div>` : ''}</td>
       <td style="text-align:right">${r.beatPct != null ? `${Math.round(r.beatPct)}%` : '—'}</td>
@@ -9753,7 +9867,8 @@ function renderBest() {
     <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''}${d.outOfState ? ` · ${d.outOfState} at venues not legal in ${escAttr(d.state?.name || 'your state')}` : ''}${rows.length !== (d.rows || []).length ? ` · showing ${rows.length}` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">
       <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th><th></th></tr></thead>
-      <tbody>${body}</tbody></table></div>` : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
+      <tbody>${body}</tbody></table></div>` : !d.total && d.outOfState && lrState ? `${tailEmpty(`NOTHING AT A ${escAttr(String(d.state?.name || lrStateName()).toUpperCase())} VENUE RIGHT NOW`, `${d.outOfState} play${d.outOfState === 1 ? ' is' : 's are'} at venues not legal in ${escAttr(d.state?.name || lrStateName())} (CUSTOMIZE &gt; My state). Nothing is better than a bad bet.`)}<div style="text-align:center;margin:-8px 0 12px"><button class="lr-sbar-b" onclick="lrSetState('')">SHOW ALL STATES</button></div>`
+      : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
     ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Pro unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">GET PRO</button></div>` : ''}
     <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
 }
@@ -11574,7 +11689,7 @@ function shpToggleVenue(id, on) {
 }
 function shpQuery() {
   const o = shpUi.opts, p = new URLSearchParams();
-  if (o.state) p.set('state', o.state);
+  if (lrState) p.set('state', lrState);
   if (o.markets) p.set('markets', o.markets);
   const favL = o.favOnly ? (o.favLeagues || []) : [];
   if (o.league) p.set('league', o.league); else if (favL.length) p.set('league', favL.join(','));
@@ -11614,7 +11729,7 @@ const SHP_FAIR = { pinnacle: 'Pinnacle no-vig', pinnacle_matchbook: 'Pinnacle + 
 function shpControls() {
   const o = shpUi.opts, d = shpUi.data;
   const chip = (on, label, js) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${js}">${label}</button>`;
-  document.getElementById('shpModes').innerHTML = chip(o.state === 'TX', 'Texas venues', `shpSet('state','TX')`) + chip(!o.state, 'All venues', `shpSet('state','')`)
+  document.getElementById('shpModes').innerHTML = chip(!!lrState, `${escAttr(lrStateName(lrState || lrStateLast))} venues`, `lrSetState('${lrState || lrStateLast}')`) + chip(!lrState, 'All venues', `lrSetState('')`)
     + ((o.favLeagues || []).length || (o.favVenues || []).length ? chip(!!o.favOnly, '★ Favorites', `shpSet('favOnly',${!o.favOnly})`) : '')
     + '<span class="tab-sep" style="margin:0 2px"></span>'
     + [['', 'All'], ['moneyline', 'Moneyline'], ['spread', 'Spread'], ['total', 'Total'], ['player_prop', 'Props']].map(([k, l]) => chip(o.markets === k, l, `shpSet('markets','${k}')`)).join('');
@@ -11758,7 +11873,8 @@ function shpPresetShare(i) {
   if (!p) return;
   const o = { ...p.opts, favLeagues: shpUi.opts.favLeagues, favVenues: shpUi.opts.favVenues };
   const shop = LRShare.resolveFavorites(o, (shpUi.data?.providers || []).map(x => x.id));
-  lrCopyLink(lrShareUrl({ tab: 'odds', mode: o.mode, shop, name: p.name }), `view "${p.name}"`);
+  // the state is the device's own (CUSTOMIZE > My state), not the view's
+  lrCopyLink(lrShareUrl({ tab: 'odds', mode: o.mode, st: lrState, shop: { ...shop, state: lrState }, name: p.name }), `view "${p.name}"`);
 }
 // opportunities sort in the browser: tap a header, tap again to flip
 const SHP_SORT = {
@@ -11851,6 +11967,7 @@ function shpArbSize(a) {
   <div class="lay-box" role="dialog" aria-label="Customize layout">
     <h3>Customize your layout</h3>
     <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>
+    <div class="lay-row"><span class="lay-name">My state<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Where you bet from. Every screen greys or hides the venues not legal there and marks the ones that are. A view filter only: prices and alerts are the same for everyone</span></span><select class="lay-sel lr-state" id="layState" aria-label="My state" onchange="lrSetState(this.value)"><option value="TX">Texas</option></select></div>
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
     <div class="lay-row"><span class="lay-name">App tour</span><button class="lay-b" id="layTour" onclick="layClose();tourStart()">SHOW</button></div>

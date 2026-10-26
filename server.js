@@ -5072,7 +5072,7 @@ function leagueRecord() {
     return { ruleText: rec.rule.text, labels: rec.labels, proven, bySport };
   });
 }
-function leagueBoard(cfg) {
+function leagueBoard(cfg, state = 'TX') {
   const pro = !PAYWALL;
   const lic = webhookLicence();
   if (cfg.esports) {
@@ -5094,10 +5094,10 @@ function leagueBoard(cfg) {
   }
   const st = shopQuotes();
   const quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
-  const view = shopper.build(quotes, { league: cfg.keys, state: 'TX', sort: 'ev', stake: 100, limit: 12, method: 'power', proven: evBookProven, depth: shopDepth.forQuote });
+  const view = shopper.build(quotes, { league: cfg.keys, state, sort: 'ev', stake: 100, limit: 12, method: 'power', proven: evBookProven, depth: shopDepth.forQuote });
   if (!view.counts.markets) return { readAt: st.builtAt || null, stale: !freeBooksState.gamesAt, markets: 0 };
   const games = new Set(view.markets.map(m => m.eventId)).size;
-  const tx = venues.legalIn('TX');
+  const tx = venues.legalIn(state);
   const names = new Map();
   for (const m of view.markets) for (const s of m.sides) for (const c of s.prices || []) if (tx(c.provider) && !c.secondHand) names.set(c.provider, c.name || c.provider);
   const txOpps = view.opportunities.filter(o => o.access === 'direct' && tx(o.provider));
@@ -5107,24 +5107,33 @@ function leagueBoard(cfg) {
   return { readAt: st.builtAt || null, pro, games, markets: view.counts.markets, priced: view.counts.priced, above: txOpps.length,
     locked: txOpps.length, venues: [...names.values()], opps: pro ? opps : [], anyExchange: opps.some(o => o.exchange) };
 }
-async function leagueData(slug) {
+// ?state=XX on a league page: the venues of that state (venues.js), Texas when none
+const leagueStates = () => venues.statesList().map(x => [x.state, x.name]);
+function leagueState(code) {
+  const st = venues.stateOf(code) || 'TX', info = venues.stateInfo(st);
+  return { code: st, name: info.name, asOf: info.asOf, kalshi: venues.statusIn(st, 'kalshi').status, states: leagueStates() };
+}
+async function leagueData(slug, stateCode = 'TX') {
   const cfg = leagues.bySlug(slug);
+  const state = leagueState(stateCode);
   let record = null;
   try {
     const r = await leagueRecord();
     record = { ruleText: r.ruleText, labels: r.labels, proven: r.proven.map(p => ({ ...p,
-      inLeague: cfg ? cfg.keys.reduce((n, k) => n + (r.bySport.get(`${p.kind}|${p.book}|${k.toLowerCase()}`) || 0), 0) : null })) };
+      inLeague: cfg ? cfg.keys.reduce((n, k) => n + (r.bySport.get(`${p.kind}|${p.book}|${k.toLowerCase()}`) || 0), 0) : null,
+      inState: venues.legalIn(state.code)(p.book) })) };
   } catch (e) { console.warn('League pages: record:', e.message); }
   let board = null;
-  if (cfg) { try { board = leagueBoard(cfg); } catch (e) { console.warn(`League pages: ${slug} board:`, e.message); } }
-  return { now: Date.now(), board, record };
+  if (cfg) { try { board = leagueBoard(cfg, state.code); } catch (e) { console.warn(`League pages: ${slug} board:`, e.message); } }
+  return { now: Date.now(), board, record, state };
 }
 app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async (req, res) => {
   try {
     const slug = req.path === '/leagues' ? '' : leagues.byPath(req.path.replace(/\/+$/, '').toLowerCase());
     const origin = siteOrigin(req);
-    const html = await leagueMemo(`${slug}|${origin}`, async () => {
-      const data = await leagueData(slug);
+    const state = venues.stateOf(req.query.state) || 'TX';
+    const html = await leagueMemo(`${slug}|${origin}|${state}`, async () => {
+      const data = await leagueData(slug, state);
       return slug ? leagues.render(slug, data, { origin }) : leagues.index(data, { origin });
     });
     res.set('Cache-Control', 'public, max-age=60').type('html').send(html);
@@ -5143,7 +5152,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.206.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.207.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5336,6 +5345,17 @@ app.get('/api/ev/scoreboard', async (req, res) => {
 // the kinds that close on Pinnacle's own price, the Texas cut, and the labels
 // every other tool wears. The sales page, /learn and the welcome screen read it.
 const claims = require('./claims');
+// ── MY STATE (venuestates.js via venues.js) ──
+// Which venues a resident of each state can use, with a source and a date per
+// entry. A view filter only: prices, alerts and the record are the same for
+// everyone (CFTC 4.14(a)(9)); unknown is never shown as available.
+app.get('/api/states', (req, res) => res.set('Cache-Control', 'public, max-age=300').json({ asOf: venues.table().asOf, check: venues.CHECK, states: venues.statesList() }));
+app.get('/api/states/table', (req, res) => res.set('Cache-Control', 'public, max-age=300').json(venues.table()));
+app.get('/api/states/:state', (req, res) => {
+  const info = venues.stateInfo(req.params.state);
+  if (!info) return res.status(404).json({ error: 'A state is its two-letter code, like TX. /api/states lists them.' });
+  res.set('Cache-Control', 'public, max-age=300').json(info);
+});
 app.get('/api/claims', async (req, res) => {
   try {
     const lic = webhookLicence();
@@ -8974,7 +8994,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.206.0',
+  version: '3.207.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9199,6 +9219,14 @@ const v1Num = (v, lo, hi, name) => {
   return n;
 };
 const V1_MARKETS = new Set(['moneyline', 'spread', 'total', 'player_prop']);
+// ?state=TX: only venues a resident there can use (venues.js); a bad code is a 400, not everything
+function v1State(v) {
+  if (v == null || v === '') return null;
+  const st = venues.stateOf(v);
+  if (!st) throw new V1Error(400, 'bad_parameter', 'state is a two-letter US state code, like TX (DC too).');
+  return st;
+}
+const v1StateHead = st => (st ? { state: st, stateName: venues.stateInfo(st).name, stateNote: `Only venues a source says a ${venues.stateInfo(st).name} resident can use. ${venues.CHECK}` } : {});
 // each endpoint's body from its query and path values; the routes, the
 // widgets and the /developers examples all call these
 const v1 = {
@@ -9211,21 +9239,22 @@ const v1 = {
     const minSize = v1Num(q.minSize, 0, 100000, 'minSize');
     const hours = v1Num(q.hours, 0.1, 336, 'hours') ?? 48;
     const limit = v1Int(q.limit, 1, 200, 50, 'limit');
+    const state = v1State(q.state);
     const lic = webhookLicence();
     const at = new Date().toISOString();
     const head = { at, builtAt: shopState.builtAt || null, stale: v1Stale(), fairFrom: "Pinnacle's no-vig price (power method); EV is after each venue's fee",
       labels: { proven: "PROVEN: the venue's main lines are proven on RESULTS", lead: 'LEAD: research, not a proven edge' } };
     if (!v1FullTier()) return { ...head, locked: true, note: 'Fair prices and EV are for subscribers while the paywall is on, so no rows are listed here.', count: 0, rows: [] };
     const st = shopQuotes();
-    const key = `bp|${lic.kalshi ? 1 : 0}${lic.polymarket ? 1 : 0}|${st.builtAt}|${league}|${markets}|${venue}|${minEv}|${minSize}|${hours}`;
+    const key = `bp|${lic.kalshi ? 1 : 0}${lic.polymarket ? 1 : 0}|${st.builtAt}|${league}|${markets}|${venue}|${minEv}|${minSize}|${hours}|${state}`;
     const rows = v1MemoSync(key, () => {
       let quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
       if (!lic.polymarket) quotes = quotes.filter(x => !String(x.providerId).startsWith('polymarket'));
-      const view = shopper.build(quotes, { league, marketTypes: markets, providers: venue ? [venue] : null, toMs: Date.now() + hours * 3600e3,
+      const view = shopper.build(quotes, { league, marketTypes: markets, providers: venue ? [venue] : null, state, toMs: Date.now() + hours * 3600e3,
         minEv: minEv / 100, minSize: minSize || null, sort: 'ev', stake: 100, method: 'power', limit: 200, proven: evBookProven, depth: shopDepth.forQuote });
       return publicApi.bestPrices(view, { limit: 200 });
     });
-    return { ...head, locked: false, count: Math.min(rows.length, limit), rows: rows.slice(0, limit) };
+    return { ...head, ...v1StateHead(state), locked: false, count: Math.min(rows.length, limit), rows: rows.slice(0, limit) };
   },
   moves(q) {
     const window = v1Str(q.window, /^(open|3h|1h)$/, 'window') || 'open';
@@ -9256,17 +9285,19 @@ const v1 = {
   league(lg, q) {
     const league = v1Str(lg, /^[a-z0-9]{1,20}$/, 'league');
     const search = String(q.q || '').slice(0, 60);
-    const s = oddsScreenFor({ league, q: search, kalshiOk: !!webhookLicence().kalshi });
+    const state = v1State(q.state);
+    const s = oddsScreenFor({ league, q: search, state, kalshiOk: !!webhookLicence().kalshi });
     if (!s.games.length && !s.leagues.some(l => l.key === league)) throw new V1Error(404, 'not_found', `No ${league} games in the next 48 hours. /api/v1/leagues lists the leagues on the board.`);
     const full = v1FullTier();
-    return { at: new Date().toISOString(), league, linesAt: s.updated, stale: !!s.stale, fairShown: full, venues: s.venues, count: s.games.length,
+    return { at: new Date().toISOString(), league, ...v1StateHead(state), linesAt: s.updated, stale: !!s.stale, fairShown: full, venues: s.venues, count: s.games.length,
       games: (full ? s : oddsScreen.stripPro(s)).games.map(g => publicApi.boardGame(g, { withFair: full })),
       note: 'Fair is Pinnacle\'s no-vig price. Reference venues (Pinnacle, Matchbook, Polymarket global) are prices to read, not places to bet from the US; second-hand prices are copies, never a play alone.' };
   },
   async record(q) {
     const days = v1Num(q.days, 0, 3650, 'days') || 0;
-    const rec = claims.publicRecord({ board: await closeBoardFor(webhookLicence(), days, null) });
-    return { ...rec, days: days || null, flags: '/api/v1/record/flags' };
+    const state = v1State(q.state);
+    const rec = claims.publicRecord({ board: await closeBoardFor(webhookLicence(), days, state) });
+    return { ...rec, ...v1StateHead(state), days: days || null, flags: '/api/v1/record/flags' };
   },
   async flags(q) {
     const days = v1Num(q.days, 0, 3650, 'days') || 0;
@@ -9274,6 +9305,12 @@ const v1 = {
     const limit = v1Int(q.limit, 1, 1000, 200, 'limit'), offset = v1Int(q.offset, 0, 1e7, 0, 'offset');
     const { rows } = await recordFlags({ query: { days: days || undefined, kind: kind || undefined, book: book || undefined } });
     return { at: new Date().toISOString(), days: days || null, kind, book, columns: closeBoard.FLAG_COLUMNS, total: rows.length, offset, limit, flags: rows.slice(offset, offset + limit) };
+  },
+  states(st) {
+    if (st == null) return { asOf: venues.table().asOf, check: venues.CHECK, states: venues.statesList(), table: '/api/states/table' };
+    const info = venues.stateInfo(v1State(st));
+    if (!info) throw new V1Error(404, 'not_found', 'A state is its two-letter code, like TX.');
+    return info;
   },
   digests: () => digestIndex(),
   async digest(week) {
@@ -9348,6 +9385,8 @@ app.get('/api/v1/leagues', v1Auth, v1Route(() => v1.leagues()));
 app.get('/api/v1/leagues/:league', v1Auth, v1Route(req => v1.league(req.params.league, req.query)));
 app.get('/api/v1/record', v1Auth, v1Route(req => v1.record(req.query)));
 app.get('/api/v1/record/flags', v1Auth, v1Route(req => v1.flags(req.query)));
+app.get('/api/v1/states', v1Auth, v1Route(() => v1.states()));
+app.get('/api/v1/states/:state', v1Auth, v1Route(req => v1.states(req.params.state)));
 app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
 app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
@@ -9567,6 +9606,8 @@ async function developerExamples() {
   let weeks = null;
   await add('/api/v1/digest', '/api/v1/digest', async () => (weeks = await v1.digests()));
   if (weeks?.current) await add('/api/v1/digest/{week}', `/api/v1/digest/${weeks.current}`, () => v1.digest(weeks.current));
+  await add('/api/v1/states', '/api/v1/states', () => v1.states(), 3);
+  await add('/api/v1/states/{state}', '/api/v1/states/TX', () => v1.states('TX'), 2);
   await add('/api/v1/status', '/api/v1/status', () => v1.status());
   return ex;
 }
