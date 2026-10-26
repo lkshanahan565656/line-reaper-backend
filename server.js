@@ -4870,10 +4870,10 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nDisallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/learn', '/status', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/learn', '/status', '/developers', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -4884,7 +4884,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.196.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.197.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5165,22 +5165,23 @@ async function publishDigest(now = Date.now()) {
   digestState.error = null;
   return digestState.last;
 }
+// the weeks the digest covers (newest first, at most 13): /api/digest and /api/v1/digest
+async function digestIndex(now = Date.now()) {
+  const frozen = await frozenDigests();
+  const lists = await closeBoardLists(webhookLicence(), null);
+  const first = Math.min(...Object.values(lists).flat().map(digest.startOf).filter(t => t > 0), now);
+  const cur = digest.weekOf(now);
+  const weeks = [];
+  for (let t = cur.from, i = 0; t >= digest.weekStart(first) && i < 13; t -= digest.WEEK, i++) {
+    const id = digest.weekOf(t).id, f = frozen.find(d => d.week === id);
+    weeks.push({ week: id, name: digest.weekName(id), partial: t === cur.from, frozen: !!f, sentAt: f ? f.pushedAt || f.builtAt : null,
+      graded: f ? f.digest.summary.graded : null, share: `/digest/${id}` });
+  }
+  return { at: new Date(now).toISOString(), current: cur.id, sendsAt: 'Monday 13:00 UTC', nextSend: new Date(digest.sendAt(cur.id)).toISOString(), weeks };
+}
 app.get('/api/digest', async (req, res) => {
-  try {
-    const now = Date.now();
-    const frozen = await frozenDigests();
-    const lists = await closeBoardLists(webhookLicence(), null);
-    const first = Math.min(...Object.values(lists).flat().map(digest.startOf).filter(t => t > 0), now);
-    const cur = digest.weekOf(now);
-    const weeks = [];
-    for (let t = cur.from, i = 0; t >= digest.weekStart(first) && i < 13; t -= digest.WEEK, i++) {
-      const id = digest.weekOf(t).id, f = frozen.find(d => d.week === id);
-      weeks.push({ week: id, name: digest.weekName(id), partial: t === cur.from, frozen: !!f, sentAt: f ? f.pushedAt || f.builtAt : null,
-        graded: f ? f.digest.summary.graded : null, share: `/digest/${id}` });
-    }
-    res.set('Cache-Control', 'public, max-age=60').json({ at: new Date(now).toISOString(), current: cur.id, sendsAt: 'Monday 13:00 UTC',
-      nextSend: new Date(digest.sendAt(cur.id)).toISOString(), weeks });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.set('Cache-Control', 'public, max-age=60').json(await digestIndex()); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/digest/:week', async (req, res) => {
   try {
@@ -8614,7 +8615,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.196.1',
+  version: '3.197.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8795,6 +8796,272 @@ schedule('*/5 * * * *', () => { if (statusBooted) statusBoard.sample(); });
 const statusView = () => statusBoard.view({ liveCheck: liveCheck.state, uptimeS: Math.round(process.uptime()) });
 app.get('/api/uptime', (req, res) => res.set('Cache-Control', 'no-store').json(statusView()));
 app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html').send(statusPage.renderPage(statusView(), { origin: siteOrigin(req) })));
+// ─── PUBLIC API v1, WIDGETS AND /developers (publicapi.js, embeds.js) ────────
+// A read-only, versioned copy of what the app shows, the same for every
+// caller: the public licences (the webhook's: Kalshi and Polymarket only where
+// their display flag allows), no polymarket.com links, hidden wallets dropped.
+// Fair prices and EV ride the free tier: shown while the paywall is off, held
+// back (with a note) once it is on. Keyed: 60 calls a minute and 5,000 a day.
+// Widgets need no key (per-address limit) and say no more than the API does.
+const publicApi = require('./publicapi');
+const embeds = require('./embeds');
+const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json' })) });
+apiKeys.init().catch(e => console.warn('API keys: store failed to initialise:', e.message));
+const apiLimiter = publicApi.createLimiter();
+const widgetLimiter = publicApi.createLimiter({ perMinute: publicApi.WIDGET_PER_MINUTE, perDay: 0 });
+const v1Safe = x => hideWallets(stripPolymarketLinks(x));
+const v1FullTier = () => !PAYWALL;
+const v1Stale = () => Date.now() - Date.parse(freeBooksState.gamesAt || 0) >= FREE_BOOKS_MAX_AGE_MS;
+class V1Error extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; } }
+const v1Str = (v, re, name) => {
+  if (v == null || v === '') return null;
+  const s = String(v).toLowerCase();
+  if (!re.test(s)) throw new V1Error(400, 'bad_parameter', `${name} is not valid.`);
+  return s;
+};
+const v1Int = (v, lo, hi, def, name) => {
+  if (v == null || v === '') return def;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < lo || n > hi) throw new V1Error(400, 'bad_parameter', `${name} must be a whole number from ${lo} to ${hi}.`);
+  return n;
+};
+const v1Num = (v, lo, hi, name) => {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < lo || n > hi) throw new V1Error(400, 'bad_parameter', `${name} must be a number from ${lo} to ${hi}.`);
+  return n;
+};
+const V1_MARKETS = new Set(['moneyline', 'spread', 'total', 'player_prop']);
+// each endpoint's body from its query and path values; the routes, the
+// widgets and the /developers examples all call these
+const v1 = {
+  bestPrices(q) {
+    const league = v1Str(q.league, /^[a-z0-9]{1,20}$/, 'league');
+    const markets = q.market ? String(q.market).toLowerCase().split(',').map(x => x.trim()).filter(Boolean) : null;
+    if (markets && (markets.length > 4 || markets.some(m => !V1_MARKETS.has(m)))) throw new V1Error(400, 'bad_parameter', 'market is one or more of moneyline, spread, total, player_prop.');
+    const venue = v1Str(q.venue, /^[a-z0-9]{1,20}$/, 'venue');
+    const minEv = v1Num(q.minEv, -100, 1000, 'minEv') ?? 0;
+    const minSize = v1Num(q.minSize, 0, 100000, 'minSize');
+    const hours = v1Num(q.hours, 0.1, 336, 'hours') ?? 48;
+    const limit = v1Int(q.limit, 1, 200, 50, 'limit');
+    const lic = webhookLicence();
+    const at = new Date().toISOString();
+    const head = { at, builtAt: shopState.builtAt || null, stale: v1Stale(), fairFrom: "Pinnacle's no-vig price (power method); EV is after each venue's fee",
+      labels: { proven: "PROVEN: the venue's main lines are proven on RESULTS", lead: 'LEAD: research, not a proven edge' } };
+    if (!v1FullTier()) return { ...head, locked: true, note: 'Fair prices and EV are for subscribers while the paywall is on, so no rows are listed here.', count: 0, rows: [] };
+    const st = shopQuotes();
+    const key = `bp|${lic.kalshi ? 1 : 0}${lic.polymarket ? 1 : 0}|${st.builtAt}|${league}|${markets}|${venue}|${minEv}|${minSize}|${hours}`;
+    const rows = v1MemoSync(key, () => {
+      let quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+      if (!lic.polymarket) quotes = quotes.filter(x => !String(x.providerId).startsWith('polymarket'));
+      const view = shopper.build(quotes, { league, marketTypes: markets, providers: venue ? [venue] : null, toMs: Date.now() + hours * 3600e3,
+        minEv: minEv / 100, minSize: minSize || null, sort: 'ev', stake: 100, method: 'power', limit: 200, proven: evBookProven, depth: shopDepth.forQuote });
+      return publicApi.bestPrices(view, { limit: 200 });
+    });
+    return { ...head, locked: false, count: Math.min(rows.length, limit), rows: rows.slice(0, limit) };
+  },
+  moves(q) {
+    const window = v1Str(q.window, /^(open|3h|1h)$/, 'window') || 'open';
+    const type = v1Str(q.type, /^(price|line)$/, 'type') || 'price';
+    const league = v1Str(q.league, /^[a-z0-9]{1,20}$/, 'league');
+    const kind = v1Str(q.kind, /^(game|prop)$/, 'kind');
+    const limit = v1Int(q.limit, 1, 200, 50, 'limit');
+    const base = movesFor({ window, kalshiOk: !!webhookLicence().kalshi });
+    const rows = bigMoves.rank(base.rows.filter(r => !kind || r.kind === kind), { league, type, sort: 'move' });
+    return { at: base.updated, window, type, league, kind, linesAt: base.linesAt, stale: !!base.stale, total: rows.length, rows: rows.slice(0, limit).map(publicApi.moveRow),
+      note: 'A move is information, not a proven edge. Venues still at the old number have graded as no edge against the close.' };
+  },
+  moveHistory(gameId, q) {
+    const id = String(gameId || '').slice(0, 80);
+    const market = v1Str(q.market, /^(ml|spread|total)$/, 'market');
+    const lic = webhookLicence();
+    let series = oddsHistory.forGame(id).filter(x => !market || x.market === market);
+    if (!lic.kalshi) series = series.map(x => ({ ...x, pts: x.pts.map(([t, p, f, px]) => [t, p, f, Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
+    if (!series.length) throw new V1Error(404, 'not_found', 'No saved prices for that game: an id comes from /api/v1/moves or /api/v1/leagues/{league}, and history is kept until 6 hours after the start.');
+    const g = oddsScreenFor({ kalshiOk: !!lic.kalshi }).games.find(x => x.id === id);
+    return { gameId: id, game: g ? { event: `${g.away} @ ${g.home}`, league: g.league, leagueLabel: g.leagueLabel, start: g.start } : null, fairShown: v1FullTier(),
+      series: publicApi.historySeries(series, { withFair: v1FullTier() }) };
+  },
+  leagues() {
+    const s = oddsScreenFor({ kalshiOk: !!webhookLicence().kalshi });
+    return { at: new Date().toISOString(), linesAt: s.updated, stale: !!s.stale, leagues: s.leagues.map(l => ({ ...l, board: `/api/v1/leagues/${l.key}` })) };
+  },
+  league(lg, q) {
+    const league = v1Str(lg, /^[a-z0-9]{1,20}$/, 'league');
+    const search = String(q.q || '').slice(0, 60);
+    const s = oddsScreenFor({ league, q: search, kalshiOk: !!webhookLicence().kalshi });
+    if (!s.games.length && !s.leagues.some(l => l.key === league)) throw new V1Error(404, 'not_found', `No ${league} games in the next 48 hours. /api/v1/leagues lists the leagues on the board.`);
+    const full = v1FullTier();
+    return { at: new Date().toISOString(), league, linesAt: s.updated, stale: !!s.stale, fairShown: full, venues: s.venues, count: s.games.length,
+      games: (full ? s : oddsScreen.stripPro(s)).games.map(g => publicApi.boardGame(g, { withFair: full })),
+      note: 'Fair is Pinnacle\'s no-vig price. Reference venues (Pinnacle, Matchbook, Polymarket global) are prices to read, not places to bet from the US; second-hand prices are copies, never a play alone.' };
+  },
+  async record(q) {
+    const days = v1Num(q.days, 0, 3650, 'days') || 0;
+    const rec = claims.publicRecord({ board: await closeBoardFor(webhookLicence(), days, null) });
+    return { ...rec, days: days || null, flags: '/api/v1/record/flags' };
+  },
+  async flags(q) {
+    const days = v1Num(q.days, 0, 3650, 'days') || 0;
+    const kind = v1Str(q.kind, /^[\w-]{1,40}$/, 'kind'), book = v1Str(q.book, /^[\w-]{1,40}$/, 'book');
+    const limit = v1Int(q.limit, 1, 1000, 200, 'limit'), offset = v1Int(q.offset, 0, 1e7, 0, 'offset');
+    const { rows } = await recordFlags({ query: { days: days || undefined, kind: kind || undefined, book: book || undefined } });
+    return { at: new Date().toISOString(), days: days || null, kind, book, columns: closeBoard.FLAG_COLUMNS, total: rows.length, offset, limit, flags: rows.slice(offset, offset + limit) };
+  },
+  digests: () => digestIndex(),
+  async digest(week) {
+    const w = String(week || '');
+    if (!digest.validWeek(w)) throw new V1Error(400, 'bad_parameter', 'A week is the date of its Monday, like 2026-10-19.');
+    const out = await digestFor(w);
+    if (!out) throw new V1Error(404, 'not_found', 'That week has not started.');
+    return { ...out, share: `/digest/${w}` };
+  },
+  status: () => statusView(),
+};
+// a short synchronous memo for the shopper's per-query build
+const v1Sync = new Map();
+function v1MemoSync(key, fn) {
+  const hit = v1Sync.get(key);
+  if (hit && Date.now() - hit.at < 30e3) return hit.v;
+  const v = fn();
+  if (v1Sync.size > 200) v1Sync.clear();
+  v1Sync.set(key, { at: Date.now(), v });
+  return v;
+}
+function v1Fail(res, e) {
+  if (!(e instanceof V1Error)) console.warn('API v1:', e.message);
+  const status = e instanceof V1Error ? e.status : 500;
+  return res.status(status).set('Cache-Control', 'no-store').json({ error: { code: e instanceof V1Error ? e.code : 'server_error', message: e instanceof V1Error ? e.message : 'Something went wrong on our side. Try again in a minute.' } });
+}
+// every /api/v1 answer: the headers a browser caller may read
+app.use('/api/v1', (req, res, next) => {
+  res.set({ 'Access-Control-Expose-Headers': 'ETag, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-RateLimit-Daily-Limit, X-RateLimit-Daily-Remaining, Retry-After', 'X-Robots-Tag': 'noindex' });
+  next();
+});
+const v1KeyOf = req => req.get('x-api-key') || (typeof req.query.key === 'string' ? req.query.key : '');
+function v1Auth(req, res, next) {
+  const key = v1KeyOf(req);
+  const doc = apiKeys.check(key);
+  if (!doc) return v1Fail(res, new V1Error(401, key ? 'bad_key' : 'no_key', key ? 'That key is not known or was revoked. Make a new one at /developers.' : 'Send your key in an X-API-Key header. Make one free at /developers.'));
+  const lim = apiLimiter.take(doc.id);
+  publicApi.limitHeaders(res, lim);
+  if (!lim.ok) return v1Fail(res, new V1Error(429, 'rate_limited', lim.over === 'day' ? `Over ${lim.dayLimit} calls today (UTC). Try again tomorrow.` : `Over ${lim.limit} calls this minute. Try again in ${lim.retryAfter} s.`));
+  req.apiKey = doc;
+  next();
+}
+const v1Route = fn => async (req, res) => {
+  try { publicApi.sendCached(req, res, v1Safe(await fn(req))); } catch (e) { v1Fail(res, e); }
+};
+app.get('/api/v1', (req, res) => publicApi.sendCached(req, res, { version: publicApi.VERSION, docs: '/developers', auth: 'X-API-Key header (or ?key=)', limits: publicApi.LIMITS,
+  endpoints: publicApi.ENDPOINTS.map(e => ({ path: e.path, title: e.title, params: Object.fromEntries(e.params) })), widgets: ['/embed/best-price', '/embed/line-move', '/embed/record', '/embed.js'] }, { scope: 'public', maxAge: 300 }));
+app.post('/api/v1/keys', async (req, res) => {
+  try {
+    const out = await apiKeys.create({ name: req.body?.name, userId: req.user?.id || null, who: publicApi.callerOf(req) });
+    res.status(201).set('Cache-Control', 'no-store').json({ ...out, note: 'Shown once: keep it somewhere safe. Only a hash of it is stored.', limits: publicApi.LIMITS });
+  } catch (e) {
+    if (e.retryAfter) res.set('Retry-After', String(e.retryAfter));
+    v1Fail(res, e.status ? new V1Error(e.status, e.status === 429 ? 'rate_limited' : 'unavailable', e.message) : e);
+  }
+});
+// a signed-in account's keys (never the keys themselves)
+app.get('/api/v1/keys', async (req, res) => {
+  if (!req.user) return v1Fail(res, new V1Error(401, 'not_signed_in', 'Sign in to list the keys made from your account.'));
+  await apiKeys.init().catch(() => {});
+  res.set('Cache-Control', 'no-store').json({ keys: apiKeys.listFor(req.user.id) });
+});
+app.get('/api/v1/key', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ key: publicApi.publicKey(req.apiKey), usage: apiLimiter.usage(req.apiKey.id), limits: publicApi.LIMITS }));
+app.delete('/api/v1/key', v1Auth, async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json({ revoked: await apiKeys.revoke(v1KeyOf(req)) }); } catch (e) { v1Fail(res, e); }
+});
+app.get('/api/v1/best-prices', v1Auth, v1Route(req => v1.bestPrices(req.query)));
+app.get('/api/v1/moves', v1Auth, v1Route(req => v1.moves(req.query)));
+app.get('/api/v1/moves/:gameId', v1Auth, v1Route(req => v1.moveHistory(req.params.gameId, req.query)));
+app.get('/api/v1/leagues', v1Auth, v1Route(() => v1.leagues()));
+app.get('/api/v1/leagues/:league', v1Auth, v1Route(req => v1.league(req.params.league, req.query)));
+app.get('/api/v1/record', v1Auth, v1Route(req => v1.record(req.query)));
+app.get('/api/v1/record/flags', v1Auth, v1Route(req => v1.flags(req.query)));
+app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
+app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
+app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
+app.use('/api/v1', (req, res) => v1Fail(res, new V1Error(404, 'not_found', 'No such endpoint. /api/v1 lists them.')));
+
+// ── widgets: no key, a per-address limit, the same bodies as the API ──
+function widgetGate(req, res, next) {
+  const lim = widgetLimiter.take(publicApi.callerOf(req));
+  if (!lim.ok) return res.status(429).set({ 'Retry-After': String(lim.retryAfter), 'Cache-Control': 'no-store' }).type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#94a3b8;font:13px system-ui;margin:8px">Too many widget loads from this address. It will load again in a minute.</body>');
+  next();
+}
+const widgetId = req => String(req.query._id || '').replace(/[^\w-]/g, '').slice(0, 40);
+const sendWidget = (req, res, html) => publicApi.sendCached(req, res, html, { type: 'text/html; charset=utf-8', maxAge: 60, scope: 'public' });
+const widgetError = (res, e) => res.status(e instanceof V1Error ? e.status : 500).set('Cache-Control', 'no-store').type('html')
+  .send(`<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#94a3b8;font:13px system-ui;margin:8px">${learn.esc(e instanceof V1Error ? e.message : 'This widget could not load. It tries again in a minute.')}</body>`);
+app.get('/embed/best-price', widgetGate, (req, res) => {
+  try {
+    const n = v1Int(req.query.n, 1, 5, 1, 'n');
+    const body = v1Safe(v1.bestPrices({ league: req.query.league, market: req.query.market, venue: req.query.venue, limit: n }));
+    sendWidget(req, res, embeds.bestPriceWidget(body.rows, { league: v1Str(req.query.league, /^[a-z0-9]{1,20}$/, 'league'), at: body.builtAt, locked: body.locked, stale: body.stale, origin: siteOrigin(req), id: widgetId(req) }));
+  } catch (e) { widgetError(res, e); }
+});
+app.get('/embed/line-move', widgetGate, (req, res) => {
+  try {
+    let game = String(req.query.game || '').slice(0, 80), market = v1Str(req.query.market, /^(ml|spread|total)$/, 'market');
+    if (!game) {
+      // today's biggest game-line move, price first
+      const base = movesFor({ window: 'open', kalshiOk: !!webhookLicence().kalshi });
+      const games = base.rows.filter(r => r.kind === 'game');
+      const top = bigMoves.rank(games, { type: 'price', sort: 'move' })[0] || bigMoves.rank(games, { type: 'line', sort: 'move' })[0];
+      if (top) { game = top.gameId; market = market || top.market; }
+    }
+    let hist = null;
+    if (game) { try { hist = v1Safe(v1.moveHistory(game, {})); } catch (e) { if (!(e instanceof V1Error)) throw e; } }
+    const g = hist?.game ? { ...hist.game } : null;
+    const sideIndex = v1Int(req.query.side, 0, 2, 0, 'side');
+    sendWidget(req, res, embeds.lineMoveWidget({ game: g || (hist ? { event: game, leagueLabel: '', start: hist.series[0]?.start } : (game ? { event: game } : null)), series: hist?.series || [], market, sideIndex,
+      withFair: v1FullTier(), origin: siteOrigin(req), id: widgetId(req), venueName: v => bigMoves.NAMES[v] || venues.NAMES[v] || v }));
+  } catch (e) { widgetError(res, e); }
+});
+app.get('/embed/record', widgetGate, async (req, res) => {
+  try { sendWidget(req, res, embeds.recordWidget(publicApi.recordCard(await v1.record({})), { origin: siteOrigin(req), id: widgetId(req) })); }
+  catch (e) { widgetError(res, e); }
+});
+app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/javascript').send(embeds.embedScript(siteOrigin(req))));
+
+// ── /developers: the docs, with each endpoint's live answer cut to its first rows ──
+const trimArrays = (x, n = 3, depth = 0) => {
+  if (Array.isArray(x)) return x.slice(0, n).map(v => trimArrays(v, n, depth + 1));
+  if (!x || typeof x !== 'object' || depth > 8) return x;
+  return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, trimArrays(v, n, depth + 1)]));
+};
+async function developerExamples() {
+  const ex = {};
+  const add = async (path, url, fn, n = 2) => {
+    try { ex[path] = { url, at: new Date().toISOString(), body: trimArrays(v1Safe(await fn()), n) }; } catch { /* left out: the page says why */ }
+  };
+  await add('/api/v1/best-prices', '/api/v1/best-prices?limit=2', () => v1.bestPrices({ limit: 2 }));
+  let moves = null;
+  await add('/api/v1/moves', '/api/v1/moves?limit=2', () => (moves = v1.moves({ limit: 20 })));
+  const gid = moves?.rows.find(r => r.gameId)?.gameId;
+  if (gid) await add('/api/v1/moves/{gameId}', `/api/v1/moves/${encodeURIComponent(gid)}?market=ml`, () => v1.moveHistory(gid, { market: 'ml' }));
+  let lgs = null;
+  await add('/api/v1/leagues', '/api/v1/leagues', () => (lgs = v1.leagues()), 4);
+  const lg = lgs?.leagues[0]?.key;
+  if (lg) await add('/api/v1/leagues/{league}', `/api/v1/leagues/${lg}`, () => v1.league(lg, {}), 1);
+  await add('/api/v1/record', '/api/v1/record', () => v1.record({}));
+  await add('/api/v1/record/flags', '/api/v1/record/flags?limit=2', () => v1.flags({ limit: 2 }));
+  let weeks = null;
+  await add('/api/v1/digest', '/api/v1/digest', async () => (weeks = await v1.digests()));
+  if (weeks?.current) await add('/api/v1/digest/{week}', `/api/v1/digest/${weeks.current}`, () => v1.digest(weeks.current));
+  await add('/api/v1/status', '/api/v1/status', () => v1.status());
+  return ex;
+}
+const devMemo = require('./ops').createMemo({ ttlMs: 60e3 });
+app.get('/developers', async (req, res) => {
+  try {
+    const examples = await devMemo('examples', developerExamples);
+    res.set('Cache-Control', 'public, max-age=60').type('html').send(embeds.developersPage({ origin: siteOrigin(req), endpoints: publicApi.ENDPOINTS, examples,
+      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence() }));
+  } catch (e) { console.warn('Developers page:', e.message); res.status(500).type('text').send('The developers page could not be built. Try again in a minute.'); }
+});
 // NBA model: finished box scores, tonight's schedule and the injury list every 30 minutes (first read 2 minutes after boot)
 if (nbaModel) {
   schedule('11,41 * * * *', () => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)));

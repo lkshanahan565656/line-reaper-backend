@@ -999,6 +999,59 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     await settle(page, w, opts, 60);
   },
 
+  async 'developers page and widgets: key, try it, fit the screen'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    const claimy = /guaranteed|risk[- ]free|sure thing|lock of|undefined|NaN/i;
+    try {
+      const res = await page.goto(`${opts.base}/developers`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/developers answered ${res && res.status()}`);
+      expect(/Public API and widgets/.test(await text(page, 'h1')), 'the developers page heading is missing');
+      expect(await fits(), 'the developers page scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!claimy.test(body), 'the developers page shows a claim or broken text');
+      expect(/GET \/api\/v1\/best-prices/.test(body) && /GET \/api\/v1\/record/.test(body), 'an endpoint is missing from the docs');
+      expect(await page.locator('iframe[data-lr-id]').count() === 3, 'the three widget previews are missing');
+      if (!opts.live) {
+        // TRY IT before a key says to make one, rather than doing nothing
+        const tryBtn = page.locator('[data-try]').first();
+        if (await tryBtn.count()) {
+          await tryBtn.click();
+          expect(/Make a key first/.test(await text(page, '[data-try-msg]')), 'TRY IT without a key gave no answer');
+        }
+        await page.locator('#kname').fill('e2e site');
+        await page.locator('#mk button[type=submit]').click();
+        await page.locator('#keyText').waitFor({ timeout: 6000 });
+        const key = (await text(page, '#keyText')).trim();
+        expect(/^lr_[\w-]{20,}$/.test(key), `the new key reads "${key}"`);
+        expect(await page.locator('#mine').isVisible(), 'the saved key panel did not show');
+        if (await tryBtn.count()) {
+          await tryBtn.click();
+          await page.waitForFunction(() => /^\d{3} ·/.test(document.querySelector('[data-try-msg]').textContent), null, { timeout: 6000 });
+          expect(/^200 ·/.test(await text(page, '[data-try-msg]')), `TRY IT answered "${await text(page, '[data-try-msg]')}"`);
+        }
+        await page.locator('#mineUse').click();
+        await page.waitForFunction(() => /Used \d+ of/.test(document.getElementById('mineInfo').textContent), null, { timeout: 6000 });
+        await page.locator('#mineRevoke').click();
+        await page.waitForFunction(() => /Revoked/.test(document.getElementById('mkOut').textContent), null, { timeout: 6000 });
+        const r = await page.request.get(`${opts.base}/api/v1/leagues`, { headers: { 'X-API-Key': key } });
+        expect(r.status() === 401, `a revoked key still answers ${r.status()}`);
+        expect(await fits(), 'the developers page scrolls sideways after making a key');
+      }
+      for (const u of ['/embed/best-price?league=nfl&n=3', '/embed/line-move', '/embed/record']) {
+        const wr = await page.goto(`${opts.base}${u}`, { waitUntil: 'domcontentloaded' });
+        expect(wr && wr.status() === 200, `${u} answered ${wr && wr.status()}`);
+        expect(await fits(), `${u} scrolls sideways at this size`);
+        const t = await page.evaluate(() => document.body.innerText);
+        expect(/LINE REAPER|FULL RECORD/.test(t), `${u} has no link back to the site`);
+        expect(!claimy.test(t), `${u} shows a claim or broken text`);
+        expect(!/[^ ]PROVEN|PROVEN/.test(t) || /graded|main lines|Proven here means|RESULTS/i.test(t), `${u} says PROVEN without the record behind it`);
+      }
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
   async 'sales page and Learn claim only what the record proves'(page, w, opts) {
     // TEST DATA, not a recording: one proven row shaped like /api/claims, so the
     // page is checked against known numbers. The live check reads the real API.
