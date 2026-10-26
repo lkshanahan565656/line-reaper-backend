@@ -276,7 +276,8 @@ function pick6Home(decoded) {
 // Pick6's pills are its sports; season-long boards and the NFL day filters
 // (NFL SUN, MNF) repeat or aren't single games
 const PICK6_SKIP = /SZN|SEASON|^NFL SUN$|^MNF$|^TNF$/i;
-const PICK6_SPORT = { 'PGA TOUR': 'GOLF', UFC: 'MMA', CFB: 'CFB', CBB: 'CBB' };
+// college basketball under the names DraftKings uses elsewhere (no Pick6 pill until the season opens, 2026-10-26)
+const PICK6_SPORT = { 'PGA TOUR': 'GOLF', UFC: 'MMA', CFB: 'CFB', CBB: 'CBB', NCAAB: 'CBB', NCAAM: 'CBB', CBK: 'CBB', 'COLLEGE BASKETBALL': 'CBB' };
 function pick6Sports(home) {
   const out = [];
   const seen = new Set();

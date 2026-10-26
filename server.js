@@ -266,7 +266,7 @@ const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permiss
 const PRIZEPICKS_URL = process.env.PRIZEPICKS_URL || 'https://partner-api.prizepicks.com/projections';
 const PP_FULL_MS = 20 * 60 * 1000;
 // fullAt: last full try; fullOkAt and leagueOkAt[id]: last pulls that answered
-const ppState = { fullAt: 0, esportsLeagues: [], next: 0, fullOkAt: 0, leagueOkAt: {} };
+const ppState = { fullAt: 0, esportsLeagues: [], next: 0, fullOkAt: 0, leagueOkAt: {}, fullPages: null, fullProjections: null };
 const PP_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   'Accept': 'application/json', 'Origin': 'https://app.prizepicks.com', 'Referer': 'https://app.prizepicks.com/',
@@ -282,6 +282,11 @@ async function scrapePrizePicks() {
       const res = await axios.get(PRIZEPICKS_URL, { params: { per_page: 10000, single_stat: true }, headers: PP_HEADERS, timeout: 30000, maxContentLength: 80e6 });
       const { lines, leagues } = parsePrizePicksPayload(res.data);
       allLines = lines;
+      // one page holds the whole board (17,252 projections, 21 MB, total_pages 1 on 2026-10-26);
+      // say so if PrizePicks ever starts paging it (college basketball from Nov 3 about doubles the board)
+      ppState.fullPages = Number(res.data?.meta?.total_pages) || 1;
+      ppState.fullProjections = (res.data?.data || []).length;
+      if (ppState.fullPages > 1) console.warn(`PP: the full board came in ${ppState.fullPages} pages; only page 1 (${ppState.fullProjections} projections) was read`);
       cache.ppPromos = { data: parsePrizePicksPromos(res.data), updated: new Date().toISOString() };
       ppState.esportsLeagues = Object.entries(leagues).filter(([, name]) => isEsports(name)).map(([id]) => id);
       if (!ppState.esportsLeagues.length) ppState.esportsLeagues = [...new Set(lines.filter(l => isEsports(l.sport) && l.leagueId).map(l => l.leagueId))];
@@ -8724,7 +8729,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   version: '3.199.0',
   modelWeight: MODEL_WEIGHT,
-  prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
+  prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks, fullPages: ppState.fullPages, fullProjections: ppState.fullProjections },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),

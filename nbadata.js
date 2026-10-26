@@ -84,7 +84,9 @@ function scheduleOf(ev, { teamKey = t => fixAbbr(t?.abbreviation), minTotal = 15
   const { total, spread } = M.spreadOf(o ? [o] : null, home, away, minTotal);
   return { id: String(ev.id), t: Date.parse(ev.date), home, away, done: !!c.status?.type?.completed, total, spread,
     homeName: h.team?.displayName || '', awayName: a.team?.displayName || '', stype: ev.season?.type ?? null,
-    homeAbbr: h.team?.abbreviation || home, awayAbbr: a.team?.abbreviation || away };
+    homeAbbr: h.team?.abbreviation || home, awayAbbr: a.team?.abbreviation || away,
+    // the school's short names ("Duke", "UConn", "Kansas St"): what an app's team field can carry
+    homeAlt: [h.team?.shortDisplayName, h.team?.location].filter(Boolean), awayAlt: [a.team?.shortDisplayName, a.team?.location].filter(Boolean) };
 }
 // ESPN's injury list → Map(team abbr → Set(player key)) of players listed Out
 // (Doubtful counts as out; Questionable and Day-To-Day do not)
@@ -210,9 +212,17 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
     const hist = H.players.get(key);
     const last = hist && hist.length ? hist[hist.length - 1] : null;
     const near = state.schedule.filter(s => Math.abs(s.t - t) < 4 * 3600e3);
+    const rowTeam = (s, a) => C.teamMatch(a, a === s.home ? s.homeName : s.awayName, row.team, a === s.home ? s.homeAbbr : s.awayAbbr, a === s.home ? s.homeAlt : s.awayAlt);
+    const at = (s, team) => ({ ...s, team, opp: team === s.home ? s.away : s.home, isHome: team === s.home });
+    // college: the app's own team field first. A transfer's last team on
+    // record is his old school, which can be playing the same night (a
+    // 150-game slate), so it only counts when the row names no school there.
+    if (C.preferRowTeam && !strict && row.team) {
+      for (const s of near) { const team = [s.home, s.away].find(a => rowTeam(s, a)); if (team) return at(s, team); }
+    }
     for (const s of near) {
-      const team = [s.home, s.away].find(a => (last && last.team === a) || (!strict && C.teamMatch(a, a === s.home ? s.homeName : s.awayName, row.team, a === s.home ? s.homeAbbr : s.awayAbbr)));
-      if (team) return { ...s, team, opp: team === s.home ? s.away : s.home, isHome: team === s.home };
+      const team = [s.home, s.away].find(a => (last && last.team === a) || (!strict && rowTeam(s, a)));
+      if (team) return at(s, team);
     }
     return null;
   }

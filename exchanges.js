@@ -52,11 +52,12 @@ function kalshiPrice(m, field) {
 
 // "KXNHLGAME-25OCT08BOSTOR-BOS" → 'nhl'. Rows carry their league so a
 // Bruins–Leafs market can't attach to a Celtics–Raptors game.
-const KALSHI_LEAGUE_RE = /KX(NCAAF|NCAAB|WNBA|NBA|NFL|MLB|NHL|MLS)/i;
+// Men's college basketball is KXNCAAMB… on Kalshi ("KXNCAAMBGAME"): the board's ncaab.
+const KALSHI_LEAGUE_RE = /KX(NCAAF|NCAAMB|NCAAB|WNBA|NBA|NFL|MLB|NHL|MLS)/i;
 function kalshiLeague(...tickers) {
   for (const t of tickers) {
     const m = String(t || '').match(KALSHI_LEAGUE_RE);
-    if (m) return m[1].toLowerCase();
+    if (m) return m[1].toLowerCase() === 'ncaamb' ? 'ncaab' : m[1].toLowerCase();
   }
   return null;
 }
