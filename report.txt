@@ -1,0 +1,103 @@
+Weekend board NBA/CFB/NHL 20261025: 11858 legs, 1066 not graded yet, 547 void (player not in the box)
+
+Pre-registered 10-24:
+NBA|sleeper|sl-combo-books                     894  447-447      50.0% vs  56.2%  z -3.72   -97.59u  clv 0pt (40)
+NHL|sleeper|pin-same-over                      667  308-359      46.2% vs  48.5%  z -1.24   -33.84u  clv 0.01pt (665)
+NHL|sleeper|pin-same-under                     667  359-308      53.8% vs  64.7%  z -6.04   -115.8u  clv -0.01pt (665)
+NHL|pick6|pin-same-over                        633  299-334      47.2% vs  52.9%  z -2.95   -66.77u  clv -
+NHL|pick6|pin-same-under                       633  334-299      52.8% vs  64.6%  z -6.42  -114.55u  clv -
+NHL|underdog|pin-same-over                     538  262-276      48.7% vs  52.6%  z -1.86   -43.98u  clv -0.01pt (536)
+NHL|underdog|pin-same-under                    528  269-259      50.9% vs  64.1%  z -6.45     -112u  clv 0.01pt (526)
+NBA|pick6|pin-same-over                        355  181-174      51.0% vs  55.8%  z -1.85   -31.72u  clv -0.16pt (294)
+NBA|pick6|pin-same-under                       355  174-181      49.0% vs  57.4%  z -3.21   -52.07u  clv 0.16pt (294)
+NBA|underdog|pin-same-over                     333  169-164      50.7% vs  56.0%  z -1.96   -31.38u  clv 0.07pt (300)
+NBA|underdog|pin-same-under                    333  164-169      49.3% vs  58.5%  z -3.46   -53.04u  clv -0.07pt (300)
+NBA|sleeper|pin-same-over                      328  165-163      50.3% vs  55.1%  z -1.76   -29.65u  clv -0.06pt (259)
+NBA|sleeper|pin-same-under                     328  163-165      49.7% vs  57.3%  z -2.79   -43.92u  clv 0.06pt (259)
+NBA|prizepicks|pin-same-over                   226  125-101      55.3% vs  55.0%  z  0.08     1.15u  clv -0.03pt (203)
+NBA|prizepicks|pin-same-under                  226  101-125      44.7% vs  55.0%  z -3.12   -42.46u  clv 0.03pt (203)
+NHL|prizepicks|pin-same-over                   153  78-75        51.0% vs  55.0%  z -1.01   -11.26u  clv 0.01pt (142)
+NHL|prizepicks|pin-same-under                  153  75-78        49.0% vs  55.0%  z -1.49   -16.71u  clv -0.01pt (142)
+CFB|underdog|pin-same-over                     146  71-75        48.6% vs  56.5%  z -1.93   -18.61u  clv -0.01pt (142)
+CFB|underdog|pin-same-under                    145  74-71        51.0% vs  56.7%  z -1.37   -12.28u  clv 0.01pt (141)
+CFB|prizepicks|pin-same-over                   121  59-62        48.8% vs  55.0%  z -1.39   -13.79u  clv -0.04pt (116)
+CFB|prizepicks|pin-same-under                  121  62-59        51.2% vs  55.0%  z -0.84    -8.33u  clv 0.04pt (116)
+CFB|sleeper|pin-same-over                       87  42-45        48.3% vs  56.2%  z -1.49   -10.56u  clv 0.05pt (63)
+CFB|sleeper|pin-same-under                      87  45-42        51.7% vs  56.3%  z -0.87    -5.12u  clv -0.05pt (63)
+CFB|prizepicks|pp-qb-pass-over                  35  15-20        42.9% vs  55.0%  z -1.45    -7.74u  clv 0.04pt (16)
+CFB PP QB pass Over + own receiver Over: 35 of 123 pairs (28.5%) on 35 games vs 33.3% for a 2-pick at 3x, z -1.15 (payout cut for same-team picks not applied)
+
+Per app and kind (graded at bet time, an hour before the start; units at 1u a leg at the break-even price):
+NBA|prizepicks|all                            3648  1824-1824-94  50.0% vs  55.0%  z -6.11  -333.44u  clv 0pt (406)
+NBA|sleeper|all                               3034  1517-1517    50.0% vs  56.3%  z -7.02  -343.31u  clv 0pt (518)
+NBA|underdog|all                              2129  1065-1064    50.0% vs  57.5%  z -7.08  -269.77u  clv 0pt (600)
+NHL|sleeper|all                               1920  960-960      50.0% vs  56.7%  z -6.17  -237.73u  clv 0pt (1330)
+NBA|prizepicks|over                           1824  966-858-47   53.0% vs  55.0%  z -1.78   -68.59u  clv -0.03pt (203)
+NBA|prizepicks|under                          1824  858-966-47   47.0% vs  55.0%  z -6.86  -264.85u  clv 0.03pt (203)
+NHL|underdog|all                              1693  839-854      49.6% vs  58.1%  z -7.43  -260.01u  clv 0pt (1062)
+NHL|pick6|all                                 1610  805-805      50.0% vs  58.9%  z -7.62  -242.57u  clv -
+NBA|sleeper|over                              1517  794-723      52.3% vs  55.7%  z -2.64   -96.36u  clv -0.06pt (259)
+NBA|sleeper|under                             1517  723-794      47.7% vs  56.8%  z -7.29  -246.94u  clv 0.06pt (259)
+NBA|pick6|all                                 1486  743-743      50.0% vs  56.9%  z -5.38  -179.99u  clv 0pt (588)
+CFB|underdog|all                              1277  542-735      42.4% vs  55.4%  z -9.47  -302.33u  clv 0pt (283)
+CFB|prizepicks|all                            1206  603-603-6    50.0% vs  55.0%  z -3.51  -110.23u  clv 0pt (232)
+NBA|underdog|over                             1082  570-512      52.7% vs  56.4%  z  -2.5   -68.01u  clv 0.07pt (300)
+NBA|underdog|under                            1047  495-552      47.3% vs  58.7%  z -7.58  -201.76u  clv -0.07pt (300)
+CFB|sleeper|all                                974  487-487      50.0% vs  56.5%  z -4.18  -117.07u  clv 0pt (126)
+NHL|sleeper|over                               960  407-553      42.4% vs  47.3%  z -3.09  -109.58u  clv 0.01pt (665)
+NHL|sleeper|under                              960  553-407      57.6% vs  66.1%  z -5.73  -128.15u  clv -0.01pt (665)
+CFB|underdog|over                              952  372-580      39.1% vs  54.4%  z -9.65  -270.46u  clv -0.01pt (142)
+NHL|underdog|over                              860  392-468      45.6% vs  51.0%  z  -3.3   -105.1u  clv -0.01pt (536)
+NHL|underdog|under                             833  447-386      53.7% vs  65.4%  z -7.37  -154.91u  clv 0.01pt (526)
+NHL|pick6|over                                 805  362-443      45.0% vs  51.4%  z -3.77  -104.48u  clv -
+NHL|pick6|under                                805  443-362      55.0% vs  66.4%  z -7.12  -138.09u  clv -
+NBA|pick6|over                                 743  394-349      53.0% vs  56.2%  z -1.76    -43.2u  clv -0.16pt (294)
+NBA|pick6|under                                743  349-394      47.0% vs  57.5%  z -5.86  -136.79u  clv 0.16pt (294)
+NHL|prizepicks|all                             694  347-347-28   50.0% vs  55.0%  z -2.66   -63.43u  clv 0pt (284)
+CFB|prizepicks|over                            603  271-332-3    44.9% vs  55.0%  z -4.98  -110.54u  clv -0.04pt (116)
+CFB|prizepicks|under                           603  332-271-3    55.1% vs  55.0%  z  0.01     0.31u  clv 0.04pt (116)
+CFB|sleeper|over                               487  204-283      41.9% vs  51.0%  z -4.09   -88.94u  clv 0.05pt (63)
+CFB|sleeper|under                              487  283-204      58.1% vs  61.9%  z -1.78   -28.13u  clv -0.05pt (63)
+NHL|prizepicks|over                            347  175-172-14   50.4% vs  55.0%  z -1.72   -28.99u  clv 0.01pt (142)
+NHL|prizepicks|under                           347  172-175-14   49.6% vs  55.0%  z -2.05   -34.44u  clv -0.01pt (142)
+CFB|underdog|under                             325  170-155      52.3% vs  58.4%  z -2.24   -31.86u  clv 0.01pt (141)
+NBA|pick6|pin-coinflip                         216  108-108      50.0% vs  55.5%  z -1.63    -21.2u  clv 0pt (178)
+NBA|sleeper|pin-coinflip                       214  107-107      50.0% vs  56.2%  z -1.82    -23.6u  clv 0pt (164)
+NBA|underdog|pin-coinflip                      196  98-98        50.0% vs  56.5%  z -1.85   -22.69u  clv 0pt (170)
+NBA|prizepicks|pin-coinflip                    194  97-97        50.0% vs  55.0%  z -1.41   -17.73u  clv 0pt (174)
+CFB|underdog|pin-coinflip                      188  94-94        50.0% vs  56.3%  z -1.73   -20.99u  clv 0pt (182)
+CFB|prizepicks|pin-coinflip                    180  90-90        50.0% vs  55.0%  z -1.36   -16.45u  clv 0pt (172)
+NHL|pick6|pin-coinflip                         150  75-75        50.0% vs  56.7%  z -1.67   -18.98u  clv -
+NHL|sleeper|pin-coinflip                       138  69-69        50.0% vs  56.2%  z -1.46   -15.97u  clv 0pt (138)
+NHL|prizepicks|pin-coinflip                    130  65-65        50.0% vs  55.0%  z -1.15   -11.88u  clv 0pt (120)
+NHL|underdog|pin-coinflip                      123  61-62        49.6% vs  56.6%  z -1.57   -16.08u  clv 0pt (123)
+NBA|prizepicks|better-number-than-pin          107  52-55-8      48.6% vs  55.0%  z -1.34   -12.51u  clv -
+CFB|sleeper|better-number-than-pin             100  54-46        54.0% vs  56.4%  z -0.48    -4.37u  clv -
+CFB|sleeper|pin-coinflip                        94  47-47        50.0% vs  56.2%  z -1.21   -10.34u  clv 0pt (74)
+NBA|pick6|better-number-than-pin                92  48-44        52.2% vs  58.1%  z -1.15    -8.41u  clv -
+NBA|sleeper|better-number-than-pin              74  39-35        52.7% vs  59.3%  z -1.15       -8u  clv -
+CFB|prizepicks|better-number-than-pin           50  26-24        52.0% vs  55.0%  z -0.43    -2.75u  clv -
+CFB|underdog|better-number-than-pin             43  26-17        60.5% vs  56.2%  z  0.56     3.24u  clv -
+NHL|prizepicks|better-number-than-pin           37  18-19-11     48.6% vs  55.0%  z -0.78    -4.29u  clv -
+NBA|underdog|better-number-than-pin             34  17-17        50.0% vs  60.1%  z -1.21    -6.15u  clv -
+NBA|prizepicks|pin-backed                       21  10-11        47.6% vs  55.0%  z -0.68    -2.83u  clv -0.47pt (18)
+NHL|prizepicks|pin-backed                       17  14-3         82.3% vs  55.0%  z  2.26     8.44u  clv -0.23pt (15)
+NHL|pick6|better-number-than-pin                14  10-4         71.4% vs  73.4%  z -0.17    -0.19u  clv -
+NBA|pick6|pin-backed                            14  9-5          64.3% vs  55.1%  z  0.69     2.35u  clv -0.62pt (12)
+NHL|sleeper|better-number-than-pin               8  4-4          50.0% vs  63.8%  z -0.82    -1.62u  clv -
+NHL|pick6|pin-backed                             7  5-2          71.4% vs  55.9%  z  0.83      1.9u  clv -
+NHL|prizepicks|pin-backed-2                      6  6-0         100.0% vs  55.0%  z  2.21      4.9u  clv -0.11pt (5)
+NBA|prizepicks|pin-backed-2                      5  2-3          40.0% vs  55.0%  z -0.68    -1.37u  clv -1.47pt (4)
+NBA|underdog|pin-backed                          4  4-0         100.0% vs  54.6%  z  1.82     3.33u  clv -0.64pt (3)
+NHL|underdog|better-number-than-pin              3  2-1          66.7% vs  71.7%  z  -0.2     0.01u  clv -
+NBA|pick6|pin-backed-2                           3  1-2          33.3% vs  55.0%  z -0.76    -1.18u  clv 0.35pt (2)
+CFB|prizepicks|pin-backed                        2  2-0         100.0% vs  55.0%  z  1.28     1.63u  clv 0pt (2)
+NHL|pick6|pin-backed-2                           2  2-0         100.0% vs  55.0%  z  1.28     1.63u  clv -
+CFB|prizepicks|pin-backed-2                      1  1-0         100.0% vs  55.0%  z   0.9     0.82u  clv 0pt (1)
+NHL|underdog|pin-backed                          1  1-0         100.0% vs  56.2%  z  0.88     0.78u  clv 0pt (1)
+
+Break-evens:
+{"prizepicks":{"6-pick flex":0.5421,"5-pick flex":0.5425,"6-pick power":0.5466,"5-pick power":0.5493,"3-pick power":0.5503,"4-pick flex":0.5503,"4-pick power":0.5623,"2-pick power":0.5774,"3-pick flex":0.5774},"pick6":{"3-pick":0.5503,"8-pick (pays a miss)":0.5507,"6-pick (pays a miss)":0.5611,"4-pick":0.5623,"7-pick (pays a miss)":0.571,"5-pick (pays a miss)":0.5768,"2-pick":0.5774},"underdog":{"1x leg (3-pick standard)":0.5623,"other legs":"UD_IMPLIED / multiplier, or 1 / decimal price"},"sleeper":{"every leg":"1 / its multiplier"}}
+
+why not graded: {"not final":1066,"no grader: NBA two_pointers_attempted":128,"no grader: NBA two_pointers_made":104,"no grader: NBA fantasy_score":220,"void: not in box":547,"no grader: NBA dunks":31,"no grader: CFB longest_comp":61,"no grader: CFB fantasy_score":91,"no grader: CFB pat_made":6,"no grader: NHL time_on_ice":60,"no grader: NHL faceoffs_won":71,"no grader: NHL fantasy_score":1,"no grader: NHL goals_allowed":17,"no grader: NHL goalie_fantasy_score":22,"no grader: NHL pp_points":301,"no grader: NHL plus/minus":22,"no grader: NBA to_record_a_double_double":122,"no grader: NBA to_record_a_triple_double":14,"no grader: CFB first_td_scorer":214,"no grader: CFB total_tds":20,"no grader: CFB fantasy_points":195,"no grader: CFB 1q|pass_yds":32,"no grader: CFB 1q|rush_yds":49,"no grader: CFB 1q|pass_tds":32,"no grader: CFB 1h|pass_tds":32,"no grader: CFB 1h|pass_yds":32,"no grader: CFB 1h|rush_yds":66,"no grader: CFB game_high_rush_yards":5,"no grader: CFB game_high_pass_yards":4,"no grader: CFB 1h|rush_tds":91,"no grader: CFB 1_+_pass_tds_in_each_half":4,"no grader: CFB 1h|rush_rec_yds":27,"no grader: CFB 1q|rec_yds":60,"no grader: CFB 1q|receptions":118,"no grader: CFB 1h|rec_yds":114,"no grader: CFB 1h|receptions":118,"no grader: CFB 1h|receiving_tds":115,"no grader: CFB game_high_rec_yards":6,"no grader: CFB xp_made":14,"no grader: NHL anytime_goalscorer":553,"no grader: NHL fantasy_points":133,"no grader: NHL 1p|shots_on_goal":210,"no grader: NHL first_goalscorer":311,"no grader: NHL plus_minus":235,"no grader: NHL 1p|saves":21,"no grader: NHL 1p|goals_against":24,"no grader: NBA 1q|points":128,"no grader: NBA 1q|rebounds":12,"no grader: NBA 1q|assists":11}
+sources (keys seen): {"pinnacle":1602,"underdog":6835,"pick6":1579,"sleeper":3700,"fanduel":1913,"fanduel-rungs":3425,"betrivers":292,"prizepicks":4011}
