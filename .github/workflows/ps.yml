@@ -1,0 +1,25 @@
+name: pagespeed-live
+on: { push: { branches: [diag-pagespeed] } }
+permissions: { contents: write }
+jobs:
+  ps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/cache@v4
+        with: { path: ~/.cache/ms-playwright, key: pw-1.63.0-headless-shell }
+      - run: npm i --no-save --no-audit --no-fund playwright@1.63.0 && npx playwright install --with-deps --only-shell chromium
+      - run: |
+          W=$(sed -n 1p WANT); for i in $(seq 1 60); do v=$(curl -s "$SITE/api/status" | grep -o '"version":"[^"]*"' | head -1); echo "$v"; case "$v" in *"\"$W\""*) break;; esac; [ -z "$W" ] && break; sleep 20; done
+          { for u in /app /api/odds-screen /api/status /api/underdog /api/claims "/glossary.js"; do echo "== $u"; curl -s -o /dev/null -D - -H 'Accept-Encoding: br, gzip' -w 'size_download=%{size_download} ttfb=%{time_starttransfer} total=%{time_total}\n' "$SITE$u" | grep -iE '^(content-encoding|content-length|cache-control|etag|vary)|size_download'; done; } > curl.txt 2>&1 || true
+          PS_RUNS=3 PS_JSON=ps.json node scripts/pagespeed.js "$SITE" > ps.txt 2>&1 || true
+      - run: |
+          git config user.email ps@line-reaper; git config user.name ps
+          mkdir -p /tmp/o && cp curl.txt ps.txt ps.json /tmp/o/ 2>/dev/null || true
+          git checkout --orphan diag-pagespeed-out; git rm -rqf --cached .; git clean -fdq
+          cp /tmp/o/* .; git add -f .; git commit -qm "ps $(date -u +%FT%TZ)"
+          git push -f origin diag-pagespeed-out
