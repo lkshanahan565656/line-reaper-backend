@@ -1,0 +1,22 @@
+name: diag-kxprops
+on:
+  push:
+    branches: [diag-kxprops]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node pull.js || true
+        env: { BUDGET_MIN: '120' }
+      - name: push out
+        if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b diag-kxprops-out && git add -A
+          git -c user.name=diag -c user.email=diag@x commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-kxprops-out
