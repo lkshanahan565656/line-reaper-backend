@@ -1,0 +1,43 @@
+18:58:03 sports series 4049
+18:58:03 prop series 12 KXNFLPASSATT,KXNBAREB,KXNBAPRA,KXNFLRSHYDS,KXNHLAST,KXNBA3PT,KXMLBHR,KXNFLPASSYDS,KXNFLPASSINT,KXNHLGOAL,KXNHLSAVE,KXNFLTD
+18:58:03 series KXNFLPASSATT markets 78
+18:58:03 series KXNFLRSHYDS markets 775
+18:58:03 series KXNBAPRA markets 621
+18:58:03 series KXNHLAST markets 843
+18:58:03 series KXMLBHR markets 79
+18:58:03 series KXNFLPASSINT markets 78
+18:58:03 series KXNFLPASSYDS markets 262
+18:58:03 series KXNHLSAVE markets 43
+18:58:03 series KXNBA3PT markets 1777
+18:58:03 series KXNBAREB markets 1724
+18:58:04 series KXNFLTD markets 698
+18:58:04 series KXNHLGOAL markets 1415
+18:58:04 markets 8393 calls 18
+18:58:04 closed markets with volume 5222
+18:59:45 hist 200 of 5222 calls 922 errs 0
+19:01:26 hist 400 of 5222 calls 1806 errs 0
+19:03:07 hist 600 of 5222 calls 2678 errs 0
+19:04:47 hist 800 of 5222 calls 3563 errs 0
+19:06:27 hist 1000 of 5222 calls 4443 errs 0
+19:08:06 hist 1200 of 5222 calls 5304 errs 0
+19:09:47 hist 1400 of 5222 calls 6183 errs 0
+19:11:27 hist 1600 of 5222 calls 7059 errs 0
+19:13:08 hist 1800 of 5222 calls 7940 errs 0
+19:14:48 hist 2000 of 5222 calls 8821 errs 0
+19:16:27 hist 2200 of 5222 calls 9683 errs 0
+19:18:07 hist 2400 of 5222 calls 10549 errs 0
+19:19:48 hist 2600 of 5222 calls 11428 errs 1
+19:21:27 hist 2800 of 5222 calls 12289 errs 2
+19:23:09 hist 3000 of 5222 calls 13180 errs 2
+19:24:49 hist 3200 of 5222 calls 14040 errs 3
+19:26:29 hist 3400 of 5222 calls 14917 errs 3
+19:28:09 hist 3600 of 5222 calls 15797 errs 3
+19:29:49 hist 3800 of 5222 calls 16700 errs 3
+19:31:28 hist 4000 of 5222 calls 17560 errs 4
+19:33:08 hist 4200 of 5222 calls 18422 errs 4
+19:34:58 hist 4400 of 5222 calls 19375 errs 4
+19:36:46 hist 4600 of 5222 calls 20313 errs 4
+19:38:30 hist 4800 of 5222 calls 21218 errs 4
+19:40:16 hist 5000 of 5222 calls 22134 errs 4
+19:41:55 hist 5200 of 5222 calls 23003 errs 4
+19:42:08 done hist 5222 calls 23080 errs 4
