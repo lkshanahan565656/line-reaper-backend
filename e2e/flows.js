@@ -1064,6 +1064,9 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
           await tryBtn.click();
           expect(/Make a key first/.test(await text(page, '[data-try-msg]')), 'TRY IT without a key gave no answer');
         }
+        // the Discord feed without a key says to make one, rather than doing nothing
+        await page.locator('#fdCheck').click();
+        expect(/Make a key first/.test(await text(page, '#fdOut')), 'CHECK FEED without a key gave no answer');
         await page.locator('#kname').fill('e2e site');
         await page.locator('#mk button[type=submit]').click();
         await page.locator('#keyText').waitFor({ timeout: 6000 });
@@ -1075,6 +1078,20 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
           await page.waitForFunction(() => /^\d{3} ·/.test(document.querySelector('[data-try-msg]').textContent), null, { timeout: 6000 });
           expect(/^200 ·/.test(await text(page, '[data-try-msg]')), `TRY IT answered "${await text(page, '[data-try-msg]')}"`);
         }
+        // the Discord feed with the key: a wrong URL is refused on the page, a
+        // right-looking one is checked with Discord (offline here, so it says so)
+        await page.locator('#fdCheck').click();
+        await page.waitForFunction(() => /No Discord feed on this key/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
+        await page.locator('#fdUrl').fill('https://example.com/not-a-hook');
+        await page.locator('#fd button[type=submit]').click();
+        expect(/not a Discord webhook URL/.test(await text(page, '#fdOut')), `CONNECT with a wrong URL said "${await text(page, '#fdOut')}"`);
+        await page.locator('#fdUrl').fill(`https://discord.com/api/webhooks/123456789012345678/${'e'.repeat(68)}`);
+        await page.locator('#fd button[type=submit]').click();
+        await page.waitForFunction(() => !/Checking the webhook/.test(document.getElementById('fdOut').textContent), null, { timeout: 15000 });
+        expect(/Discord|Connected/.test(await text(page, '#fdOut')), `CONNECT said "${await text(page, '#fdOut')}"`);
+        await page.locator('#fdOff').click();
+        await page.waitForFunction(() => /Disconnected/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
+        expect(await fits(), 'the developers page scrolls sideways after the feed steps');
         await page.locator('#mineUse').click();
         await page.waitForFunction(() => /Used \d+ of/.test(document.getElementById('mineInfo').textContent), null, { timeout: 6000 });
         await page.locator('#mineRevoke').click();
