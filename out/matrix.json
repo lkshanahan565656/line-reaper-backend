@@ -1,0 +1,2806 @@
+[
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "best",
+  "how": "bar",
+  "len": 3099,
+  "am": 0,
+  "dec": 0,
+  "pctT": 9,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (5)\nKalshi (3)\nPolymarket US (1)\nSleeper (1)\nUnderdog (1)\nSORT BY\nBest rank",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "odds",
+  "how": "bar",
+  "len": 26702,
+  "am": 756,
+  "dec": 0,
+  "pctT": 580,
+  "amSamples": [
+   "LOGBoston Celtics\t-637",
+   "\t-681\t-667\t-720",
+   "\t-719",
+   "\t-720",
+   "LOGChicago Bulls\t+637",
+   "\t+552\t+620\t+573"
+  ],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNFL 1\nWNBA 1\nMLB 1\nBETTING FROM\nAll states",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2295,
+  "am": 2,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [
+   "0u · Kalshi 42¢ 0u · BetRivers +128 0u · FanDuel +124 0"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n28 SHARP BETS WATCHED\nPOLLED 18s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "arb",
+  "how": "bar",
+  "len": 11178,
+  "am": 12,
+  "dec": 0,
+  "pctT": 17,
+  "amSamples": [
+   "nn-Ford over 3.5 receptions at +1000",
+   "rescott over 324.5 pass yds at +425",
+   "lex Caruso over 14.5 points at +750",
+   "r DeRozan over 3.5 rebounds at +255",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "Bet Dallas Cowboys +2.5 at -240"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n2\nARBS RIGHT NOW\n0\nMIDDLES\n4\nSPORTSBOOK ARBS\n2m\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,046 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: ",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "big",
+  "how": "bar",
+  "len": 37819,
+  "am": 185,
+  "dec": 0,
+  "pctT": 482,
+  "amSamples": [
+   "$16,006 on Kalshi at 62¢ (-163) · 4 prints, bigges",
+   "BetRivers\t\t-157\t+1.5%\t-1.0%",
+   "$1,456 on Kalshi at 58¢ (-138) · 1 print, biggest",
+   "BetRivers\t\t-136\t+0.7%\t-1.2%",
+   "$1,970 on Kalshi at 78¢ (-355) · 1 print, biggest",
+   "BetRivers\t\t-345\t+0.6%\t+4.3%"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23738,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\nHIDE LIVE\nREFRESH\n117\nMATCHES\n42\nO",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "results",
+  "how": "bar",
+  "len": 61544,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2195,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,692\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,018 graded · pooled, so never proven\nBY KIND AND VENUE\n\tKI",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "tools",
+  "how": "bar",
+  "len": 1205,
+  "am": 1,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [
+   "FAIR ODDS\n+105"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nEdge and bet size\nNo-vig fair odds\nStrip the juice\nArbitrage\nStake every side\nHedge\nLock in a result\nPick'em payouts\nBreak-even per slip\nParlay\nPayout and true EV\nMiddle\nTwo lines, one window\nFree bet converter\nPromo to cash\nProfit boost\nIs the boost +EV\nClosing line value\nDid you beat the close\nExchange fees\nKalshi, Gemini, Polymarket US\nProp line\nProjection to odd",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "props",
+  "how": "more",
+  "len": 23492,
+  "am": 0,
+  "dec": 24,
+  "pctT": 328,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n36,373 discounted or boosted legs on the apps now · 2,296 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 36373\nPP 25585\nUD 3886\nP6 6902\nAPP · TYPE\nLEG\nMULT\nNEEDS\nSHARP\nEV\nUnderdog Boos",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "ev",
+  "how": "more",
+  "len": 3514,
+  "am": 25,
+  "dec": 0,
+  "pctT": 16,
+  "amSamples": [
+   "FAIR\n-138 · 57.98%",
+   "FAIR\n+104 · 49.02%",
+   "FAIR\n-130 · 56.56%",
+   "FAIR\n-130 · 56.56%",
+   "FAIR\n-129 · 56.27%",
+   "FAIR\n+104 · 49.02%"
+  ],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 35NBA 13NCAAF 9NFL 2NHL 1SERIEA 1TENNIS 4UCL 1UFC 2WNBA 2\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp sources agree\nBETTING FROM\nAll sta",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2467,
+  "am": 0,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "customize",
+  "how": "missing",
+  "none": true
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "TX",
+  "issues": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "best",
+  "how": "bar",
+  "len": 2708,
+  "am": 0,
+  "dec": 0,
+  "pctT": 6,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (4)\nKalshi (2)\nSleeper (1)\nUnderdog (1)\nSORT BY\nBest ranked\nBiggest edge\nSt",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "odds",
+  "how": "bar",
+  "len": 26692,
+  "am": 0,
+  "dec": 756,
+  "pctT": 580,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNFL 1\nWNBA 1\nMLB 1\nBETTING FROM\nAll states",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2295,
+  "am": 0,
+  "dec": 2,
+  "pctT": 8,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n29 SHARP BETS WATCHED\nPOLLED 19s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "arb",
+  "how": "bar",
+  "len": 10001,
+  "am": 0,
+  "dec": 11,
+  "pctT": 17,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n1\nARB RIGHT NOW\n0\nMIDDLES\n3\nSPORTSBOOK ARBS\n72s\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,098 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: ",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "big",
+  "how": "bar",
+  "len": 40847,
+  "am": 0,
+  "dec": 105,
+  "pctT": 528,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23814,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\nHIDE LIVE\nREFRESH\n117\nMATCHES\n42\nO",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "results",
+  "how": "bar",
+  "len": 61544,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2195,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,692\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,018 graded · pooled, so never proven\nBY KIND AND VENUE\n\tKI",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "tools",
+  "how": "bar",
+  "len": 1205,
+  "am": 0,
+  "dec": 1,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nEdge and bet size\nNo-vig fair odds\nStrip the juice\nArbitrage\nStake every side\nHedge\nLock in a result\nPick'em payouts\nBreak-even per slip\nParlay\nPayout and true EV\nMiddle\nTwo lines, one window\nFree bet converter\nPromo to cash\nProfit boost\nIs the boost +EV\nClosing line value\nDid you beat the close\nExchange fees\nKalshi, Gemini, Polymarket US\nProp line\nProjection to odd",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "props",
+  "how": "more",
+  "len": 23492,
+  "am": 0,
+  "dec": 24,
+  "pctT": 328,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n36,373 discounted or boosted legs on the apps now · 2,296 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 36373\nPP 25585\nUD 3886\nP6 6902\nAPP · TYPE\nLEG\nMULT\nNEEDS\nSHARP\nEV\nUnderdog Boos",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "ev",
+  "how": "more",
+  "len": 3503,
+  "am": 0,
+  "dec": 25,
+  "pctT": 16,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 34NBA 12NCAAF 9NFL 2NHL 1SERIEA 1TENNIS 4UCL 1UFC 2WNBA 2\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp sources agree\nBETTING FROM\nAll sta",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2467,
+  "am": 0,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "customize",
+  "how": "missing",
+  "none": true
+ },
+ {
+  "vp": "desktop",
+  "fmt": "decimal",
+  "st": "TX",
+  "issues": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "best",
+  "how": "bar",
+  "len": 17659,
+  "am": 177,
+  "dec": 0,
+  "pctT": 130,
+  "amSamples": [
+   "fair -135 (57.51%) from Pinna",
+   "cle, BetMGM pays -115 · not proven yet: 2",
+   "\tBetMGM\t-115\t1u\t+7.5%\tLOG",
+   "fair -129 (56.27%) from Pinna",
+   "cle, DraftKings pays -111 · not proven yet: 3",
+   "\tDraftKings\t-111\t1u\t+7.0%\tLOG"
+  ],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (63)\nBet365 (18)\nBetMGM (15)\nDraftKings (12)\nThescore (5)\nBetRivers (4)\nCaesars (2)\nHardrock (2)\nKalshi (2)\nFanatics (1)\nSleeper (1)\nUnderdog ",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "odds",
+  "how": "bar",
+  "len": 43544,
+  "am": 1352,
+  "dec": 0,
+  "pctT": 1055,
+  "amSamples": [
+   "LOGBoston Celtics\t-637",
+   "\t-681\t-667\t-720",
+   "\t-719",
+   "\t-720",
+   "\t-650",
+   "\t-835"
+  ],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNFL 1\nWNBA 1\nMLB 1\nBETTING FROM\nAll states (every venue)\nAlabama\nAlaska\nArizona\nArkansas\nCalifornia\nColorado\n",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2295,
+  "am": 2,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [
+   "0u · Kalshi 42¢ 0u · BetRivers +128 0u · FanDuel +124 0"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n29 SHARP BETS WATCHED\nPOLLED 18s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "arb",
+  "how": "bar",
+  "len": 10045,
+  "am": 11,
+  "dec": 0,
+  "pctT": 18,
+  "amSamples": [
+   "nn-Ford over 3.5 receptions at +1000",
+   "rescott over 324.5 pass yds at +425",
+   "r DeRozan over 3.5 rebounds at +255",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "ick White under 16.5 points at -120"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n1\nARB RIGHT NOW\n0\nMIDDLES\n3\nSPORTSBOOK ARBS\n2m\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,098 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: w",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "big",
+  "how": "bar",
+  "len": 43054,
+  "am": 209,
+  "dec": 0,
+  "pctT": 563,
+  "amSamples": [
+   "$16,006 on Kalshi at 62¢ (-163) · 4 prints, bigges",
+   "BetRivers\t\t-157\t+1.5%\t-1.0%",
+   "$2,845 on Kalshi at 47.5¢ (+111) · 2 prints, bigges",
+   "FanDuel\t5.5\t+112\t+0.7%\t-7.1%",
+   "$1,456 on Kalshi at 58¢ (-138) · 1 print, biggest",
+   "BetRivers\t\t-136\t+0.7%\t-1.2%"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23745,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\nHIDE LIVE\nREFRESH\n117\nMATCHES\n42\nON BOTH EXCHANGES\n2\nEDGES NOW\n1m ago\nUPDATED\nUS mode: Kalshi edges o",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "results",
+  "how": "bar",
+  "len": 61348,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2195,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,692\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,018 graded · pooled, so never proven\nBY KIND AND VENUE\n\tKIND · VENUE\tGRADED?\tCLV?\tBEAT?\tW-L?\tUNITS?\t\nCOPIED BOOK\tMain lines v",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "tools",
+  "how": "bar",
+  "len": 1205,
+  "am": 1,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [
+   "FAIR ODDS\n+105"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nEdge and bet size\nNo-vig fair odds\nStrip the juice\nArbitrage\nStake every side\nHedge\nLock in a result\nPick'em payouts\nBreak-even per slip\nParlay\nPayout and true EV\nMiddle\nTwo lines, one window\nFree bet converter\nPromo to cash\nProfit boost\nIs the boost +EV\nClosing line value\nDid you beat the close\nExchange fees\nKalshi, Gemini, Polymarket US\nProp line\nProjection to odd",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "props",
+  "how": "more",
+  "len": 23432,
+  "am": 0,
+  "dec": 23,
+  "pctT": 328,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n36,373 discounted or boosted legs on the apps now · 2,296 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 36373\nPP 25585\nUD 3886\nP6 6902\nAPP · TYPE\nLEG\nMULT\nNEEDS\nSHARP\nEV\nUnderdog Boosted UD BOARD ↗\nSusan Bandecchi TENNIS · Games Played · Tue 10:20 AM",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "ev",
+  "how": "more",
+  "len": 37846,
+  "am": 1013,
+  "dec": 0,
+  "pctT": 370,
+  "amSamples": [
+   "theScore\n-110",
+   "FAIR\n-137 · 57.75%",
+   "Pinnacle -151",
+   "theScore\n-115",
+   "FAIR\n-138 · 58.03%",
+   "BetRivers -132"
+  ],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 377MLB 10NBA 148NCAAF 143NFL 36NHL 24SERIEA 1TENNIS 4UCL 1UFC 2WNBA 8\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp sources agree\nBETTING FROM\nAll states (every venue)\nAlabama\nAlaska\nArizona\nArkansas\nCalif",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2478,
+  "am": 0,
+  "dec": 0,
+  "pctT": 9,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": []
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "tab": "customize",
+  "how": "missing",
+  "none": true
+ },
+ {
+  "vp": "desktop",
+  "fmt": "american",
+  "st": "",
+  "issues": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "best",
+  "how": "bar",
+  "len": 2708,
+  "am": 0,
+  "dec": 0,
+  "pctT": 6,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (4)\nKalshi (2)\nSleeper (1)\nUnderdog (1)\nSORT BY\nBest ranked\nBiggest edge\nSt",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "odds",
+  "how": "bar",
+  "len": 26708,
+  "am": 756,
+  "dec": 0,
+  "pctT": 580,
+  "amSamples": [
+   "LOGBoston Celtics\t-637",
+   "\t-681\t-667\t-720",
+   "\t-719",
+   "\t-720",
+   "LOGChicago Bulls\t+637",
+   "\t+552\t+620\t+573"
+  ],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nMLS 5\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNFL 1\nWNBA 1\nMLB 1\nBETTING FROM\nAll ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2295,
+  "am": 2,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [
+   "0u · Kalshi 42¢ 0u · BetRivers +128 0u · FanDuel +124 0"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n29 SHARP BETS WATCHED\nPOLLED 19s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "arb",
+  "how": "bar",
+  "len": 9947,
+  "am": 11,
+  "dec": 0,
+  "pctT": 17,
+  "amSamples": [
+   "nn-Ford over 3.5 receptions at +1000",
+   "rescott over 324.5 pass yds at +425",
+   "r DeRozan over 3.5 rebounds at +255",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "Bet Over 7.5 at +330"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No single bet is priced under Polymarket's book right now. These need no second bet: just buy the one side.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n1\nARB RIGHT NOW\n0\nMIDDLES\n3\nSPORTSBOOK ARBS\n70s\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,188 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "big",
+  "how": "bar",
+  "len": 43539,
+  "am": 211,
+  "dec": 0,
+  "pctT": 575,
+  "amSamples": [
+   "$16,006 on Kalshi at 62¢ (-163) · 4 prints, bigges",
+   "BetRivers\t\t-157\t+1.5%\t-1.0%",
+   "$2,845 on Kalshi at 47.5¢ (+111) · 2 prints, bigges",
+   "FanDuel\t5.5\t+112\t+0.7%\t-7.1%",
+   "$1,456 on Kalshi at 58¢ (-138) · 1 print, biggest",
+   "BetRivers\t\t-136\t+0.7%\t-1.2%"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23776,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\nHIDE LIVE\nREFRESH\n117\nMATCHES\n42\nO",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "results",
+  "how": "bar",
+  "len": 61540,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2195,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,692\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,018 graded · pooled, so never proven\nBY KIND AND VENUE\n\tKI",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "tools",
+  "how": "bar",
+  "len": 960,
+  "am": 1,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [
+   "FAIR ODDS\n+105"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nNo-vig fair odds\nArbitrage\nHedge\nPick'em payouts\nParlay\nMiddle\nFree bet converter\nProfit boost\nClosing line value\nExchange fees\nProp line\nOdds converter\nEV + KELLY\nYour price against the fair one. Give a fair win chance, or paste both sides of a sharp market (Pinnacle, Kalshi, Polymarket) and it de-vigs them for you. Kelly sizes the bet; a quarter is the sane defaul",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "props",
+  "how": "more",
+  "len": 23785,
+  "am": 0,
+  "dec": 0,
+  "pctT": 320,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n35,380 discounted or boosted legs on the apps now · 2,089 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 35380\nPP 24733\nUD 3745\nP6 6902\nUnderdog Boosted UD BOARD ↗\nSusan Bandecchi TENN",
+  "pm": [],
+  "overflow": [
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 64.5 · FD 65.5 · BR 62.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 11.5 · FD 13.5 · BR 12.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 250.5 · FD 250.5 · BR 246.5 · KAL",
+    "left": 152,
+    "right": 398,
+    "limit": 359
+   }
+  ]
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "ev",
+  "how": "more",
+  "len": 3523,
+  "am": 25,
+  "dec": 0,
+  "pctT": 16,
+  "amSamples": [
+   "FAIR\n+104 · 49.02%",
+   "FAIR\n-130 · 56.56%",
+   "FAIR\n-129 · 56.27%",
+   "FAIR\n-129 · 56.27%",
+   "FAIR\n+104 · 49.02%",
+   "Polymarket US\n-1023"
+  ],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 34NBA 11NCAAF 8NFL 4NHL 1SERIEA 1TENNIS 4UCL 1UFC 2WNBA 2\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp sources agree\nBETTING FROM\nAll sta",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2478,
+  "am": 0,
+  "dec": 0,
+  "pctT": 9,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "tab": "customize",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "TX",
+  "issues": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "best",
+  "how": "bar",
+  "len": 2705,
+  "am": 0,
+  "dec": 0,
+  "pctT": 6,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (4)\nKalshi (2)\nSleeper (1)\nUnderdog (1)\nSORT BY\nBest ranked\nBiggest edge\nSt",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "odds",
+  "how": "bar",
+  "len": 26618,
+  "am": 0,
+  "dec": 748,
+  "pctT": 572,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nMLS 5\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNFL 1\nWNBA 1\nMLB 1\nBETTING FROM\nAll ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2295,
+  "am": 0,
+  "dec": 2,
+  "pctT": 8,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n29 SHARP BETS WATCHED\nPOLLED 17s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "arb",
+  "how": "bar",
+  "len": 9914,
+  "am": 0,
+  "dec": 11,
+  "pctT": 18,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n1\nARB RIGHT NOW\n0\nMIDDLES\n3\nSPORTSBOOK ARBS\n72s\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,229 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "big",
+  "how": "bar",
+  "len": 45410,
+  "am": 0,
+  "dec": 113,
+  "pctT": 601,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23774,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\nHIDE LIVE\nREFRESH\n117\nMATCHES\n42\nO",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "results",
+  "how": "bar",
+  "len": 61543,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2197,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,705\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,030 graded · pooled, so never proven\nBY KIND AND VENUE\n\tKI",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "tools",
+  "how": "bar",
+  "len": 960,
+  "am": 0,
+  "dec": 1,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nNo-vig fair odds\nArbitrage\nHedge\nPick'em payouts\nParlay\nMiddle\nFree bet converter\nProfit boost\nClosing line value\nExchange fees\nProp line\nOdds converter\nEV + KELLY\nYour price against the fair one. Give a fair win chance, or paste both sides of a sharp market (Pinnacle, Kalshi, Polymarket) and it de-vigs them for you. Kelly sizes the bet; a quarter is the sane defaul",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "props",
+  "how": "more",
+  "len": 23785,
+  "am": 0,
+  "dec": 0,
+  "pctT": 320,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n35,378 discounted or boosted legs on the apps now · 2,088 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 35378\nPP 24733\nUD 3743\nP6 6902\nUnderdog Boosted UD BOARD ↗\nSusan Bandecchi TENN",
+  "pm": [],
+  "overflow": [
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 64.5 · FD 65.5 · BR 62.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 11.5 · FD 13.5 · BR 12.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 250.5 · FD 250.5 · BR 246.5 · KAL",
+    "left": 152,
+    "right": 398,
+    "limit": 359
+   }
+  ]
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "ev",
+  "how": "more",
+  "len": 3367,
+  "am": 0,
+  "dec": 24,
+  "pctT": 15,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM TEXAS · 16 legal · others greyed or hidden. No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.\nVENUES\nCHANGE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 32NBA 8NCAAF 8NFL 5NHL 1SERIEA 1TENNIS 4UCL 1UFC 2WNBA 2\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp sources agree\nBETTING FROM\nAll stat",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2478,
+  "am": 0,
+  "dec": 0,
+  "pctT": 9,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "tab": "customize",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "decimal",
+  "st": "TX",
+  "issues": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "best",
+  "how": "bar",
+  "len": 17583,
+  "am": 174,
+  "dec": 0,
+  "pctT": 127,
+  "amSamples": [
+   "BetMGM · -115 · 1u · +7.5%",
+   "fair -135 (57.51%) from Pinna",
+   "cle, BetMGM pays -115 · not proven yet: 2",
+   "DraftKings · -111 · 1u · +7.0%",
+   "fair -129 (56.27%) from Pinna",
+   "cle, DraftKings pays -111 · not proven yet: 3"
+  ],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (61)\nBet365 (18)\nBetMGM (14)\nDraftKings (12)\nThescore (5)\nBetRivers (4)\nCaesars (2)\nHardrock (2)\nKalshi (2)\nFanatics (1)\nPrizePicks (1)\nSORT B",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "odds",
+  "how": "bar",
+  "len": 42538,
+  "am": 1248,
+  "dec": 0,
+  "pctT": 974,
+  "amSamples": [
+   "LOGBoston Celtics\t-637",
+   "\t-681\t·\t-720",
+   "\t·\t·\t-650",
+   "\t-835",
+   "LOGChicago Bulls\t+637",
+   "\t+552\t·\t+573"
+  ],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nMLS 5\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNFL 1\nWNBA 1\nMLB 1\nBETTING FROM\nAll states (every venue)\nAlabama\nAlaska\nArizona\nArkansas\nCalifornia\nCol",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2295,
+  "am": 2,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [
+   "0u · Kalshi 42¢ 0u · BetRivers +128 0u · FanDuel +124 0"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n29 SHARP BETS WATCHED\nPOLLED 18s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "arb",
+  "how": "bar",
+  "len": 9354,
+  "am": 10,
+  "dec": 0,
+  "pctT": 21,
+  "amSamples": [
+   "nn-Ford over 3.5 receptions at +1000",
+   "r DeRozan over 3.5 rebounds at +255",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "n Pierce over 29.5 rush yds at +220",
+   "Bet Over 7.5 at +330"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n1\nARB RIGHT NOW\n0\nMIDDLES\n2\nSPORTSBOOK ARBS\n2m\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,229 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: w",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "big",
+  "how": "bar",
+  "len": 47892,
+  "am": 227,
+  "dec": 0,
+  "pctT": 645,
+  "amSamples": [
+   "$1,456 on Kalshi at 58¢ (-138) · 1 print, biggest",
+   "BetRivers\t\t-132\t+1.9%\t+0.1%",
+   "$16,006 on Kalshi at 62¢ (-163) · 4 prints, bigges",
+   "BetRivers\t\t-157\t+1.5%\t-1.0%",
+   "$2,845 on Kalshi at 47.5¢ (+111) · 2 prints, bigges",
+   "FanDuel\t5.5\t+112\t+0.7%\t-7.1%"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\nHIDE LIVE\nREFRESH\n117\nMATCHES\n42\nON BOTH EXCHANGES\n2\nEDGES NOW\njust now\nUPDATED\nUS mode: Kalshi edges",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "results",
+  "how": "bar",
+  "len": 61347,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2197,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,705\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,030 graded · pooled, so never proven\nBY KIND AND VENUE\n\tKIND · VENUE\tGRADED?\tCLV?\tBEAT?\tW-L?\tUNITS?\t\nCOPIED BOOK\tMain lines v",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "tools",
+  "how": "bar",
+  "len": 960,
+  "am": 1,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [
+   "FAIR ODDS\n+105"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nNo-vig fair odds\nArbitrage\nHedge\nPick'em payouts\nParlay\nMiddle\nFree bet converter\nProfit boost\nClosing line value\nExchange fees\nProp line\nOdds converter\nEV + KELLY\nYour price against the fair one. Give a fair win chance, or paste both sides of a sharp market (Pinnacle, Kalshi, Polymarket) and it de-vigs them for you. Kelly sizes the bet; a quarter is the sane defaul",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "props",
+  "how": "more",
+  "len": 23690,
+  "am": 0,
+  "dec": 0,
+  "pctT": 320,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n35,378 discounted or boosted legs on the apps now · 2,088 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 35378\nPP 24733\nUD 3743\nP6 6902\nUnderdog Boosted UD BOARD ↗\nSusan Bandecchi TENNIS · Games Played · Tue 10:20 AM\nHIGHER 20.5\n55.1%\n+4.9%\n+\nUnderdog",
+  "pm": [],
+  "overflow": [
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 64.5 · FD 65.5 · BR 62.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 11.5 · FD 13.5 · BR 12.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 250.5 · FD 250.5 · BR 246.5 · KAL",
+    "left": 152,
+    "right": 398,
+    "limit": 359
+   }
+  ]
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "ev",
+  "how": "more",
+  "len": 32997,
+  "am": 850,
+  "dec": 0,
+  "pctT": 326,
+  "amSamples": [
+   "theScore\n-110",
+   "FAIR\n-137 · 57.75%",
+   "Pinnacle -151",
+   "theScore\n-115",
+   "FAIR\n-138 · 58.03%",
+   "BetRivers -132"
+  ],
+  "showAll": false,
+  "stateBar": "ALL STATES · every venue shown, legal or not where you live.\nSET MY STATE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL STATES · every venue shown, legal or not where you live.\nSET MY STATE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 334MLB 10NBA 103NCAAF 141NFL 38NHL 26SERIEA 1TENNIS 4UCL 1UFC 2WNBA 8\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp sources agree\nBETTING FROM\nAll states (every venue)\nAlabama\nAlaska\nArizona\nArkansas\nCalif",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2478,
+  "am": 0,
+  "dec": 0,
+  "pctT": 9,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "tab": "customize",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "american",
+  "st": "",
+  "issues": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "best",
+  "how": "bar",
+  "len": 2442,
+  "am": 0,
+  "dec": 0,
+  "pctT": 5,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE\nABOUT THIS TAB\nBEST PLAYS RIGHT NOW — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sports props priced off Pinnacle and Kalshi, sportsbook lines and player props above fair, an\nShow\nALL SHARP TAIL EXCHANGE VALUE ESPORTS EDGES ESPORTS PROPS SPORTS PROPS SPORTSBOOK LINES SPORTSBOOK PROPS ARBS MIDDLES\nSPORTSBOOK\nAll books (3)\nKalshi (2)\nPrizePicks (1)\nSORT BY\nBes",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "odds",
+  "how": "bar",
+  "len": 38175,
+  "am": 1028,
+  "dec": 0,
+  "pctT": 823,
+  "amSamples": [
+   "LOGBoston Celtics\t-637",
+   "\t-681\t·\t-720",
+   "LOGChicago Bulls\t+637",
+   "\t+552\t·\t+573",
+   "LOGBoston Celtics -14.5\t+104",
+   "\t-101\t·\t-107"
+  ],
+  "showAll": false,
+  "stateBar": "BETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE\nABOUT THIS TAB\nODDS SCREEN Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlin\nShow\nGAME LINES\nBEST PRICES ABOVE FAIR\nALL LINES & PROPS\nARBS\nMAKER\nOUTRIGHTS\nBIGGEST MOVES\nNFL MODEL\nALL\nTENNIS 95\nNHL 12\nSERIE A 8\nKHL 7\nNBA 7\nMLS 5\nBRASILEIRAO 3\nAHL 3\nCFB 3\nKBO 1\nNF",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "tail",
+  "how": "bar",
+  "len": 2296,
+  "am": 2,
+  "dec": 0,
+  "pctT": 8,
+  "amSamples": [
+   "0u · Kalshi 42¢ 0u · BetRivers +128 0u · FanDuel +124 0"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP TAIL follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook). How it worksPolymarket bets set\nShow\nSIGNALS\nSHARP BOARD\nTRADERS\nWHALE FLOW\nTRACK RECORD\nALL SIGNALS\nBETS ONLY\n4 TO BET\n30 SHARP BETS WATCHED\nPOLLED 17s AGO\nALERT ME\n● LIVE\n1 UNIT = $\nTODAY'S SIGNALS 1.16u = $11.60\nMY DAILY LIMIT u\nSet your unit to see every signal in dollars\n0.16u\nLIMIT BID · Kalshi\nB\nSimpleTony\nSPORTS\nCounter-Strike: Liquid vs Aurora Gaming (BO3) - PGL Masters Bucharest ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "arb",
+  "how": "bar",
+  "len": 8924,
+  "am": 9,
+  "dec": 0,
+  "pctT": 21,
+  "amSamples": [
+   "nn-Ford over 3.5 receptions at +1000",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "Bet Dallas Cowboys +2.5 at -240",
+   "n Pierce over 29.5 rush yds at +220",
+   "Bet Over 7.5 at +330",
+   "Bet Detroit Lions +2.5 at -205"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   },
+   {
+    "text": "No stale price right now. When Polymarket's book jumps 3 cents or more and Kalshi or Polymarket US hasn't followed, the old price shows here",
+    "where": "page-arb #arbExchanges>#xarbContent>div.xa-sec>div.xa-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nEXCHANGES\nPRICES\nSPORTSBOOKS\n1\nARB RIGHT NOW\n0\nMIDDLES\n1\nSPORTSBOOK ARBS\n72s\nSINCE THE LAST SCAN\nAn arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on Kalshi and Polymarket US (107,234 right now) is checked once a minute, fees included, and so is every main and alternate line and player prop at FanDuel and BetRivers against each other and the exchanges.\nYOUR STAKE $\nALL\nCULTURE\nSPORTS\nALL VENUES\nWITH A SPORTSBOOK\nEXCHANGES ONLY\n2-BET ARBS\nnone right now\nNo two-bet arb right now. Real ones close within minutes: ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "big",
+  "how": "bar",
+  "len": 50856,
+  "am": 241,
+  "dec": 0,
+  "pctT": 685,
+  "amSamples": [
+   "$1,456 on Kalshi at 58¢ (-138) · 1 print, biggest",
+   "BetRivers\t\t-132\t+1.9%\t+0.1%",
+   "$16,006 on Kalshi at 62¢ (-163) · 4 prints, bigges",
+   "BetRivers\t\t-157\t+1.5%\t-1.0%",
+   "$2,845 on Kalshi at 47.5¢ (+111) · 2 prints, bigges",
+   "FanDuel\t5.5\t+112\t+0.7%\t-7.1%"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nBIG MONEY — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the U\nShow\n$1K+\n$2.5K+\n$5K+\n$10K+\nALL\nPROPS\nGAME LINES\nHIDE MARKET MAKERS\nLIVE RECORD\n175-170\n+3.7% a bet · +12.74u\nAT THE CLOSE\n+0.7%\nour ticket's edge at the money's market close, over 406\nSTILL THERE 2 MIN ON\n63.7%\nof 397 plays, same line and price\nBETTORS VS MARKET MAKERS\nBettors 132-117 (+7.6%)\nMarket makers 43-53 (-6.5%)\nMoney is a taker order of $1,000 or m",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "gas",
+  "how": "bar",
+  "len": 3195,
+  "am": 0,
+  "dec": 0,
+  "pctT": 39,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nGAS LOCKS — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalsh\nShow\nLIVE RECORD\n326-5\n+2.6% a bet · +8.43u\nCLOSE OUR WAY\n-2.7%\naverage CLV over 331\nBACKTEST (WALK-FORWARD)\n+1.4%\n1,278 bets, 27 losses, 2026-09-07 to 2026-10-14\nThe rule: CA, MA, MD, WA, MI, VA, TX, FL, MN, OH, TN, OR, NY, NJ, SC; the side asked 90¢ to 98¢, 12 to 19 hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $100+ rest",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "esports",
+  "how": "bar",
+  "len": 23809,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE\nMATCHES\nPLAYER PROPS\nMATCHUPS\nMAP UNDERS\nEvery esports match on Kalshi and Polymarket, side by side. Fair is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A green price is cheaper than fair from the other sources.\nALL 117\nCS2 73\nLOL 8\nVALORANT 8\nDOTA 2 5\nOVERWATCH 9\nMOBILE LEGENDS 5\nHONOR OF KINGS 5\nSTARCRAFT II 4\nEDGES ONLY\n",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "results",
+  "how": "bar",
+  "len": 61599,
+  "am": 0,
+  "dec": 0,
+  "pctT": 2197,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE\nABOUT THIS TAB\nTHE PUBLIC RECORD — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it\nShow\nRECORD WEEKLY DIGEST\nALL TIME 30 DAYS 7 DAYS\nDOWNLOAD CSV\nJSON\nPROVEN\n1\nkinds pass the rule\nGRADED GAMES\n9,705\n67 kinds and venues\nALL SHARP CLOSES\n+1.6%\n6,030 graded · pooled, so ",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "betlog",
+  "how": "bar",
+  "len": 710,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No bets yet. Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays set",
+    "where": "page-betlog #page-betlog>#mybList>div.mb-empty"
+   }
+  ],
+  "head": "MY BETS\nEvery bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.\nADD BET\nEXPORT CSV\nIMPORT CSV\nPROFIT\n$0.00\n0.00u\nROI?\n—\n$0.00 risked\nRECORD?\n0-0\nno results yet\nAVG CLV\n—\nadd closing odds\nOPEN\n0\nnothing at risk\nDRAWDOWN\n$0.00\npeak to trough\nOpen 0\nSettled 0\nAll 0\n7D\n30D\n90D\nAll time\nAll tools\nAll books\nAll sports\nNo bets yet.\nAdd one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "myslips",
+  "how": "bar",
+  "len": 994,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "No slips yet. Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like Josh Allen Over 245.5 Pass Y",
+    "where": "page-myslips #page-myslips>#msList>div.mb-empty"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nMY SLIPS\nPaste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.\nPASTE SLIPS\nIMPORT CSV\nPUBLISH RECORD\nSLIPS\n0\n0 legs\nBEAT THE CLOSE?\n—\nno closes yet\nLEG CLV?\n—\nvs the app's b",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "tools",
+  "how": "bar",
+  "len": 960,
+  "am": 1,
+  "dec": 0,
+  "pctT": 2,
+  "amSamples": [
+   "FAIR ODDS\n+105"
+  ],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [],
+  "head": "ABOUT THIS TAB\nBETTING TOOLS — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees. Type odds any way:\nShow\nEV + Kelly\nNo-vig fair odds\nArbitrage\nHedge\nPick'em payouts\nParlay\nMiddle\nFree bet converter\nProfit boost\nClosing line value\nExchange fees\nProp line\nOdds converter\nEV + KELLY\nYour price against the fair one. Give a fair win chance, or paste both sides of a sharp market (Pinnacle, Kalshi, Polymarket) and it de-vigs them for you. Kelly sizes the bet; a quarter is the sane defaul",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "lines",
+  "how": "hidden",
+  "len": 238,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-lines #page-lines>#linesContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nALL\nNBA\nMLB\nNFL\nNHL\nNCAAB\nMMA\nREFRESH\n—\nGAMES\n—\nSTEAM\n—\nARBS\n—\nSHARP\nNo data loaded\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "shop",
+  "how": "hidden",
+  "len": 509,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "ODDS API OFF This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+    "where": "page-shop #page-shop>#shopContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nLINE SHOPPER — search any team or player prop and instantly see every book's number side by side. Find the best price before you bet. Enter a team name to compare moneylines and spreads across all boo\nShow\nSEARCH\nALL\nNBA\nMLB\nNFL\nNHL\nMMA\nSPORTSBOOK\nAll books\nSORT GAMES BY\nStarting soonest\nBiggest edge\nBiggest price gap\nMost books\nMY BOOKS\nODDS API OFF\nThis tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "props",
+  "how": "more",
+  "len": 23795,
+  "am": 0,
+  "dec": 0,
+  "pctT": 320,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": "BETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE\nABOUT THIS TAB\nPROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a\nShow\nPROMOS\n35,371 discounted or boosted legs on the apps now · 2,065 with a sharp price · 2 above the hit rate their payout needs\nALL APPS 35371\nPP 24733\nUD 3736\nP6 6902\nUnderdog Boost",
+  "pm": [],
+  "overflow": [
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 64.5 · FD 65.5 · BR 62.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 11.5 · FD 13.5 · BR 12.5 · KAL",
+    "left": 176,
+    "right": 403,
+    "limit": 359
+   },
+   {
+    "what": "cut off by its card",
+    "where": "page-props div.ln-row>div.ln-who>div.ln-name>span.pb-anc",
+    "text": "PIN 250.5 · FD 250.5 · BR 246.5 · KAL",
+    "left": 152,
+    "right": 398,
+    "limit": 359
+   }
+  ]
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "ev",
+  "how": "more",
+  "len": 3112,
+  "am": 23,
+  "dec": 0,
+  "pctT": 14,
+  "amSamples": [
+   "FAIR\n-148 · 59.68%",
+   "FAIR\n-130 · 56.56%",
+   "FAIR\n-129 · 56.27%",
+   "FAIR\n-135 · 57.45%",
+   "Polymarket US\n-1023",
+   "FAIR\n-1280 · 92.76%"
+  ],
+  "showAll": false,
+  "stateBar": "BETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE",
+  "empties": [],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nBETTING FROM CALIFORNIA · 6 legal · 1 not sure, check with the venue · others greyed or hidden. Neither sportsbook we read (FanDuel, BetRivers) takes bets here.\nVENUES\nCHANGE\nABOUT THIS TAB\n+EV SCREENER — every sportsbook and DFS price scored against the no-vig sharp line (Pinnacle, Circa, exchanges). Positive EV means the price beats the fair odds. Fair price = vig removed from each sha\nShow\nALL 29NBA 8NCAAF 8NFL 2NHL 1SERIEA 1TENNIS 4UCL 1UFC 2WNBA 2\nALL BETS GAME LINES PLAYER PROPS DFS (PP/UD) ALT LINES ESPORTS STALE TRACK RECORD MIN EV \nsharp-backed only\ntwo sharp s",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "sharp",
+  "how": "more",
+  "len": 2478,
+  "am": 0,
+  "dec": 0,
+  "pctT": 9,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.",
+    "where": "page-sharp #page-sharp>#sharpFeedContent>div.empty-wrap"
+   }
+  ],
+  "head": "SHARE CARD\nEXPORT\nPRINT\nABOUT THIS TAB\nSHARP MONEY — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book. First moves appear\nShow\nPIN · DK · FD · MGM · CZR · B365 · BOL · LVG\nCLEAR\nNo sportsbook odds feed is connected, so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.\nEXCHANGE STEAM · POLYMARKET MOVED, THE US PRICE HASN'T\nNothing steaming right now. When Polymarket's bo",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "clv",
+  "how": "hidden",
+  "len": 361,
+  "am": 0,
+  "dec": 0,
+  "pctT": 0,
+  "amSamples": [],
+  "showAll": false,
+  "stateBar": null,
+  "empties": [
+   {
+    "text": "NO CLV Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+    "where": "page-clv #page-clv>#clvList>div.empty-wrap"
+   }
+  ],
+  "head": "ABOUT THIS TAB\nCLOSING LINE VALUE (CLV) is the best measure of whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bet\nShow\n—\nAVG CLV\n—\n+CLV BETS\n—\nCLV HIT%\nCLV BY BET\nNO CLV\nAdd closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.",
+  "pm": [],
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "mybets",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "tab": "customize",
+  "how": "missing",
+  "none": true,
+  "overflow": []
+ },
+ {
+  "vp": "phone",
+  "fmt": "implied",
+  "st": "CA",
+  "issues": []
+ }
+]
