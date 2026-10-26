@@ -25,13 +25,14 @@ const OK = /^(NFL|NCAAF|NBA|NHL)-/;
 const evs = new Map();
 const add = e => { if (e && e.id != null && !evs.has(String(e.id))) evs.set(String(e.id), e); for (const x of e?.events || []) add(x); };
 for (const sport of (process.env.SPORTS || 'american_football,basketball,hockey').split(',')) {
-  for (let off = 0; off < 20000; off += 500) {
-    const r = await get(`/v1/prediction-markets/events?status=settled&sport=${sport}&sports_market_type=moneyline&sports_market_type=spread&sports_market_type=total&sports_market_scope=full_contest&limit=500&offset=${off}`);
+  const L = +(process.env.PAGE || 500);
+  for (let off = 0; off < 20000; off += L) {
+    const r = await get(`/v1/prediction-markets/events?status=settled&sport=${sport}${process.env.BARE ? '' : '&sports_market_type=moneyline&sports_market_type=spread&sports_market_type=total&sports_market_scope=full_contest'}&limit=${L}&offset=${off}`);
     const d = r?.data || [];
     d.forEach(add);
     const starts = d.map(e => Date.parse(e.startTime)).filter(Number.isFinite);
     console.log(sport, off, d.length, starts.length ? new Date(Math.min(...starts)).toISOString() : '-', JSON.stringify(r?.pagination || null));
-    if (d.length < 500 || (starts.length && Math.max(...starts) < FROM)) break;
+    if (d.length < L || (starts.length && Math.max(...starts) < FROM)) break;
   }
 }
 const keep = [...evs.values()].filter(e => OK.test(String(e.ticker || '')) && Date.parse(e.startTime) >= FROM && Date.parse(e.startTime) < Date.now());
