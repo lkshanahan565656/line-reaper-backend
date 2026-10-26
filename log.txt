@@ -1,0 +1,5 @@
+dates=20261024 44
+dates=20261024&groups=80 44
+dates=20261024&groups=80&limit=300 44
+in default but not groups=80: 0
+dates=20261024&limit=300 44
