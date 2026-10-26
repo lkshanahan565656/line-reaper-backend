@@ -1,0 +1,13 @@
+Mon Oct 26 20:20:22 UTC 2026
+pin football 3 leagues 121 specials
+pin basketball 56 leagues 471 specials
+pin hockey 31 leagues 207 specials
+pin baseball 3 leagues 66 specials
+kalshi series 4051
+kalshi far events 4294 markets 65435
+kalshi books 1500
+pm futures events 266
+errors 3 401 https://guest.api.arcadia.pinnacle.com/0.1/leagues/228035/matchups
+401 https://guest.api.arcadia.pinnacle.com/0.1/leagues/565/matchups
+401 https://guest.api.arcadia.pinnacle.com/0.1/leagues/216131/matchups
+Mon Oct 26 20:44:38 UTC 2026
