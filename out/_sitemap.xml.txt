@@ -1,0 +1,37 @@
+200
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://line-reaper-backend-production.up.railway.app/</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/app</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/status</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/developers</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/leagues</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/nfl</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/nba</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/nhl</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/cfb</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/cbb</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/mlb</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/soccer</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/tennis</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/esports/lol</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/esports/cs2</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/esports/valorant</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/esports/dota2</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/no-vig-fair-odds</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/expected-value</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/closing-line-value</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/hold-and-arbitrage</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/middles</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/kelly-criterion</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/exchange-fees</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/pickem-math</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/learn/how-the-record-works</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/terms</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/privacy</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/refunds</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/disclaimer</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/responsible-gambling</loc></url>
+  <url><loc>https://line-reaper-backend-production.up.railway.app/data-sources</loc></url>
+</urlset>

@@ -1,0 +1,2 @@
+200
+{"ok":true,"version":"3.202.0","uptimeS":30,"listening":true,"boot":[{"mark":"modules loaded","ms":1636,"at":"2026-10-26T18:45:36.133Z"},{"mark":"listening","ms":1639,"at":"2026-10-26T18:45:36.136Z"},{"mark":"backup read","ms":3656,"at":"2026-10-26T18:45:38.153Z"}],"stalls":{"count":2,"worstMs":1831,"last":{"at":"2026-10-26T18:45:39.342Z","ms":1831,"uptimeS":5,"jobs":[],"requests":[]}},"inFlight":1,"memory":{"rssMb":1447,"heapMb":943},"backup":"ready","stores":{"writes":0,"rows":0,"bytes":0,"ms":0,"maxMs":0,"errors":0,"lastError":null,"pending":33}}
