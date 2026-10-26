@@ -15,6 +15,7 @@
 const fs = require('fs');
 const pingames = require('../pingames');
 const xarb = require('../xarb');
+const freebooks = require('../freebooks');
 const D = require('../depthfill');
 const execcheck = require('../execcheck');
 
@@ -101,11 +102,33 @@ function kalshiQuotes(evs, teams, pol) {
   return kk;
 }
 
+// BetRivers (Kambi) live games: listView STARTED events → betoffer/event → { id, lg, home, away, st, s, ml, spreads, totals }
+// (Pinnacle's guest feed serves live markets only with a key and caches the rest up to 15 min, so the
+// live reference is BetRivers; see PREREGISTERED.md amendment). Main line = the pair closest to even.
+const KLG = { nba: 'basketball/nba', nhl: 'ice_hockey/nhl', nfl: 'american_football/nfl', ncaaf: 'american_football/ncaaf' };
+function kambiGame(lg, payload, live) {
+  const e = payload?.events?.[0];
+  if (!e) return null;
+  const g0 = freebooks.parseKambiEvent({ ...payload, events: [{ ...e, state: 'NOT_STARTED' }] }, 0);
+  if (!g0) return null;
+  const prob1 = a => (a < 0 ? -a / (-a + 100) : 100 / (a + 100));
+  const pairs = (outs, keyOf) => { const m = new Map(); for (const o of outs) { const k = keyOf(o); if (!m.has(k)) m.set(k, []); m.get(k).push(o); } return [...m.values()].filter(v => v.length === 2); };
+  const mainIdx = ps => { let b = -1, bd = 9; ps.forEach((x, i) => { const d = Math.abs(prob1(x[1]) - prob1(x[2])); if (d < bd) { bd = d; b = i; } }); return b; };
+  const h = g0.h2h.find(o => o.name === g0.home), a = g0.h2h.find(o => o.name === g0.away);
+  let spreads = pairs(g0.spreads, o => Math.abs(o.point)).map(v => { const hh = v.find(o => o.name === g0.home), aa = v.find(o => o.name === g0.away); return hh && aa ? [hh.point, hh.price, aa.price, 1, null] : null; }).filter(Boolean);
+  let totals = pairs(g0.totals, o => o.point).map(v => { const o = v.find(x => x.name === 'Over'), u = v.find(x => x.name === 'Under'); return o && u ? [o.point, o.price, u.price, 1, null] : null; }).filter(Boolean);
+  const ms = mainIdx(spreads); if (ms >= 0) spreads[ms][3] = 0;
+  const mt = mainIdx(totals); if (mt >= 0) totals[mt][3] = 0;
+  const ld = live?.liveData || {};
+  const st = { h: ld.score?.home ?? null, a: ld.score?.away ?? null, period: ld.matchClock?.period ?? null, min: ld.matchClock?.minute ?? null, sec: ld.matchClock?.second ?? null, running: ld.matchClock?.running ?? null, left: ld.matchClock?.minutesLeftInPeriod != null ? `${ld.matchClock.minutesLeftInPeriod}:${String(ld.matchClock.secondsLeftInMinute ?? 0).padStart(2, '0')}` : null };
+  return { id: e.id, lg, home: g0.home, away: g0.away, st: e.start, s: st, ml: h && a ? [h.price, a.price, null] : null, spreads, totals };
+}
+
 function createInplay({ http, kget, stats }) {
   fs.mkdirSync('out', { recursive: true });
   const log = fs.createWriteStream('out/inplay.jsonl', { flags: 'a' });
   const dlog = fs.createWriteStream('out/ipdepth.jsonl', { flags: 'a' });
-  const st = (stats.inplay = { loops: 0, lines: 0, books: 0, pinLive: {}, kGames: 0, matched: 0, unmatched: {}, errors: {}, lastLoopMs: null, startedAt: new Date().toISOString() });
+  const st = (stats.inplay = { loops: 0, lines: 0, books: 0, pinLive: {}, kGames: 0, matched: 0, brLive: {}, unmatched: {}, errors: {}, lastLoopMs: null, startedAt: new Date().toISOString() });
   let kgames = [], kgamesAt = 0, stopped = false;
   const err = (k, e) => { st.errors[k] = `${e.response?.status || ''} ${e.message || e}`.slice(0, 200); };
 
@@ -141,6 +164,27 @@ function createInplay({ http, kget, stats }) {
     return games;
   }
 
+  let sampled = 0;
+  async function booksLive() {
+    const games = [];
+    await Promise.all(Object.entries(KLG).map(async ([lg, path]) => {
+      try {
+        const lv = (await http.get(`${freebooks.KAMBI}/listView/${path}/all/all/matches.json`, { params: { lang: 'en_US', market: 'US' }, timeout: 12000 }))?.data;
+        const live = (lv?.events || []).filter(x => x?.event?.state === 'STARTED');
+        st.brLive[lg] = live.length;
+        await Promise.all(live.map(async x => {
+          try {
+            const p = (await http.get(`${freebooks.KAMBI}/betoffer/event/${x.event.id}.json`, { params: { lang: 'en_US', market: 'US' }, timeout: 12000 }))?.data;
+            if (sampled < 2) { sampled++; fs.writeFileSync(`out/ipsample-${sampled}.json`, JSON.stringify({ live: x, p }).slice(0, 400000)); }
+            const g = kambiGame(lg, p, x);
+            if (g) games.push(g); else st.brNoParse = (st.brNoParse || 0) + 1;
+          } catch (e) { err(`brEvent_${lg}`, e); }
+        }));
+      } catch (e) { err(`brList_${lg}`, e); }
+    }));
+    return games;
+  }
+
   async function kEvent(ticker) {
     try { return (await kget(`${K}/events/${ticker}`, { params: { with_nested_markets: true }, timeout: 10000 }))?.data; }
     catch (e) { if (e.response?.status !== 404) err('kevent', e); return null; }
@@ -149,7 +193,7 @@ function createInplay({ http, kget, stats }) {
   async function loop() {
     const t0 = Date.now();
     await discover();
-    const pin = await pinLive();
+    const pin = await booksLive();
     const t = Date.now();
     if (!pin.length) return;
     // match each live Pinnacle game to a Kalshi game: same league, teams either way round, window holds the start
@@ -171,7 +215,7 @@ function createInplay({ http, kget, stats }) {
         const evs = await Promise.all(['GAME', 'SPREAD', 'TOTAL'].map(s => kEvent(`${k.root}${s}-${k.suffix}`)));
         const tk = Date.now();
         const kk = kalshiQuotes(evs, k.teams, pol);
-        const rec = { t, tk, gk: k.key, pid: g.id, lg: g.lg, home: g.home, away: g.away, st: g.st, s: g.s, ml: g.ml, sp_: g.spreads, to: g.totals, k: kk };
+        const rec = { src: 'betrivers', t, tk, gk: k.key, pid: g.id, lg: g.lg, home: g.home, away: g.away, st: g.st, s: g.s, ml: g.ml, sp_: g.spreads, to: g.totals, k: kk };
         log.write(JSON.stringify(rec) + '\n'); st.lines++;
         // book reads: Kalshi sides at or past Pinnacle's fair on the same line
         for (const x of kk) {
