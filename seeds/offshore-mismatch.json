@@ -1,0 +1,75 @@
+{
+ "builtAt": "2026-10-26T19:40:37.533Z",
+ "reasons": [
+  {
+   "why": "duplicate offshore market (thinner one dropped)",
+   "count": 17,
+   "examples": [
+    "race|senate|sc|D|",
+    "race|senate|ks|D|",
+    "race|governor|tn|D|",
+    "race|governor|ma|R|",
+    "race|house|fl-3|D|",
+    "race|senate|la|D|",
+    "race|house|tx-8|D|",
+    "race|senate|tn|D|"
+   ]
+  },
+  {
+   "why": "offshore volume under $50k",
+   "count": 246,
+   "examples": [
+    "race|house|fl-25|D|",
+    "race|governor|tn|D|",
+    "race|governor|tn|R|",
+    "race|governor|ok|D|",
+    "race|governor|ok|R|",
+    "race|house|nc-13|R|",
+    "race|governor|ne|D|",
+    "race|governor|ne|R|"
+   ]
+  },
+  {
+   "why": "Kalshi counts seats held after the midterms (incl. holdovers, exact or bands of 5); offshore counts by its own seat rules and brackets differ (≤47 vs Below 45/45/46/47). Not identical.",
+   "count": 1,
+   "examples": [
+    "seat counts"
+   ]
+  },
+  {
+   "why": "Kalshi pays on a company CONFIRMING an IPO; offshore pays on COMPLETING one. Different events.",
+   "count": 1,
+   "examples": [
+    "IPO before 2027"
+   ]
+  },
+  {
+   "why": "Kalshi settles on CF Benchmarks at its own hour; offshore on Binance/Chainlink at another. Different numbers.",
+   "count": 1,
+   "examples": [
+    "crypto prices"
+   ]
+  },
+  {
+   "why": "Different stations and reports (NWS climate report vs Wunderground).",
+   "count": 1,
+   "examples": [
+    "weather"
+   ]
+  },
+  {
+   "why": "Kalshi \"next head of state\" vs offshore \"head of state at end of 2026\". Different events.",
+   "count": 1,
+   "examples": [
+    "Iran head of state"
+   ]
+  },
+  {
+   "why": "Offshore books under $50k depth or brackets that do not line up with Kalshi strikes; dropped by the volume rule.",
+   "count": 1,
+   "examples": [
+    "CPI / jobs"
+   ]
+  }
+ ]
+}
