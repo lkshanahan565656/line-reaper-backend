@@ -1551,6 +1551,53 @@ body.no-help .clv-info { display:none; }
 /* keyboard shortcuts overlay (? on a keyboard, or CUSTOMIZE > Keyboard shortcuts) */
 .kbd-list { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:12px; color:var(--text2); margin:0 0 14px; }
 .kbd-list kbd { font:600 11px 'JetBrains Mono',monospace; color:var(--text); background:#161c28; border:1px solid var(--border2); border-radius:4px; padding:1px 6px; white-space:nowrap; justify-self:start; }
+/* EXPORT and PRINT bar on each data screen */
+.xp-bar { display:flex; justify-content:flex-end; gap:6px; margin:0 0 8px; }
+.xp-btn { font:700 10px 'JetBrains Mono',monospace; letter-spacing:1px; color:var(--text2); background:var(--card); border:1px solid var(--border2); border-radius:6px; padding:5px 10px; cursor:pointer; }
+.xp-btn:hover { color:var(--text); border-color:var(--green); }
+.xp-btn.primary { color:#06110d; background:var(--green); border-color:var(--green); }
+.xp-ph { display:none; }
+/* GLOSSARY: the ? beside a label and its definition */
+.gl-q { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; margin-left:3px; border-radius:50%; border:1px solid currentColor; font:700 9px/1 'Inter',sans-serif; opacity:.55; cursor:help; vertical-align:middle; flex:none; letter-spacing:0; text-transform:none; }
+.gl-q:hover, .gl-q:focus-visible { opacity:1; color:var(--green); outline:none; }
+[data-gl]:not([data-gl=""]) { -webkit-touch-callout:none; }
+.gl-pop { display:none; position:fixed; z-index:600; width:min(300px, calc(100vw - 16px)); background:#0d1117; border:1px solid var(--border2); border-left:3px solid var(--green); border-radius:8px; padding:10px 12px; box-shadow:0 8px 30px rgba(0,0,0,.5); font-size:12px; line-height:1.5; color:var(--text2); text-align:left; letter-spacing:0; text-transform:none; font-weight:400; white-space:normal; }
+.gl-pop .gl-h { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; color:var(--text); margin:0 0 4px; }
+.gl-pop .gl-x { background:none; border:0; color:var(--text2); cursor:pointer; font-size:12px; padding:0 2px; }
+.gl-pop .gl-more { display:inline-block; margin-top:6px; color:#34d399; font-size:11px; text-decoration:none; }
+</style>
+<style id="xpPrintCss" media="print">
+/* the print view (PRINT on a data screen, or the browser's own print): light,
+   no nav, no controls, every row of the open screen */
+body { background:#fff !important; color:#111 !important; min-height:0 !important; }
+body::before { display:none !important; }
+.page *, .xp-ph, .xp-ph * { color:#111 !important; background:transparent !important; box-shadow:none !important; text-shadow:none !important; animation:none !important; border-color:#bbb !important; }
+.nav, #netBanner, .xp-bar, .welcome, .tour, .toast, .acct-modal, .lay-modal, .more-menu, #esSlipBar, #pkTray, .gl-pop, .gl-q, footer.lr-foot, .lr-foot { display:none !important; }
+.page:not(.active) { display:none !important; }
+.page { padding:0 4px !important; }
+.page button, .page select, .page input, .page textarea, .page label:has(select), .page label:has(input), .page .sport-row, .page .pb-chips, .page .os-ctrl, .page .shp-bar, .page .shp-health, .page .os-chart, .page .mv-chart, .page canvas, .page svg { display:none !important; }
+.page details:not([open]), .page .clv-info.folded { display:none !important; }
+.page table { border-collapse:collapse !important; width:100%; font-size:10px !important; }
+.page th, .page td { border:1px solid #bbb !important; padding:3px 5px !important; }
+.page td.best, .page td.top, .page .shp-cell.best { font-weight:800 !important; outline:2px solid #111 !important; outline-offset:-2px; }
+.page a { text-decoration:none !important; }
+.page .os-game, .page .shp-card, .page .pb-card, .page .ms-slip, .page .nflm-card, .page tr { break-inside:avoid; page-break-inside:avoid; }
+.page .pb-card, .page .os-game, .page .shp-card, .page .ms-slip, .page .clv-info, .page .shp-dim { border-color:#ccc !important; }
+.xp-ph { display:block !important; border-bottom:2px solid #111 !important; padding:4px 0 8px !important; margin:0 0 12px !important; font-size:11px; }
+.xp-ph-t { font:800 14px 'JetBrains Mono',monospace; letter-spacing:1px; }
+.xp-ph-m { margin-top:3px; }
+.xp-ph-b { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+.xp-ph-b .xp-btn { display:inline-block !important; color:#111 !important; background:#fff !important; border:1px solid #111 !important; }
+.xp-ph-b .xp-btn.primary { color:#fff !important; background:#111 !important; }
+.xp-ph-s { font-size:11px; }
+@media print {
+  .xp-ph-b { display:none !important; }
+  @page { margin:10mm; }
+  /* on paper nothing scrolls: every column squeezes onto the page */
+  .page [class*="scroll"], .page [class*="wrap"], .page .os-game, .page .shp-card, .page .pb-card { overflow:visible !important; max-height:none !important; }
+  .page table { table-layout:fixed !important; font-size:8px !important; }
+  .page th, .page td { word-break:break-word; white-space:normal !important; }
+}
 </style>
 </head>
 <body>
@@ -2475,6 +2522,7 @@ function renderOdds() {
     return;
   }
   const cols = (d.venues || []).filter(v => games.some(g => g.markets.some(m => m.sides.some(s => s.venues.some(x => x.venue === v.key)))));
+  osUi.readAt = d.updated || null;
   box.innerHTML = games.slice(0, 80).map(g => osGame(g, cols, d.pro)).join('') + (games.length > 80 ? `<div class="os-note">Showing the first 80 games: pick a league or search a team for the rest.</div>` : '');
   for (const id of Object.keys(osUi.open)) if (osUi.open[id]) osDrawChart(id);
 }
@@ -2487,9 +2535,11 @@ function osGame(g, cols, pro) {
       cols.map(v => {
         const x = s.venues.find(y => y.venue === v.key);
         if (!x) return '<td>·</td>';
-        if (x.lineDiffers) return `<td class="diff" title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}</td>`;
+        const xp = xpA({ event: `${g.away} @ ${g.home}`, league: g.leagueLabel, start: g.start, market: m.label, selection: s.label, line: x.point, venue: x.venue, venueName: x.name, american: x.american, decimal: x.decimal,
+          fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
+        if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}</td>`;
         const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}" ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -2699,6 +2749,293 @@ if (afUi.on) {
   const go = () => { document.body.classList.add('after-fees'); afLoad().then(ok => { if (ok) afRerender(); }); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 }
+
+// ─── EXPORT AND PRINT (every data screen) ────────────────────────────────────
+// EXPORT downloads the rows the screen shows right now, with its filters as
+// they are: a row a filter hides, a folded section or a page not yet loaded
+// is not in the file. Rows a screen tags (data-xp: the odds screen and its
+// views, PROPS, MY SLIPS) come out one price a row with the venue, the price,
+// its break-even after the venue's fee (fees.js, the AFTER FEES view's
+// numbers), Pinnacle's fair and close where the screen has them, the fill
+// size where a book was read, and when the price was read. Any other table
+// comes out as its columns. Nothing from the account (stars, saved views,
+// MY BETS) is added; MY SLIPS exports only its own slips.
+// PRINT opens a light print view of the same screen (no nav, no controls):
+// the browser's print dialog saves it as a PDF.
+const XP_PAGES = ['odds', 'best', 'tail', 'arb', 'big', 'gas', 'esports', 'results', 'myslips', 'props', 'ev', 'sharp', 'lines', 'shop'];
+// row-like cards a screen draws without a table (exported as their text)
+const XP_CARDS = '.pb-card, .ln-row, .pm-row, .emu-row, .esm-card, .soc-row, .xa-card, .tail-card, .cb-row, .shop-card, .aps-row, .ms-leg:not(.ms-th)';
+const xpUi = { loaded: {} };
+// a row's fields for the file, on the element that draws it. Empty fields are left out
+const xpA = o => ` data-xp="${escAttr(JSON.stringify(o, (k, v) => (v == null || v === '' || (typeof v === 'number' && !isFinite(v)) ? undefined : v)))}"`;
+// when each screen last loaded from our server (the file's loaded_at)
+(() => {
+  const f = window.fetch;
+  if (typeof f !== 'function') return;
+  window.fetch = function (...args) {
+    const p = f.apply(this, args);
+    try {
+      const u = String(args[0]?.url || args[0] || '');
+      if (/\/api\//.test(u)) {
+        const pg = document.querySelector('.page.active')?.id?.replace(/^page-/, '');
+        if (pg) p.then(r => { if (r && r.ok) xpUi.loaded[pg] = new Date().toISOString(); }).catch(() => {});
+      }
+    } catch {}
+    return p;
+  };
+})();
+const xpVis = el => !!el && el.getClientRects().length > 0;
+const xpNorm = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+// a cell's words as the screen shows them, without its buttons and ? marks
+function xpText(el) {
+  const out = [];
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => (n.parentElement?.closest('button, select, option, script, style, .gl-q, .xp-skip') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+  let n;
+  while ((n = w.nextNode())) { const t = n.nodeValue.trim(); if (t && xpVis(n.parentElement)) out.push(t); }
+  return xpNorm(out.join(' '));
+}
+// the screen, the view and the filters as the page shows them
+function xpWhere(page) {
+  const tab = xpNorm(document.querySelector('.tab.active')?.innerText || page.id.replace(/^page-/, '')).replace(/\s*▾$/, '');
+  const chips = [...page.querySelectorAll('.sport-chip.active, .sport-chip.on, .mb-seg button.on')].filter(xpVis).map(b => xpText(b) || xpNorm(b.innerText)).filter(Boolean);
+  const view = chips[0] || '';
+  const filters = chips.slice(1);
+  for (const s of page.querySelectorAll('select')) {
+    if (!xpVis(s) || s.selectedIndex <= 0 || s.closest('.gl-pop')) continue;
+    const lab = xpNorm(s.closest('label')?.firstChild?.nodeValue || s.getAttribute('aria-label') || '');
+    filters.push(`${lab ? lab + ': ' : ''}${xpNorm(s.options[s.selectedIndex].text)}`);
+  }
+  for (const i of page.querySelectorAll('input[type="search"], input[type="text"], input[type="number"], input:not([type])')) {
+    if (xpVis(i) && i.value && !i.closest('.gl-pop')) filters.push(`${xpNorm(i.closest('label')?.firstChild?.nodeValue || i.placeholder || 'search')}: ${i.value}`);
+  }
+  return { tab, view, filters: filters.join(' · ') };
+}
+const xpPct = x => (x == null || !isFinite(x) ? '' : `${(x * 100).toFixed(2)}%`);
+const xpAmTxt = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
+const xpDecOfAm = a => (a == null || Math.abs(a) < 100 ? null : a > 0 ? 1 + a / 100 : 1 + 100 / -a);
+// the break-even after the venue's fee: an exchange's all-in cost, a book's
+// implied chance, a pick'em leg's share of its slip (fees.js)
+function xpBreakeven(r) {
+  if (r.be != null) return r.be;
+  if (!window.LRFees) return null;
+  try {
+    if (r.cost != null) return r.cost;
+    if (r.price != null && r.price > 0 && r.price < 1) return LRFees.allInCost(r.venue, r.price, { maker: !!r.maker });
+    const kind = LRFees.kindOf ? LRFees.kindOf(r.venue) : LRFees.schedule(r.venue)?.kind;
+    if (kind === 'pickem') return LRFees.legBreakeven(r.venue, { multiplier: r.multiplier ?? null })?.breakeven ?? null;
+    const d = r.decimal ?? xpDecOfAm(r.american);
+    if (!(d > 1)) return null;
+    return LRFees.afterFee({ venue: r.venue, decimal: d, inPrice: r.feeIn !== false })?.breakeven ?? null;
+  } catch { return null; }
+}
+const XP_COLS = ['screen', 'view', 'filters', 'event', 'league', 'starts', 'market', 'selection', 'line', 'venue', 'price', 'decimal_odds', 'after_fee_breakeven', 'prices_shown', 'fair', 'fair_source', 'close', 'ev', 'fill_size_usd', 'label', 'read_at', 'loaded_at', 'exported_at'];
+function xpRowOut(r, base) {
+  const be = xpBreakeven(r);
+  const dec = r.decimal ?? xpDecOfAm(r.american);
+  const raw = r.american != null ? xpAmTxt(r.american) : r.price != null ? `${(r.price * 100).toFixed(1)}c` : r.multiplier != null ? `${r.multiplier}x` : r.shown || (dec ? dec.toFixed(3) : '');
+  return { ...base, event: r.event, league: r.league, starts: r.start, market: r.market, selection: r.selection, line: r.line, venue: r.venueName || r.venue,
+    price: afUi.on && be != null ? xpPct(be) : raw, decimal_odds: dec ? dec.toFixed(4) : '', after_fee_breakeven: xpPct(be),
+    fair: xpPct(r.fair), fair_source: r.fair != null || r.close != null ? r.fairSrc || 'Pinnacle no-vig' : '', close: xpPct(r.close), ev: r.ev == null ? '' : `${(r.ev * 100).toFixed(2)}%`,
+    fill_size_usd: r.fill ?? '', label: r.tag, read_at: r.readAt };
+}
+// the rows on the open screen, as { cols, rows }
+function xpCollect() {
+  const page = document.querySelector('.page.active');
+  if (!page) return null;
+  const w = xpWhere(page);
+  const base = { screen: w.tab, view: w.view, filters: w.filters, prices_shown: afUi.on ? 'after fees' : 'as listed', loaded_at: xpUi.loaded[page.id.replace(/^page-/, '')] || '', exported_at: new Date().toISOString() };
+  const tagged = [...page.querySelectorAll('[data-xp]')].filter(xpVis);
+  if (tagged.length) {
+    const rows = [];
+    for (const el of tagged) { try { rows.push(xpRowOut(JSON.parse(el.dataset.xp), base)); } catch {} }
+    return { w, cols: XP_COLS, rows };
+  }
+  const meta = ['screen', 'view', 'filters'], tail = ['prices_shown', 'loaded_at', 'exported_at'];
+  const tables = [...page.querySelectorAll('table')].filter(t => xpVis(t) && !t.parentElement.closest('table'));
+  if (tables.length) {
+    const cols = [...meta], rows = [];
+    for (const t of tables) {
+      const trs = [...t.rows].filter(xpVis);
+      const headRow = trs.find(tr => tr.querySelector('th') && !tr.querySelector('td'));
+      const head = headRow ? [...headRow.cells].map((c, i) => xpText(c) || `column ${i + 1}`) : [];
+      for (const tr of trs) {
+        if (tr === headRow || !tr.querySelector('td')) continue;
+        const cells = [...tr.cells];
+        if (cells.length === 1 && cells[0].colSpan > 1) continue; // a note or a drawn chart across the table
+        const o = { ...base };
+        cells.forEach((c, i) => { let k = head[i] || `column ${i + 1}`; if (meta.includes(k) || tail.includes(k)) k += ' (table)'; if (!cols.includes(k)) cols.push(k); o[k] = xpText(c); });
+        rows.push(o);
+      }
+    }
+    return { w, cols: [...cols, ...tail], rows };
+  }
+  const cards = [...page.querySelectorAll(XP_CARDS)].filter(xpVis).filter(el => !el.parentElement.closest(XP_CARDS));
+  return { w, cols: [...meta, 'row', ...tail], rows: cards.map(el => ({ ...base, row: xpText(el) })).filter(r => r.row) };
+}
+// one CSV field: quoted when needed; a leading = or @ (or a sign before a
+// non-number) is kept as text so a spreadsheet never runs it
+const xpCell = v => { let s = String(v ?? ''); if (/^[=@]|^[+-][^\d.]/.test(s) || /^[\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const xpSlug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+async function xpCsv() {
+  // the break-even needs the fee schedules: load them once if this is the first use
+  if (!afReady()) await afLoad();
+  const x = xpCollect();
+  if (!x || !x.rows.length) { showToast('Nothing on this screen to export yet', 'danger'); return; }
+  const csv = [x.cols.map(xpCell).join(','), ...x.rows.map(r => x.cols.map(c => xpCell(r[c])).join(','))].join('\r\n') + '\r\n';
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const name = `line-reaper-${[xpSlug(x.w.tab), xpSlug(x.w.view)].filter(Boolean).join('-')}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.csv`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast(`Exported ${x.rows.length} row${x.rows.length === 1 ? '' : 's'} as ${name}`);
+}
+function xpPrint() {
+  const page = document.querySelector('.page.active');
+  if (!page) return;
+  xpPrintClose(true);
+  const w = xpWhere(page), now = new Date();
+  const loaded = xpUi.loaded[page.id.replace(/^page-/, '')];
+  const head = document.createElement('div');
+  head.className = 'xp-ph'; head.id = 'xpHead';
+  head.innerHTML = `<div class="xp-ph-t">LINE REAPER · ${escAttr(w.tab)}${w.view ? ' · ' + escAttr(w.view) : ''}</div>
+    <div class="xp-ph-m">${w.filters ? escAttr(w.filters) + ' · ' : ''}${afUi.on ? 'Prices after fees · ' : ''}${loaded ? `Loaded ${escAttr(new Date(loaded).toLocaleString())} · ` : ''}Printed ${escAttr(now.toLocaleString())} · ${escAttr(location.host)}</div>
+    <div class="xp-ph-m">Prices move: check each one in the venue's app before you bet. Not betting advice. 21+.</div>
+    <div class="xp-ph-b"><button class="xp-btn primary" onclick="xpPrintGo()">PRINT / SAVE AS PDF</button><button class="xp-btn" onclick="xpPrintClose()">CLOSE PRINT VIEW</button><span class="xp-ph-s" id="xpHeadSay"></span></div>`;
+  page.insertBefore(head, page.firstChild);
+  document.getElementById('xpPrintCss').media = 'all';
+  document.body.classList.add('xp-pv');
+  window.scrollTo(0, 0);
+}
+function xpPrintGo() {
+  const s = document.getElementById('xpHeadSay');
+  if (s) s.textContent = "Opening the print dialog: pick \"Save as PDF\" as the printer for a file.";
+  setTimeout(() => window.print(), 30);
+}
+function xpPrintClose(quiet) {
+  document.getElementById('xpHead')?.remove();
+  const css = document.getElementById('xpPrintCss');
+  if (css) css.media = 'print';
+  document.body.classList.remove('xp-pv');
+  if (!quiet) window.scrollTo(0, 0);
+}
+// the EXPORT and PRINT bar at the top of each data screen
+(() => {
+  const go = () => {
+    for (const id of XP_PAGES) {
+      const pg = document.getElementById('page-' + id);
+      if (!pg || pg.querySelector(':scope > .xp-bar')) continue;
+      const bar = document.createElement('div');
+      bar.className = 'xp-bar';
+      bar.innerHTML = '<button class="xp-btn" onclick="xpCsv()" title="Download the rows on this screen, as filtered now, as a CSV file">EXPORT</button><button class="xp-btn" onclick="xpPrint()" title="A clean light view of this screen to print or save as a PDF">PRINT</button>';
+      pg.insertBefore(bar, pg.firstChild);
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  // leaving the screen closes its print view
+  const st = window.showTab;
+  if (typeof st === 'function') window.showTab = function (...a) { if (document.body.classList.contains('xp-pv')) xpPrintClose(true); return st.apply(this, a); };
+})();
+
+// ─── GLOSSARY: ? BESIDE A LABEL, OR A LONG PRESS ON IT ───────────────────────
+// glossary.js (window.LRGlossary, the same list as the GLOSSARY on /learn)
+// names every label and badge. Each label it knows gets a small ? after it;
+// a tap on the ?, or pressing and holding the label (phones), opens the
+// definition beside it with a link to the full glossary. Chips and buttons get
+// the long press only, so a tap still does what it always did.
+const glUi = { ready: false, queue: new Set(), raf: 0, press: null, eat: false };
+const GL_LABELS = 'th, label, .tag, .nflm-tag, .shp-tag, .tail-tag, .sp-badge, .ln-badge, .tx-tag, .pb-besttag, .pb-gap, .ln-head > div, .ms-th > div, .tl-stat .k, .pb-stat span, .roi-lbl, .section-head, .asc-h, .emu-verdict b';
+const GL_PRESS = '.sport-chip, .mb-seg button';
+// the label's own words: its first text, before any control or count inside it
+function glOwnText(el) {
+  for (const n of el.childNodes) {
+    if (n.nodeType === 3 && n.nodeValue.trim()) return n;
+    if (n.nodeType === 1 && !n.matches('select, input, button, .gl-q, i, svg') && n.childNodes.length === 1 && n.firstChild.nodeType === 3 && n.firstChild.nodeValue.trim()) return n.firstChild;
+    if (n.nodeType === 1) break;
+  }
+  return null;
+}
+function glDecorate(root) {
+  if (!window.LRGlossary || !root?.querySelectorAll) return;
+  const els = root.matches?.(GL_LABELS) ? [root, ...root.querySelectorAll(GL_LABELS)] : [...root.querySelectorAll(GL_LABELS)];
+  for (const el of els) {
+    if (el.dataset.gl != null || el.closest('.gl-pop, .xp-ph, .nav, #welcome, #tour')) continue;
+    const t = glOwnText(el);
+    const term = t && LRGlossary.lookup(t.nodeValue);
+    el.dataset.gl = term ? term.id : '';
+    if (!term) continue;
+    const q = document.createElement('span');
+    q.className = 'gl-q'; q.setAttribute('role', 'button'); q.tabIndex = 0;
+    q.dataset.glq = term.id; q.title = `What is ${term.term}?`; q.setAttribute('aria-label', `What is ${term.term}?`);
+    q.textContent = '?';
+    t.parentNode.insertBefore(q, t.nextSibling);
+  }
+  const chips = root.matches?.(GL_PRESS) ? [root, ...root.querySelectorAll(GL_PRESS)] : [...root.querySelectorAll(GL_PRESS)];
+  for (const el of chips) {
+    if (el.dataset.gl != null) continue;
+    const term = LRGlossary.lookup(el.textContent);
+    el.dataset.gl = term ? term.id : '';
+  }
+}
+function glFlush() {
+  glUi.raf = 0;
+  const list = [...glUi.queue]; glUi.queue.clear();
+  for (const el of list) if (el.isConnected) glDecorate(el);
+}
+function glOpen(id, anchor) {
+  const t = window.LRGlossary?.get(id);
+  if (!t) return;
+  let pop = document.getElementById('glPop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'glPop'; pop.className = 'gl-pop'; pop.setAttribute('role', 'dialog');
+    document.body.appendChild(pop);
+  }
+  pop.setAttribute('aria-label', t.term);
+  pop.innerHTML = `<div class="gl-h"><b>${escAttr(t.term)}</b><button class="gl-x" onclick="glClose()" aria-label="Close">✕</button></div><div class="gl-d">${escAttr(t.def)}</div><a class="gl-more" href="/learn#g-${escAttr(t.id)}" target="_blank" rel="noopener">More in the glossary →</a>`;
+  pop.style.display = 'block';
+  const r = anchor.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, innerWidth - pw - 8));
+  const top = r.bottom + 6 + ph < innerHeight ? r.bottom + 6 : Math.max(8, r.top - ph - 6);
+  pop.style.left = `${left}px`; pop.style.top = `${top}px`;
+}
+function glClose() { const p = document.getElementById('glPop'); if (p) p.style.display = 'none'; }
+(() => {
+  const start = () => {
+    new MutationObserver(list => {
+      for (const m of list) for (const n of m.addedNodes) if (n.nodeType === 1 && !n.classList.contains('gl-q')) glUi.queue.add(n);
+      if (glUi.queue.size && !glUi.raf) glUi.raf = requestAnimationFrame(glFlush);
+    }).observe(document.body, { childList: true, subtree: true });
+    mybLoadScript('/glossary.js').then(() => { glUi.ready = true; document.querySelectorAll('.page').forEach(glDecorate); }).catch(() => {});
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  // the ?: opens the definition and stops the click there (a sort header stays as it is)
+  document.addEventListener('click', e => {
+    if (glUi.eat) { glUi.eat = false; e.preventDefault(); e.stopPropagation(); return; }
+    const q = e.target.closest?.('.gl-q');
+    if (q) { e.preventDefault(); e.stopPropagation(); glOpen(q.dataset.glq, q); return; }
+    if (!e.target.closest?.('.gl-pop')) glClose();
+  }, true);
+  document.addEventListener('keydown', e => {
+    const q = e.target.closest?.('.gl-q');
+    if (q && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); glOpen(q.dataset.glq, q); }
+    if (e.key === 'Escape') glClose();
+  }, true);
+  // a long press on a label or chip opens it too, and the press is not a tap
+  const cancel = () => { if (glUi.press) { clearTimeout(glUi.press.timer); glUi.press = null; } };
+  document.addEventListener('pointerdown', e => {
+    cancel();
+    const el = e.target.closest?.('[data-gl]');
+    if (!el || !el.dataset.gl || e.button > 0) return;
+    glUi.press = { x: e.clientX, y: e.clientY, timer: setTimeout(() => { glUi.press = null; glUi.eat = true; setTimeout(() => { glUi.eat = false; }, 800); glOpen(el.dataset.gl, el); }, 550) };
+  }, true);
+  document.addEventListener('pointermove', e => { if (glUi.press && Math.hypot(e.clientX - glUi.press.x, e.clientY - glUi.press.y) > 10) cancel(); }, true);
+  document.addEventListener('pointerup', cancel, true);
+  document.addEventListener('pointercancel', cancel, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest?.('[data-gl]')?.dataset.gl) e.preventDefault(); }, true);
+  addEventListener('scroll', () => glClose(), { passive: true });
+})();
 
 // ─── TOOLS: BETTING CALCULATORS ───────────────────────────────────────────────
 // The math lives in calc.js on the backend (tested there) and loads once, the
@@ -3444,13 +3781,18 @@ function msSlipHtml(v) {
   const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
   const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
   const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
-  return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l)).join('')}</div>`;
+  return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l, v)).join('')}</div>`;
 }
-function msLegHtml(l) {
+function msLegHtml(l, v = null) {
   const g = l.g;
+  // the export: this leg, its slip's app and break-even, the sharp fair first and at the close
+  const xp = v ? xpA({ event: g?.matched?.matchTitle || g?.matched?.sport, start: g?.matched?.start, market: l.market, selection: `${l.player} ${l.side}`, line: l.line, venue: v.app, venueName: LRSlips.appLabel(v.app),
+    shown: `${v.legs.length}-pick${v.flex ? ' flex' : ''}${v.stake ? ` ${mybUsd(v.stake)}` : ''}`, be: v.be, fair: g?.signalFair, close: g?.status === 'open' ? null : g?.closeFair, fairSrc: g?.esports ? "books' consensus" : 'sharp consensus',
+    ev: g?.closeEv != null && g.status !== 'open' ? g.closeEv / 100 : null, readAt: v.placedAt,
+    tag: [g?.outcome ? `result ${g.outcome}${g.result != null ? ' (' + g.result + ')' : ''}` : g?.status || '', g?.raw?.ev != null ? `${g.raw.source === 'pinnacle' ? 'Pinnacle' : 'Kalshi'} own close ${msPct(g.raw.ev)}` : '', g?.appClose != null ? `app close ${g.appClose}` : '', v.result && v.result !== 'open' ? `slip ${v.result}` : ''].filter(Boolean).join('; ') }) : '';
   const name = `<div><b>${escAttr(l.player)}</b> ${l.side} ${l.line} ${escAttr(l.market)}${g?.matched?.start ? `<small>${escAttr(g.matched.matchTitle || g.matched.sport || '')} · ${new Date(g.matched.start).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}${g.matchUncertain ? ' · <b class="ms-unsure" title="Two matches fit and your slip names no opponent: we took the one whose posted line equals yours">match uncertain</b>' : ''}${g.esports ? ' · books\' consensus price' : ''}</small>` : ''}</div>`;
-  if (!g) return `<div class="ms-leg">${name}<div class="ms-none">checking...</div></div>`;
-  if (g.status === 'nohistory') return `<div class="ms-leg">${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? (g.reason === 'match' ? `: ${escAttr(g.opp ? 'none of them is ' + g.opp + '; ' : '')}they play ${escAttr(g.near.join(' and '))}` : `: it lists ${escAttr(g.near.join(', '))}`) : ''}</div></div>`;
+  if (!g) return `<div class="ms-leg"${xp}>${name}<div class="ms-none">checking...</div></div>`;
+  if (g.status === 'nohistory') return `<div class="ms-leg"${xp}>${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? (g.reason === 'match' ? `: ${escAttr(g.opp ? 'none of them is ' + g.opp + '; ' : '')}they play ${escAttr(g.near.join(' and '))}` : `: it lists ${escAttr(g.near.join(', '))}`) : ''}</div></div>`;
   const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
   const open = g.status === 'open';
   const move = g.lineMove ? ` <small class="${msCls(g.lineMove)}">${Math.abs(g.lineMove)} ${g.lineMove > 0 ? 'your way' : 'against you'}</small>` : '';
@@ -3460,7 +3802,7 @@ function msLegHtml(l) {
   const rw = g.raw && g.raw.ev != null && !open ? `<small class="${g.raw.ok === false ? '' : msCls(g.raw.ev)}" title="${g.raw.source === 'pinnacle' ? 'Pinnacle' : 'Kalshi'}'s last number before the start${g.raw.exact ? ' at your line' : `, read from its ${g.raw.line} line along the stat's curve`}${g.raw.ok === false ? ', read over an hour early' : ''}">${g.raw.source === 'pinnacle' ? 'PIN' : 'KAL'} ${msPct(g.raw.ev)}${g.raw.exact ? '' : '~'}</small>` : '';
   const src = g.gradeSource ? `<small title="${escAttr(g.gradeSource)}${g.late ? (g.gameSource === 'board' ? '. Logged after the start: the game and close come from our board' : '. Logged after the start: the game was found in the box scores, no close') : ''}">${escAttr(g.gradeSource.replace(/ box score$/, ''))}${g.late ? ' · late' : ''}</small>` : '';
   const res = g.outcome ? `<span class="${g.outcome === 'win' ? 'pos' : g.outcome === 'loss' ? 'neg' : ''}">${g.outcome.toUpperCase()}</span>${g.result != null ? `<small>${g.result}</small>` : ''}${src}` : g.status === 'void' ? `VOID<small>${escAttr(g.voidReason || '')}</small>` : open ? '<small>before start</small>' : '<small>waiting on the box score</small>';
-  return `<div class="ms-leg">${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}${rw}</div><div class="r" data-k="Result">${res}</div></div>`;
+  return `<div class="ms-leg"${xp}>${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}${rw}</div><div class="r" data-k="Result">${res}</div></div>`;
 }
 function msRenderPikkit() {
   const el = document.getElementById('msPikkit');
@@ -5146,7 +5488,11 @@ function pbCell(row, key, name) {
   const ev = c.ev ? `<span class="pb-evp${c.ev.ev > 0 ? ' pos' : ''}">${pbSideWord(key, c.ev.side)} ${pbEvTxt(c.ev.ev)}</span>` : '';
   const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';
   const be = key === 'prizepicks' ? afLeg(key) : afLeg(key, c.overOpen && c.over != null ? +c.over : c.underOpen && c.under != null ? +c.under : null);
-  return `<div class="pb-bk${best ? ' best' : ''}">${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}${be}</div>${fair}${ev}</div>`;
+  const mOn = key === 'prizepicks' ? null : c.ev ? (c.ev.side === 'Over' ? c.over : c.under) : c.overOpen && c.over != null ? c.over : c.underOpen && c.under != null ? c.under : null;
+  const xp = xpA({ event: row.matchTitle || [row.team, row.opponent].filter(Boolean).join(' vs '), league: row.sport, start: row.startTime, market: row.market, selection: `${row.player} ${c.ev ? pbSideWord(key, c.ev.side) : c.fair != null ? pbSideWord(key, 'Over') : ''}`.trim(), line: c.line,
+    venue: key, venueName: name, multiplier: mOn != null ? +mOn : null, shown: key === 'prizepicks' ? 'standard' : price, fair: c.fair != null ? (c.ev?.side === 'Under' ? 1 - c.fair / 100 : c.fair / 100) : null, fairSrc: c.fair != null ? "books' consensus" : null,
+    ev: c.ev ? c.ev.ev / 100 : null, readAt: pbState.data?.updated, tag: best ? 'best' : '' });
+  return `<div class="pb-bk${best ? ' best' : ''}"${xp}>${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}${be}</div>${fair}${ev}</div>`;
 }
 // ── LINES: one app's lines in a table, best EV first ──
 // Each row: the app's line, our fair line (the sharp books' consensus median,
@@ -5216,7 +5562,11 @@ function lnRow(r, book) {
   const used = lnUsed.keys.has(key);
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
   const meta = [pbMatchup(r, true), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
-  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}">
+  const xp = xpA({ event: r.matchTitle || [r.team, r.opponent].filter(Boolean).join(' vs '), league: r.sport, start: r.startTime, market: r.market, selection: `${r.player}${ev ? ' ' + pbSideWord(book, ev.side) : ''}`, line: c.line,
+    venue: book, venueName: PB_BOOKS.find(x => x[0] === book)?.[1] || book, multiplier: mult != null ? +mult : null, shown: multTxt, fair: prob != null ? prob / 100 : null,
+    fairSrc: prob == null ? null : r.esports ? 'our esports model' : ev?.bookFair ? 'sportsbooks only, not sharp' : 'sharp consensus', ev: ev ? ev.ev / 100 : null, readAt: pbState.data?.updated,
+    tag: [go ? 'clears the bettable bar' : '', ev?.h2h ? 'H2H model' : '', moved ? 'stale' : '', fairLine != null ? `fair line ${lnFix(fairLine)}` : ''].filter(Boolean).join(', ') });
+  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}"${xp}>
     <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span>${pbAncChip(r)}</div>
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
@@ -10340,7 +10690,8 @@ function nflmRender() {
   const body = games.map(g => {
     const k = new Date(g.kickoff);
     const fav = g.model.margin >= 0 ? g.home : g.away;
-    const rows = g.rows.map(r => `<tr class="${r.flag ? 'nflm-gap' : ''}"><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)}${r.kalshi.url ? ` <a href="${escEs(r.kalshi.url)}" target="_blank" rel="noopener" class="nflm-link">Kalshi</a>` : ''}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
+    const rows = g.rows.map(r => `<tr class="${r.flag ? 'nflm-gap' : ''}"${xpA({ event: `${g.away} at ${g.home}`, league: 'NFL', start: g.kickoff, market: r.kind, selection: r.label, venue: 'kalshi', venueName: 'Kalshi', cost: r.kalshi?.cost, fair: r.pin,
+      tag: `MODEL, NOT AN EDGE: model ${nflPct(r.model)}, model − cost ${nflPts(r.edge)} pts, Pinnacle − cost ${nflPts(r.pinEdge)} pts` })}><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)}${r.kalshi.url ? ` <a href="${escEs(r.kalshi.url)}" target="_blank" rel="noopener" class="nflm-link">Kalshi</a>` : ''}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
     return `<div class="nflm-game"><div class="nflm-gh"><b>${escEs(g.away)} at ${escEs(g.home)}</b> <span class="shp-dim">${k.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span></div>
       <div class="shp-dim nflm-sub">Model: ${escEs(fav)} by ${Math.abs(g.model.margin).toFixed(1)}, total ${g.model.total}, ${escEs(g.home)} ${nflPct(g.model.pHome)} to win${g.nflverse?.spread != null ? ` · consensus line ${escEs(g.home)} ${g.nflverse.spread > 0 ? '-' : '+'}${Math.abs(g.nflverse.spread)}, total ${g.nflverse.total}` : ''}</div>
       <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Contract</th><th>Model</th><th>Kalshi cost</th><th>Pinnacle fair</th><th>Model − cost</th><th>Pinnacle − cost</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -10416,7 +10767,9 @@ function kmkRender() {
   if (!d.kalshi) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">KALSHI OFF</div><div class="empty-sub">Kalshi's prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
   const rows = (d.board || []);
   if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">No Kalshi game side Pinnacle prices starts in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a minute after a restart)'}.</div></div>`; return; }
-  const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div></td>
+  const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}"${xpA({ event: r.event, league: kmkLg[r.sport] || r.sport, start: r.start, market: kmkMkt[r.market] || r.market, selection: r.side, venue: 'kalshi', venueName: 'Kalshi',
+    price: r.bid ?? r.ask, maker: r.bid != null, fair: r.fair, ev: r.bid != null ? r.edge : r.takerEv, readAt: d.boardAt,
+    tag: r.bid != null ? `RESEARCH, NOT A BET: rest a bid at ${kmkC(r.bid)} (ask ${kmkC(r.ask)}, best bid ${kmkC(r.bestBid)}, maker fee in)` : `RESEARCH, NOT A BET: no room under the ask; take now at ${kmkC(r.ask)} (taker fee in)` })}><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div></td>
     <td>${kmkC1(r.fair)}</td><td>${afContract('kalshi', { price: r.ask }, kmkC(r.ask))}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${afContract('kalshi', { price: r.bid, fee: r.fee, maker: true }, kmkC(r.bid))}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.filter(r => r.bid != null).length} of ${rows.length} sides have a bid 2%+ under fair below Kalshi's ask. "Take now" is buying at the ask with the taker fee. Read ${escEs(d.boardAt ? shpWhen(d.boardAt).replace('starting', 'just now') : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Side</th><th>Pinnacle fair</th><th>Kalshi ask</th><th>Best bid</th><th>Rest a bid at</th><th>Maker fee</th><th>Edge if filled</th><th>Take now</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -10488,7 +10841,10 @@ function ortRender() {
     const fill = n => (t[n] ? `${t[n].full ? '' : '<span class="shp-dim">part </span>'}${nflPts(t[n].ev)}%` : '<span class="shp-dim">—</span>');
     const ev = r.at ? r.at.ev : r.ev;
     const hot = !r.season && r.fair >= d.minFair && t[d.flagTier]?.full && t[d.flagTier].ev >= flagEdge(r);
-    return `<tr class="${hot ? 'nflm-gap' : ''}"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
+    const fillTop = [1000, 200, 50].find(n => t[n]?.full);
+    const xp = xpA({ event: r.event, league: r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase(), start: r.cutoff, market: ortType(r.type), selection: `${r.runner} ${r.buy === 'yes' ? 'YES' : 'NO'}`, venue: r.venue, venueName: ortVenue(r.venue),
+      price: r.price, cost: r.cost, fair: r.fair, fairSrc: 'Pinnacle no-vig (lower of power and Shin)', ev, fill: fillTop || null, readAt: d.boardAt || d.pinAt, tag: `RESEARCH, NOT A BET${hot ? ", clears the record's bar" : ''}${r.sized ? '' : ', size unread'}` });
+    return `<tr class="${hot ? 'nflm-gap' : ''}"${xp}><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
       <td>${escEs(ortVenue(r.venue))}</td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${afActive() ? afContract(r.venue, { price: r.price, cost: r.cost }) : `${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div>`}</td>
       <td><span class="${ev > 0 ? 'nflm-pos' : ''}">${nflPts(ev)}%</span></td><td>${fill(50)}</td><td>${fill(200)}</td><td>${fill(1000)}</td>
       <td class="shp-dim">${r.margin == null ? 'two-way' : `${(r.margin * 100).toFixed(0)}% margin`}${r.missing ? ` · ${(r.missing * 100).toFixed(0)}% held back` : ''}${r.pinLimit ? ` · limit $${r.pinLimit}` : ''}${r.sized ? '' : ' · size unread'}</td></tr>`;
@@ -10591,7 +10947,11 @@ function mvRender() {
       : `${escEs(r.side)}<div class="shp-dim">${escEs(r.event || r.marketLabel)} · ${escEs(shpWhen(r.start))}</div>`;
     const chart = r.kind === 'game' ? `<button class="os-btn${mvUi.open[r.id] ? ' on' : ''}" onclick="mvChart(${i})">${mvUi.open[r.id] ? 'HIDE' : 'CHART'}</button>` : '';
     const list = l => (l.length ? l.map(f => mvVenue(f, r)).join('') : '<span class="shp-dim">—</span>');
-    return `<tr><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${afUi.on && r.type !== 'line' && r.kind === 'game' ? fromTo : escEs(fromTo)}</div></td><td>${venue}${r.kind === 'prop' ? afLeg(r.venue) : ''}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
+    const names = l => l.map(f => f.name).join(', ') || 'none';
+    const xp = xpA({ event: r.event, league: r.leagueLabel, start: r.start, market: r.marketLabel, selection: r.side, venue: r.venue, venueName: r.venueName,
+      line: r.type === 'line' ? r.to : null, american: r.kind === 'game' && r.type !== 'line' ? r.to : r.kind === 'game' ? r.now : null, shown: r.kind === 'prop' && r.type !== 'line' ? mvChance(r.to) : null,
+      fill: r.size && !r.size.unread ? (r.size.fills || 0) : null, tag: `INFORMATION, NOT AN EDGE: moved ${size} (${r.type === 'line' ? `${mvPt(r.from, r.market)} to ${mvPt(r.to, r.market)}` : r.kind === 'game' ? `${mvAm(r.from)} to ${mvAm(r.to)}` : `${mvChance(r.from)} to ${mvChance(r.to)}`}) since ${r.since || '?'}; moved too: ${names(moved)}; still at old number: ${names(old)}` });
+    return `<tr${xp}><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${afUi.on && r.type !== 'line' && r.kind === 'game' ? fromTo : escEs(fromTo)}</div></td><td>${venue}${r.kind === 'prop' ? afLeg(r.venue) : ''}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
       <td>${list(moved)}</td><td>${list(old)}</td><td>${list(rest)}</td><td class="shp-dim">${escEs(since(r.since) || '—')}</td><td>${chart}</td></tr>` +
       (mvUi.open[r.id] && r.kind === 'game' ? `<tr><td colspan="8"><div class="os-chart mv-chart" id="osc-mv${i}"><div class="os-note">Loading the line history...</div></div></td></tr>` : '');
   }).join('');
@@ -10777,7 +11137,9 @@ function shpOpps(d) {
     const open = shpUi.open.has(x.key);
     const m = open ? (x.view || d.markets.find(mm => mm.key === x.market)) : null;
     const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
-    return `<tr class="shp-row" onclick="shpOpen('${escAttr(x.key)}')">
+    const xp = xpA({ event: x.event, league: String(x.league || '').toUpperCase(), start: x.start, market: x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType, selection: x.selection,
+      venue: x.provider, venueName: x.providerName, decimal: x.effective, fair: x.fair, fairSrc: SHP_FAIR[x.fairSource] || x.fairSource, ev: x.ev, fill: shpFillUsd(x.size, x.sizedAt), readAt: shpReadAt(x.ageSec ?? x.view?.ageSec), tag: `${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}${x.oneWay ? ', alt line' : ''}` });
+    return `<tr class="shp-row"${xp} onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
       <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
@@ -10802,7 +11164,9 @@ function shpMarketTable(m) {
       const p = s.prices.find(x => x.provider === cc.provider);
       if (!p) return '<td class="shp-cell shp-dim">—</td>';
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${afPx(p.provider, p.effective, shpOdds(p.effective))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
+      const xp = xpA({ event: m.event, league: String(m.league || '').toUpperCase(), start: m.start, market: shpMkt(m), selection: s.name, line: m.line, venue: p.provider, venueName: p.name, decimal: p.effective,
+        fair: s.fair, fairSrc: SHP_FAIR[m.fair?.source] || m.fair?.source, ev: p.ref ? null : p.ev, fill: shpFillUsd(p.size, p.sizedAt), readAt: shpReadAt(p.ageSec), tag: [p.ref ? 'reference' : p.best ? 'best' : '', p.secondHand ? 'copy' : '', p.freshness === 'stale' ? 'stale' : '', p.oneWay ? 'one-way' : '', p.feeUnknown ? 'commission not in the price' : ''].filter(Boolean).join(', ') });
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${afPx(p.provider, p.effective, shpOdds(p.effective))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
@@ -10920,6 +11284,13 @@ function shpSizeLine(z, sizedAt) {
   const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${afActive() ? afP(1 / w.decimal) : shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
   return `<div class="shp-dim" style="font-size:10px;white-space:normal" title="${escAttr(shpSizeTip(z, sizedAt))}">${parts.join(' · ')}</div>`;
 }
+// for the export: dollars the book fills at the price shown, and when the price was read
+function shpFillUsd(z, sizedAt) {
+  if (!z || z.unread || z.empty) return z?.empty ? 0 : null;
+  const top = [1000, 200, 50].find(t => z.tiers?.[t]?.full);
+  return sizedAt || top || (z.depthUsd != null ? Math.round(z.depthUsd) : null);
+}
+const shpReadAt = ageSec => { const b = Date.parse(shpUi.data?.builtAt || ''); return ageSec == null || !isFinite(b) ? shpUi.data?.builtAt || null : new Date(b - ageSec * 1000).toISOString(); };
 // a venue cell: the biggest size its book fills
 function shpSizeCell(p) {
   const z = p.size;

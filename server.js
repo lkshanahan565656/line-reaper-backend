@@ -4746,6 +4746,7 @@ const learnCache = new Map();
 app.get(['/learn', '/learn/:slug'], (req, res) => {
   const slug = String(req.params.slug || '').toLowerCase().slice(0, 60);
   const canon = slug ? learn.canonicalOf(slug) : '';
+  if (slug === 'glossary') return res.redirect(301, '/learn#glossary');
   if (canon == null) return res.status(404).type('html').send(learn.render('', { origin: siteOrigin(req) }).replace('<h1>', '<p class="note">That guide does not exist. Here are all of them.</p><h1>'));
   if (slug && canon !== slug) return res.redirect(301, `/learn/${canon}`);
   const o = siteOrigin(req), k = `${o}|${canon}`;
@@ -4813,6 +4814,11 @@ app.get('/calc.js', (req, res) => {
 app.get('/fees.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'fees.js'));
 });
+// Every label and badge in plain words (glossary.js, window.LRGlossary): the
+// ? beside a label in the app and the GLOSSARY section on /learn read it
+app.get('/glossary.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'glossary.js'));
+});
 app.get('/api/fees', (req, res) => { res.set('Cache-Control', 'public, max-age=300').json({ checked: fees.CHECKED, lot: fees.LOT, schedules: fees.footnote() }); });
 // MY SLIPS parsing and math (slips.js, window.LRSlips).
 app.get('/slips.js', (req, res) => {
@@ -4865,7 +4871,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.190.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.191.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8569,7 +8575,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.190.0',
+  version: '3.191.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

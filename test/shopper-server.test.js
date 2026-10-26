@@ -66,6 +66,15 @@ test('prop line history, learn pages and feature flags are served', async () => 
   assert.equal(red.status, 301);
   assert.equal(red.headers.get('location'), '/learn/closing-line-value');
   assert.equal((await fetch(base + '/learn/not-a-guide')).status, 404);
+  // the glossary: a section of /learn, its short link, and the file the app's ? marks read
+  const gl = await fetch(base + '/learn/glossary', { redirect: 'manual' });
+  assert.equal(gl.status, 301);
+  assert.equal(gl.headers.get('location'), '/learn#glossary');
+  assert.match(await (await fetch(base + '/learn')).text(), /id="glossary"[\s\S]*id="g-clv"/);
+  const js = await fetch(base + '/glossary.js');
+  assert.equal(js.status, 200);
+  assert.match(js.headers.get('content-type'), /javascript/);
+  assert.match(await js.text(), /LRGlossary/);
   const map = await (await fetch(base + '/sitemap.xml')).text();
   assert.match(map, /\/learn\/how-the-record-works/);
   const st = await get('/api/status');

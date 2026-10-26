@@ -29,6 +29,10 @@
     {
       "text": "^Proven at the week's end:$",
       "why": "the weekly digest's summary heading, followed by the record's own proven list or 'nothing yet'"
+    },
+    {
+      "text": "^PROVEN \\(label\\)",
+      "why": "the glossary's own heading for the PROVEN label (glossary.js), followed by the record's rule; a definition, not a claim"
     }
   ],
   "misses": [
