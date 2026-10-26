@@ -1,0 +1,44 @@
+# diag-sharecards: once the live site shows the wanted version, fetch every
+# share card and share page and keep them on diag-sharecards-out.
+name: diag-sharecards
+on: { push: { branches: [diag-sharecards] } }
+permissions: { contents: write }
+concurrency: { group: diag-sharecards, cancel-in-progress: true }
+jobs:
+  cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          want=$(sed -n 1p WANT)
+          for i in $(seq 1 75); do v=$(curl -s -H 'Accept: application/json' "$SITE/" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p'); echo "live $v"; [ "$v" = "$want" ] && break; sleep 20; done
+      - run: |
+          mkdir -p /tmp/o && cd /tmp/o
+          get() { curl -s -A 'Mozilla/5.0 (diag)' -o "$1" -w "$2 %{http_code} %{content_type} %{size_download} %{time_total}\n" "$SITE$2" >> log.txt; }
+          get record.png /card/record.png
+          get league-nfl.png '/card/league.png?league=nfl'
+          get league-nba.png '/card/league.png?league=nba'
+          get league-soccer.png '/card/league.png?league=soccer'
+          get league-lol.png '/card/league.png?league=lol'
+          get digest.png /card/digest.png
+          get price-top.png /card/price.png
+          get results.html /results
+          get share-league.html '/share/league?league=nfl'
+          get app.html /app
+          get digest.html /digest/2026-10-19
+          curl -s -H 'Accept: application/json' "$SITE/api/status" -o status.json
+          # a real shopper row and a real game from the live API answers the app reads
+          curl -s "$SITE/api/shopper?limit=3" -o shopper.json
+          id=$(node -e "const j=require('/tmp/o/shopper.json');const o=(j.opportunities||[])[0];process.stdout.write(o?encodeURIComponent(o.key):'')")
+          [ -n "$id" ] && get price-row.png "/card/price.png?id=$id" && get share-price.html "/share/price?id=$id"
+          curl -s "$SITE/api/moves?window=open&type=price" -o moves.json || true
+          g=$(node -e "try{const j=require('/tmp/o/moves.json');const r=(j.rows||[]).find(x=>x.kind==='game'&&x.gameId);if(r)process.stdout.write('game='+encodeURIComponent(r.gameId)+'&market='+r.market+'&side='+encodeURIComponent(r.side))}catch{}")
+          [ -n "$g" ] && get move.png "/card/move.png?$g"
+          get move-top.png /card/move.png
+          cat log.txt
+      - run: |
+          git config user.email diag@line-reaper; git config user.name diag
+          git checkout --orphan diag-sharecards-out; git rm -rqf --cached .; git clean -fdq
+          cp -r /tmp/o/. .; git add -f .; git commit -qm "cards $(date -u +%FT%TZ)"; git push -f origin diag-sharecards-out
