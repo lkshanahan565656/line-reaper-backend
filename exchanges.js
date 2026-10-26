@@ -24,12 +24,11 @@ const KALSHI_SERIES = ['KXNBAGAME', 'KXNFLGAME', 'KXMLBGAME', 'KXNHLGAME', 'KXNC
 const POLYMARKET_TAGS = ['nba', 'nfl', 'mlb', 'nhl'];
 
 // ── fees and prices ──
-// Kalshi taker fee is charged per order and rounded UP to the cent.
-function kalshiFee(price, contracts = 1, rate = 0.07) {
-  const p = Number(price);
-  if (!(p > 0 && p < 1) || !(contracts > 0)) return 0;
-  // the epsilon keeps float noise (0.0175000001) from adding a cent
-  return Math.max(0, Math.ceil(rate * contracts * p * (1 - p) * 100 - 1e-9) / 100);
+// Kalshi taker fee is charged per order and rounded UP to the cent. The
+// schedule lives in fees.js (one place for every venue's cut).
+const fees = require('./fees');
+function kalshiFee(price, contracts = 1, rate = fees.SCHEDULES.kalshi.taker.rate) {
+  return fees.orderFee('kalshi', price, contracts, { rate, round: true });
 }
 
 function effectiveAmerican(askDollars, feePerContract = 0) {

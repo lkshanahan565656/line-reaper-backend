@@ -24,6 +24,7 @@ const pingames = require('./pingames');
 const execcheck = require('./execcheck');
 const pmus = require('./pmus');
 const { outcomeOf } = require('./evtrack');
+const fees = require('./fees');
 
 const VENUES = ['kalshi', 'gemini', 'polymarketus'];
 // Polymarket US answered 429 at 7 book reads in a pass beside its own board reads (10-25): 3 a pass
@@ -32,7 +33,8 @@ const MIN_N = 50;
 const CLOSE_MAX_AGE_MS = 20 * 60e3;
 const r4 = x => Math.round(x * 1e4) / 1e4;
 const prob = a => { const x = Number(a); return !Number.isFinite(x) || x === 0 ? null : x < 0 ? -x / (-x + 100) : 100 / (x + 100); };
-const kcost = p => (p > 0 && p < 1 ? p + 0.07 * p * (1 - p) : null);
+// Kalshi's all-in cost a contract (fees.js), the same number the shopper ranks on
+const kcost = p => fees.allInCost('kalshi', p);
 
 // Pinnacle's fair for one side of a parsed Pinnacle game (pingames.parseGames)
 // → { p, alt, limit } | null. three: the venue's result market is three-way.
@@ -71,7 +73,7 @@ function sidesOf({ games = {}, pinGames = [], kalshiRows = [] } = {}) {
   const pinBy = new Map(pinGames.map(pg => [`pin-${pg.id}`, pg]));
   const sportBy = new Map();
   const out = [];
-  const push = (x, f) => { if (f && x.cost > 0 && x.cost < 1) out.push({ ...x, sideKey: `${x.venue}|${x.ref.id}|${x.ref.buy}`, fair: f.p, alt: f.alt, limit: f.limit, ev: r4(f.p / x.cost - 1) }); };
+  const push = (x, f) => { if (f && x.cost > 0 && x.cost < 1) out.push({ ...x, sideKey: `${x.venue}|${x.ref.id}|${x.ref.buy}`, fair: f.p, alt: f.alt, limit: f.limit, ev: fees.edge(f.p, x.cost) }); };
   for (const [sport, gs] of Object.entries(games)) {
     for (const g of gs || []) {
       sportBy.set(g.id, sport);
@@ -209,7 +211,7 @@ function createSizeTracker({ store, http, now = () => Date.now(), maxReads = MAX
   function close(b) {
     b.status = 'closed';
     const age = Date.parse(b.start) - Date.parse(b.fairLastAt || 0);
-    if (b.fairLast > 0 && age <= CLOSE_MAX_AGE_MS) { b.closeFair = b.fairLast; b.closeAlt = !!b.altLast; b.clv = r4(b.closeFair / b.cost - 1); }
+    if (b.fairLast > 0 && age <= CLOSE_MAX_AGE_MS) { b.closeFair = b.fairLast; b.closeAlt = !!b.altLast; b.clv = fees.edge(b.closeFair, b.cost); }
     else { b.closeFair = null; b.clv = null; b.closeMissing = true; }
   }
 

@@ -541,6 +541,86 @@ const FLOWS = {
     await settle(page, w, opts, 60);
   },
 
+  async 'AFTER FEES: every price after the venue fee, with the FEES sources'(page, w, opts) {
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `after-fees-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    await openTab(page, 'odds', w, opts);
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect((await text(page, '#layAfterFees')) === 'OFF', 'After fees should start OFF');
+    await page.locator('#layAfterFees').click();
+    await settle(page, w, opts, 250);
+    expect((await text(page, '#layAfterFees')) === 'ON', 'After fees did not turn ON');
+    expect((await page.evaluate(() => localStorage.getItem('lr_after_fees'))) === '1', 'After fees was not saved');
+    await page.keyboard.press('Escape');
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    // GAME LINES: venue cells read as the after-fee chance, an exchange cell carries its fee
+    await page.locator('#osContent .af-v').first().waitFor({ timeout: 6000 });
+    const os = await page.evaluate(() => ({ n: document.querySelectorAll('#osContent .af-v').length, subs: [...document.querySelectorAll('#osContent .af-sub')].map(e => e.textContent) }));
+    expect(os.n > 0 && os.subs.every(t => /^(fee \d+(\.\d)?¢|no fee|fee unknown)$/.test(t)), `game lines after fees: ${JSON.stringify(os).slice(0, 300)}`);
+    expect(await wide() <= 0, `ODDS SCREEN after fees is ${await wide()} px too wide`);
+    await shot('lines');
+    // FEES footnote: every schedule, its status and source
+    const foot = page.locator('#afFoot details');
+    await foot.waitFor({ timeout: 4000 });
+    await foot.locator('summary').click();
+    await settle(page, w, opts, 80);
+    const ft = await text(page, '#afFoot');
+    for (const want of ['Kalshi', 'VERIFIED', 'UNVERIFIED', 'Polymarket US', 'PrizePicks', 'oblin and demon', 'kalshi.com/docs/kalshi-fee-schedule.pdf', 'Sleeper'])
+      expect(ft.includes(want), `FEES footnote misses "${want}"`);
+    expect(await wide() <= 0, `FEES footnote is ${await wide()} px too wide`);
+    await page.locator('#afFoot details').evaluate(el => el.scrollIntoView());
+    await shot('fees');
+    await foot.locator('summary').click();
+    // BEST PRICES (Exchange Shopper): the after-fee chance on screen is the cost the shopper ranks on
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 300);
+    const shp = await page.evaluate(() => {
+      const d = window.shpUi?.data, out = { cells: 0, bad: [] };
+      for (const m of d?.markets || []) for (const sd of m.sides) for (const c of sd.prices) {
+        if (!(c.effective > 1)) continue;
+        // eslint-disable-next-line no-undef
+        const a = LRFees.afterFee({ venue: c.provider, decimal: c.effective });
+        if (!a || a.implied == null) continue;
+        out.cells++;
+        if (Math.abs(a.implied - c.implied) > 2e-4) out.bad.push(`${c.provider} ${a.implied} vs ${c.implied}`);
+      }
+      out.shown = document.querySelectorAll('#shpContent .af-v').length;
+      return out;
+    });
+    expect(!shp.bad.length, `shopper after-fee chance differs from the ranked cost: ${shp.bad.slice(0, 3).join('; ')}`);
+    expect(shp.cells === 0 || shp.shown > 0, 'BEST PRICES shows no after-fee prices');
+    expect(await wide() <= 0, `BEST PRICES after fees is ${await wide()} px too wide`);
+    await shot('shopper');
+    // PROPS: each app's line carries its own break-even
+    await openTab(page, 'props', w, opts);
+    await settle(page, w, opts, 400);
+    const be = await page.locator('#page-props .af-be').count();
+    if (await page.locator('#page-props .pb-bk, #page-props .ln-row').count()) expect(be > 0, 'PROPS lines show no break-even with After fees on');
+    expect(await wide() <= 0, `PROPS after fees is ${await wide()} px too wide`);
+    await shot('props');
+    // off again: raw prices back
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click().catch(() => {});
+    await settle(page, w, opts, 200);
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layAfterFees').click();
+    await settle(page, w, opts, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 200);
+    expect(!(await page.locator('#osContent .af-v').count()), 'After fees off still shows after-fee prices');
+    expect(!(await page.locator('#afFoot details').count()), 'After fees off still shows the FEES footnote');
+    // leave the odds screen on the view the flows before this one left it on
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click().catch(() => {});
+    await settle(page, w, opts, 200);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');

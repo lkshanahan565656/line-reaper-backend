@@ -1524,6 +1524,19 @@ body.no-help .clv-info { display:none; }
 .help-btn { white-space:nowrap; background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
 .help-btn:hover { color:var(--text); border-color:var(--text2); }
 @media (max-width:640px) { .tour-card { left:16px !important; right:16px; bottom:16px; top:auto !important; width:auto; } }
+/* After fees (CUSTOMIZE > After fees): the after-fee chance, the fee or break-even under it */
+.af-v { font-variant-numeric:tabular-nums; }
+.af-sub { display:block; font-size:9px; font-weight:500; color:var(--muted2); letter-spacing:.3px; white-space:nowrap; }
+.af-be { display:inline-block; margin-left:4px; padding:0 4px; border:1px solid #334155; border-radius:3px; font-size:9px; font-weight:600; color:#fbbf24; white-space:nowrap; }
+#afFoot { max-width:1400px; margin:12px auto 0; padding:0 16px; }
+.af-foot { border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:11px; color:#94a3b8; background:rgba(15,23,42,.5); }
+.af-foot b { color:var(--text); }
+.af-foot a { color:#93c5fd; }
+.af-foot summary { cursor:pointer; font-weight:700; letter-spacing:.6px; color:var(--text); }
+.af-foot p { margin:6px 0; }
+.af-row { padding:6px 0; border-top:1px solid var(--border); overflow-wrap:anywhere; }
+.af-st { font-size:9px; font-weight:700; padding:0 4px; border-radius:3px; border:1px solid currentColor; }
+.af-st.verified { color:#34d399; } .af-st.recorded { color:#93c5fd; } .af-st.unverified { color:#fbbf24; }
 /* Compact rows (CUSTOMIZE > Compact rows): desktop only, so phones keep their tap sizes */
 @media (min-width:1100px) {
   body.compact .page { padding:10px 14px; }
@@ -2075,6 +2088,7 @@ body.no-help .clv-info { display:none; }
   <div id="clvList"><div class="empty-wrap"><div class="empty-big">NO BETS</div><div class="empty-sub">Log bets with closing odds to see CLV</div></div></div>
 </div>
 
+<div id="afFoot" style="display:none"></div>
 <footer class="lr-foot">
   <nav aria-label="Legal"><a href="/status" target="_blank" rel="noopener">Status</a><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/refunds" target="_blank" rel="noopener">Refunds</a><a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a><a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a><a href="/data-sources" target="_blank" rel="noopener">Data sources</a><button id="footDelete" style="display:none" onclick="acctOpen('delete')">Delete account</button></nav>
   <div>Line Reaper is an information and analytics tool, not a sportsbook, exchange or adviser. It does not take bets or hold funds, and nothing here is financial or betting advice. Alerts are the same for every subscriber. Past results do not guarantee future results. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div>
@@ -2473,8 +2487,8 @@ function osGame(g, cols, pro) {
       cols.map(v => {
         const x = s.venues.find(y => y.venue === v.key);
         if (!x) return '<td>·</td>';
-        if (x.lineDiffers) return `<td class="diff" title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${osAm(x.american)}</td>`;
-        const inner = `${osAm(x.american)}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
+        if (x.lineDiffers) return `<td class="diff" title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}</td>`;
+        const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
         return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}" ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
@@ -2573,6 +2587,117 @@ function osHover(ev, id) {
   tip.style.display = 'block';
   const left = (c.X(t) / c.W) * box.width;
   tip.style.left = Math.min(left + 10, box.width - tip.offsetWidth - 4) + 'px'; tip.style.top = '6px';
+}
+
+// ─── AFTER FEES (CUSTOMIZE > After fees) ─────────────────────────────────────
+// One switch, off by default, kept on this device like Compact rows. On, each
+// price becomes the chance you have to win to break even after the venue's
+// cut: an exchange's all-in cost a contract (ask + taker fee), a sportsbook's
+// implied chance (its margin is in the price), a pick'em leg's break-even on
+// the app's own slip. The schedules are fees.js, the same file the Exchange
+// Shopper ranks on and the exchange records grade CLV with, loaded once from
+// /fees.js (with /calc.js for the pick'em tables). It changes what is shown,
+// never a stake or an alert.
+const afUi = { on: false, loading: null };
+try { afUi.on = localStorage.getItem('lr_after_fees') === '1'; } catch {}
+const afReady = () => !!(window.LRFees && window.LRCalc);
+function afLoad() {
+  if (afReady()) return Promise.resolve(true);
+  if (!afUi.loading) afUi.loading = (async () => {
+    if (!window.LRCalc) await mybLoadScript('/calc.js');
+    if (!window.LRFees) await mybLoadScript('/fees.js');
+    return afReady();
+  })().catch(() => { afUi.loading = null; return false; });
+  return afUi.loading;
+}
+// the switch is on and the schedules are here; on but not loaded yet → load,
+// then draw the screen again
+function afActive() {
+  if (!afUi.on) return false;
+  if (afReady()) return true;
+  afLoad().then(ok => { if (ok) afRerender(); });
+  return false;
+}
+const afP = x => `${(x * 100).toFixed(1)}%`;
+const AF_KIND_TIP = { exchange: 'all-in cost of a contract, taker fee in', book: 'implied chance; the margin is in the price', commission: 'commission' };
+// a venue's price as decimal odds → the after-fee cell (raw kept when the
+// switch is off). inPrice false: the price shown is a raw ask, fee not in yet
+function afPx(venue, decimal, raw, { inPrice = true } = {}) {
+  if (!afActive() || !(decimal > 1)) return raw;
+  const a = LRFees.afterFee({ venue, decimal, inPrice });
+  const s = LRFees.schedule(venue), name = s?.name || venue;
+  if (!a || a.implied == null) return `${raw}<span class="af-sub" title="${escAttr(`${name}: ${s?.summary || 'no fee schedule we could read'}`)}">fee unknown</span>`;
+  const fee = a.fee > 0.00005 ? `fee ${(a.fee * 100).toFixed(1)}¢` : 'no fee';
+  const tip = `${name}: win ${afP(a.implied)} of the time to break even after the fee (${AF_KIND_TIP[s?.kind] || 'after the fee'}).${s?.status === 'unverified' ? ' Schedule unverified: see FEES.' : ''}`;
+  return `<span class="af-v" title="${escAttr(tip)}">${afP(a.implied)}</span><span class="af-sub">${fee}</span>`;
+}
+const afAm = (venue, american, raw, opts) => (american == null || Math.abs(american) < 100 ? raw : afPx(venue, american > 0 ? 1 + american / 100 : 1 + 100 / -american, raw, opts));
+// an exchange contract by its price in dollars: listed (raw ask, fee added
+// here) or cost (fee already in). maker: a resting bid's maker fee instead
+function afContract(venue, { price = null, cost = null, maker = false, fee = null } = {}, raw = '') {
+  if (!afActive()) return raw;
+  let c = cost;
+  if (c == null && price > 0 && price < 1) c = fee != null ? price + fee : LRFees.allInCost(venue, price, { maker });
+  if (!(c > 0 && c < 1)) return raw;
+  const f = price > 0 && price < 1 ? c - price : null;
+  const name = LRFees.schedule(venue)?.name || venue;
+  return `<span class="af-v" title="${escAttr(`${name}: win ${afP(c)} of the time to break even after the ${maker ? 'maker' : 'taker'} fee`)}">${afP(c)}</span><span class="af-sub">${f == null ? 'fee in' : f > 0.00005 ? `fee ${(f * 100).toFixed(1)}¢` : 'no fee'}</span>`;
+}
+// a pick'em leg: the app's break-even on its own slip, at the pick's
+// multiplier when it has one. absolute: the multiplier is the whole payout
+function afLeg(app, mult = null, { absolute = false } = {}) {
+  if (!afActive()) return '';
+  let be = null;
+  if (absolute && mult > 1) be = { breakeven: 1 / mult, label: `${mult}x straight payout` };
+  else be = LRFees.legBreakeven(app, { multiplier: mult });
+  if (!be) return '';
+  const s = LRFees.schedule(app);
+  const tip = `${s?.name || app}: a leg has to hit ${afP(be.breakeven)} of the time for ${be.label} to break even.${s?.unpublished ? ' ' + s.unpublished : ''}`;
+  return `<span class="af-be" title="${escAttr(tip)}">BE ${afP(be.breakeven)}</span>`;
+}
+function afToggle() {
+  afUi.on = !afUi.on;
+  try { localStorage.setItem('lr_after_fees', afUi.on ? '1' : '0'); } catch {}
+  document.body.classList.toggle('after-fees', afUi.on);
+  if (typeof layRenderList === 'function' && document.getElementById('layAfterFees')) layRenderList();
+  if (afUi.on && !afReady()) afLoad().then(ok => { if (ok) afRerender(); else showToast('The fee schedules could not load from the server', 'danger'); });
+  else afRerender();
+}
+// draw the open screen again with or without fees (only screens with data)
+function afRerender() {
+  const page = document.querySelector('.page.active')?.id?.replace(/^page-/, '') || '';
+  const run = f => { try { f(); } catch (e) { console.warn('after fees:', e.message); } };
+  if (page === 'odds') {
+    if (osUi.data) run(renderOdds);
+    if (window.shpUi?.data) run(shpRender);
+    if (window.mvUi?.data) run(mvRender);
+    if (window.kmkUi?.data) run(kmkRender);
+    if (window.ortUi?.data) run(ortRender);
+  }
+  if (page === 'props' && pbState.data) run(renderPropsBoard);
+  if (page === 'esports') {
+    if (esmState.data && esmState.mode === 'matches') run(renderEsMatches);
+    if (typeof renderEsMatchups === 'function' && esmState.mode === 'matchups') run(renderEsMatchups);
+    if (esmState.mode === 'props') run(renderEsports);
+  }
+  afFootRender();
+}
+// FEES: where each schedule comes from, under every screen while the switch is on
+function afFootRender() {
+  const el = document.getElementById('afFoot');
+  if (!el) return;
+  if (!afUi.on || !afReady()) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const st = { verified: 'VERIFIED', recorded: 'RECORDED', unverified: 'UNVERIFIED' };
+  const link = src => (/^https?:\/\//.test(src || '') ? `<a href="${escAttr(src)}" target="_blank" rel="noopener">${escAttr(src.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60))}</a>` : escAttr(src || 'no page to cite'));
+  el.style.display = '';
+  el.innerHTML = `<details class="af-foot"><summary>FEES · prices shown after each venue's fee (checked ${escAttr(LRFees.CHECKED)})</summary>
+    <p>Exchange prices are the all-in cost of one contract, priced on a ${LRFees.LOT}-contract order; one contract alone can pay up to a cent more. A pick'em leg shows the chance it must hit for the app's default slip to break even; the full table is under TOOLS. Nothing here changes a stake or an alert.</p>
+    ${LRFees.footnote().map(f => `<div class="af-row"><b>${escAttr(f.name)}</b> <span class="af-st ${escAttr(f.status)}">${st[f.status] || escAttr(f.status)}</span>${f.effective ? ` <span class="shp-dim">since ${escAttr(f.effective)}</span>` : ''}<div>${escAttr(f.summary)}${f.breakeven ? ` Default leg break-even ${afP(f.breakeven.breakeven)} (${escAttr(f.breakeven.label)}).` : ''}${f.unpublished ? ` ${escAttr(f.unpublished)}` : ''}</div><div class="shp-dim">Source: ${link(f.source)}${f.status === 'recorded' ? `, recorded ${escAttr(f.checked)}` : ''}</div></div>`).join('')}
+  </details>`;
+}
+if (afUi.on) {
+  const go = () => { document.body.classList.add('after-fees'); afLoad().then(ok => { if (ok) afRerender(); }); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 }
 
 // ─── TOOLS: BETTING CALCULATORS ───────────────────────────────────────────────
@@ -2718,13 +2843,15 @@ const TOOL_DEFS = [
       return { stats: [['CLV', tlPct(c.clv), tlSgn(c.clv)], ['Fair close', tlAm(c.fairDec)], ['Fair chance at close', tlProb(c.fairProb)], ['Probability gained', tlPct(c.probGain)]],
         note: c.devigged ? '' : 'Close not de-vigged: add the other side for the honest number.' };
     } },
-  { id: 'exchange', name: 'Exchange fees', sub: 'Kalshi and Polymarket',
-    blurb: 'What an exchange contract really costs once the taker fee is in, and the sportsbook odds that equals. Kalshi rounds its fee up to the cent per order, so tiny orders pay the most.',
-    fields: [['venue', 'Exchange', 'kalshi', [['kalshi', 'Kalshi'], ['polymarket', 'Polymarket'], ['none', 'No fee (maker)']]], ['price', 'Price (cents)', '55'],
-      ['contracts', 'Contracts', '100'], ['rate', 'Polymarket fee rate', '0.05'], ['mine', 'Your win % (optional)', '']],
+  { id: 'exchange', name: 'Exchange fees', sub: 'Kalshi, Gemini, Polymarket US',
+    blurb: 'What an exchange contract really costs once the fee is in, and the sportsbook odds that equals. Kalshi and Gemini round the fee up to the cent per order, so tiny orders pay the most. Schedules and their sources: CUSTOMIZE > After fees, then FEES at the bottom of any screen.',
+    fields: [['venue', 'Exchange', 'kalshi', [['kalshi', 'Kalshi (taker)'], ['kalshi_maker', 'Kalshi resting bid (maker)'], ['gemini', 'Gemini (taker)'], ['polymarketus', 'Polymarket US (taker)'], ['none', 'No fee (NHL spread/total maker on Kalshi)']]], ['price', 'Price (cents)', '55'],
+      ['contracts', 'Contracts', '100'], ['rate', 'Polymarket US fee rate (its market shows it)', '0.0695'], ['mine', 'Your win % (optional)', '']],
     run(v) {
       let pr = tlNum(v.price); if (pr == null) return null; if (pr >= 1) pr /= 100;
-      const x = LRCalc.exchangeBuy(pr, tlNum(v.contracts) || 100, v.venue, { rate: v.venue === 'polymarket' ? (tlNum(v.rate) ?? 0.05) : 0.07, myProb: tlOptPct(v.mine) }); if (!x) return null;
+      const venue = v.venue === 'polymarket' ? 'polymarketus' : v.venue;
+      const rate = venue === 'polymarketus' ? (tlNum(v.rate) ?? 0.0695) : venue === 'kalshi_maker' ? 0.0175 : 0.07;
+      const x = LRCalc.exchangeBuy(pr, tlNum(v.contracts) || 100, venue, { rate, myProb: tlOptPct(v.mine) }); if (!x) return null;
       const st = [['Total cost', tlUsd(x.cost)], ['Fee', tlUsd(x.fee)], ['All-in per contract', (x.perContract * 100).toFixed(2) + 'c'], ['As odds', x.american],
         ['Break-even', tlProb(x.breakeven, 2)], ['Profit if it wins', tlUsd(x.profitIfWin), tlSgn(x.profitIfWin)]];
       if (x.ev != null) st.push(['EV', tlPct(x.ev), tlSgn(x.ev)], ['Quarter Kelly', tlProb(x.kelly, 2)]);
@@ -4482,6 +4609,7 @@ function layRenderList() {
   }).join('');
   const h = document.getElementById('layHelp'); h.textContent = layout.help ? 'SHOWN' : 'HIDDEN'; h.classList.toggle('on', layout.help);
   const c = document.getElementById('layCompact'); c.textContent = layout.compact ? 'ON' : 'OFF'; c.classList.toggle('on', !!layout.compact);
+  const af = document.getElementById('layAfterFees'); if (af) { af.textContent = afUi.on ? 'ON' : 'OFF'; af.classList.toggle('on', afUi.on); }
 }
 function layMove(n, d) {
   const names = layNames(), i = names.indexOf(n), j = i + d;
@@ -5017,7 +5145,8 @@ function pbCell(row, key, name) {
   }
   const ev = c.ev ? `<span class="pb-evp${c.ev.ev > 0 ? ' pos' : ''}">${pbSideWord(key, c.ev.side)} ${pbEvTxt(c.ev.ev)}</span>` : '';
   const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';
-  return `<div class="pb-bk${best ? ' best' : ''}">${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}</div>${fair}${ev}</div>`;
+  const be = key === 'prizepicks' ? afLeg(key) : afLeg(key, c.overOpen && c.over != null ? +c.over : c.underOpen && c.under != null ? +c.under : null);
+  return `<div class="pb-bk${best ? ' best' : ''}">${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}${be}</div>${fair}${ev}</div>`;
 }
 // ── LINES: one app's lines in a table, best EV first ──
 // Each row: the app's line, our fair line (the sharp books' consensus median,
@@ -5095,7 +5224,7 @@ function lnRow(r, book) {
     <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${h2 ? `<span class="ln-pin h2h" title="${escAttr(pbH2hTitle())}">H2H</span>${r.model.pin ? `<span class="ln-pin" title="Pinnacle-based fair: ${r.model.pin.proj}">PIN ${lnFix(r.model.pin.proj)}</span>` : ''}` : r.model?.share ? `<span class="ln-pin" title="${r.model.share.rounds ? 'Pinnacle-backed: Pinnacle\'s rounds × his kills a round' : 'Pinnacle-backed: Pinnacle\'s team kills × his share of them'}">PIN</span>` : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
-    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
+    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span>${afLeg(book, book === 'prizepicks' ? null : mult)}</div>
     <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : h2hDead ? ` (our matchup model alone: ${escAttr(pbH2hTitle())}; grey, not a play)` : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
     <div class="c ln-usedc" data-l="Used"><button class="ln-add${pkHas(r.key, book) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAdd('${escAttr(r.key)}','${book}')">+</button><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
@@ -6497,7 +6626,7 @@ function esmEdgeCard(m, e) {
   const link = m.links[e.venue];
   return `<div class="esm-card edge"><div class="esm-top"><span class="esm-game">${escEs(m.label)}</span><span>${escEs(m.teams.join(' vs '))}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-tkt"><div><div class="what">${escEs(esmMarketText(mk || { kind: e.kind }, e.outcome))}</div>
-      <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
+      <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${afActive() ? afP(e.cost) + '<small>after fee</small>' : esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
     <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>EV VS FAIR</small>${link ? `<a class="esm-btn" href="${escEs(link)}" target="_blank" rel="noopener">Open ${esmVenue(e.venue)}</a>` : ''}</div></div></div>`;
 }
 function renderEsMatches() {
@@ -6607,8 +6736,8 @@ function emuCard(mu) {
   const meter = md.priced ? `<div class="esm-split" title="Model: ${escEs(mu.teams[0].name)} ${Math.round(md.win * 100)}%"><i style="width:${Math.round(md.win * 100)}%"></i><i style="flex:1"></i></div>` : '';
   const sub = [];
   if (c) sub.push(`<span>Model vs ${escEs(c.vs || 'Kalshi')}: <b class="emu-diff" style="color:${Math.abs(c.diff) >= 0.05 ? '#fbbf24' : '#cbd5e1'}">${emuPts(c.diff)} pts</b> on ${escEs(mu.teams[0].name)} <span style="color:#64748b">(model view)</span></span>`);
-  if (k?.sides) sub.push(`<span>Kalshi to buy: ${k.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">with fee</span></span>`);
-  if (u?.sides) sub.push(`<span>PM US to buy: ${u.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">with fee</span></span>`);
+  if (k?.sides) sub.push(`<span>Kalshi to buy: ${k.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${afActive() ? afP(sd.cost) : esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">${afActive() ? 'to win, after fee' : 'with fee'}</span></span>`);
+  if (u?.sides) sub.push(`<span>PM US to buy: ${u.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${afActive() ? afP(sd.cost) : esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">${afActive() ? 'to win, after fee' : 'with fee'}</span></span>`);
   if (c?.best && k?.sides && u?.sides) sub.push(`<span>Cheapest: ${c.best.map((b, i) => b ? `${escEs(mu.teams[i].code || mu.teams[i].name)} on ${escEs(b.venue)}` : null).filter(Boolean).join(' · ')}</span>`);
   if (!k && !u && md.priced) sub.push('<span style="color:#64748b">Neither Kalshi nor Polymarket US has a book on this series yet</span>');
   if (mu.h2h?.series) sub.push(`<span>H2H 2y: ${mu.h2h.series} series, maps ${mu.h2h.maps[0]}-${mu.h2h.maps[1]}</span>`);
@@ -6726,7 +6855,7 @@ function socCard(g) {
   const md = g.model, open = socState.open.has(g.id);
   const rows = g.rows.map(r => {
     const name = r.pick === 'home' ? g.home : r.pick === 'away' ? g.away : 'Draw';
-    const cell = (v, e, fl, lab) => v ? `<div class="emu-num mkt"><b>${esmCents(v.cost)}</b><small>${lab}${e != null ? ` ${emuPts(e)}` : ''}${fl ? ' <span class="soc-flag">●</span>' : ''}</small></div>` : `<div class="emu-num mkt"><b>—</b><small>${lab}</small></div>`;
+    const cell = (v, e, fl, lab) => v ? `<div class="emu-num mkt"><b>${afActive() ? afP(v.cost) : esmCents(v.cost)}</b><small>${lab}${e != null ? ` ${emuPts(e)}` : ''}${fl ? ' <span class="soc-flag">●</span>' : ''}</small></div>` : `<div class="emu-num mkt"><b>—</b><small>${lab}</small></div>`;
     return `<div class="soc-row"><div class="esm-name"><b>${escEs(name)}</b></div>
       <div class="emu-num model"><b>${socPct(r.model)}</b><small>MODEL</small></div>
       <div class="emu-num mkt"><b>${socPct(r.pin)}</b><small>PINNACLE</small></div>
@@ -9449,7 +9578,7 @@ function esLineRow(p, key) {
     <div>${esRowButtons(p)}</div>
     <div style="min-width:0">
       <div class="pl"><span class="nm">${escEs(p.player)}</span><span class="tag">${escEs(p.sport)}</span></div>
-      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
+      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${key ? afLeg(key, key === 'prizepicks' ? null : mult, { absolute: key === 'underdog' && p.udRegime === 'decimal' }) : ''}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
       ${bookRow}${esStatEdge(p)}
     </div>
     <div class="nums"><div class="es-lf"><b>${escEs(line)}</b><div>fair <span>${escEs(p.modelPred ?? '—')}</span></div></div>${side}</div>
@@ -10277,7 +10406,7 @@ function kmkRender() {
     const kname = { 'kalshi-maker': 'kalshi-maker', 'kalshi-maker-nhl': 'kalshi-maker-nhl, NHL spreads and totals (no maker fee)' };
     const btCards = b2 ? (b2.kinds ? Object.entries(b2.kinds).map(([k, x]) => kmkRecordCard(`Backtest at 2%, ${kname[k] || k} (judged)`, x)).join('') : kmkRecordCard('Backtest at 2% (judged)', b2.all)) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
       + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged, both kinds)`, x.all)).join('') : '';
-    const rows = (d.recent || []).map(r => `<tr><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div></td><td>${kmkC(r.bid)}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
+    const rows = (d.recent || []).map(r => `<tr><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div></td><td>${afContract('kalshi', { price: r.bid, fee: r.fee ?? null, maker: true }, kmkC(r.bid))}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
     el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
       <div class="nflm-cards">${d.kinds ? Object.entries(d.kinds).map(([k, x]) => kmkRecordCard(`Live record, ${kname[k] || k}`, x)).join('') : kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, kalshi-maker, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
       ${bt ? `<div class="nflm-bt">${escEs(bt.summary || '')}</div><div class="nflm-cards">${btCards}</div>` : ''}
@@ -10288,7 +10417,7 @@ function kmkRender() {
   const rows = (d.board || []);
   if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">No Kalshi game side Pinnacle prices starts in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a minute after a restart)'}.</div></div>`; return; }
   const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div></td>
-    <td>${kmkC1(r.fair)}</td><td>${kmkC(r.ask)}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${kmkC(r.bid)}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
+    <td>${kmkC1(r.fair)}</td><td>${afContract('kalshi', { price: r.ask }, kmkC(r.ask))}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${afContract('kalshi', { price: r.bid, fee: r.fee, maker: true }, kmkC(r.bid))}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.filter(r => r.bid != null).length} of ${rows.length} sides have a bid 2%+ under fair below Kalshi's ask. "Take now" is buying at the ask with the taker fee. Read ${escEs(d.boardAt ? shpWhen(d.boardAt).replace('starting', 'just now') : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Side</th><th>Pinnacle fair</th><th>Kalshi ask</th><th>Best bid</th><th>Rest a bid at</th><th>Maker fee</th><th>Edge if filled</th><th>Take now</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
@@ -10360,7 +10489,7 @@ function ortRender() {
     const ev = r.at ? r.at.ev : r.ev;
     const hot = !r.season && r.fair >= d.minFair && t[d.flagTier]?.full && t[d.flagTier].ev >= flagEdge(r);
     return `<tr class="${hot ? 'nflm-gap' : ''}"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
-      <td>${escEs(ortVenue(r.venue))}</td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div></td>
+      <td>${escEs(ortVenue(r.venue))}</td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${afActive() ? afContract(r.venue, { price: r.price, cost: r.cost }) : `${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div>`}</td>
       <td><span class="${ev > 0 ? 'nflm-pos' : ''}">${nflPts(ev)}%</span></td><td>${fill(50)}</td><td>${fill(200)}</td><td>${fill(1000)}</td>
       <td class="shp-dim">${r.margin == null ? 'two-way' : `${(r.margin * 100).toFixed(0)}% margin`}${r.missing ? ` · ${(r.missing * 100).toFixed(0)}% held back` : ''}${r.pinLimit ? ` · limit $${r.pinLimit}` : ''}${r.sized ? '' : ' · size unread'}</td></tr>`;
   }).join('');
@@ -10414,7 +10543,7 @@ const mvAm = a => (a == null ? '—' : a > 0 ? `+${a}` : `${a}`);
 const mvPt = (x, mkt) => (x == null ? '—' : mkt === 'spread' && x > 0 ? `+${x}` : `${x}`);
 const mvChance = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
 // a price as the row shows it: American on game lines, the chance on props
-const mvPrice = (r, v) => (r.kind === 'game' ? mvAm(v) : mvChance(v));
+const mvPrice = (r, v, venue = r.venue) => (r.kind === 'game' ? afAm(venue, v, mvAm(v)).replace('<span class="af-sub">', '<span class="af-sub" style="display:inline;margin-left:3px">') : mvChance(v));
 const MV_STATUS = { moved: 'moved too', old: 'still at old number', part: 'moved part way', against: 'moved the other way', other: 'on another number', new: 'no price at the start' };
 function mvSize(z) {
   if (!z) return '';
@@ -10424,9 +10553,9 @@ function mvSize(z) {
 }
 function mvVenue(f, r) {
   const what = r.type === 'line' ? (f.point == null ? '' : ` ${mvPt(f.point, r.market)}`)
-    : f.status === 'other' ? (f.point != null ? ` at ${mvPt(f.point, r.market)}` : '') : ` ${mvPrice(r, f.now)}${f.cents != null ? ` (${f.cents > 0 ? '+' : ''}${f.cents}¢)` : ''}`;
+    : f.status === 'other' ? (f.point != null ? ` at ${mvPt(f.point, r.market)}` : '') : ` ${mvPrice(r, f.now, f.venue)}${f.cents != null ? ` (${f.cents > 0 ? '+' : ''}${f.cents}¢)` : ''}`;
   const name = `${escEs(f.name)}${f.secondHand ? '<sup>c</sup>' : ''}`;
-  const label = `${f.url && !f.ref ? `<a href="${escAttr(f.url)}" target="_blank" rel="noopener">${name}</a>` : name}${escEs(what)}`;
+  const label = `${f.url && !f.ref ? `<a href="${escAttr(f.url)}" target="_blank" rel="noopener">${name}</a>` : name}${afUi.on && r.kind === 'game' && r.type !== 'line' ? what : escEs(what)}${r.kind === 'prop' ? afLeg(f.venue) : ''}`;
   const sz = mvSize(f.size);
   return `<div class="mv-v mv-${f.status}" title="${escAttr(f.name + ': ' + (MV_STATUS[f.status] || f.status))}">${label}${sz ? ` ${sz}` : ''}</div>`;
 }
@@ -10462,7 +10591,7 @@ function mvRender() {
       : `${escEs(r.side)}<div class="shp-dim">${escEs(r.event || r.marketLabel)} · ${escEs(shpWhen(r.start))}</div>`;
     const chart = r.kind === 'game' ? `<button class="os-btn${mvUi.open[r.id] ? ' on' : ''}" onclick="mvChart(${i})">${mvUi.open[r.id] ? 'HIDE' : 'CHART'}</button>` : '';
     const list = l => (l.length ? l.map(f => mvVenue(f, r)).join('') : '<span class="shp-dim">—</span>');
-    return `<tr><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${escEs(fromTo)}</div></td><td>${venue}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
+    return `<tr><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${afUi.on && r.type !== 'line' && r.kind === 'game' ? fromTo : escEs(fromTo)}</div></td><td>${venue}${r.kind === 'prop' ? afLeg(r.venue) : ''}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
       <td>${list(moved)}</td><td>${list(old)}</td><td>${list(rest)}</td><td class="shp-dim">${escEs(since(r.since) || '—')}</td><td>${chart}</td></tr>` +
       (mvUi.open[r.id] && r.kind === 'game' ? `<tr><td colspan="8"><div class="os-chart mv-chart" id="osc-mv${i}"><div class="os-note">Loading the line history...</div></div></td></tr>` : '');
   }).join('');
@@ -10651,7 +10780,7 @@ function shpOpps(d) {
     return `<tr class="shp-row" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
+      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -10673,7 +10802,7 @@ function shpMarketTable(m) {
       const p = s.prices.find(x => x.provider === cc.provider);
       if (!p) return '<td class="shp-cell shp-dim">—</td>';
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${shpOdds(p.effective)}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${afPx(p.provider, p.effective, shpOdds(p.effective))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
@@ -10772,7 +10901,7 @@ function shpArbs(d) {
   if (!d.arbs.length) return tailEmpty('NO ARBS RIGHT NOW', "No market's best prices add up to under 100% at venues read direct. Copies from Action Network never count as an arb leg.");
   return d.arbs.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(shpMkt(m))} · ${shpWhen(m.start)}</span></h4>
     <div class="shp-good" style="margin:0 0 4px">Locks ${shpPct(m.arb.profit)} · $${m.arb.total} returns $${m.arb.payout.toFixed(2)} whichever side wins</div>
-    ${m.arb.legs.map(l => `<div class="shp-num" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(m.sides.find(s => s.side === l.side)?.name || l.side)} at ${escAttr(l.name)} ${shpOdds(m.sides.find(s => s.side === l.side)?.best?.effective)}</div>`).join('')}
+    ${m.arb.legs.map(l => `<div class="shp-num" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(m.sides.find(s => s.side === l.side)?.name || l.side)} at ${escAttr(l.name)} ${afPx(m.sides.find(s => s.side === l.side)?.best?.provider, m.sides.find(s => s.side === l.side)?.best?.effective, shpOdds(m.sides.find(s => s.side === l.side)?.best?.effective))}</div>`).join('')}
     ${shpArbSize(m.arb)}
     <div class="shp-dim" style="margin-top:4px">Prices move: place the harder leg first and check both before the second.</div></div>`).join('');
 }
@@ -10788,7 +10917,7 @@ function shpSizeLine(z, sizedAt) {
   if (!z) return '';
   if (z.unread) return '<div class="shp-dim" style="font-size:10px" title="This venue\'s order book has not been read in the last 5 minutes, so its size is unknown">size not read yet</div>';
   if (z.empty) return '<div class="shp-bad" style="font-size:10px">book empty</div>';
-  const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
+  const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${afActive() ? afP(1 / w.decimal) : shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
   return `<div class="shp-dim" style="font-size:10px;white-space:normal" title="${escAttr(shpSizeTip(z, sizedAt))}">${parts.join(' · ')}</div>`;
 }
 // a venue cell: the biggest size its book fills
@@ -10821,6 +10950,7 @@ function shpArbSize(a) {
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
     <div class="lay-row"><span class="lay-name">App tour</span><button class="lay-b" id="layTour" onclick="layClose();tourStart()">SHOW</button></div>
     <div class="lay-row"><span class="lay-name">Compact rows<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Tighter rows and smaller text on screens 1100 px and wider</span></span><button class="lay-b" id="layCompact" onclick="layToggleCompact()"></button></div>
+    <div class="lay-row"><span class="lay-name">After fees<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Every price as the chance you need to win after the venue's fee, with the fee or the pick'em break-even beside it. Sources under FEES at the bottom</span></span><button class="lay-b" id="layAfterFees" onclick="afToggle()"></button></div>
     <div class="lay-row"><span class="lay-name">Keyboard shortcuts</span><button class="lay-b" id="layKbd" onclick="layClose();kbdOpen()">SHOW</button></div>
     <h3 style="margin-top:18px">Phone app</h3>
     <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>

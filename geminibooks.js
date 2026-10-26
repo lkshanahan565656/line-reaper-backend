@@ -35,7 +35,8 @@
 // API (not a scrape), so it reads by default like Kalshi's; GEMINI=off stops it.
 
 const URL = 'https://api.gemini.com/v1/prediction-markets/events';
-const TAKER_RATE = 0.07;
+const fees = require('./fees');
+const TAKER_RATE = fees.SCHEDULES.gemini.taker.rate;
 // What we ask Gemini for, one query each (10-24: soccer's lines are
 // regulation-time contracts, a fight is one moneyline event with a contract per
 // fighter and no participants). Gemini's ticker prefix → the free-books sport.
@@ -54,7 +55,8 @@ const SOCCER = new Set(['epl', 'laliga', 'bundesliga', 'seriea', 'ligue1', 'mls'
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const num = x => { const n = Number(x); return Number.isFinite(n) ? n : null; };
 // the cost of one contract bought at p, with the taker fee
-const costOf = (p, rate = TAKER_RATE) => p + rate * p * (1 - p);
+// (fees.js: priced on a 100-contract order, so the round-up is to the centicent)
+const costOf = (p, rate = TAKER_RATE) => fees.allInCost('gemini', p, { rate });
 function american(cost) {
   if (!(cost > 0 && cost < 1)) return null;
   const d = 1 / cost;

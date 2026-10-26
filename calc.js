@@ -256,6 +256,8 @@
   // default (the same formula exchanges.js charges arbs with). Polymarket's
   // per-market schedule: n·rate·(p(1−p))^exponent, no rounding; sports markets
   // run 0.05 with exponent 1.
+  // (fees.js holds the schedule; this is its formula, so the TOOLS page works
+  // even before /fees.js loads, and a test keeps the two equal)
   function kalshiFee(price, contracts = 1, rate = 0.07) {
     const p = Number(price);
     if (!(p > 0 && p < 1) || !(contracts > 0)) return 0;
@@ -273,7 +275,12 @@
   function exchangeBuy(price, contracts = 100, venue = 'kalshi', opts = {}) {
     const p = Number(price), n = Number(contracts);
     if (!(p > 0 && p < 1) || !(n > 0)) return null;
-    const fee = venue === 'kalshi' ? kalshiFee(p, n, opts.rate ?? 0.07)
+    // the schedules are fees.js's (a test keeps these equal): Kalshi and
+    // Gemini 0.07 taker rounded up per order, Kalshi's resting (maker) bids
+    // 0.0175, Polymarket US the market's own coefficient (0.0695 on sports)
+    const fee = venue === 'kalshi' || venue === 'gemini' ? kalshiFee(p, n, opts.rate ?? 0.07)
+      : venue === 'kalshi_maker' ? kalshiFee(p, n, opts.rate ?? 0.0175)
+      : venue === 'polymarketus' ? polymarketFee(p, n, opts.rate ?? 0.0695, 1)
       : venue === 'polymarket' ? polymarketFee(p, n, opts.rate ?? 0.05, opts.exponent ?? 1) : 0;
     const cost = p * n + fee, perContract = cost / n;
     if (perContract >= 1) return { cost, fee, perContract, dec: null, american: '—', breakeven: perContract, profitIfWin: n - cost };

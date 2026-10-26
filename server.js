@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 // health, event-loop stalls, slow requests and the boot timeline (ops.js)
 const ops = require('./ops').createOps();
+const fees = require('./fees');
 const { runSteps, runStepsAsync, createSlicer } = require('./ops');
 ops.start();
 app.use(ops.middleware);
@@ -4807,6 +4808,12 @@ app.get('/app', (req, res) => {
 app.get('/calc.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'calc.js'));
 });
+// Every venue's fee schedule (fees.js, window.LRFees): the AFTER FEES view and
+// the FEES footnote read the same file the shopper and the records do.
+app.get('/fees.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'fees.js'));
+});
+app.get('/api/fees', (req, res) => { res.set('Cache-Control', 'public, max-age=300').json({ checked: fees.CHECKED, lot: fees.LOT, schedules: fees.footnote() }); });
 // MY SLIPS parsing and math (slips.js, window.LRSlips).
 app.get('/slips.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'slips.js'));
@@ -4858,7 +4865,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.189.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.190.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8562,7 +8569,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.189.0',
+  version: '3.190.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

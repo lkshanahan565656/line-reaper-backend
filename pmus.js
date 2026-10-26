@@ -34,7 +34,7 @@ const { teamMatches } = require('./exchanges');
 
 const GATEWAY = 'https://gateway.polymarket.us';
 const SITE = 'https://polymarket.us';
-const FEE_RATE = 0.0695;
+const FEE_RATE = require('./fees').SCHEDULES.polymarketus.taker.rate;   // 0.0695 (fees.js); each market's own feeCoefficient wins
 const TIMEOUT = 4000;
 const EPS = 1e-9;
 
