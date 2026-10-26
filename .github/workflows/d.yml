@@ -1,0 +1,14 @@
+name: diag-bkcheck
+on: { push: { branches: [diag-bkcheck] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir o
+          code=$(curl -sS -o new.json -w '%{http_code}' --max-time 180 https://line-reaper-backend-production.up.railway.app/api/results/backup) || code=000
+          echo "$code" > o/code.txt
+          jq -c '{at, keyId, counts, other}' new.json > o/env.json 2>o/err.txt || head -c 500 new.json > o/body.txt
+          curl -sS https://line-reaper-backend-production.up.railway.app/api/status | jq '.resultsBackup' > o/rb.json
+          cd o && git init -q && git checkout -q -b diag-bkcheck-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-bkcheck-out
