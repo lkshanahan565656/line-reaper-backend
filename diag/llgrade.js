@@ -6,13 +6,13 @@ const axios = require('axios');
 const SG = require('../sportgrade');
 const SPORT = { nfl: 'NFL', ncaaf: 'CFB', nba: 'NBA', nhl: 'NHL', mlb: 'MLB', ncaab: 'CBB', epl: 'EPL', laliga: 'LALIGA', bundesliga: 'BUNDESLIGA', seriea: 'SERIEA',
   ligue1: 'LIGUE1', mls: 'MLS', ligamx: 'LIGAMX', eredivisie: 'EREDIVISIE', brasileirao: 'BRASILEIRAO', ucl: 'UCL', uel: 'UEL' };
-const sh = c => execSync(c, { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 31 }).toString();
+const sh = c => execSync(c, { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 }).toString();
 (async () => {
   sh('git fetch -q origin "+refs/heads/diag-leadlag-out-*:refs/remotes/origin/diag-leadlag-out-*"');
   const refs = sh(`git for-each-ref --format='%(refname:short)' "refs/remotes/origin/diag-leadlag-out-*"`).split('\n').filter(Boolean);
   const games = new Map();   // sport|pin-id → { home, away, st, keys:Set }
   for (const r of refs) {
-    let txt; try { txt = zlib.gunzipSync(execSync(`git show ${r}:changes.jsonl.gz`, { maxBuffer: 1 << 31 })).toString(); } catch { continue; }
+    let txt; try { txt = zlib.gunzipSync(execSync(`git show ${r}:changes.jsonl.gz`, { maxBuffer: 1 << 30 })).toString(); } catch { continue; }
     for (const l of txt.split('\n')) {
       if (!l) continue; let o; try { o = JSON.parse(l); } catch { continue; }
       const [sp, id] = o.k.split('|'); const g = `${sp}|${id}`;
