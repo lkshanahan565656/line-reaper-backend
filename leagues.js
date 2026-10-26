@@ -22,6 +22,7 @@
 // the server builds `data` from its own state (leagueData in server.js).
 
 const { CSS, LOGO, FAVICON, esc } = require('./learn');
+const oddsFmt = require('./oddsfmt');
 
 // keys: the board's league keys (oddsscreen/shopper) and the record's sport
 // keys; props: the PROPS tab's sport chip; lines: the game-lines league (one
@@ -59,7 +60,7 @@ const byPath = p => ORDER.find(k => LEAGUES[k].path === p) || null;
 
 // links into the app, in the share-link format the app decodes (LRShare in
 // public/index.html; test/leagues.test.js runs them through it)
-function appLinks(cfg) {
+function appLinks(cfg, st = null) {
   const out = [];
   if (!cfg.esports) {
     out.push({ label: 'Best prices above fair', href: `/app#lr&t=odds&m=opps&lg=${cfg.keys.join(',')}` });
@@ -69,10 +70,12 @@ function appLinks(cfg) {
   if (cfg.es?.emu) out.push({ label: cfg.es.emu === 'SOCCER' ? 'Soccer model (not an edge)' : 'Matchup model (not an edge)', href: `/app#lr&t=esports&em=matchups&eg=${cfg.es.emu}` });
   if (cfg.props) out.push({ label: 'Pick\'em lines', href: `/app#lr&t=props&sp=${cfg.props}` });
   if (cfg.propsView) out.push({ label: cfg.propsView === 'mlb' ? 'MLB vs Pinnacle (research)' : 'Props model (not an edge)', href: `/app#lr&t=props&pv=${cfg.propsView}` });
-  return out;
+  // a state picked on the page opens the app on it too (for that visit, as a share link does)
+  return st && /^[A-Z]{2}$/.test(st) && st !== 'TX' ? out.map(l => ({ ...l, href: `${l.href}&st=${st.toLowerCase()}` })) : out;
 }
 
-const am = a => (a == null || !Number.isFinite(a) ? '—' : a > 0 ? `+${Math.round(a)}` : `${Math.round(a)}`);
+// American odds in the page's format (?odds=, the app's CUSTOMIZE > Odds format; American when none)
+const am = (a, fmt = 'american') => (a == null || !Number.isFinite(a) ? '—' : oddsFmt.fromAm(a, fmt));
 const pct = (x, n = 1) => (x == null || !Number.isFinite(x) ? '—' : `${(x * 100).toFixed(n)}%`);
 const spct = (x, n = 1) => (x == null || !Number.isFinite(x) ? '—' : `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(n)}%`);
 const cents = p => (p == null || !Number.isFinite(p) ? '—' : `${(p * 100).toFixed(1).replace(/\.0$/, '')}¢`);
@@ -159,11 +162,20 @@ const foot = () => `<footer><div class="in"><nav><a href="/">Line Reaper</a><a h
 <div>Line Reaper is an information service, not a sportsbook. It does not take or place bets. Prices are what each feed showed at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>`;
 const top = () => `<header class="top"><div class="top-in"><a class="brand" href="/">${LOGO}<span>LINE<b>REAPER</b></span></a><a class="back" href="/app">OPEN THE APP</a></div></header>`;
 
+// the query a page keeps on its links to other league pages: the picked state
+// and odds format, each only when it is not the default (Texas, American)
+const keepQs = (st, fmt) => {
+  const p = new URLSearchParams();
+  if (st && st.code && st.code !== 'TX') p.set('state', st.code);
+  if (fmt && fmt !== 'american') p.set('odds', fmt);
+  const q = p.toString();
+  return q ? `?${q}` : '';
+};
 // the picked state: { code, name, kalshi (its status there), states: [[code, name]] }; Texas when none
 const TX = { code: 'TX', name: 'Texas', kalshi: 'yes', states: [] };
 const stateOf = s => (s && s.code && s.name ? { ...TX, ...s } : TX);
 // a plain GET form, so it works without JavaScript; the canonical URL stays the league's own
-const statePicker = (path, st) => (st.states?.length ? `<form class="st-pick" method="get" action="${esc(path)}#board"><label for="stp">Betting from</label><select id="stp" name="state">${st.states.map(([c, n]) => `<option value="${esc(c)}"${c === st.code ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><button type="submit">SHOW</button><span>Venues a resident can use, from our venue table (dated ${esc(st.asOf || '')}). Check with the venue before you deposit.</span></form>` : '');
+const statePicker = (path, st, fmt = 'american') => (st.states?.length ? `<form class="st-pick" method="get" action="${esc(path)}#board"><label for="stp">Betting from</label><select id="stp" name="state">${st.states.map(([c, n]) => `<option value="${esc(c)}"${c === st.code ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><label for="sto">Odds</label><select id="sto" name="odds">${oddsFmt.OPTIONS.map(([v, n]) => `<option value="${esc(v)}"${v === fmt ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><button type="submit">SHOW</button><span>Venues a resident can use, from our venue table (dated ${esc(st.asOf || '')}). Check with the venue before you deposit. Odds: the format the prices show in; exchange contracts stay in cents.</span></form>` : '');
 
 // the record: proven kinds only, each with its whole count and this league's share of it
 function recordHtml(cfg, rec, st = TX) {
@@ -185,7 +197,7 @@ function recordHtml(cfg, rec, st = TX) {
 }
 
 // the board for a sports league: the state's best prices above Pinnacle's fair
-function sportBoardHtml(cfg, b, now, st = TX) {
+function sportBoardHtml(cfg, b, now, st = TX, fmt = 'american') {
   if (!b || !b.markets) return `<div class="empty">No ${esc(cfg.noun)} on the board in the next 48 hours${b && b.stale ? ', and the feeds are behind right now' : ''}. The page fills in when the books post lines.</div>`;
   const stats = `<div class="stats"><div class="stat"><b>${b.games}</b><span>games, 48 h</span></div><div class="stat"><b>${b.markets}</b><span>markets</span></div><div class="stat"><b>${b.priced}</b><span>with a fair</span></div><div class="stat"><b>${b.pro ? b.above : '—'}</b><span>above fair, ${esc(st.code)}</span></div></div>`;
   const venues = b.venues?.length ? `<p class="venues">${esc(st.name)} venues on this board: ${b.venues.map(v => esc(v)).join(', ')}. Pinnacle is the reference for the fair and is not a US venue.</p>` : `<p class="venues">No ${esc(st.name)} venue prices these games right now; only the reference books do.</p>`;
@@ -195,7 +207,7 @@ function sportBoardHtml(cfg, b, now, st = TX) {
   else {
     rows = `<div class="scroll"><table class="bd"><thead><tr><th>Game and pick</th><th>Venue</th><th>Price</th><th>Fair</th><th>EV</th><th>Fill</th><th>Label</th></tr></thead><tbody>${b.opps.map(o => `<tr>
 <td>${esc(o.selection)}<span class="sub">${esc(o.event)} · ${esc(o.marketName)} · ${esc(when(o.start, now))}</span></td>
-<td data-l="Venue">${esc(o.providerName)}</td><td data-l="Price">${esc(am(o.american))}</td><td data-l="Fair">${esc(am(o.fairAmerican))}<span class="sub">${esc(pct(o.fair))}</span></td><td data-l="EV">${esc(spct(o.ev))}</td>
+<td data-l="Venue">${esc(o.providerName)}</td><td data-l="Price">${esc(am(o.american, fmt))}</td><td data-l="Fair">${esc(am(o.fairAmerican, fmt))}<span class="sub">${esc(pct(o.fair))}</span></td><td data-l="EV">${esc(spct(o.ev))}</td>
 <td data-l="Fill" style="font-family:inherit;font-size:13px">${esc(sizeText(o.size, { exchange: o.exchange }))}</td><td data-l="Label"><span class="tag${o.label === 'proven' ? ' pv' : ''}">${o.label === 'proven' ? 'proven kind' : 'research'}</span></td></tr>`).join('')}</tbody></table></div>
 <p class="note">Price: the venue's price${b.anyExchange ? ', an exchange\'s all-in cost with its taker fee in' : ''}. Fair: Pinnacle's no-vig price (power method). EV at a $100 stake. Fill: what the exchange's book held at this price when it was last read. A price above fair is research: exchange flags have not beaten the close on our record.</p>`;
   }
@@ -218,37 +230,42 @@ function render(slug, data = {}, { origin = '' } = {}) {
   const o = String(origin).replace(/[^\w.:/-]/g, '');
   const now = data.now ?? Date.now();
   const st = stateOf(data.state);
+  const fmt = oddsFmt.fmtOf(data.fmt);
+  const keep = keepQs(st, fmt);
   const title = cfg.esports ? `${cfg.long} odds: Kalshi prices vs the sharp line | Line Reaper` : `${cfg.name} odds comparison: best prices vs Pinnacle's fair | Line Reaper`;
   const description = cfg.esports
     ? `Live ${cfg.long} match prices on Kalshi beside Pinnacle's no-vig price where one exists, with our matchup model labelled a model, not an edge. Read live, the same for everyone.`
     : `Live ${cfg.long} odds from the exchanges a ${st.name} resident can use against Pinnacle's no-vig fair, with what each exchange book fills. Only what the record proves is called proven.`;
-  const links = appLinks(cfg).map(l => `<a class="go" href="${esc(l.href)}">${esc(l.label)} →</a>`).join('');
-  const board = cfg.esports ? esportsBoardHtml(cfg, data.board, now, st) : sportBoardHtml(cfg, data.board, now, st);
+  const links = appLinks(cfg, st.code).map(l => `<a class="go" href="${esc(l.href)}">${esc(l.label)} →</a>`).join('');
+  const board = cfg.esports ? esportsBoardHtml(cfg, data.board, now, st) : sportBoardHtml(cfg, data.board, now, st, fmt);
   return `${head({ title, description, canonical: o ? `${o}${cfg.path}` : null, origin: o })}
 <body>
 ${top()}
 <main>
-<p class="kicker"><a href="/leagues" style="color:inherit;text-decoration:none">Leagues</a> · ${esc(cfg.name)}</p>
+<p class="kicker"><a href="/leagues${esc(keep)}" style="color:inherit;text-decoration:none">Leagues</a> · ${esc(cfg.name)}</p>
 <h1>${esc(cfg.esports ? `${cfg.long} odds` : `${cfg.name} odds comparison`)}</h1>
 <p class="lead">${esc(cfg.esports ? `Every ${cfg.long} match Kalshi lists, with the sharp price beside it where there is one.` : `Every ${cfg.long} price we read, against Pinnacle's no-vig fair, cut to the venues a ${st.name} resident can use.`)} Board read ${esc(readAgo(data.board?.readAt, now))}.</p>
 <div class="links">${links}</div>
-${statePicker(cfg.path, st)}
+${statePicker(cfg.path, st, fmt)}
 <h2 id="board">${cfg.esports ? 'Match board' : `Best ${esc(st.name)} prices above the fair`}</h2>
 ${board}
 <h2 id="record">What the record says</h2>
 ${recordHtml(cfg, data.record, st)}
 <h2 id="more">More leagues</h2>
-${leagueList(cfg)}
+${leagueList(cfg, keep)}
 </main>
 ${foot()}
 </body>
 </html>`;
 }
 
-const leagueList = (cur = null) => `<ul class="lg-list">${ORDER.filter(k => !cur || LEAGUES[k] !== cur).map(k => `<li><a href="${LEAGUES[k].path}">${esc(LEAGUES[k].name)}<span>${esc(LEAGUES[k].esports ? 'esports' : LEAGUES[k].long)}</span></a></li>`).join('')}</ul>`;
+const leagueList = (cur = null, keep = '') => `<ul class="lg-list">${ORDER.filter(k => !cur || LEAGUES[k] !== cur).map(k => `<li><a href="${LEAGUES[k].path}${esc(keep)}">${esc(LEAGUES[k].name)}<span>${esc(LEAGUES[k].esports ? 'esports' : LEAGUES[k].long)}</span></a></li>`).join('')}</ul>`;
 
 function index(data = {}, { origin = '' } = {}) {
   const o = String(origin).replace(/[^\w.:/-]/g, '');
+  const st = stateOf(data.state);
+  const fmt = oddsFmt.fmtOf(data.fmt);
+  const keep = keepQs(st, fmt);
   const title = 'Odds by league: NFL, NBA, college, soccer, tennis and esports | Line Reaper';
   const description = 'One page per league with live prices from the venues a Texas resident can use against Pinnacle\'s no-vig fair, and only what the record proves called proven.';
   return `${head({ title, description, canonical: o ? `${o}/leagues` : null, origin: o })}
@@ -257,10 +274,11 @@ ${top()}
 <main>
 <p class="kicker">Leagues</p>
 <h1>Odds by league</h1>
-<p class="lead">Each page reads the live board when you open it: the venues a Texas resident can use, Pinnacle's no-vig fair, and the record's verdict, the same for everyone.</p>
-${leagueList()}
+<p class="lead">Each page reads the live board when you open it: the venues a ${esc(st.name)} resident can use, Pinnacle's no-vig fair, and the record's verdict, the same for everyone.</p>
+${statePicker('/leagues', st, fmt)}
+${leagueList(null, keep)}
 <h2 id="record">What the record says</h2>
-${recordHtml({ noun: 'games', labels: ['Exchange Shopper', 'Pick\'em leg flags'] }, data.record ? { ...data.record, proven: (data.record.proven || []).map(p => ({ ...p, inLeague: null })) } : null)}
+${recordHtml({ noun: 'games', labels: ['Exchange Shopper', 'Pick\'em leg flags'] }, data.record ? { ...data.record, proven: (data.record.proven || []).map(p => ({ ...p, inLeague: null })) } : null, st)}
 </main>
 ${foot()}
 </body>

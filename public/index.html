@@ -3227,6 +3227,7 @@ const SC_LEAGUE = { NFL: 'nfl', NBA: 'nba', NHL: 'nhl', NCAAF: 'cfb', CFB: 'cfb'
 const SC_LEAGUE_NAME = { nfl: 'NFL', nba: 'NBA', nhl: 'NHL', cfb: 'College football', cbb: 'College basketball', mlb: 'MLB', tennis: 'Tennis', soccer: 'Soccer', lol: 'League of Legends', cs2: 'Counter-Strike 2', valorant: 'Valorant', dota2: 'Dota 2' };
 const scBase = () => (/^https?:$/.test(location.protocol) ? location.origin : BACKEND_URL);
 const scAm = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
+const scFmt = () => (oddsFmtCur !== 'american' ? oddsFmtCur : '');
 // what this screen can be a card of: up to six rows the screen tags with a
 // card (a shopper price, a game's line), its leagues, and the record
 function scOptions() {
@@ -3240,7 +3241,8 @@ function scOptions() {
     if (lg && !lgs.includes(lg)) lgs.push(lg);
     const c = r.card;
     if (!c || out.length >= 6) continue;
-    const q = c.k === 'price' ? { id: c.id } : { game: c.game, market: c.market, side: c.side, i: c.i };
+    // the viewer's odds format goes on the card (American when none)
+    const q = c.k === 'price' ? { id: c.id, odds: scFmt() } : { game: c.game, market: c.market, side: c.side, i: c.i, odds: scFmt() };
     const key = `${c.k}|${JSON.stringify(q)}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -3248,7 +3250,8 @@ function scOptions() {
       ? { k: 'price', q, kind: 'BEST PRICE', what: `${r.selection || ''} · ${r.venueName || r.venue || ''}${r.event ? ` · ${r.event}` : ''}`, to: true }
       : { k: 'move', q, kind: 'LINE MOVE CHART', what: `${r.selection || ''} · ${r.market || ''}${r.event ? ` · ${r.event}` : ''}`, to: true });
   }
-  for (const lg of lgs.slice(0, 2)) out.push({ k: 'league', q: { league: lg }, kind: 'LEAGUE', what: `${SC_LEAGUE_NAME[lg]}: games, venues and the best prices above the fair` });
+  // a league card counts the venues of the viewer's state (CUSTOMIZE > My state), as the screen does
+  for (const lg of lgs.slice(0, 2)) out.push({ k: 'league', q: { league: lg, state: lrState, odds: scFmt() }, kind: 'LEAGUE', what: `${SC_LEAGUE_NAME[lg]}: games, ${lrState ? `${lrStateName()} venues` : 'venues'} and the best prices above the fair` });
   out.push({ k: 'record', q: {}, kind: 'RESULTS', what: 'The public record: what RESULTS proves, nothing more' });
   if (page?.id === 'page-results') out.push({ k: 'digest', q: {}, kind: 'WEEKLY DIGEST', what: "Last week's record digest" });
   return out;
