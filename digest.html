@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week of Oct 19 to 25 | Line Reaper record</title>
+<meta name="description" content="6237 games graded across 55 kinds and venues.">
+<link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/digest/2026-10-19">
+<meta name="theme-color" content="#080b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+.lab { font:700 10px var(--mono); letter-spacing:.06em; white-space:nowrap; }
+.lab.tx { color:#60a5fa; }
+.why, .sub { color:var(--muted); font-size:11px; font-family:inherit; }
+td.n, th.n { text-align:right; white-space:nowrap; }
+.muted { color:var(--muted); }
+.tiles { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.tiles div { flex:1 1 140px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.tiles span { display:block; font:600 10px var(--mono); letter-spacing:.1em; color:var(--muted); }
+.tiles b { display:block; font-size:20px; margin:2px 0; }
+.tiles i { font-style:normal; color:var(--text2); font-size:12px; }
+</style>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Line Reaper">
+<meta property="og:title" content="Line Reaper record: week of Oct 19 to 25">
+<meta property="og:description" content="6237 games graded across 55 kinds and venues.">
+<meta property="og:image" content="https://line-reaper-backend-production.up.railway.app/card/digest.png?week=2026-10-19&amp;v=1s1uh">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The weekly record card">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Line Reaper record: week of Oct 19 to 25">
+<meta name="twitter:description" content="6237 games graded across 55 kinds and venues.">
+<meta name="twitter:image" content="https://line-reaper-backend-production.up.railway.app/card/digest.png?week=2026-10-19&amp;v=1s1uh">
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app?start=results">OPEN RESULTS</a></div></header>
+<main>
+<p class="kicker">Weekly record</p>
+<h1>Week of Oct 19 to 25</h1>
+<p class="lead">6237 games graded across 55 kinds and venues. Every number comes from the public record on RESULTS, graded against the close.</p>
+<p class="note">Published 2026-10-26 13:00 UTC and frozen: this is what was sent.</p>
+<div class="tiles">
+<div><span>GRADED THIS WEEK</span><b>6237</b><i>55 kinds and venues</i></div>
+<div><span>PROVEN</span><b style="color:var(--green2)">1</b><i>none new this week</i></div>
+<div><span>NEWLY LOSING TO THE CLOSE</span><b style="color:#f87171">1</b><i>none lost proven</i></div>
+<div><span>ALL SHARP CLOSES</span><b>+1.2%</b><i>this week, 4037 graded · pooled, never proven</i></div>
+</div>
+<h2>Proven at the end of the week</h2>
+<ul><li><b>Main lines vs the sharp fair · BetRivers</b>: 373 graded, CLV +2.8%, not a Texas venue, profit not shown yet (units do not clear chance).</li></ul>
+<h2>By kind and venue</h2>
+<div class="scroll"><table><thead><tr><th></th><th>Kind · venue</th><th class="n">This week</th><th class="n">Toward 50</th><th class="n">All time</th></tr></thead><tbody><tr>
+<td><span class="lab" style="color:#94a3b8">TOO EARLY</span><div class="lab" style="color:#60a5fa">REACHED 50 GRADED</div></td>
+<td><b>Pick&#39;em sharp price</b> · Underdog <span class="lab tx">TX</span><div class="why">The CLV t is under 2.</div></td>
+<td class="n">48<div class="sub">-0.6% · 29-20</div></td>
+<td class="n">43 → 91/50<div class="sub">t +0.3 → +0.1 · away</div></td>
+<td class="n">+0.1%<div class="sub">50-44 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+1.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#f87171">LOSING TO THE CLOSE</span><div class="lab" style="color:#f87171">NEWLY LOSING TO THE CLOSE</div></td>
+<td><b>Pick&#39;em sharp price</b> · Sleeper <span class="lab tx">TX</span></td>
+<td class="n">23<div class="sub">-1.6% · 14-11</div></td>
+<td class="n">6 → 29/50<div class="sub">t -1.4 → -2.0 · away</div></td>
+<td class="n">-2.7%<div class="sub">17-14 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+6.3u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#64748b">NO SHARP CLOSE</span></td>
+<td><b>Alt lines (model only)</b> · FanDuel<div class="why">Closes on our own curve or soft books, so the CLV is the flag&#39;s own edge again. Shown, never judged.</div></td>
+<td class="n">1353<div class="sub">-0.7% · —</div></td>
+<td class="n">935 → 2288/50<div class="sub">t — → —</div></td>
+<td class="n">+0.8%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#64748b">NO SHARP CLOSE</span></td>
+<td><b>Alt lines (model only)</b> · BetRivers<div class="why">Closes on our own curve or soft books, so the CLV is the flag&#39;s own edge again. Shown, never judged.</div></td>
+<td class="n">521<div class="sub">-1.3% · —</div></td>
+<td class="n">389 → 910/50<div class="sub">t — → —</div></td>
+<td class="n">-1.0%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · DraftKings<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">493<div class="sub">+1.6% · 43-31</div></td>
+<td class="n">215 → 708/50<div class="sub">t +7.0 → +9.8</div></td>
+<td class="n">+1.8%<div class="sub">56-44 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+2.6u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#f87171">LOSING TO THE CLOSE</span></td>
+<td><b>Main lines vs the sharp fair</b> · FanDuel</td>
+<td class="n">366<div class="sub">-0.3% · 74-80</div></td>
+<td class="n">130 → 496/50<div class="sub">t +1.2 → +0.1 · away</div></td>
+<td class="n">+0.0%<div class="sub">103-107 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-17.6u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · bet365<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">362<div class="sub">+2.4% · 39-30</div></td>
+<td class="n">150 → 512/50<div class="sub">t +8.0 → +11.5</div></td>
+<td class="n">+2.6%<div class="sub">50-41 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+4.7u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · Fanatics<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">296<div class="sub">+0.1% · 74-49</div></td>
+<td class="n">82 → 378/50<div class="sub">t +3.2 → +1.5</div></td>
+<td class="n">+0.5%<div class="sub">89-65 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+6.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · BetMGM<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">269<div class="sub">+1.6% · 30-23</div></td>
+<td class="n">78 → 347/50<div class="sub">t +2.8 → +5.6</div></td>
+<td class="n">+1.6%<div class="sub">43-38 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-2.6u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#34d399">PROVEN</span></td>
+<td><b>Main lines vs the sharp fair</b> · BetRivers</td>
+<td class="n">235<div class="sub">+2.5% · 374-353</div></td>
+<td class="n">138 → 373/50<div class="sub">t +8.7 → +12.2 · toward</div></td>
+<td class="n">+2.8%<div class="sub">579-557 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-7.1u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · Hard Rock<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">215<div class="sub">+3.4% · 12-8</div></td>
+<td class="n">141 → 356/50<div class="sub">t +9.6 → +16.9</div></td>
+<td class="n">+3.3%<div class="sub">25-21 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-1.6u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · Caesars<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">193<div class="sub">+0.5% · 35-29</div></td>
+<td class="n">93 → 286/50<div class="sub">t +1.4 → +1.7</div></td>
+<td class="n">+0.6%<div class="sub">45-39 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.3u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Stale lines (Pinnacle only)</b> · FanDuel<div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">174<div class="sub">+1.5% · —</div></td>
+<td class="n">55 → 229/50<div class="sub">t +1.9 → +4.1</div></td>
+<td class="n">+1.6%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Alt lines (cleared)</b> · BetRivers<div class="why">Never proven: the close is Kalshi&#39;s mid or another book&#39;s number at the rung, not Pinnacle&#39;s own price.</div></td>
+<td class="n">161<div class="sub">+1.1% · —</div></td>
+<td class="n">90 → 251/50<div class="sub">t +4.9 → +4.5</div></td>
+<td class="n">+2.0%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Alt lines (cleared)</b> · FanDuel<div class="why">Never proven: the close is Kalshi&#39;s mid or another book&#39;s number at the rung, not Pinnacle&#39;s own price.</div></td>
+<td class="n">154<div class="sub">-2.5% · —</div></td>
+<td class="n">108 → 262/50<div class="sub">t +1.2 → -1.0</div></td>
+<td class="n">-0.8%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Big money</b> · BetRivers<div class="why">Big money is research: following big accounts has not held up in our raw re-checks.</div></td>
+<td class="n">154<div class="sub">+1.2% · 88-95</div></td>
+<td class="n">72 → 226/50<div class="sub">t +5.3 → +4.7</div></td>
+<td class="n">+1.8%<div class="sub">131-125 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+14.9u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale (Pinnacle only)</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">147<div class="sub">+1.9% · 75-63</div></td>
+<td class="n">66 → 213/50<div class="sub">t +4.7 → +6.1</div></td>
+<td class="n">+2.9%<div class="sub">106-98 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-11.4u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#64748b">NO SHARP CLOSE</span></td>
+<td><b>Main lines vs a soft consensus</b> · FanDuel<div class="why">Closes on our own curve or soft books, so the CLV is the flag&#39;s own edge again. Shown, never judged.</div></td>
+<td class="n">119<div class="sub">-0.6% · —</div></td>
+<td class="n">11 → 130/50<div class="sub">t — → —</div></td>
+<td class="n">-0.6%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em sharp consensus</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">100<div class="sub">+1.3% · 59-50</div></td>
+<td class="n">50 → 150/50<div class="sub">t +2.1 → +2.9</div></td>
+<td class="n">+1.5%<div class="sub">87-87 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-17.7u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">COPIED BOOK</span></td>
+<td><b>Main lines vs the sharp fair</b> · theScore<div class="why">Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.</div></td>
+<td class="n">83<div class="sub">+0.6% · 77-79</div></td>
+<td class="n">37 → 120/50<div class="sub">t +3.3 → +2.1</div></td>
+<td class="n">+1.1%<div class="sub">116-107 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+3.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick6 sharp consensus</b> · DK Pick6 <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">72<div class="sub">+1.8% · 38-36</div></td>
+<td class="n">2 → 74/50<div class="sub">t — → +3.1</div></td>
+<td class="n">+1.8%<div class="sub">39-38 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-6.8u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em vs one book (FanDuel or BetRivers)</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">67<div class="sub">+1.6% · 45-30</div></td>
+<td class="n">13 → 80/50<div class="sub">t +0.7 → +1.8</div></td>
+<td class="n">+1.9%<div class="sub">51-37 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+3.6u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em vs one book (FanDuel or BetRivers)</b> · Underdog <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">64<div class="sub">-0.9% · 29-41</div></td>
+<td class="n">20 → 84/50<div class="sub">t -1.5 → -1.5</div></td>
+<td class="n">-1.6%<div class="sub">34-56 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-16.9u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale (confirmed)</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">55<div class="sub">+4.3% · 35-19</div></td>
+<td class="n">30 → 85/50<div class="sub">t +3.7 → +6.5</div></td>
+<td class="n">+5.1%<div class="sub">48-36 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+3.2u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Stale lines (Pinnacle only)</b> · BetRivers<div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">53<div class="sub">+2.1% · —</div></td>
+<td class="n">58 → 111/50<div class="sub">t +4.0 → +4.6</div></td>
+<td class="n">+3.1%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em sharp consensus</b> · Underdog <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">53<div class="sub">+0.0% · 22-33</div></td>
+<td class="n">23 → 76/50<div class="sub">t -0.4 → -0.3</div></td>
+<td class="n">-0.3%<div class="sub">35-46 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-11.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Big money</b> · FanDuel<div class="why">Big money is research: following big accounts has not held up in our raw re-checks.</div></td>
+<td class="n">48<div class="sub">+1.1% · 29-29</div></td>
+<td class="n">19 → 67/50<div class="sub">t -0.8 → +0.3</div></td>
+<td class="n">+0.7%<div class="sub">37-40 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.7u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Stale lines (confirmed)</b> · BetRivers<div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">37<div class="sub">+3.8% · —</div></td>
+<td class="n">31 → 68/50<div class="sub">t +6.8 → +6.1</div></td>
+<td class="n">+5.4%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale (Pinnacle only)</b> · Underdog <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">36<div class="sub">+2.6% · 25-11</div></td>
+<td class="n">20 → 56/50<div class="sub">t +1.6 → +2.5</div></td>
+<td class="n">+3.0%<div class="sub">39-19 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+12.1u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em line gap</b> · Underdog <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">33<div class="sub">-0.7% · 15-18</div></td>
+<td class="n">32 → 65/50<div class="sub">t -2.0 → -1.9</div></td>
+<td class="n">-2.3%<div class="sub">34-32 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-5.4u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em vs one book (FanDuel or BetRivers)</b> · Sleeper <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">27<div class="sub">-4.4% · 11-17</div></td>
+<td class="n">7 → 34/50<div class="sub">t -1.5 → -3.8</div></td>
+<td class="n">-4.7%<div class="sub">16-19 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-4.3u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">TOO EARLY</span></td>
+<td><b>Pick&#39;em sharp price</b> · PrizePicks <span class="lab tx">TX</span><div class="why">45 of 50 graded.</div></td>
+<td class="n">25<div class="sub">+5.2% · 15-12</div></td>
+<td class="n">20 → 45/50<div class="sub">t +0.0 → +2.4 · toward</div></td>
+<td class="n">+2.9%<div class="sub">28-19 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+1.3u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Stale lines (confirmed)</b> · FanDuel<div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">25<div class="sub">+1.7% · —</div></td>
+<td class="n">5 → 30/50<div class="sub">t +0.7 → +1.0</div></td>
+<td class="n">+1.7%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em line gap</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">24<div class="sub">+3.6% · 12-12</div></td>
+<td class="n">9 → 33/50<div class="sub">t +3.2 → +3.4</div></td>
+<td class="n">+3.7%<div class="sub">15-18 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-6.3u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick6 line gap</b> · DK Pick6 <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">18<div class="sub">+3.3% · 11-7</div></td>
+<td class="n">1 → 19/50<div class="sub">t — → +3.4</div></td>
+<td class="n">+3.2%<div class="sub">12-7 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+2.8u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale (Pinnacle only)</b> · Sleeper <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">15<div class="sub">-0.3% · 11-4</div></td>
+<td class="n">3 → 18/50<div class="sub">t -0.5 → -0.4</div></td>
+<td class="n">-0.5%<div class="sub">12-7 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+2.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale at Pinnacle&#39;s own number</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">13<div class="sub">-0.2% · 4-10</div></td>
+<td class="n">0 → 13/50<div class="sub">t — → -0.1</div></td>
+<td class="n">-0.2%<div class="sub">4-10 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-6.7u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em vs 3+ books&#39; consensus</b> · Underdog <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">11<div class="sub">+5.9% · 7-7</div></td>
+<td class="n">1 → 12/50<div class="sub">t — → +1.5</div></td>
+<td class="n">+4.1%<div class="sub">7-9 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.2u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em sharp consensus</b> · Sleeper <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">10<div class="sub">-7.7% · 10-3</div></td>
+<td class="n">2 → 12/50<div class="sub">t — → -3.4</div></td>
+<td class="n">-6.3%<div class="sub">11-5 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+5.1u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#fbbf24">BUILDING</span></td>
+<td><b>Main lines vs the sharp fair</b> · Polymarket US <span class="lab tx">TX</span><div class="why">10 of 50 graded.</div></td>
+<td class="n">10<div class="sub">+1.3% · 1-1</div></td>
+<td class="n">0 → 10/50<div class="sub">t — → +0.7 · toward</div></td>
+<td class="n">+1.3%<div class="sub">1-1 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.1u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em vs 3+ books&#39; consensus</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">9<div class="sub">+3.2% · 7-2</div></td>
+<td class="n">5 → 14/50<div class="sub">t +0.5 → +1.3</div></td>
+<td class="n">+2.7%<div class="sub">10-4 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+4.2u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em line gap</b> · Sleeper <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">9<div class="sub">+3.7% · 7-2</div></td>
+<td class="n">5 → 14/50<div class="sub">t -1.3 → +0.3</div></td>
+<td class="n">+0.6%<div class="sub">10-4 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+3.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em vs 3+ books&#39; consensus</b> · Sleeper <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">9<div class="sub">-0.4% · 6-3</div></td>
+<td class="n">1 → 10/50<div class="sub">t — → -0.8</div></td>
+<td class="n">-2.3%<div class="sub">6-4 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+1.2u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick6 sharp price</b> · DK Pick6 <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">9<div class="sub">+2.0% · 5-4</div></td>
+<td class="n">0 → 9/50<div class="sub">t — → +1.4</div></td>
+<td class="n">+2.0%<div class="sub">5-4 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+0.1u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#94a3b8">TOO EARLY</span></td>
+<td><b>Main lines vs the sharp fair</b> · Gemini <span class="lab tx">TX</span><div class="why">7 of 50 graded.</div></td>
+<td class="n">7<div class="sub">+2.5% · 8-3</div></td>
+<td class="n">0 → 7/50<div class="sub">t — → +0.5 · toward</div></td>
+<td class="n">+2.5%<div class="sub">8-3 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+0.6u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale (confirmed)</b> · Underdog <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">6<div class="sub">+4.8% · 4-2</div></td>
+<td class="n">3 → 9/50<div class="sub">t +4.5 → +2.6</div></td>
+<td class="n">+5.6%<div class="sub">5-4 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+0.3u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Big money</b> · Sleeper <span class="lab tx">TX</span><div class="why">Big money is research: following big accounts has not held up in our raw re-checks.</div></td>
+<td class="n">5<div class="sub">-47.6% · 3-1</div></td>
+<td class="n">0 → 5/50<div class="sub">t — → -6.0</div></td>
+<td class="n">-47.6%<div class="sub">3-1 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.8u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Esports book lines</b> · BetRivers<div class="why">Only main lines and pick&#39;em sharp-price legs closing on Pinnacle can be proven.</div></td>
+<td class="n">4<div class="sub">+4.0% · —</div></td>
+<td class="n">27 → 31/50<div class="sub">t +4.8 → +4.5</div></td>
+<td class="n">+3.8%<div class="sub">— · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">0.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Big money</b> · Underdog <span class="lab tx">TX</span><div class="why">Big money is research: following big accounts has not held up in our raw re-checks.</div></td>
+<td class="n">4<div class="sub">-2.7% · 2-2</div></td>
+<td class="n">2 → 6/50<div class="sub">t — → -0.3</div></td>
+<td class="n">-2.6%<div class="sub">3-3 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale (confirmed)</b> · Sleeper <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">4<div class="sub">+1.1% · 2-2</div></td>
+<td class="n">0 → 4/50<div class="sub">t — → +0.3</div></td>
+<td class="n">+1.1%<div class="sub">2-2 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-0.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick6 vs one book</b> · DK Pick6 <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">4<div class="sub">+3.3% · 3-1</div></td>
+<td class="n">0 → 4/50<div class="sub">t — → +1.9</div></td>
+<td class="n">+3.3%<div class="sub">3-1 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+1.4u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick&#39;em stale at Pinnacle&#39;s own number</b> · Underdog <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">2<div class="sub">+3.1% · 2-0</div></td>
+<td class="n">0 → 2/50<div class="sub">t — → —</div></td>
+<td class="n">+3.1%<div class="sub">2-0 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+1.5u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick6 stale (Pinnacle only)</b> · DK Pick6 <span class="lab tx">TX</span><div class="why">Never proven: where Pinnacle moved its number, the close is our curve at the venue&#39;s number, not Pinnacle&#39;s own price. Legs at Pinnacle&#39;s own number score on their own row.</div></td>
+<td class="n">1<div class="sub">-8.4% · 0-1</div></td>
+<td class="n">0 → 1/50<div class="sub">t — → —</div></td>
+<td class="n">-8.4%<div class="sub">0-1 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-1.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Big money</b> · PrizePicks <span class="lab tx">TX</span><div class="why">Big money is research: following big accounts has not held up in our raw re-checks.</div></td>
+<td class="n">1<div class="sub">+11.8% · 0-1</div></td>
+<td class="n">0 → 1/50<div class="sub">t — → —</div></td>
+<td class="n">+11.8%<div class="sub">0-1 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">-1.0u*</span></div></td></tr><tr>
+<td><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td><b>Pick6 vs 3+ books&#39; consensus</b> · DK Pick6 <span class="lab tx">TX</span><div class="why">Pick&#39;em legs of this kind are research: only pick&#39;em sharp-price legs on Pinnacle&#39;s close can be proven.</div></td>
+<td class="n">1<div class="sub">+4.4% · 1-0</div></td>
+<td class="n">0 → 1/50<div class="sub">t — → —</div></td>
+<td class="n">+4.4%<div class="sub">1-0 · <span class="muted" title="Not a profit claim: this kind is not proven, or its units do not clear chance">+0.8u*</span></div></td></tr></tbody></table></div>
+<p class="note">This week: games that started in the week and were graded, CLV at the flagged price against the close, W-L. Toward 50: graded all time at the week's start → end, and the CLV t then and now. A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pinnacle&#39;s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick&#39;em kinds only sharp-price legs. Units are 1u a graded line; * marks units on a kind that is not proven, which are not a profit claim. 8 other kinds and venues had nothing graded this week.</p>
+<h2>Models and research (not a claim)</h2><div class="scroll"><table><thead><tr><th>Tool</th><th>Tag</th><th>Where and why</th></tr></thead><tbody><tr><td>Exchange Shopper: best prices above fair</td><td>RESEARCH</td><td>ODDS SCREEN: A price above Pinnacle&#39;s fair, with what the exchange book fills. Exchange flags have not beaten the close yet.</td></tr><tr><td>NBA, CFB and CBB props models</td><td>MODEL, NOT AN EDGE</td><td>PROPS: Our own projections. None has cleared our bar against the apps&#39; lines in held-out tests.</td></tr><tr><td>NFL model</td><td>MODEL, NOT AN EDGE</td><td>ODDS SCREEN &gt; NFL MODEL: Kalshi&#39;s price an hour before kickoff beat it in the held-out test.</td></tr><tr><td>Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer</td><td>MODEL, NOT AN EDGE</td><td>ESPORTS &gt; MATCHUPS: The exchanges&#39; own prices beat our ratings in walk-forward tests.</td></tr><tr><td>Kalshi maker bids</td><td>RESEARCH</td><td>ODDS SCREEN &gt; MAKER: A resting bid under the fair. Nothing places an order.</td></tr><tr><td>F1 and golf outrights</td><td>RESEARCH</td><td>ODDS SCREEN &gt; OUTRIGHTS: Pinnacle takes small limits there, so its fair is weaker.</td></tr><tr><td>Injury news</td><td>RESEARCH</td><td>PROPS &gt; INJURY NEWS: Legs left up after news. Not ahead of the close so far.</td></tr><tr><td>Sharp Tail and big money</td><td>RESEARCH</td><td>SHARP TAIL, BIG MONEY: Following big accounts has not beaten the close in our tests.</td></tr><tr><td>Pick&#39;em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6)</td><td>NOT PROVEN</td><td>PROPS: Flagged legs have broken about even against Pinnacle&#39;s close.</td></tr></tbody></table></div>
+<p><a class="go" href="/app?start=results">SEE THE FULL RECORD →</a></p>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/learn/how-the-record-works">How the record works</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take bets. This page reports a record; it is not advice to bet. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>
