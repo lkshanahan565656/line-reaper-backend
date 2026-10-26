@@ -1,0 +1,20 @@
+const fs = require('fs');
+const pairs = JSON.parse(fs.readFileSync('diag/pairs.json', 'utf8'));
+(async () => {
+  const out = {};
+  const toks = pairs.slice(0, 60).map(p => ({ token_id: p.p.tok }));
+  let r = await fetch('https://clob.polymarket.com/books', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(toks) });
+  let j = await r.json().catch(() => null);
+  out.books = { status: r.status, n: Array.isArray(j) ? j.length : null, first: Array.isArray(j) ? { ...j[0], bids: j[0].bids?.slice(-3), asks: j[0].asks?.slice(-3) } : j };
+  const tk = pairs.filter(p => p.k).slice(0, 60).map(p => p.k.t).join(',');
+  r = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?limit=100&tickers=' + tk); j = await r.json().catch(() => null);
+  out.kalshi = { status: r.status, n: j?.markets?.length, first: j?.markets?.[0] };
+  r = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets/' + pairs.find(p => p.k).k.t + '/orderbook'); j = await r.json().catch(() => null);
+  out.kbook = { status: r.status, j: JSON.stringify(j).slice(0, 600) };
+  const u = pairs.find(p => p.u).u.slug;
+  r = await fetch('https://gateway.polymarket.us/v1/markets/' + u + '/book'); j = await r.json().catch(() => null);
+  out.ubook = { status: r.status, j: JSON.stringify(j).slice(0, 800) };
+  r = await fetch('https://gateway.polymarket.us/v1/markets/' + u + '/settlement'); out.uset = { status: r.status, t: (await r.text()).slice(0, 400) };
+  r = await fetch('https://gateway.polymarket.us/v1/markets/slug/' + u); out.umkt = { status: r.status, t: (await r.text()).slice(0, 1200) };
+  fs.mkdirSync('data', { recursive: true }); fs.writeFileSync('data/probe.json', JSON.stringify(out, null, 1));
+})();
