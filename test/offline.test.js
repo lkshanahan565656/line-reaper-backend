@@ -163,3 +163,16 @@ test('the page: install steps, the offline banner, stamps and landmarks are in p
   assert.match(html, /SAVED DATA/);
   assert.ok(!/--muted2: #475569/.test(html), 'muted text meets AA contrast');
 });
+
+test('hashed app files under /assets/ are saved on first load and served from the device after', async () => {
+  const w = load();
+  const first = await w.get('/assets/app.0123456789abcdef.js');
+  const n = (await first.json()).n;
+  w.net.mode = 'down';
+  const off = await w.get('/assets/app.0123456789abcdef.js');
+  assert.equal((await off.json()).n, n, 'offline: the saved file');
+  w.net.mode = 'ok';
+  const calls = w.net.calls.length;
+  await w.get('/assets/app.0123456789abcdef.js');
+  assert.equal(w.net.calls.length, calls, 'a saved hashed file needs no network');
+});

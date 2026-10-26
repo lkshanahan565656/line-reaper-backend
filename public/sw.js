@@ -85,6 +85,15 @@ async function shellFirstNetwork(req, key) {
   }
 }
 
+async function assetCacheFirst(req, key) {
+  const c = await caches.open(SHELL);
+  const old = await c.match(key);
+  if (old) return old;
+  const r = await fetch(req);
+  if (r.ok && r.type === 'basic') await c.put(key, r.clone());
+  return r;
+}
+
 async function apiNetworkFirst(req) {
   const key = keyOf(req.url);
   const c = await caches.open(API);
@@ -115,6 +124,9 @@ self.addEventListener('fetch', e => {
   if (url.origin !== self.location.origin) return;
   if (req.mode === 'navigate' && (url.pathname === '/app' || url.pathname === '/app/')) return e.respondWith(shellFirstNetwork(req, '/app'));
   if (SHELL_PATHS.has(url.pathname) && !url.search) return e.respondWith(shellFirstNetwork(req, url.pathname));
+  // hashed app files (/assets/app.<hash>.js): the name changes with the
+  // contents, so a saved copy is always right and is served first
+  if (url.pathname.startsWith('/assets/')) return e.respondWith(assetCacheFirst(req, url.pathname));
   if (cacheableApi(req, url)) return e.respondWith(apiNetworkFirst(req));
 });
 
