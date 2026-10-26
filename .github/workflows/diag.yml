@@ -1,0 +1,16 @@
+name: diag-cbbready
+on: { push: { branches: [diag-cbbready] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: main, path: repo }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd repo && npm ci --omit=dev --ignore-scripts --no-audit --no-fund > /dev/null 2>&1 || true
+      - run: mkdir -p out && node probe.js > out/log.txt 2>&1 || true
+      - run: cd out && git init -q && git checkout -q -b diag-cbbready-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-cbbready-out
