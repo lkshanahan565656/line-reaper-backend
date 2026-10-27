@@ -15,6 +15,8 @@ const path = require('path');
 const zlib = require('zlib');
 const M = require('./cfbmodel');
 const { canonName } = require('./ev');
+const { payoutFor } = require('./nbadata');
+const F = require('./farlines');
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 const SEED = path.join(__dirname, 'seeds', 'cfb-games.json.gz');
@@ -24,6 +26,15 @@ const ymd = t => new Date(t - 5 * 3600e3).toISOString().slice(0, 10).replace(/-/
 const MODEL_STATS = new Set(M.STATS);
 // the confident side the record logs (pre-registered 10-25): 58%+ on PrizePicks and Pick6 standard lines
 const PICK_MIN = 0.58;
+// Underdog pays its own multiplier per leg, so its legs are logged on value at
+// that payout: the model's side worth UD_EV_MIN or more per unit at the real
+// multiplier (as NBA v2; pre-registered 10-25, checks/cfb-model-v2-2026-10-25)
+const UD_EV_MIN = 0.05;
+// The model's version on every row and logged leg. The live record is never
+// reset: legs logged before VERSION_AT were priced by v1.
+const MODEL_VERSION = 'v2';
+const VERSION_AT = '2026-10-25';
+const VERSION_NOTE = 'v2 from 2026-10-25: same projections, plus a calibration fitted on ESPN BET\'s 2024-25 CFB main lines (v1 was overconfident: its 58%+ sides hit 54.9% held out). Legs logged before then were priced by v1; the record carries on, never reset.';
 
 const readJson = (file, gz = false) => { try { const b = fs.readFileSync(file); return JSON.parse(gz ? zlib.gunzipSync(b) : b); } catch { return null; } };
 const loadSeed = (file = SEED) => readJson(file, true) || [];
@@ -31,6 +42,16 @@ const loadParams = (file = PARAMS_FILE) => { const p = readJson(file); return p 
 const loadBacktest = (file = BACKTEST) => readJson(file);
 
 // ESPN scoreboard event → { id, t, home, away (team ids), names, abbrs, done, total, spread (home's) }
+
+// a section row's far summary: far = some app's line is 1+ of our sds from the
+// projection (and Pinnacle's line does not sit toward it); farD = the largest |d|, signed
+function farOfApps(apps) {
+  const cells = Object.values(apps).filter(a => a.far && a.pinAgree !== 'toward');
+  if (!cells.length) return { far: false, farD: null };
+  const top = cells.sort((a, b) => Math.abs(b.d) - Math.abs(a.d))[0];
+  return { far: true, farD: top.d };
+}
+
 function scheduleOf(ev) {
   const c = ev?.competitions?.[0];
   const cs = c?.competitors || [];
@@ -151,26 +172,41 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
       const p = projectionFor(row);
       if (!p.proj) continue;
       const apps = {};
+      const pin = pinAt(row), fd = bookAt(row);
       for (const [book, cell] of Object.entries(row.books || {})) {
         if (!Number.isFinite(cell?.line)) continue;
         const pr = priced(p.proj, row.mkey, cell.line);
-        if (pr) apps[book] = { line: cell.line, pOver: pr.pOver, side: pr.side, pSide: pr.pSide, over: cell.over ?? null, under: cell.under ?? null };
+        if (!pr) continue;
+        // each app's real payout for the model's side (PrizePicks 3-pick Power, Pick6 table x multiplier, Underdog's and Sleeper's multipliers)
+        const pay = payoutFor(book, pr.side, pr.pSide, cell);
+        apps[book] = { line: cell.line, pOver: pr.pOver, side: pr.side, pSide: pr.pSide, over: cell.over ?? null, under: cell.under ?? null,
+          decimal: pay?.decimal ?? null, breakEven: pay?.breakEven ?? null, ev: pay?.ev ?? null };
+        // the line's distance from our projection (farlines.js): d in the model's own sds, far at |d| >= 1;
+        // pinAgree 'toward' = Pinnacle's line sits toward our projection (the stale play, not in the far record)
+        const d = F.distance(pr.raw);
+        if (d != null) {
+          const fs = d > 0 ? 'Over' : 'Under';
+          Object.assign(apps[book], { d, far: F.isFar(d), farSide: fs, pinAgree: F.agreeOf(fs, cell.line, pin && Number.isFinite(pin.line) ? pin.line : null) });
+        }
       }
       if (!Object.keys(apps).length) continue;
-      const pin = pinAt(row), fd = bookAt(row);
       const best = Object.entries(apps).sort((a, b) => b[1].pSide - a[1].pSide)[0];
+      const bestPay = Object.entries(apps).filter(([, a]) => a.ev != null).sort((a, b) => b[1].ev - a[1].ev)[0] || null;
       out.push({ key: row.key, player: row.player, team: p.game.teamName, opp: p.game.oppName, home: p.game.isHome, start: new Date(p.game.t).toISOString(),
         mkey: row.mkey, market: row.market || row.mkey, mean: Math.round(M.expected(p.proj, row.mkey) * 10) / 10, median: M.median(p.proj, row.mkey, P),
         games: p.proj.games, total: p.game.total, spread: p.spread, apps,
         pinnacle: pin && Number.isFinite(pin.line) ? { line: pin.line, pOver: pin.pOver, model: priced(p.proj, row.mkey, pin.line)?.pOver ?? null } : null,
         book: fd && Number.isFinite(fd.line) ? { book: fd.book, line: fd.line, pOver: fd.pOver, model: priced(p.proj, row.mkey, fd.line)?.pOver ?? null } : null,
-        bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide });
+        bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide,
+        bestPay: bestPay ? { book: bestPay[0], side: bestPay[1].side, line: bestPay[1].line, ev: bestPay[1].ev, breakEven: bestPay[1].breakEven } : null,
+        ...farOfApps(apps),
+        version: MODEL_VERSION });
     }
     return out.sort((a, b) => b.bestP - a.bestP);
   }
 
   // the record's legs: PrizePicks and Pick6 standard lines with the model's side at PICK_MIN+
-  function plays(rows) {
+  function plays(rows, { pinAt = () => null } = {}) {
     const flagged = [];
     for (const row of rows || []) {
       if (row.sport !== 'CFB' || !MODEL_STATS.has(row.mkey)) continue;
@@ -187,7 +223,26 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
         if (book === 'pick6' && mult != null && Number(mult) !== 1) continue;
         if (pr.side === 'Over' ? cell.overOpen === false : cell.underOpen === false) continue;
         flagged.push({ row, kind: book === 'pick6' ? 'p6-cfb-model' : 'cfb-model', research: true,
-          play: { book, side: pr.side, line: cell.line, mult: 1, ev: +((pr.pSide / 0.5503 - 1) * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean } });
+          play: { book, side: pr.side, line: cell.line, mult: 1, ev: +((pr.pSide / 0.5503 - 1) * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean, modelVersion: MODEL_VERSION } });
+      }
+      // Underdog: the model's side at UD's real multiplier, logged when it is worth UD_EV_MIN or more
+      const ud = row.books?.underdog;
+      if (ud && Number.isFinite(ud.line)) {
+        const p = projectionFor(row);
+        const pr = p.proj ? priced(p.proj, row.mkey, ud.line) : null;
+        const mult = pr ? (pr.side === 'Over' ? ud.over : ud.under) : null;
+        // a side with no multiplier read is not priced at 1x (it may not be offered)
+        const pay = pr && mult != null ? payoutFor('underdog', pr.side, pr.pSide, ud) : null;
+        if (pay && pay.ev >= UD_EV_MIN && !(pr.side === 'Over' ? ud.overOpen === false : ud.underOpen === false)) {
+          flagged.push({ row, kind: 'ud-cfb-model', research: true,
+            play: { book: 'underdog', side: pr.side, line: ud.line, mult, ev: +(pay.ev * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean, modelVersion: MODEL_VERSION } });
+        }
+      }
+      // an app line far from our projection (farlines.js): kinds FAR_KINDS, research, own record
+      const pf = projectionFor(row);
+      if (pf.proj) {
+        const pin = pinAt(row);
+        flagged.push(...F.farPlays('CFB', row, line => priced(pf.proj, row.mkey, line), { pinLine: pin && Number.isFinite(pin.line) ? pin.line : null, payoutFor, version: MODEL_VERSION }));
       }
     }
     return flagged;
@@ -203,4 +258,4 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
   return { refresh, projectionFor, section, plays, fairAt, status, state, history: () => H, params: P };
 }
 
-module.exports = { createCfbModel, scheduleOf, teamMatches, loadSeed, loadParams, PICK_MIN, MODEL_STATS };
+module.exports = { createCfbModel, scheduleOf, teamMatches, loadSeed, loadParams, PICK_MIN, UD_EV_MIN, MODEL_VERSION, VERSION_AT, VERSION_NOTE, MODEL_STATS };

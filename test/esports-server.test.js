@@ -317,6 +317,35 @@ test('the bare URL: browsers get the sales page, API clients the JSON status', a
   assert.equal((await get('/')).body.status, 'Line Reaper backend running');
 });
 
+test('GET /api/claims: proven rows from the close scoreboard, the Texas cut and the labels; the sales page reads it', async () => {
+  const r = await get('/api/claims');
+  assert.equal(r.status, 200);
+  assert.ok(Array.isArray(r.body.proven) && Array.isArray(r.body.texas.proven) && Array.isArray(r.body.labels));
+  assert.ok(r.body.texas.exchanges.some(v => v.key === 'polymarketus') && !r.body.texas.exchanges.some(v => v.key === 'polymarket'));
+  const page = S.landingHtml({ env: {} });
+  assert.ok(page.includes("fetch('/api/claims')") && !page.includes("fetch('/api/results')"), 'the sales page reads /api/claims, not the looser /api/results');
+  assert.doesNotMatch(page, /Locked profit|two-minute test/);
+});
+
+test('GET /api/record and its downloads: the Results page reads the same rule as /api/claims', async () => {
+  const [rec, claims] = await Promise.all([get('/api/record'), get('/api/claims')]);
+  assert.equal(rec.status, 200);
+  assert.ok(Array.isArray(rec.body.rows) && Array.isArray(rec.body.labels) && rec.body.rule.graded === 50 && rec.body.rule.clvT === 2);
+  assert.equal(rec.body.proven, claims.body.proven.length, 'Results and the sales page count the same proven kinds');
+  assert.ok(rec.body.columns.includes('clvPct') && rec.body.downloads.csv === '/api/record/flags.csv');
+  const csv = await fetch(`${base}/api/record/flags.csv?days=30&kind=ev&book=betrivers`);
+  assert.equal(csv.status, 200);
+  assert.match(csv.headers.get('content-type'), /text\/csv/);
+  assert.match(csv.headers.get('content-disposition'), /attachment; filename="line-reaper-record-ev-betrivers-30d-\d{4}-\d{2}-\d{2}\.csv"/);
+  assert.ok((await csv.text()).startsWith('flaggedAt,start,kind,'), 'a header row even with nothing closed');
+  const js = await get('/api/record/flags.json?kind=bad%20kind!');
+  assert.equal(js.status, 200);
+  assert.equal(js.body.kind, null, 'a malformed filter is ignored');
+  assert.ok(Array.isArray(js.body.flags) && js.body.n === js.body.flags.length);
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert.ok(app.includes('/api/record${q}') && app.includes('/api/record/flags.csv'), 'the Results tab reads the public record');
+});
+
 test('sales page prices and early-access note come from env', () => {
   const { landingHtml } = S;
   const free = landingHtml({ paywall: false, env: {} });

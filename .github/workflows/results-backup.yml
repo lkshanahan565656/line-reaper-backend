@@ -3,6 +3,9 @@
 # results-data branch, which the next deploy reads back on boot. Runs on a
 # schedule and on every push to main, so the snapshot is taken from the old
 # container while the new one builds. Free: public repo, built-in token.
+# GitHub runs the schedule below only every few hours here, so the 20-minute
+# snapshots come from results-backup-loop.yml; this one still snapshots on
+# every push to main, from the old container while the new one builds.
 name: results-backup
 on:
   schedule:
@@ -22,33 +25,8 @@ jobs:
     env:
       APP_URL: ${{ vars.APP_URL || 'https://line-reaper-backend-production.up.railway.app' }}
     steps:
-      - name: Fetch the snapshot from the live app
-        id: fetch
-        run: |
-          code=$(curl -sS -o new.json -w '%{http_code}' --max-time 180 "$APP_URL/api/results/backup") || code=000
-          if [ "$code" != 200 ] || ! jq -e '.v == 1 and (.data | length > 0) and .keyId' new.json >/dev/null; then
-            echo "::notice::No snapshot from the app (HTTP $code); nothing to keep this run."
-            exit 0
-          fi
-          jq -c '{at, keyId, counts, other}' new.json
-          echo "ok=1" >> "$GITHUB_OUTPUT"
-      - name: Keep it unless it lost records
-        if: steps.fetch.outputs.ok == '1'
-        run: |
-          git init -q keep && cd keep
-          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
-          if git fetch -q --depth 1 origin results-data 2>/dev/null && git show FETCH_HEAD:results.json > ../old.json 2>/dev/null; then
-            # same key: every results store must have at least as many records
-            lost=$(jq -n --slurpfile o ../old.json --slurpfile n ../new.json '
-              if $o[0].keyId != $n[0].keyId then 0
-              else [$o[0].counts | to_entries[] | select(($n[0].counts[.key] // 0) < .value)] | length end')
-            if [ "$lost" != 0 ]; then
-              echo "::warning::The new snapshot has fewer records than the kept one; keeping the old one."
-              jq -c '{old: $o[0].counts, new: $n[0].counts}' -n --slurpfile o ../old.json --slurpfile n ../new.json
-              exit 0
-            fi
-          fi
-          cp ../new.json results.json
-          git add results.json
-          git -c user.name='line-reaper-backup' -c user.email='actions@users.noreply.github.com' commit -qm "Results backup $(jq -r .at results.json)"
-          git push -qf origin HEAD:refs/heads/results-data
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: .github }
+      - name: Fetch the snapshot from the live app and keep it unless it lost records
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: bash .github/backup-once.sh

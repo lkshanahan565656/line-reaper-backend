@@ -1,0 +1,187 @@
+{
+ "generated": "2026-10-25T14:12:15.073Z",
+ "prereg": "checks/nfl-gameline-2026-10-25/PREREGISTERED.md",
+ "testFrom": "2025-01-01",
+ "testTo": "2026-10-25",
+ "params": {
+  "on": "2006-2023 all games, walk-forward from 1999",
+  "n": 4861,
+  "mse": 182.43,
+  "mseT": 185.21,
+  "marketMse": 175.93,
+  "marketMseT": 179.32,
+  "check2024": {
+   "n": 272,
+   "mse": 169.72,
+   "mseT": 165.37,
+   "marketMse": 158.89,
+   "marketMseT": 157.54
+  },
+  "frozen": "2026-10-25T12:41:38.254Z"
+ },
+ "miss": {
+  "noGame": 5224,
+  "noSide": 2,
+  "noQuote": 1806,
+  "wide": 936,
+  "noVol": 555
+ },
+ "contracts": 12359,
+ "games": 376,
+ "types": {
+  "ml": {
+   "contracts": 740,
+   "games": 370,
+   "logLoss": {
+    "kalshiT60": 0.6233,
+    "model": 0.6396,
+    "modelMinusKalshiT": 1.6877,
+    "marketClose": 0.6221,
+    "marketCloseN": 740
+   },
+   "brier": {
+    "kalshiT60": 0.2177,
+    "model": 0.2249
+   },
+   "blend": {
+    "kalshiW": 0.968,
+    "modelW": -0.107,
+    "modelT": -0.3128,
+    "kalshiT": 3.6288,
+    "games": 370
+   },
+   "bets3": {
+    "n": 422,
+    "graded": 422,
+    "wins": 143,
+    "roi": -0.0533,
+    "roiT": -0.6411,
+    "units": -22.4863,
+    "clvClose": -0.0943,
+    "clvCloseT": -18.0769,
+    "clvKalshi": -0.0529,
+    "clvKalshiT": -23.5788,
+    "games": 217,
+    "resultsVsCloseZ": 0.5815
+   },
+   "bets5": {
+    "n": 307,
+    "graded": 307,
+    "wins": 99,
+    "roi": -0.0396,
+    "roiT": -0.3172,
+    "units": -12.163,
+    "clvClose": -0.0984,
+    "clvCloseT": -15.3883,
+    "clvKalshi": -0.0511,
+    "clvKalshiT": -19.9098,
+    "games": 157,
+    "resultsVsCloseZ": 0.6971
+   },
+   "verdict": "FAIL"
+  },
+  "spread": {
+   "contracts": 6640,
+   "games": 376,
+   "logLoss": {
+    "kalshiT60": 0.5301,
+    "model": 0.5463,
+    "modelMinusKalshiT": 3.2032,
+    "marketClose": 0.5295,
+    "marketCloseN": 6640
+   },
+   "brier": {
+    "kalshiT60": 0.1776,
+    "model": 0.184
+   },
+   "blend": {
+    "kalshiW": 1.0646,
+    "modelW": -0.0896,
+    "modelT": -0.3505,
+    "kalshiT": 4.5305,
+    "games": 376
+   },
+   "bets3": {
+    "n": 2916,
+    "graded": 2916,
+    "wins": 1065,
+    "roi": -0.0926,
+    "roiT": -0.8288,
+    "units": -270.1307,
+    "clvClose": 0.0031,
+    "clvCloseT": 2.6029,
+    "clvKalshi": -0.0587,
+    "clvKalshiT": -17.3774,
+    "games": 277,
+    "resultsVsCloseZ": -2.9202
+   },
+   "bets5": {
+    "n": 1876,
+    "graded": 1876,
+    "wins": 693,
+    "roi": -0.0563,
+    "roiT": -0.9273,
+    "units": -105.549,
+    "clvClose": 0.006,
+    "clvCloseT": 2.721,
+    "clvKalshi": -0.057,
+    "clvKalshiT": -17.8702,
+    "games": 198,
+    "resultsVsCloseZ": -1.5844
+   },
+   "verdict": "FAIL"
+  },
+  "total": {
+   "contracts": 4979,
+   "games": 376,
+   "logLoss": {
+    "kalshiT60": 0.5766,
+    "model": 0.5944,
+    "modelMinusKalshiT": 2.2553,
+    "marketClose": 0.5763,
+    "marketCloseN": 4979
+   },
+   "brier": {
+    "kalshiT60": 0.1977,
+    "model": 0.2048
+   },
+   "blend": {
+    "kalshiW": 1.1903,
+    "modelW": -0.199,
+    "modelT": -0.7388,
+    "kalshiT": 4.5055,
+    "games": 376
+   },
+   "bets3": {
+    "n": 2223,
+    "graded": 2223,
+    "wins": 912,
+    "roi": -0.115,
+    "roiT": -1.5184,
+    "units": -255.629,
+    "clvClose": -0.0393,
+    "clvCloseT": -11.9221,
+    "clvKalshi": -0.0576,
+    "clvKalshiT": -30.8221,
+    "games": 239,
+    "resultsVsCloseZ": -2.4612
+   },
+   "bets5": {
+    "n": 1519,
+    "graded": 1519,
+    "wins": 617,
+    "roi": -0.1036,
+    "roiT": -0.7858,
+    "units": -157.3126,
+    "clvClose": -0.0384,
+    "clvCloseT": -10.1862,
+    "clvKalshi": -0.0585,
+    "clvKalshiT": -24.0975,
+    "games": 175,
+    "resultsVsCloseZ": -1.8327
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "verdict": "no market type passed: model, not an edge"
+}

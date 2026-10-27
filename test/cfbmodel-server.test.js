@@ -46,13 +46,46 @@ test('the CFB MODEL view prices an app line from the seed and never calls it an 
   assert.ok(row.apps.prizepicks.pOver > 0.9, 'half a yard is a near-certain Over for a starter');
   assert.ok(row.mean > 50);
   assert.ok(d.backtest && Array.isArray(d.backtest.lines) && d.backtest.lines.length > 0);
-  assert.match(d.backtest.verdict, /No edge/);
+  assert.match(d.backtest.verdict, /Bar not cleared/);
+  // v2: calibrated, each app's real payout, the record by version
+  assert.equal(d.version, 'v2');
+  assert.match(d.versionNote, /calibration/);
+  assert.ok('underdog' in d.record && 'prizepicks' in d.recordByVersion && 'underdog' in d.recordByVersion);
+  assert.equal(row.version, 'v2');
+  assert.ok(row.apps.prizepicks.breakEven > 0.55 && row.apps.prizepicks.breakEven < 0.551);
+  assert.ok(row.apps.prizepicks.ev > 0, 'a near-certain side is worth more than the 55% break-even');
+  assert.equal(row.bestPay.book, 'prizepicks');
   // the record's legs: a research kind of its own on PrizePicks, never the headline
-  const flagged = srv.cfbModel.plays([{ key: row.key, sport: 'CFB', player: last.name, team: 'Home U', mkey: 'pass_yds', startTime: new Date(kick).toISOString(), books: { prizepicks: { line: 0.5 } } }]);
+  const all = srv.cfbModel.plays([{ key: row.key, sport: 'CFB', player: last.name, team: 'Home U', mkey: 'pass_yds', startTime: new Date(kick).toISOString(), books: { prizepicks: { line: 0.5 } } }]);
+  const flagged = all.filter(l => l.kind === 'cfb-model');
   assert.equal(flagged.length, 1);
+  // half a yard is far under the projection: a far-from-projection leg of its own (farlines.js)
+  const far = all.filter(l => l.kind === 'far-cfb');
+  assert.equal(far.length, 1);
+  assert.equal(far[0].research, true);
+  assert.equal(far[0].play.side, 'Over');
+  assert.ok(far[0].play.farD >= 1);
+  assert.ok(row.apps.prizepicks.far && row.far);
+  assert.equal(d.far.label, 'model, not an edge');
+  assert.equal(d.far.minD, 1);
+  assert.match(d.far.backtest.verdict, /no app cleared/);
+  assert.ok('prizepicks' in d.far.record && 'underdog' in d.far.record);
+  assert.ok(d.far.count >= 1);
+  const only = await (await fetch(`${base}/api/props/cfbmodel?far=1`)).json();
+  assert.ok(only.rows.length >= 1 && only.rows.every(x => x.far));
   assert.equal(flagged[0].kind, 'cfb-model');
   assert.equal(flagged[0].research, true);
   assert.equal(flagged[0].play.side, 'Over');
+  assert.equal(flagged[0].play.modelVersion, 'v2');
+  // Underdog: logged on value at its real multiplier; a side with no multiplier read is never priced at 1x
+  const udRow = m => ({ key: row.key, sport: 'CFB', player: last.name, team: 'Home U', mkey: 'pass_yds', startTime: new Date(kick).toISOString(), books: { underdog: { line: 0.5, over: m, under: null } } });
+  const ud = srv.cfbModel.plays([udRow(1)]).filter(l => l.kind === 'ud-cfb-model');
+  assert.equal(ud.length, 1);
+  assert.equal(ud[0].kind, 'ud-cfb-model');
+  assert.equal(ud[0].play.mult, 1);
+  assert.ok(ud[0].play.ev >= 5);
+  assert.equal(srv.cfbModel.plays([udRow(null)]).length, 0);
+  assert.equal(srv.cfbModel.plays([udRow(1)]).filter(l => l.kind === 'ud-far-cfb').length, 1);
   const rec = await (await fetch(`${base}/api/props/record`)).json();
   assert.ok(rec.overall);
 });

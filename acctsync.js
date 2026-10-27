@@ -32,11 +32,13 @@
 
   // localStorage key → what it is. Only these keys ever leave the browser.
   // Device-only things stay out: the login token, the last tab, browser
-  // notification toggles (each browser asks its own permission), the slip tray.
+  // notification toggles (each browser asks its own permission), the slip tray,
+  // the public-record publish key (lr_pub_record).
   /** @type {Record<string, { kind: 'records'|'map'|'value', label: string, max: number }>} */
   const KEYS = {
     lr_bets: { kind: 'records', label: 'My bets', max: 3e6 },
     lr_slips: { kind: 'records', label: 'My slips', max: 3e6 },
+    lr_slip_imports: { kind: 'records', label: 'Slip imports', max: 1e6 },
     lr_slip_grades: { kind: 'map', label: 'Slip grades', max: 2e6 },
     lr_pikkit: { kind: 'value', label: 'Pikkit import', max: 2e6 },
     lr_shopper: { kind: 'value', label: 'Shopper filters and favorites', max: 2e4 },
@@ -44,6 +46,9 @@
     lr_os: { kind: 'value', label: 'Odds screen filters', max: 2e4 },
     lr_mybooks: { kind: 'value', label: 'My books', max: 1e4 },
     lr_layout: { kind: 'value', label: 'Tab layout', max: 2e4 },
+    lr_state: { kind: 'value', label: 'My state', max: 10 },
+    lr_odds_fmt: { kind: 'value', label: 'Odds format', max: 20 },
+    lr_after_fees: { kind: 'value', label: 'After-fees prices', max: 5 },
     lr_push_kinds: { kind: 'value', label: 'Alert kinds', max: 2e3 },
     lr_unit_usd: { kind: 'value', label: 'Unit size', max: 50 },
     lr_bankroll: { kind: 'value', label: 'Bankroll', max: 50 },

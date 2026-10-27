@@ -253,3 +253,55 @@ test('resultsShortfall: needs 30 lines and 1.5 sd under', () => {
   assert.equal(s.short, true); assert.ok(s.z < -1.5);
   assert.equal(results.resultsShortfall([]).n, 0);
 });
+
+// ─── the public record's download (closeboard.flags / flagsCsv) ─────────────
+test('flags: one line per closed flag with the price shown, the size behind it, the close, the CLV and the result; open flags stay out', () => {
+  const ev = [
+    { id: 'e1', status: 'closed', flaggedAt: '2026-10-20T15:00:00Z', start: '2026-10-20T23:00:00Z', sport: 'nfl', event: 'A @ B', market: 'spreads', side: 'A +3.5', book: 'betrivers', price: 110, decimal: 2.1,
+      closeFair: 50, clv: 5, execClv: 4, closeOk: true, outcome: 'win', profit: 1.1, source: 'sharp' },
+    { id: 'e2', status: 'closed', flaggedAt: '2026-10-21T15:00:00Z', start: '2026-10-21T23:00:00Z', sport: 'nfl', event: 'C @ D', market: 'h2h', side: 'D', book: 'polymarketus', decimal: 1.8,
+      depthUsd: 412.5, execSizedUsd: 100, pinClose: 57, pinClv: 2.6, execPinClv: 1.9, pinCloseOk: true, closeFair: 56, clv: 0.8, closeOk: true, outcome: 'loss', profit: -1, source: 'sharp' },
+    { id: 'e3', status: 'open', flaggedAt: '2026-10-25T15:00:00Z', start: '2026-10-26T23:00:00Z', event: 'E @ F', side: 'E', book: 'betrivers', decimal: 2, source: 'sharp' },
+  ];
+  const props = [{ id: 'p1', status: 'graded', kind: 'ev', sport: 'NBA', player: 'P One', market: 'Points', mkey: 'pts', signalAt: '2026-10-22T18:00:00Z', start: '2026-10-22T23:30:00Z',
+    book: 'prizepicks', signalBook: 'PP', signalSide: 'Over', signalLine: 24.5, signalDecimal: 1.8, closeFair: 0.58, closeEv: 4.4, closeOk: true, outcome: 'win', profit: 0.8 }];
+  const rows = closeBoard.flags({ ev, props });
+  assert.deepEqual(rows.map(r => r.id), ['p1', 'e2', 'e1'], 'newest first, the open flag left out');
+  const [p1, e2, e1] = rows;
+  assert.equal(e1.priceAmerican, 110);
+  assert.equal(e1.priceDecimal, 2.1);
+  assert.equal(e1.clvPct, 5);
+  assert.equal(e1.clv2minPct, 4);
+  assert.equal(e1.result, 'win');
+  assert.equal(e1.units, 1.1);
+  assert.equal(e1.fillUsd, null, 'a sportsbook posts no size');
+  assert.equal(e2.closeOn, "Pinnacle's own close");
+  assert.equal(e2.closeProb, 0.57);
+  assert.equal(e2.clvPct, 2.6, 'an exchange a Texan trades is graded on Pinnacle\'s own close');
+  assert.equal(e2.fillUsd, 412.5);
+  assert.equal(e2.priceAmerican, -125);
+  assert.equal(p1.pick, 'P One Over 24.5 Points');
+  assert.equal(p1.kind, 'props-ev');
+  assert.equal(p1.closeProb, 0.58);
+  assert.equal(closeBoard.flags({ ev, props }, { kind: 'ev', book: 'betrivers' }).length, 1);
+  const csv = closeBoard.flagsCsv(rows).split('\r\n');
+  assert.equal(csv[0], closeBoard.FLAG_COLUMNS.join(','));
+  assert.equal(csv.length, 5, 'header, three flags and the closing line break');
+});
+
+test('flagsCsv quotes commas and quotes, and keeps a cell from running as a spreadsheet formula', () => {
+  const csv = closeBoard.flagsCsv([{ event: 'A, "B" @ C', pick: '=HYPERLINK("x")', units: -1, priceAmerican: -125 }]).split('\r\n')[1];
+  assert.ok(csv.includes('"A, ""B"" @ C"'));
+  assert.ok(csv.includes(`"'=HYPERLINK(""x"")"`));
+  assert.ok(csv.includes(',-125,') && csv.includes(',-1,'), 'negative numbers stay numbers');
+});
+
+test('the scoreboard rows carry the CLV t and units the Results page shows', () => {
+  const ev = Array.from({ length: 4 }, (_, i) => ({ id: `x${i}`, status: 'closed', flaggedAt: `2026-10-2${i}T15:00:00Z`, start: `2026-10-2${i}T23:00:00Z`, event: `G${i}`, side: 'A', book: 'betrivers',
+    decimal: 2, closeFair: 52, clv: 2 + i, closeOk: true, outcome: i % 2 ? 'win' : 'loss', profit: i % 2 ? 1 : -1, source: 'sharp' }));
+  const row = closeBoard.scoreboard({ ev }).rows.find(r => r.kind === 'ev');
+  assert.equal(row.graded, 4);
+  assert.ok(row.clvT > 2);
+  assert.equal(row.units, 0);
+  assert.equal(row.wins, 2);
+});

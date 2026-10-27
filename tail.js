@@ -113,6 +113,8 @@
 // engine (createTailEngine) that keeps candidates, scores, seen trades and
 // signals in memory so a few crons can drive it.
 
+const { keptAnswer, createSlicer } = require('./ops');
+
 const DATA_API = 'https://data-api.polymarket.com';
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 const CLOB_API = 'https://clob.polymarket.com';
@@ -374,17 +376,13 @@ const VS_WEIGHT = 0.5;   // "A vs. B" is usually a game, but a name outweighs it
 const normText = s => ` ${String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()} `;
 
 // The same market titles come round every scan (thousands a minute), and each
-// one is tried against every phrase, so the answers are kept: text → category,
-// at most SCORE_MEMO_MAX of them (the whole memo is dropped when full).
+// one is tried against every phrase, so the answers are kept: text → category.
+// (kept in two generations, so a full memo never drops every answer at once)
 const SCORE_MEMO_MAX = 20000;
-const scoreMemo = new Map();
+const scoreMemo = keptAnswer(scoreTextOnce, SCORE_MEMO_MAX);
 function scoreText(text) {
   if (typeof text !== 'string') return scoreTextOnce(text);
-  if (scoreMemo.has(text)) return scoreMemo.get(text);
-  const best = scoreTextOnce(text);
-  if (scoreMemo.size >= SCORE_MEMO_MAX) scoreMemo.clear();
-  scoreMemo.set(text, best);
-  return best;
+  return scoreMemo(text);
 }
 function scoreTextOnce(text) {
   const t = normText(text);
@@ -397,8 +395,14 @@ function scoreTextOnce(text) {
   return best;
 }
 
-const tagText = tags => (Array.isArray(tags) ? tags : jsonList(tags) || [])
+const tagTextOnce = tags => (Array.isArray(tags) ? tags : jsonList(tags) || [])
   .map(t => (typeof t === 'string' ? t : [t?.label, t?.slug].filter(Boolean).join(' '))).join(' | ');
+// The data API sends a row's tags as a JSON string, the same few strings on
+// every row of an event: each string is parsed once (kept answers).
+const tagTextMemo = keptAnswer(tagTextOnce, 20000);
+// Most rows carry no tags at all: no tags reads as '' straight away (JSON.parse
+// of nothing throws, and a thrown error per row was the dearest part of a score)
+const tagText = tags => (tags == null || tags === '' ? '' : typeof tags === 'string' ? tagTextMemo(tags) : tagTextOnce(tags));
 
 // input: a string, or anything with category / tags / title / question / slug / eventSlug / events
 function classify(input) {
@@ -420,6 +424,24 @@ function classify(input) {
   // "bun-dor-wer-2026-10-09" (league-team-team-date)
   if (SPORTS_TITLE_RE.test(sources[1]) || SPORTS_SLUG_RE.test(sources[2])) return 'sports';
   return 'other';
+}
+// A wallet's rows classified ahead of time: cats is a WeakMap row → category
+// that classifyRows fills a slice at a time, so the parsers below only look
+// the answer up (the same classify, so the same category; a row it doesn't
+// hold is classified on the spot).
+function categoryOf(r, cats) {
+  if (!cats) return classify(r);
+  const c = cats.get(r);
+  return c !== undefined ? c : classify(r);
+}
+// → Promise<WeakMap>; hands the event loop back every sliceMs
+async function classifyRows(rows, { sliceMs = 20 } = {}) {
+  const cats = new WeakMap(), slice = createSlicer(sliceMs);
+  for (const r of rows || []) {
+    if (r && typeof r === 'object' && !cats.has(r)) cats.set(r, classify(r));
+    await slice();
+  }
+  return cats;
 }
 const SPORTS_TITLE_RE = /\bwin on \d{4}-\d{2}-\d{2}\b|\bend in a draw\b|^spread:|\bo\/u \d|\b(?:game|map) \d+ winner\b|\bboth teams to score\b/i;
 const SPORTS_SLUG_RE = /(?:^|\s)[a-z0-9]{2,6}-[a-z0-9]{2,6}-[a-z0-9]{2,6}-\d{4}-\d{2}-\d{2}(?:-|\s|$)/i;
@@ -462,7 +484,7 @@ const latest = (...ts) => { let m = null; for (const t of ts) if (t != null) m =
 // to come (it resolved early), and then it has no date. activeAt is the
 // wallet's own last move on it (a close, its first entry), never a market date.
 const UNCLAIMED = new Set(['REDEEMABLE', 'REDEEMABLE_LOST']);
-function parseClosedPositions(payload, { now = Date.now() } = {}) {
+function parseClosedPositions(payload, { now = Date.now(), cats = null } = {}) {
   const out = [];
   for (const r of rowsOf(payload)) {
     if (!r || typeof r !== 'object') continue;
@@ -494,13 +516,13 @@ function parseClosedPositions(payload, { now = Date.now() } = {}) {
       exit: shares > 0 ? round((pnl + risked) / shares, 6) : null,
       won: status === 'REDEEMABLE_LOST' ? false : cur != null ? cur >= 0.99 : status === 'REDEEMABLE' || pnl > 0,
       at, endAt: end, enteredAt, activeAt: latest(unclaimed ? null : at, enteredAt),
-      category: classify(r), source: status === 'REDEEMABLE' ? 'redeemable' : status === 'REDEEMABLE_LOST' ? 'lost' : 'closed',
+      category: categoryOf(r, cats), source: status === 'REDEEMABLE' ? 'redeemable' : status === 'REDEEMABLE_LOST' ? 'lost' : 'closed',
     });
   }
   return out;
 }
 
-function parseOpenPositions(payload) {
+function parseOpenPositions(payload, { cats = null } = {}) {
   const out = [];
   for (const r of rowsOf(payload)) {
     if (!r || typeof r !== 'object') continue;
@@ -515,7 +537,7 @@ function parseOpenPositions(payload) {
       initialValue: num(r.initialValue), currentValue: num(pick(r.current_value, r.currentValue)),
       cashPnl: num(pick(r.unrealized_pnl, r.cashPnl)), realizedPnl: num(pick(r.realized_pnl, r.realizedPnl)), totalPnl: num(pick(r.total_pnl, r.totalPnl)),
       redeemable: bool(r.redeemable) || (status != null && UNCLAIMED.has(status)), endDate: pick(r.end_date, r.endDate),
-      enteredAt, activeAt: latest(toMs(pick(r.last_event_at, r.lastEventAt)), enteredAt), category: classify(r),
+      enteredAt, activeAt: latest(toMs(pick(r.last_event_at, r.lastEventAt)), enteredAt), category: categoryOf(r, cats),
     });
   }
   return out;
@@ -566,16 +588,17 @@ function markOpen(r) {
 
 // Settled and still-open positions out of raw rows: the same token listed
 // twice (under two statuses, or on two pages as the list moved) counts once.
-function resolvedPositions(closed = [], open = [], now = Date.now()) {
+// cats: classifyRows' answers for these rows (optional)
+function resolvedPositions(closed = [], open = [], now = Date.now(), cats = null) {
   const seenKeys = new Set();
-  const closedRows = parseClosedPositions(closed, { now }).filter(p => {
+  const closedRows = parseClosedPositions(closed, { now, cats }).filter(p => {
     if (!p.asset) return true;
     const k = `${p.asset}|${p.enteredAt ?? ''}`;
     if (seenKeys.has(k)) return false;
     seenKeys.add(k);
     return true;
   });
-  const openRows = parseOpenPositions(open);
+  const openRows = parseOpenPositions(open, { cats });
   const settledAssets = new Set(closedRows.map(p => p.asset).filter(Boolean));
   const fromOpen = resolvedFromOpen(openRows, now).filter(p => !p.asset || !settledAssets.has(p.asset));
   const stillOpen = openRows.filter(r => !settledOpen(r) && !(r.asset && settledAssets.has(r.asset)));
@@ -1117,10 +1140,10 @@ function holdingsOf(rows, { max = DEFAULTS.holdingsMax, minCost = 1 } = {}) {
     .slice(0, max);
 }
 
-function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null, play = null } = {}, { now = Date.now(), ...opts } = {}) {
+function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null, play = null, cats = null } = {}, { now = Date.now(), ...opts } = {}) {
   const o = resolveOptions(opts);
   const since = toMs(selectedAt);
-  const { closedRows, openRows, resolved: settled, stillOpen } = resolvedPositions(closed, open, now);
+  const { closedRows, openRows, resolved: settled, stillOpen } = resolvedPositions(closed, open, now, cats);
   // round trips aren't bets: out of the record, but counted (and still held both sides)
   const trips = settled.filter(p => isRoundTrip(p, o));
   const resolved = trips.length ? settled.filter(p => !isRoundTrip(p, o)) : settled;
@@ -1803,8 +1826,11 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       fetchOpenPositions(http, c.wallet, { maxPages: o.openMaxPages }),
       fetchWalletTrades(http, c.wallet, { limit: o.walletTradeLimit }),
     ]);
+    // classifying the rows is most of a score's work: done first, in slices,
+    // so scoring a wallet with thousands of positions doesn't hold the server
     const t = now();
-    const input = { wallet: c.wallet, name: c.name, closed: settled.rows, open: open.rows, trades, selectedAt: c.selectedAt };
+    const cats = await classifyRows([...settled.rows, ...open.rows]);
+    const input = { wallet: c.wallet, name: c.name, closed: settled.rows, open: open.rows, trades, selectedAt: c.selectedAt, cats };
     let score = scoreWallet(input, { ...o, now: t });
     // a history doesn't shrink: far fewer bets than last time is a bad read
     const prev = traders.get(c.wallet);
@@ -1812,7 +1838,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     // closing lines cost a request a bet: only for wallets good enough without
     // them, or that they could grade (in profit, failing only luck or ROI)
     if (isGraded(score) || closeWorthy(score)) {
-      const m = await measureClv(resolvedPositions(settled.rows, open.rows, t).resolved.filter(p => !isRoundTrip(p, o)), t);
+      const m = await measureClv(resolvedPositions(settled.rows, open.rows, t, cats).resolved.filter(p => !isRoundTrip(p, o)), t);
       if (m.errors.length) warn(`clv ${c.wallet}: ${m.errors.length} of ${m.tried} lookups failed (${m.errors[0]})`);
       score = scoreWallet({ ...input, clv: m.samples, play: m.play }, { ...o, now: t });
     }
@@ -2236,7 +2262,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
 
 module.exports = {
   DEFAULTS, CATEGORIES, LEADERBOARD_CATEGORIES, LEADERBOARD_PERIODS, SETTLED_STATUSES, DATA_API, GAMMA_API,
-  resolveOptions, optionsFromEnv, classify, daysOut,
+  resolveOptions, optionsFromEnv, classify, classifyRows, daysOut,
   parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
   parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,

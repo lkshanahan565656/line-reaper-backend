@@ -25,7 +25,7 @@ async function main() {
   if (!/^https?:\/\//.test(base)) throw new Error('usage: node e2e/record.js <base url> [out.json.gz]');
   const recordedAt = new Date().toISOString();
   const responses = {};
-  const extra = ['/api/props/mlb?limit=300', '/api/props/cfbmodel?limit=300', '/api/props/nbamodel?limit=300', '/api/tracker/summary', '/api/tracker/picks?limit=100&status=review',
+  const extra = ['/api/props/mlb?limit=300', '/api/props/cfbmodel?limit=300', '/api/props/nbamodel?limit=300', '/api/props/cbbmodel?limit=300', '/api/tracker/summary', '/api/tracker/picks?limit=100&status=review',
     '/api/tracker/picks?limit=100&status=locked', '/api/esports/models', '/api/esports/inplay', '/api/tail/record?limit=60', '/api/props/coverage?sport=NFL', '/api/features', '/api/push/kinds',
     ...(process.env.RECORD_EXTRA || '').split(',').filter(Boolean)];
   const browser = await chromium.launch();

@@ -86,10 +86,13 @@ const KINDS = {
   // combos (pts+rebs, pts+asts, rebs+asts, steals+blocks) off FanDuel, BetRivers and Pinnacle's parts
   'props-combo': "Pick'em combos vs the books + Pinnacle's parts",
   'props-p6-combo': "Pick6 combos vs the books + Pinnacle's parts",
+  // esports Map 1 / Map 2 kill Unders where Pinnacle's map number sits under
+  // the app's lines summed, priced on our kill model (mapunders.js): research
+  'props-es-map-under': 'Esports map kill Unders (our model on Pinnacle\'s map number)',
   'bigmoney': 'Big money',
 };
 
-const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
+const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus', 'props-es-map-under']);
 // An alt line's close is Kalshi's midpoint (a spread up to 6c wide) or a
 // sportsbook's own number at that rung; Pinnacle's two-way price is never at
 // the rung, only its curve. Scored and marked, but never proven, and never a
@@ -156,6 +159,18 @@ function propsExactPlay(b) {
   const p = propsPlay(b);
   return { ...p, kind: 'props-stale-exact', clv: b.closePinEv, exec: b.execOk === true ? b.closePinEv : null, p: b.closePinFair ?? null };
 }
+// a map kill Under (mapunders.js): nothing sharp prices a player's map kills,
+// so its close is our own model's fair at the leg's line (shown, never judged)
+function mapUnderPlay(b) {
+  const state = b.status === 'open' ? null : b.status === 'void' ? null : 'ok';
+  const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
+  const fair = b.closeFair ?? b.signalFair ?? null;
+  const clv = fair != null && b.be > 0 ? r2((fair / b.be - 1) * 100) : null;
+  const profit = b.status === 'graded' && b.outcome ? (b.outcome === 'win' ? 1 / b.be - 1 : b.outcome === 'loss' ? -1 : 0) : null;
+  return { kind: 'props-es-map-under', book: propsVenue(b), cluster: `${b.sport}|${b.player}|${b.market}|${day(b.startTime)}|${b.gameId ?? b.matchTitle ?? ''}`,
+    state, clv, exec: null, win: graded ? b.outcome === 'win' : null, p: fair, d: b.signalDecimal ?? null,
+    bet: { clv: clv != null ? clv / 100 : null, exec: null, sized: null, profit, staked: profit != null ? 1 : 0 } };
+}
 function bigPlay(b) {
   const state = b.status === 'open' || b.status === 'void' ? null : sporttrack.closeState(b);
   const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
@@ -180,12 +195,13 @@ function stats(plays, { noMark = false, cap = false, capNote = null } = {}) {
   const g = clusterBets(lines);
   const ex = g.filter(p => p.exec != null);
   const won = plays.filter(p => p.win != null);
-  let mark = 'not graded yet', note = null;
+  let mark = 'not graded yet', note = null, sc = null;
   // results far under what the close expected: the close itself is in doubt
   const short = results.resultsShortfall(lines.filter(p => p.win != null && p.p != null && p.d != null).map(p => ({ win: p.win, p: p.p, d: p.d })));
   if (noMark) mark = 'no sharp close';
   else if (g.length) {
-    mark = results.score(g.map(p => p.bet)).verdict;
+    sc = results.score(g.map(p => p.bet));
+    mark = sc.verdict;
     if (mark === 'proven' && (g.length < TARGET || cap)) { mark = 'promising'; if (cap && capNote) note = capNote; }
     if (mark === 'proven' && short.short) { mark = 'promising'; note = short.note; }
   }
@@ -195,6 +211,10 @@ function stats(plays, { noMark = false, cap = false, capNote = null } = {}) {
     staleClose: plays.filter(p => p.state === 'stale').length, unverified: plays.filter(p => p.state === 'unverified').length,
     beatPct: g.length ? r2((100 * g.filter(p => p.clv > 0).length) / g.length) : null,
     avgClv: r2(mean(g.map(p => p.clv))),
+    // the t on CLV over the graded games (one per game), the number the mark reads
+    clvT: sc ? sc.clvT : null,
+    // 1u a graded line at the price flagged, summed
+    units: r2(won.filter(p => p.bet && p.bet.profit != null && p.bet.staked > 0).reduce((a, p) => a + p.bet.profit, 0)),
     execN: ex.length, avgExecClv: r2(mean(ex.map(p => p.exec))),
     wins: won.filter(p => p.win).length, losses: won.filter(p => !p.win).length,
     ...(short.n ? { resultsZ: short.z, resultsUnits: short.units, resultsExpUnits: short.expUnits } : {}),
@@ -204,19 +224,25 @@ function stats(plays, { noMark = false, cap = false, capNote = null } = {}) {
 
 // lists: { ev, alt, stale, esports, props, bigMoney } (each tracker's list) →
 // { rows: [{ kind, kindLabel, book, bookName, relayed, ...stats }], byBook, byKind, target }
-function scoreboard(lists = {}, { since = 0 } = {}) {
+// every recorded line of every kind, each with its tracker row as `ref`
+function playsOf(lists = {}, { since = 0 } = {}) {
   const at = b => Date.parse(b.flaggedAt || b.signalAt || '') || 0;
   const keep = b => !since || at(b) >= since;
-  const plays = [
-    ...(lists.ev || []).filter(keep).map(b => evPlay(evKind(b), { pin: true })(b)),
-    ...(lists.alt || []).filter(keep).map(b => evPlay(b.source === 'alt' ? 'alt' : 'alt-model')(b)),
-    ...(lists.stale || []).filter(keep).map(b => evPlay(b.source === 'stale' ? 'stale' : 'stale-single')(b)),
-    ...(lists.esports || []).filter(keep).map(evPlay('esports')),
+  const withRef = f => b => ({ ...f(b), ref: b });
+  return [
+    ...(lists.ev || []).filter(keep).map(withRef(b => evPlay(evKind(b), { pin: true })(b))),
+    ...(lists.alt || []).filter(keep).map(withRef(b => evPlay(b.source === 'alt' ? 'alt' : 'alt-model')(b))),
+    ...(lists.stale || []).filter(keep).map(withRef(b => evPlay(b.source === 'stale' ? 'stale' : 'stale-single')(b))),
+    ...(lists.esports || []).filter(keep).map(withRef(evPlay('esports'))),
     // the research kinds (gap-odd, gap-stale) price nothing, so they aren't plays
-    ...(lists.props || []).filter(keep).filter(b => KINDS[`props-${b.kind}`] && b.status !== 'void').map(propsPlay),
-    ...(lists.props || []).filter(keep).filter(b => STALE_PROPS.has(b.kind) && b.pinExact === true && b.status !== 'void').map(propsExactPlay),
-    ...(lists.bigMoney || []).filter(keep).filter(b => b.status !== 'void').map(bigPlay),
+    ...(lists.props || []).filter(keep).filter(b => KINDS[`props-${b.kind}`] && b.status !== 'void').map(withRef(propsPlay)),
+    ...(lists.props || []).filter(keep).filter(b => STALE_PROPS.has(b.kind) && b.pinExact === true && b.status !== 'void').map(withRef(propsExactPlay)),
+    ...(lists.bigMoney || []).filter(keep).filter(b => b.status !== 'void').map(withRef(bigPlay)),
+    ...(lists.esMapUnders || []).filter(keep).filter(b => b.status !== 'void').map(withRef(mapUnderPlay)),
   ];
+}
+function scoreboard(lists = {}, opts = {}) {
+  const plays = playsOf(lists, opts);
   const group = (f, list = plays) => {
     const m = new Map();
     for (const p of list) { const k = f(p); if (!m.has(k)) m.set(k, []); m.get(k).push(p); }
@@ -239,6 +265,65 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   return { target: TARGET, freshMin: evtrack.CLOSE_FRESH_MS / 60e3, overall: stats(sharp, { cap: true }), rows, byBook, byKind };
 }
 
+// ─── THE PUBLIC RECORD: EVERY CLOSED FLAG, ONE LINE EACH ─────────────────────
+// What the Results page lets anyone download (CSV and JSON): each flag the
+// scoreboard counts, as it was shown and as it closed. Open flags are today's
+// live edges and stay out. The close is Pinnacle's own price for the exchanges
+// a Texan trades and for stale legs at Pinnacle's number, the sharp fair
+// (Pinnacle blended with Kalshi and Matchbook) for the other main lines, and
+// for each other kind what its row on the scoreboard says it closes on.
+const PIN_OWN = new Set(['gemini', 'polymarketus', 'kalshi']);
+const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const american = d => (!(d > 1) ? null : d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)));
+function closeOn(p) {
+  if (p.kind === 'props-stale-exact' || (PIN_OWN.has(p.book) && p.kind === 'ev')) return "Pinnacle's own close";
+  if (p.kind === 'props-es-map-under') return 'our kill model at the close (nothing sharp prices player map kills)';
+  if (NO_SHARP_CLOSE.has(p.kind)) return 'no sharp close (our curve or soft books)';
+  if (BOOK_CLOSE.has(p.kind)) return "the books' close (FanDuel, BetRivers)";
+  if (CAPPED_KINDS.has(p.kind)) return "our curve at the venue's number where Pinnacle moved";
+  if (p.kind === 'bigmoney') return "the money's price at the close";
+  return "the sharp fair at the close (Pinnacle with Kalshi, Matchbook)";
+}
+function flagOf(p) {
+  const b = p.ref || {};
+  const isProp = p.kind.startsWith('props-');
+  const d = p.d ?? b.decimal ?? b.signalDecimal ?? null;
+  const pick = isProp ? [b.player, b.signalSide, b.signalLine, b.market].filter(x => x != null && x !== '').join(' ')
+    : p.kind === 'bigmoney' ? [b.side, b.line].filter(x => x != null && x !== '').join(' ')
+    : [b.player, b.side].filter(Boolean).join(' ');
+  const outcome = b.outcome || (b.status === 'void' ? 'void' : null);
+  return {
+    id: b.id || null,
+    flaggedAt: b.flaggedAt || b.signalAt || null, start: b.start || b.startTime || null,
+    kind: p.kind, kindLabel: KINDS[p.kind] || p.kind, book: p.book, bookName: BOOK[p.book] || p.book, relayed: RELAYED.has(p.book),
+    sport: b.sport || null, event: b.event || b.matchTitle || b.title || null, market: b.market || null, pick: pick || null,
+    priceDecimal: r4(d), priceAmerican: b.price ?? b.american ?? american(d),
+    // what the venue's book held at our price at the flag, and what $X cost through it two minutes on;
+    // sportsbooks and pick'em apps post no size, so these are blank there
+    fillUsd: b.depthUsd != null ? r2(b.depthUsd) : null, fill2minUsd: b.execSizedUsd != null ? r2(b.execSizedUsd) : null,
+    closeProb: p.p != null ? r4(p.p) : null, closeOn: closeOn(p),
+    closeState: p.state || 'open', graded: p.state === 'ok' && p.clv != null,
+    clvPct: p.clv != null ? r2(p.clv) : null, clv2minPct: p.exec != null ? r2(p.exec) : null,
+    result: outcome === 'win' || outcome === 'loss' || outcome === 'push' || outcome === 'void' ? outcome : null,
+    units: p.bet && p.bet.profit != null && p.bet.staked > 0 ? r2(p.bet.profit) : null,
+  };
+}
+// lists → closed flags, newest first; ?kind / ?book narrow it
+function flags(lists = {}, { since = 0, kind = null, book = null } = {}) {
+  return playsOf(lists, { since }).filter(p => p.state != null && (!kind || p.kind === kind) && (!book || p.book === book))
+    .map(flagOf).sort((a, b) => String(b.flaggedAt).localeCompare(String(a.flaggedAt)));
+}
+const FLAG_COLUMNS = ['flaggedAt', 'start', 'kind', 'kindLabel', 'book', 'bookName', 'relayed', 'sport', 'event', 'market', 'pick', 'priceDecimal', 'priceAmerican',
+  'fillUsd', 'fill2minUsd', 'closeProb', 'closeOn', 'closeState', 'graded', 'clvPct', 'clv2minPct', 'result', 'units', 'id'];
+const csvCell = v => {
+  if (v == null) return '';
+  const t = String(v);
+  // a leading = + - @ would run as a formula in a spreadsheet
+  const safe = /^[=+@\t\r]/.test(t) || (/^-/.test(t) && !/^-?\d/.test(t)) ? `'${t}` : t;
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+const flagsCsv = rows => [FLAG_COLUMNS.join(','), ...rows.map(r => FLAG_COLUMNS.map(c => csvCell(r[c])).join(','))].join('\r\n') + '\r\n';
+
 // Who the +EV webhook may post for. The webhook reaches other people, so it
 // carries only what this board marks proven: a book read direct whose main
 // lines (or, for a pick'em app, whose sharp-price legs) are proven here, and
@@ -249,4 +334,4 @@ function alertBooks(board, { minExecClv = 1 } = {}) {
   return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
 }
 
-module.exports = { scoreboard, alertBooks, propsVenue, legCluster, STALE_PROPS, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };
+module.exports = { scoreboard, alertBooks, flags, flagsCsv, FLAG_COLUMNS, closeOn, playsOf, propsVenue, legCluster, STALE_PROPS, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };

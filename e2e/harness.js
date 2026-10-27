@@ -45,7 +45,7 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   for (const k of Object.keys(process.env)) if (/^(DATABASE_URL|ODDS_API_KEY|OWLS_API_KEY|STRIPE_|TAIL_WEBHOOK|ALERT_WEBHOOK_URL|SHARP_WEBHOOK|VAPID_)/.test(k)) delete process.env[k];
   for (const k of Object.keys(process.env)) if (/^(RAILWAY_|LR_SYNC$|PAYWALL$)/.test(k)) delete process.env[k];
   // sign-in and account sync on, with the file store in the temp folder (no Postgres here)
-  Object.assign(process.env, { LR_DATA_DIR: DIR, UPSTREAM_GAP_MS: '0', ALERT_STARTUP: 'off', NODE_ENV: 'test', AUTH_SECRET: process.env.E2E_AUTH_SECRET || 'e2e-auth-secret' });
+  Object.assign(process.env, { LR_DATA_DIR: DIR, UPSTREAM_GAP_MS: '0', ALERT_STARTUP: 'off', NODE_ENV: 'test', PUB_RECORDS_PER_HOUR: '1000', AUTH_SECRET: process.env.E2E_AUTH_SECRET || 'e2e-auth-secret' });
   // E2E_SYNC=off: the page as the live site shows it before sync is switched on
   if (process.env.E2E_SYNC === 'off') process.env.LR_SYNC = 'off';
   for (const f of ['TRACKER_FILE', 'USERS_FILE', 'EV_TRACK_FILE', 'TAIL_TRACK_FILE', 'TAIL_TRADERS_FILE', 'FRESH_TRACK_FILE', 'ESPORTS_EDGE_TRACK_FILE']) process.env[f] = path.join(DIR, f.toLowerCase() + '.json');
@@ -56,6 +56,19 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   for (const t of cron.getTasks().values()) t.stop();
 
   const responses = snapshot.responses || {};
+  // the line history pages (/lines, linehist.js) are drawn by the server, so
+  // the recording's own game histories go into its 30-day archive, with the
+  // game's names from the recorded odds screen: real recorded reads
+  try {
+    const board = JSON.parse(responses['/api/odds-screen']?.body || '{}').games || [];
+    for (const [k, r] of Object.entries(responses)) {
+      if (!k.startsWith('/api/odds-screen/history/')) continue;
+      for (const x of JSON.parse(r.body).series || []) {
+        const g = board.find(b => b.id === x.game);
+        S.lineArchive.add('game', { ...x, ...(g ? { event: `${g.away} @ ${g.home}`, league: g.league, leagueLabel: g.leagueLabel } : {}) });
+      }
+    }
+  } catch (e) { log(`line archive seed: ${e.message}`); }
   // the same path with other query strings, for a request the snapshot has no exact match for
   const byPath = {};
   for (const k of Object.keys(responses)) (byPath[k.split('?')[0]] ||= []).push(k);

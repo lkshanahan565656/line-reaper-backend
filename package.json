@@ -1,6 +1,6 @@
 {
   "name": "line-reaper-backend",
-  "version": "3.172.0",
+  "version": "3.222.0",
   "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
   "main": "server.js",
   "scripts": {
@@ -14,9 +14,11 @@
     "e2e": "node e2e/run.js",
     "e2e:serve": "node e2e/harness.js",
     "e2e:record": "node e2e/record.js",
-    "live-check": "node e2e/live-check.js"
+    "live-check": "node e2e/live-check.js",
+    "a11y": "node e2e/a11y.js"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -32,7 +34,8 @@
   "bin": "desktop/launcher.js",
   "pkg": {
     "assets": [
-      "public/**/*"
+      "public/**/*",
+      "fonts/**/*"
     ],
     "scripts": [
       "*.js"
@@ -42,6 +45,7 @@
     "@eslint/js": "^9.39.5",
     "@types/node": "^22.20.5",
     "@yao-pkg/pkg": "^6.23.0",
+    "axe-core": "^4.11.0",
     "eslint": "^9.39.5",
     "globals": "^16.5.0",
     "playwright": "1.63.0",

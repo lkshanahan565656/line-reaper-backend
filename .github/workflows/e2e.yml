@@ -10,7 +10,7 @@ concurrency: { group: 'e2e-${{ github.ref }}', cancel-in-progress: true }
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 11
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +24,10 @@ jobs:
       - if: steps.pw.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run e2e
+      # axe (WCAG 2.1 AA) on every tab, pop-up and public page, plus 200% zoom;
+      # fails on a serious or critical finding not in e2e/a11y-baseline.json
+      - if: success() || failure()
+        run: npm run a11y
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: e2e-report, path: e2e/out, retention-days: 7 }

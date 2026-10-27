@@ -16,7 +16,7 @@ const verdict = require('./verdict');
 
 const VIEWPORTS = {
   desktop: { viewport: { width: 1280, height: 860 } },
-  phone: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' },
+  phone: { viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' },
 };
 
 async function main() {
@@ -51,7 +51,7 @@ async function main() {
         const context = await newContext(browser, h, vp);
         const rep = makeReport();
         rep.viewport = vp; rep.flows = {};
-        await flows.run(context, { ...opts, viewportName: vp }, rep);
+        await flows.run(context, { ...opts, viewportName: vp, coldContext: () => newContext(browser, h, vp) }, rep);
         await context.close();
         reports.push(rep);
       })());

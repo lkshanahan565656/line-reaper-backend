@@ -1,20 +1,47 @@
 // The forms, step by step, with what each step must leave behind: log a bet
 // by hand and from the ODDS SCREEN, edit and settle it, export and import the
-// CSV, log a slip from PROPS, paste slips, import a Pikkit CSV, save and load
+// CSV, log a slip from PROPS, paste slips, import a Pikkit CSV and an app's
+// history (a file and copied text) with its import summary, save and load
 // a shopper view, star a venue (and keep it after a reload), turn on push
 // alerts without a real push service, use the TOOLS calculator, and move and
-// hide a tab in CUSTOMIZE, and sign in on two browsers so bets sync between
-// them and a differing layout waits for USE ACCOUNT. The crawl clicks
-// everything; these check results.
+// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
+// view by link and open it cold on a fresh device, export and print a screen,
+// open a label's glossary definition, search everything from any screen, and
+// sign in on two browsers so bets sync between them and a differing layout
+// waits for USE ACCOUNT.
+// The crawl clicks everything; these check results.
 'use strict';
+/* global esmState, renderEsMatches, pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState, oddsFmtSet, gsRender, osUi, renderOdds, pbState, lrState -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { watch, settle, openTab, enterApp, newAppPage, checkText, issue } = require('./crawl');
+const { watch, settle, openTab, enterApp, newAppPage, checkText, checkOverflow, issue } = require('./crawl');
 
 const ls = (page, k) => page.evaluate(key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }, k);
 const text = (page, sel) => page.locator(sel).first().innerText({ timeout: 4000 }).catch(() => '');
 function expect(cond, msg) { if (!cond) throw new Error(msg); }
+
+// Log bet on a game-line bet: the server checks it first (POST /api/bets/stamp).
+// Offline the recording's games are days old, so the server rightly refuses
+// them as started: that refusal is checked, then (TEST DATA) the check is
+// answered ok so the save itself is tested. Live, a game under way is refused
+// in words, which is the right answer. → the saved bets, or null when refused live
+async function mybSaveChecked(page, w, opts, before, where) {
+  await page.locator('#mybModal button.primary').click();
+  await settle(page, w, opts, 200);
+  if (!opts.live) {
+    expect(/Not logged\..*started/.test(await text(page, '#mbHint')) && ((await ls(page, 'lr_bets'))?.length || 0) === before, `a bet on a started game from ${where} should be refused in the form: "${await text(page, '#mbHint')}"`);
+    const ok = route => route.fulfill({ json: { at: new Date().toISOString(), ok: true, status: 'open', start: null, logFair: 0.5, why: null } });
+    await page.route('**/api/bets/stamp', ok);
+    await page.locator('#mybModal button.primary').click();
+    await settle(page, w, opts, 200);
+    await page.unroute('**/api/bets/stamp', ok);
+  } else if (/Not logged\..*started/.test(await text(page, '#mbHint'))) { await page.evaluate(() => mybFormClose()); return null; }
+  const list = await ls(page, 'lr_bets');
+  expect(list?.length === before + 1, `the bet from ${where} was not logged: "${await text(page, '#mbHint')}"`);
+  expect(list[0].stamp?.at, `the bet from ${where} carries no server check`);
+  return list;
+}
 
 // the Pikkit export the import reads: one row per bet, legs split by |
 function pikkitCsv(now) {
@@ -30,6 +57,36 @@ async function openPanel(page, w, opts, id) {
   if (await page.locator(`#${id}`).evaluate(d => d.open)) return;
   await page.locator(`#${id} > summary`).click();
   await settle(page, w, opts, 60);
+}
+
+// open a share link in a fresh browser (no storage, no welcome yet) and check what it restored
+async function openCold(opts, link, check) {
+  const local = new URL(opts.base).origin;
+  const ctx = await opts.coldContext();
+  const p2 = await newAppPage(ctx, opts);
+  const r2 = { issues: [], requests: 0 };
+  const w2 = watch(p2, r2, opts);
+  try {
+    await p2.goto(link.replace(/^https?:\/\/[^/]+/, local), { waitUntil: 'domcontentloaded' });
+    await settle(p2, w2, opts, 400);
+    const st = await p2.evaluate(() => ({
+      welcome: document.getElementById('welcome')?.classList.contains('open'), tour: document.getElementById('tour')?.classList.contains('open'),
+      page: document.querySelector('.page.active')?.id, hash: location.hash, toast: [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '),
+      shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
+      chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
+      osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
+      pb: { ...pbState, data: null, record: null, shopRecord: null, card: null, nbm: null, cbm: null, cfm: null }, es: { ...esmState, data: null, open: null }, emu: { game: emuState.game, league: emuState.league },
+      pbInputs: ['pbSearch', 'pbSort', 'pbShow', 'pbMarket'].map(id => document.getElementById(id)?.value),
+      socShown: document.getElementById('socPane')?.style.display === '',
+      esChips: [...document.querySelectorAll('#esModeMatches.active, #esModeProps.active, #esModeMatchups.active')].map(b => b.textContent),
+    }));
+    expect(!st.welcome && !st.tour, `the welcome screen or tour covered the shared screen (${link})`);
+    expect(st.hash === '', `the link stayed in the address bar: ${st.hash}`);
+    expect(st.overflow <= 0, `the shared screen is ${st.overflow} px too wide`);
+    await checkOverflow(p2, r2, 'odds', `share link ${link}`, opts);
+    check(st);
+    if (r2.issues.length) throw new Error(`opening ${link}: ${r2.issues[0].kind} ${JSON.stringify(r2.issues[0]).slice(0, 200)}`);
+  } finally { await ctx.close(); }
 }
 
 const FLOWS = {
@@ -63,6 +120,272 @@ const FLOWS = {
     expect(bet?.result === 'win', `the bet's result is ${bet?.result}, not win`);
     const stats = await text(page, '#mybStats');
     expect(/22\.73/.test(stats), `the stats should show the $22.73 profit: "${stats.slice(0, 200)}"`);
+  },
+
+  async 'download the public record from RESULTS'(page, w, opts) {
+    await openTab(page, 'results', w, opts);
+    await page.locator('#recordContent .rec-tiles').waitFor({ timeout: 6000 });
+    const tiles = await text(page, '#recordContent');
+    expect(/PROVEN/.test(tiles) && /GRADED GAMES/.test(tiles), `the record's summary did not render: "${tiles.slice(0, 160)}"`);
+    // the 30-day window carries over to the download
+    await page.locator('#page-results [data-days="30"]').click();
+    await settle(page, w, opts, 150);
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.locator('#recCsv').click()]);
+    expect(/^line-reaper-record-30d-\d{4}-\d{2}-\d{2}\.csv$/.test(dl.suggestedFilename()), `the CSV is named "${dl.suggestedFilename()}"`);
+    const file = path.join(os.tmpdir(), `lr-e2e-record-${process.pid}-${opts.viewportName}.csv`);
+    await dl.saveAs(file);
+    const csv = fs.readFileSync(file, 'utf8');
+    fs.rmSync(file, { force: true });
+    const head = csv.split(/\r?\n/)[0].split(',');
+    for (const c of ['flaggedAt', 'book', 'priceDecimal', 'fillUsd', 'closeProb', 'clvPct', 'result', 'units']) expect(head.includes(c), `the CSV has no ${c} column: "${head.join(',')}"`);
+    const [dj] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.locator('#recJson').click()]);
+    expect(/\.json$/.test(dj.suggestedFilename()), `the JSON download is named "${dj.suggestedFilename()}"`);
+    await page.locator('#page-results [data-days="0"]').click();
+    await settle(page, w, opts, 150);
+  },
+
+  async 'every priced row links to its venue, and a tap is counted'(page, w, opts) {
+    // TEST DATA, not a recording, for the two views the recording has no rows
+    // for (MATCHUPS and the public record): labelled made-up rows, so the
+    // links are checked on real markup. Everything else reads the recording.
+    const TEST_MATCHUPS = { game: 'LOL', label: 'LoL', status: { ready: true, series: 100 }, matchups: [
+      { id: 'e2e-mu-1', game: 'LOL', league: 'LCK', start: new Date((opts.now || Date.now()) + 5 * 3600e3).toISOString(), bestOf: 3,
+        teams: [{ name: 'E2E Alpha', code: 'EA' }, { name: 'E2E Bravo', code: 'EB' }], teamViews: [], model: { priced: true, win: 0.55, confidence: 'ok' },
+        markets: { kalshi: { prob: 0.52, url: 'https://kalshi.com/markets/kxlolgame-26oct25eaeb', sides: [{ cost: 0.53 }, { cost: 0.49 }] },
+          pmus: { prob: 0.51, slug: 'aec-lol-ea-eb-2026-10-25', sides: [{ cost: 0.52 }, { cost: 0.5 }] } } }] };
+    const TEST_RECORD = { rule: { text: 'TEST DATA.' }, proven: 0, overall: { graded: 60, clv: 0.4 }, labels: [], columns: ['flaggedAt'], rows: [
+      { recorded: true, label: 'building', kind: 'e2e', kindLabel: 'E2E kind', book: 'kalshi', bookName: 'Kalshi', texas: true, graded: 12, target: 50, clv: 0.5, clvT: 0.4, beatPct: 55, wins: 6, losses: 6, units: -0.4 },
+      { recorded: true, label: 'too early', kind: 'e2e', kindLabel: 'E2E kind', book: 'prizepicks', bookName: 'PrizePicks', texas: true, graded: 3, target: 50, clv: null, wins: 1, losses: 2, units: -1 }] };
+    await page.route(/\/api\/esports\/matchups\?/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_MATCHUPS) }));
+    await page.route(/\/api\/record(\?|$)/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_RECORD) }));
+    const views = [];
+    const look = async label => {
+      await settle(page, w, opts, 300);
+      const r = await page.evaluate(() => {
+        const pg = document.querySelector('.page.active'), vis = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+        const rows = [...pg.querySelectorAll('[data-vrow]')].filter(vis), links = [...pg.querySelectorAll('a.vlink')].filter(vis);
+        const bad = links.filter(a => !window.LRVenue.validFor(a.dataset.venue, a.getAttribute('href')) || a.target !== '_blank').map(a => a.getAttribute('href'));
+        return { rows: rows.length, bare: rows.filter(x => !x.querySelector('a.vlink')).length, links: links.length, bad, hosts: [...new Set(links.map(a => new URL(a.href).hostname))] };
+      });
+      views.push({ label, ...r });
+      expect(r.rows > 0, `${label}: no priced row rendered`);
+      expect(!r.bare, `${label}: ${r.bare} of ${r.rows} priced rows have no venue link`);
+      expect(!r.bad.length, `${label}: venue links with a wrong host or window: ${r.bad.slice(0, 3).join(' ')}`);
+      expect(!r.hosts.some(h => /(^|\.)polymarket\.com$/.test(h)), `${label}: a link to polymarket.com`);
+    };
+    await openTab(page, 'odds', w, opts);
+    for (const m of ['lines', 'opps', 'markets', 'maker', 'outrights', 'nflmodel']) {
+      await page.evaluate(m => window.shpSet('mode', m), m);
+      await look(`ODDS SCREEN ${m}`);
+    }
+    // the tap: a new tab opens on the venue, and the count goes up (the live check sends no POST)
+    const before = (await (await page.request.get(`${opts.base}/api/ops`)).json()).venueTaps?.total || 0;
+    await page.evaluate(() => window.shpSet('mode', 'lines'));
+    await settle(page, w, opts, 200);
+    const link = page.locator('#page-odds a.vlink[data-venue="kalshi"]').first();
+    const [pop] = await Promise.all([page.waitForEvent('popup', { timeout: 4000 }).catch(() => null), link.click()]);
+    expect(pop, 'tapping a venue link opened no new tab');
+    await pop?.close().catch(() => {});
+    if (!opts.live) {
+      // a tap from an earlier crawl click can land late, so the count must rise by at least one
+      let after = null;
+      for (let i = 0; i < 15; i++) {
+        await settle(page, w, opts, 200);
+        after = (await (await page.request.get(`${opts.base}/api/ops`)).json()).venueTaps;
+        if (after && after.total > before) break;
+      }
+      expect(after && after.total > before && after.byVenue?.kalshi?.total >= 1, `the tap was not counted in /api/ops: ${JSON.stringify(after)}`);
+    }
+    await page.evaluate(() => window.shpSet('mode', 'lines'));
+    await openTab(page, 'esports', w, opts);
+    await page.evaluate(() => window.setEsMode('matches'));
+    await look('ESPORTS matches');
+    await page.evaluate(() => window.setEsMode('matchups'));
+    await look('MATCHUPS');
+    await openTab(page, 'props', w, opts);
+    for (const v of ['lines', 'shop']) { await page.evaluate(v => window.pbSet('view', v), v); await look(`PROPS ${v}`); }
+    await page.evaluate(() => window.pbSet('view', 'lines'));
+    await openTab(page, 'results', w, opts);
+    await page.evaluate(() => window.resultsView('record'));
+    await look('RESULTS record');
+    await page.unroute(/\/api\/esports\/matchups\?/); await page.unroute(/\/api\/record(\?|$)/);
+  },
+
+  async 'feeds down or empty: each view says what is happening'(page, w, opts) {
+    // Railway's answer while a deploy swaps in: a 502 with an HTML page
+    const DOWN = r => (r.request().method() === 'GET' && !/\/stream\b/.test(r.request().url()) ? r.fulfill({ status: 502, contentType: 'text/html', body: '<html><body>Application failed to respond</body></html>' }) : r.continue());
+    // every list in every answer emptied: the shape of a quiet board
+    const hollow = x => (Array.isArray(x) ? [] : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, hollow(v)])) : x);
+    const EMPTY = async r => {
+      if (r.request().method() !== 'GET' || /\/stream\b/.test(r.request().url())) return r.continue();
+      const res = await r.fetch(); let body = await res.text();
+      try { body = JSON.stringify(hollow(JSON.parse(body))); } catch { /* not JSON: as it came */ }
+      return r.fulfill({ status: res.status(), contentType: res.headers()['content-type'] || 'application/json', body });
+    };
+    const RAW = /\bHTTP \d{3}\b|Unexpected token|is not valid JSON|Failed to fetch|\[object|\bundefined\b|Railway logs|BACKEND_URL/;
+    const VIEWS = [['odds', null], ['odds', ['shpSet', 'mode', 'opps']], ['odds', ['shpSet', 'mode', 'maker']], ['odds', ['shpSet', 'mode', 'outrights']], ['odds', ['shpSet', 'mode', 'lines']],
+      ['best', null], ['tail', null], ['arb', null], ['big', null], ['gas', null], ['esports', ['setEsMode', 'matches']], ['esports', ['setEsMode', 'matchups']], ['esports', ['setEsMode', 'matches']],
+      ['results', null], ['props', ['pbSet', 'view', 'shop']], ['props', ['pbSet', 'view', 'model']], ['props', ['pbSet', 'view', 'lines']], ['ev', null], ['sharp', null]];
+    try {
+    for (const [mode, handler, want] of [['down', DOWN, /restarting for an update|Couldn't reach the server|Could not refresh/], ['empty', EMPTY, null]]) {
+      await page.route('**/api/**', handler);
+      w.forced5xx = mode === 'down';
+      try {
+      for (const [tab, call] of VIEWS) {
+        // only a view that asked the server and got the 502 owes a word about it (one on cached data may not ask)
+        const failed = [];
+        // background pollers that run on every tab (the sharp feed says so on its own view) don't count against this view
+        const onRes = r => { const p = new URL(r.url()).pathname; if (r.status() === 502 && r.url().startsWith(opts.base) && !/^\/api\/(sharp-moves|health|ops)\b/.test(p)) failed.push(p); };
+        page.on('response', onRes);
+        await openTab(page, tab, w, opts);
+        if (call) await page.evaluate(([f, ...a]) => window[f](...a), call);
+        await settle(page, w, opts, 400);
+        page.off('response', onRes);
+        const t = await page.evaluate(() => { const pg = document.querySelector('.page.active'); return pg ? pg.innerText.replace(/\s+/g, ' ') : ''; });
+        const where = `${mode}: ${tab}${call ? ' ' + call.slice(1).join(' ') : ''}`;
+        expect(t.trim().length > 80, `${where}: the view is blank`);
+        const raw = RAW.exec(t);
+        expect(!raw, `${where}: shows a raw error "${raw && t.slice(Math.max(0, raw.index - 60), raw.index + 60)}"`);
+        if (want && failed.length) expect(want.test(t), `${where}: no word on the server being down (${[...new Set(failed)].join(' ')} got 502): "${t.slice(-200)}"`);
+      }
+      } finally {
+        await page.unroute('**/api/**', handler);
+        w.forced5xx = false;
+      }
+    }
+    } finally {
+      // back to the recording: reload, so later flows see its data, not the emptied copy
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
+  async 'read the weekly digest from RESULTS'(page, w, opts) {
+    // TEST DATA, not a recording: digest.js run on a labelled made-up record
+    // (one venue proven this week, one losing to the close), so the view is
+    // checked against known numbers. The live check reads the real API.
+    const D = require('../digest');
+    const W0 = Date.parse('2026-10-19T00:00:00Z');
+    const row = (i, book, start, clv) => ({ id: `e2e-${book}-${i}`, book, sport: 'nfl', event: `E2E Away${i} @ E2E Home${i}`, market: 'h2h', side: 'E2E', status: 'closed', closeOk: true,
+      flaggedAt: new Date(start - 3 * 3600e3).toISOString(), start: new Date(start).toISOString(), decimal: 2.1, clv: clv + (i % 3) * 0.2, closeFair: 50, outcome: i % 2 ? 'loss' : 'win' });
+    const ev = [];
+    for (let i = 0; i < 55; i++) ev.push(row(i, 'fanduel', i < 40 ? W0 - 20 * 86400e3 + i * 18e6 : W0 + 86400e3 + (i - 40) * 18e6, 3));
+    for (let i = 0; i < 20; i++) ev.push(row(i, 'betrivers', W0 + 2 * 86400e3 + i * 18e6, -4));
+    const TEST_WEEK = { digest: D.build({ lists: { ev }, week: '2026-10-19', now: Date.parse('2026-10-26T13:00:00Z') }), frozen: true, sentAt: '2026-10-26T13:00:04Z', pushed: 2, share: '/digest/2026-10-19' };
+    const TEST_NOW = { digest: D.build({ lists: { ev }, week: '2026-10-26', now: Date.parse('2026-10-27T09:00:00Z') }), frozen: false, sentAt: null, pushed: null, share: '/digest/2026-10-26' };
+    const TEST_LIST = { at: '2026-10-27T09:00:00Z', current: '2026-10-26', sendsAt: 'Monday 13:00 UTC', nextSend: '2026-11-02T13:00:00Z', weeks: [
+      { week: '2026-10-26', name: 'Oct 26 to Nov 1', partial: true, frozen: false, sentAt: null, graded: null, share: '/digest/2026-10-26' },
+      { week: '2026-10-19', name: 'Oct 19 to 25', partial: false, frozen: true, sentAt: '2026-10-26T13:00:04Z', graded: 35, share: '/digest/2026-10-19' }] };
+    if (!opts.live) {
+      await page.route('**/api/digest', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_LIST) }));
+      await page.route('**/api/digest/*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(/2026-10-26/.test(r.request().url()) ? TEST_NOW : TEST_WEEK) }));
+    }
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    try {
+      await openTab(page, 'results', w, opts);
+      await page.locator('#page-results [data-recview="digest"]').click();
+      await page.locator('#digestContent .rec-tiles').waitFor({ timeout: 6000 });
+      await settle(page, w, opts, 150);
+      const body = await text(page, '#digestContent');
+      expect(/WEEK OF/.test(body) && /GRADED THIS WEEK/.test(body) && /BY KIND AND VENUE/.test(body), `the digest did not render: "${body.slice(0, 200)}"`);
+      expect(await page.locator('#recView').isHidden(), 'the record table still shows under the digest');
+      const share = await page.locator('#digestShare').getAttribute('href');
+      expect(/^\/digest\/\d{4}-\d{2}-\d{2}$/.test(share || ''), `the share link is "${share}"`);
+      expect(await fits(), 'the digest scrolls sideways at this size');
+      if (!opts.live) {
+        expect(/WEEK OF OCT 19 TO 25/.test(body), 'the last published week opens first');
+        expect(/Published .* and frozen/.test(body) && /push reached 2 devices/.test(body), 'a published week says it is frozen and how many phones got it');
+        const rows = await page.locator('#digestContent .rec-tbl tbody tr').allInnerTexts();
+        expect(rows.length === 2, `${rows.length} rows for 2 venues`);
+        const fd = rows.find(r => /FanDuel/.test(r)) || '', br = rows.find(r => /BetRivers/.test(r)) || '';
+        expect(/NEWLY PROVEN/.test(fd) && /40 → 55\/50/.test(fd) && /\b15\b/.test(fd), `FanDuel row: "${fd.replace(/\s+/g, ' ')}"`);
+        expect(/LOSING TO THE CLOSE/.test(br) && /0 → 20\/50/.test(br), `BetRivers row: "${br.replace(/\s+/g, ' ')}"`);
+        expect(/\+[\d.]+u\*/.test(fd), 'units on a record that does not clear chance carry the * (not a profit claim)');
+        expect(/profit not shown yet/.test(body), 'the proven line must say profit is not shown');
+        // this week so far
+        await page.locator('#digestWeeks [data-week="2026-10-26"]').click();
+        await page.waitForFunction(() => /This week so far/.test(document.getElementById('digestContent').textContent), null, { timeout: 4000 });
+        expect(await fits(), 'the week so far scrolls sideways at this size');
+        await page.locator('#digestWeeks [data-week="2026-10-19"]').click();
+        await settle(page, w, opts, 120);
+      }
+      await page.locator('#page-results [data-recview="record"]').click();
+      await settle(page, w, opts, 150);
+      expect(await page.locator('#recView').isVisible(), 'RECORD did not come back');
+    } finally {
+      if (!opts.live) { await page.unroute('**/api/digest').catch(() => {}); await page.unroute('**/api/digest/*').catch(() => {}); }
+    }
+    // the share page itself, from the server (the offline server's own record in tests)
+    const list = opts.live ? await (await page.request.get(`${opts.base}/api/digest`)).json() : null;
+    const wk = list ? (list.weeks.find(x => !x.partial) || list.weeks[0]).week : D.weekId(Date.now());
+    try {
+      const res = await page.goto(`${opts.base}/digest/${wk}`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `the share page answered ${res && res.status()}`);
+      const h1 = await text(page, 'h1');
+      expect(/^Week of /.test(h1), `the share page heading is "${h1}"`);
+      expect(await fits(), 'the share page scrolls sideways at this size');
+      const all = await page.evaluate(() => document.body.innerText);
+      expect(!/guaranteed|risk[- ]free|undefined|NaN/i.test(all), 'the share page shows a claim or broken text');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
+  async 'read the alert history from RESULTS'(page, w, opts) {
+    // TEST DATA, not a recording: alertlog.js run on labelled made-up alerts
+    // (an EV alert graded at its own price, an arb with no grade), so the view
+    // is checked against known numbers. The live check reads the real API.
+    const AL = require('../alertlog');
+    const start = '2026-10-26T23:00:00Z';
+    const row = { group: 'e2e|g1|h2h', side: 'E2E Home', book: 'betrivers', decimal: 2.1, price: 110, ev: 6, sport: 'nba', event: 'E2E Away @ E2E Home', market: 'h2h', start };
+    const it = AL.evItem(row);
+    const docs = [
+      { id: 'e2e-a2', type: 'alert', sentAt: '2026-10-26T20:00:00Z', title: 'Exchange arbs', kind: 'exchange', lines: ['E2E arb 2.1% across two venues'], reached: { webhooks: 0, phones: 2 }, items: [] },
+      { id: 'e2e-a1', type: 'alert', sentAt: '2026-10-26T19:00:00Z', title: 'EV alerts', kind: 'ev', lines: ['E2E New edge +6.0%: E2E Home +110 at BetRivers'], reached: { webhooks: 1, phones: 2 }, items: [it] },
+    ];
+    const tracked = { id: it.ref, status: 'closed', book: 'betrivers', start, closeFair: 50, closeOk: true, pinClose: 49, pinCloseOk: true, outcome: 'win' };
+    const TEST = AL.view(docs, { rows: { ev: new Map([[it.ref, tracked]]) }, labelOf: () => ({ label: 'building', why: '12 of 50 graded.', profitShown: false }),
+      now: Date.parse('2026-10-27T09:00:00Z'), startedAt: '2026-10-26T18:00:00Z' });
+    if (!opts.live) await page.route('**/api/alerts/history*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST) }));
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    try {
+      await openTab(page, 'results', w, opts);
+      await page.locator('#page-results [data-recview="alerts"]').click();
+      await page.locator('#alertHistContent .rec-tiles').waitFor({ timeout: 6000 });
+      await settle(page, w, opts, 150);
+      const body = await text(page, '#alertHistContent');
+      expect(/ALERTS SENT/.test(body) && /BY LABEL/.test(body) && /ALERTS, NEWEST FIRST/.test(body), `the alert history did not render: "${body.slice(0, 200)}"`);
+      expect(/Alerts are kept from /.test(body), 'the view must say when storing began');
+      expect(await page.locator('#recView').isHidden(), 'the record table still shows under the alert history');
+      expect(await fits(), 'the alert history scrolls sideways at this size');
+      if (!opts.live) {
+        expect(/E2E Home \+110/.test(body), 'the EV alert text is missing');
+        expect(/\+5\.0%/.test(body), 'the bet is not graded at the alert\'s price (50% close at 2.10 = +5.0%)');
+        expect(/Pinnacle \+2\.9%/.test(body), "Pinnacle's own close at the alert's price is missing");
+        expect(/\+1\.1u\*/.test(body), 'units on a kind RESULTS does not show a profit for carry the *');
+        expect(/no close to beat/.test(body), 'the arb must say why it has no grade');
+        expect(/BUILDING/.test(body) && !/PROVEN/.test(body), 'the label must be the RESULTS label, and nothing here is proven');
+      }
+      await page.locator('#page-results [data-recview="record"]').click();
+      await settle(page, w, opts, 150);
+      expect(await page.locator('#recView').isVisible(), 'RECORD did not come back');
+    } finally {
+      if (!opts.live) await page.unroute('**/api/alerts/history*').catch(() => {});
+    }
+    // the public page, from the server (the offline server's own log in tests)
+    try {
+      const res = await page.goto(`${opts.base}/alerts`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/alerts answered ${res && res.status()}`);
+      expect(/Every alert we sent, graded/.test(await text(page, 'h1')), 'the alert history page heading is missing');
+      expect(await fits(), 'the alert history page scrolls sideways at this size');
+      const all = await page.evaluate(() => document.body.innerText);
+      expect(/Alerts are kept from /.test(all), 'the page must say when storing began');
+      expect(!/guaranteed|risk[- ]free|undefined|NaN/i.test(all), 'the page shows a claim or broken text');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
   },
 
   async 'export the bets CSV and import it back'(page, w, opts) {
@@ -101,12 +424,86 @@ const FLOWS = {
     expect(await page.locator('#mybModal .mb-venues button').count() > 0, 'the form shows no venues to pick a price from');
     await page.locator('#mybModal .mb-venues button').first().click();
     if (!(await page.inputValue('#mb_stake'))) await page.fill('#mb_stake', '20');
-    await page.locator('#mybModal button.primary').click();
-    await settle(page, w, opts, 200);
-    const list = await ls(page, 'lr_bets');
-    expect(list?.length === before + 1, 'the bet from the odds screen was not logged');
+    const list = await mybSaveChecked(page, w, opts, before, 'the odds screen');
+    if (!list) return;
     const bet = list.find(b => b.pick === pick);
     expect(bet?.track?.kind === 'line', `the odds screen bet is not tracked as a line (${JSON.stringify(bet?.track)})`);
+  },
+
+  async 'log a game line from the Exchange Shopper'(page, w, opts) {
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 250);
+    // a slow runner may still be drawing the list: wait for it
+    await page.locator('#shpContent button.os-log, #shpContent tr.shp-row').first().waitFor({ timeout: 8000 });
+    const log = page.locator('#shpContent button.os-log:visible').first();
+    // the ranked list keeps each market folded and can lead with player props (no LOG): open its first game line
+    if (!(await log.count())) {
+      const key = await page.evaluate(() => { const d = shpUi.data; const x = (d?.opportunities ? shpSorted(d.opportunities) : []).find(o => shpLoggable(o.view || d.markets.find(m => m.key === o.market))); if (x) shpOpen(x.key); return x?.key || null; });
+      expect(key, 'the ranked list has no game line to log');
+      if (!key) return;
+      await settle(page, w, opts, 200);
+    }
+    try { await log.waitFor({ timeout: 6000 }); } catch {
+      const why = await page.evaluate(() => ({ mode: shpUi.opts.mode, open: [...shpUi.open].length, logs: document.querySelectorAll('#shpContent button.os-log').length, rows: document.querySelectorAll('#shpContent tr.shp-row').length, details: document.querySelectorAll('#shpContent tr.shp-detail').length }));
+      expect(false, `no visible LOG in the Exchange Shopper (${JSON.stringify(why)})`);
+      return;
+    }
+    const before = (await ls(page, 'lr_bets'))?.length || 0;
+    await log.click();
+    await page.locator('#mybModal.open').waitFor({ timeout: 4000 });
+    expect(await page.inputValue('#mb_pick'), 'the bet form opened without the pick filled in');
+    if (await page.locator('#mybModal .mb-venues button').count()) await page.locator('#mybModal .mb-venues button').first().click();
+    if (!(await page.inputValue('#mb_stake'))) await page.fill('#mb_stake', '20');
+    const list = await mybSaveChecked(page, w, opts, before, 'the Exchange Shopper');
+    if (!list) return;
+    expect(list[0].track?.kind === 'line' && list[0].track.game && ['ml', 'spread', 'total'].includes(list[0].track.market), `the shopper bet is not tracked as a game line (${JSON.stringify(list[0].track)})`);
+  },
+
+  async 'log an esports series from MATCHUPS'(page, w, opts) {
+    await openTab(page, 'esports', w, opts);
+    // the recording has no upcoming series (none were listed when it was made):
+    // offline, TEST DATA stands in, one made-up series three hours ahead with a price to buy each side
+    const fakeMu = route => route.fulfill({ json: { game: 'LOL', label: 'model', note: 'TEST DATA', games: ['LOL'], status: { ready: true, series: 1 }, count: 1, priced: 0, withKalshi: 1, leagues: ['TEST'],
+      matchups: [{ id: 'test-series-1', game: 'LOL', start: new Date(Date.now() + 3 * 3600e3).toISOString(), league: 'TEST', bestOf: 3, state: 'unstarted', teams: [{ name: 'Test Team A', code: 'TTA' }, { name: 'Test Team B', code: 'TTB' }],
+        model: { priced: false, confidence: 'insufficient', reasons: [] }, teamViews: [], explain: ['TEST DATA'], label: 'model',
+        markets: { kalshi: { prob: 0.55, sides: [{ ask: 0.56, cost: 0.5773 }, { ask: 0.46, cost: 0.4774 }], url: null, ticker: 'TEST' }, pmus: null, polymarketRef: null, paired: null }, compare: null }],
+      backtest: null, record: { tracked: 0 }, licence: {} } });
+    if (!opts.live) await page.route('**/api/esports/matchups?game=*', fakeMu);
+    await page.evaluate(() => { emuState.data = null; emuState.at = 0; emuState.loading = false; });
+    await page.locator('#esModeMatchups').click();
+    await settle(page, w, opts, 300);
+    if (!opts.live) await page.unroute('**/api/esports/matchups?game=*', fakeMu);
+    const log = page.locator('#emuContent button.emu-log:visible');
+    try { await log.first().waitFor({ timeout: 8000 }); } catch {
+      // live, every series on the board may have started or have no price to buy: nothing to log is right then
+      if (opts.live) return;
+      expect(false, `MATCHUPS shows no LOG (${await page.locator('#emuContent .esm-card').count()} series)`);
+      return;
+    }
+    const before = (await ls(page, 'lr_bets'))?.length || 0;
+    await log.first().click();
+    await page.locator('#mybModal.open').waitFor({ timeout: 4000 });
+    expect(/to win the series/.test(await page.inputValue('#mb_pick')), `the MATCHUPS form opened without the team: "${await page.inputValue('#mb_pick')}"`);
+    expect(await page.locator('#mybModal .mb-venues button').count() >= 1, 'the MATCHUPS form lists no venue to buy at');
+    expect(/Pinnacle's series price/.test(await text(page, '#mybModal p')), 'the MATCHUPS form does not say how the bet is followed');
+    if (!(await page.inputValue('#mb_stake'))) await page.fill('#mb_stake', '20');
+    await page.locator('#mybModal button.primary').click();
+    await settle(page, w, opts, 250);
+    if (!opts.live) {
+      // offline the server has no matchup engine data, so it can't check the
+      // start and refuses in words; then (TEST DATA) the check is answered ok
+      expect(/Not logged\./.test(await text(page, '#mbHint')) && ((await ls(page, 'lr_bets'))?.length || 0) === before, `an unchecked series should be refused in the form: "${await text(page, '#mbHint')}"`);
+      const ok = route => route.fulfill({ json: { at: new Date().toISOString(), ok: true, status: 'open', start: null, logFair: 0.5, why: null } });
+      await page.route('**/api/bets/stamp', ok);
+      await page.locator('#mybModal button.primary').click();
+      await settle(page, w, opts, 250);
+      await page.unroute('**/api/bets/stamp', ok);
+    } else if (/Not logged\./.test(await text(page, '#mbHint'))) { await page.evaluate(() => mybFormClose()); return; }
+    const list = await ls(page, 'lr_bets');
+    expect(list?.length === before + 1, `the MATCHUPS bet was not logged: "${await text(page, '#mbHint')}"`);
+    expect(list[0].track?.kind === 'es' && list[0].track.match && [0, 1].includes(list[0].track.side) && list[0].stamp?.at, `the MATCHUPS bet is not tracked as an esports series (${JSON.stringify(list[0].track)})`);
+    expect(list[0].tool === 'Matchups', `the MATCHUPS bet is filed under ${list[0].tool}`);
   },
 
   async 'log a slip from PROPS'(page, w, opts) {
@@ -127,16 +524,68 @@ const FLOWS = {
     expect(await tray.isVisible(), 'the slip tray did not open');
     expect(/2 PICKS/.test(await tray.innerText()), `the tray should say 2 PICKS: "${(await tray.innerText()).slice(0, 120)}"`);
     const before = (await ls(page, 'lr_slips'))?.length || 0;
+    // a pick whose game has started is refused in words, and nothing is logged
+    const start0 = await page.evaluate(() => { const s = pk.legs[0].start; pk.legs[0].start = new Date(Date.now() - 3600e3).toISOString(); return s; });
+    await page.locator('#pkTray button', { hasText: 'LOG SLIP' }).click();
+    await settle(page, w, opts, 150);
+    expect(/Not logged\..*started at/.test(await tray.innerText()), `a started pick should be refused in the tray: "${(await tray.innerText()).slice(0, 200)}"`);
+    expect(((await ls(page, 'lr_slips'))?.length || 0) === before, 'a slip with a started pick was logged');
+    // back to the real start; the offline recording is days old, so its games read as started:
+    // there they are moved two hours ahead (live, the board's own starts are ahead already)
+    await page.evaluate(s => { const ahead = new Date(Date.now() + 2 * 3600e3).toISOString(); for (const l of pk.legs) if (!(Date.parse(l.start) > Date.now())) l.start = ahead; if (Date.parse(s) > Date.now()) pk.legs[0].start = s; pk.refused = ''; renderPkTray(); }, start0);
+    // offline, the server's board is the recording, days old, so it rightly refuses
+    // these games as started: TEST DATA, its stamp answer is replaced by one that
+    // passes every leg (test/slipstamp.test.js and slipgrade-server cover the server)
+    const fakeStamp = async route => { const b = route.request().postDataJSON(); await route.fulfill({ json: { at: new Date().toISOString(), ok: true, started: 0, unmatched: 0, why: null, app: b.app,
+      legs: b.legs.map((l, i) => ({ i, ...l, status: 'ok', start: l.start, matchTitle: 'TEST', fair: 0.55, pin: 0.54, mult: null, appLine: l.line })) } }); };
+    if (!opts.live) await page.route('**/api/slips/stamp', fakeStamp);
     // type the stake the way a viewer does, then tap LOG SLIP straight away
     await tray.locator('input[type=number]').first().click();
     await page.keyboard.type('10');
     await page.locator('#pkTray button', { hasText: 'LOG SLIP' }).click();
     await settle(page, w, opts, 250);
+    if (!opts.live) await page.unroute('**/api/slips/stamp', fakeStamp);
+    // live, a row whose game is under way is refused in words: the right answer, not a failure
+    if (opts.live && /Not logged\..*started at/.test(await tray.innerText().catch(() => ''))) { await page.evaluate(() => pkClear()); return; }
     const slips = await ls(page, 'lr_slips');
     expect(slips?.length === before + 1, `lr_slips went from ${before} to ${slips?.length}`);
     expect(slips[0].legs.length === 2 && slips[0].stake === 10, `the logged slip has ${slips[0].legs.length} legs, stake ${slips[0].stake}`);
+    // checked by the server at the tap: its clock, a verdict for every pick
+    expect(slips[0].stamp?.at && Math.abs(Date.parse(slips[0].stamp.at) - Date.parse(slips[0].placedAt)) < 1000 && slips[0].stamp.legs.length === 2, `the logged slip carries no server stamp: ${JSON.stringify(slips[0].stamp)}`);
     await openTab(page, 'myslips', w, opts);
     expect((await text(page, '#msList')).includes(slips[0].legs[0].player), 'MY SLIPS does not show the logged slip');
+  },
+
+  async 'LOG A SLIP: a copied app slip checked and logged, an old one refused, one shared to the app'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    const before = (await ls(page, 'lr_slips'))?.length || 0;
+    await page.locator('#msLogcBtn').click();
+    // TEST DATA: made-up players, as PrizePicks' entry text reads when copied
+    await page.fill('#msLogcText', 'PrizePicks 2-Pick Power Play\nTesta Onefake\nMore 24.5 Points\nTesta Twofake\nLess 7.5 Rebounds');
+    await page.locator('#msLogcGo').click();
+    await settle(page, w, opts, 250);
+    const out = await text(page, '#msLogcOut');
+    expect(/logged at/.test(out) && /NOT ON A BOARD/.test(out), `LOG A SLIP should log the slip and say the picks aren't on a board: "${out.slice(0, 300)}"`);
+    const slips = await ls(page, 'lr_slips');
+    expect(slips?.length === before + 1 && slips[0].stamp?.at && slips[0].source === 'paste', `LOG A SLIP saved ${slips?.length - before} slips, stamp ${JSON.stringify(slips?.[0]?.stamp)?.slice(0, 80)}`);
+    expect(/checked by the server/.test(await text(page, '#msList')), 'MY SLIPS does not say the slip was checked by the server');
+    // a slip whose text shows an old placing time is history, not a fresh log
+    await page.fill('#msLogcText', 'PrizePicks Oct 1, 2026, 12:58 PM\nTesta Onefake\nMore 24.5 Points\nTesta Twofake\nLess 7.5 Rebounds');
+    await page.locator('#msLogcGo').click();
+    await settle(page, w, opts, 150);
+    expect(/not logged/.test(await text(page, '#msLogcOut')) && ((await ls(page, 'lr_slips'))?.length === before + 1), 'an old slip should be refused by LOG A SLIP');
+    // a share link and a pick copied off the board with both sides: each said in plain words, nothing logged
+    await page.fill('#msLogcText', 'Check out my lineup on PrizePicks! https://prizepicks.onelink.me/abc123\nTesta Onefake\nPHX vs LAL Sat 8:30pm\nPlayer Pick\n21.5\nPoints\nLess\nMore');
+    await page.locator('#msLogcGo').click();
+    await settle(page, w, opts, 150);
+    const why = await text(page, '#msLogcOut');
+    expect(/share link/.test(why) && /both More and Less/.test(why) && ((await ls(page, 'lr_slips'))?.length === before + 1), `LOG A SLIP should say why a link and a two-sided pick weren't read: "${why.slice(0, 300)}"`);
+    // shared from the app's Share sheet to the installed app
+    await page.goto(`${opts.base}/app?share_text=${encodeURIComponent('Underdog\nTesta Threefake\nHigher 1.5 Kills\nTesta Fourfake\nLower 30.5 Kills')}`, { waitUntil: 'domcontentloaded' });
+    await settle(page, w, opts, 300);
+    expect(await page.locator('#msLogc').isVisible(), 'a shared slip should open LOG A SLIP');
+    expect(/Testa Threefake/.test(await page.locator('#msLogcText').inputValue()), 'the shared text is not in the box');
+    expect(!/share_text/.test(page.url()), 'the shared text stays in the address bar');
   },
 
   async 'paste slips into MY SLIPS'(page, w, opts) {
@@ -149,6 +598,88 @@ const FLOWS = {
     const slips = await ls(page, 'lr_slips');
     expect(slips?.length === before + 2, `pasting two slips made ${slips?.length - before}`);
     expect(/Josh Allen/.test(await text(page, '#msList')), 'the pasted slip is not listed');
+  },
+
+  async 'PUBLISH RECORD: a public page of my slips, opened and unpublished'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    // TEST DATA: a made-up slip, so the record has something to show
+    await page.locator('#page-myslips .mb-actions button', { hasText: 'PASTE SLIPS' }).click();
+    await page.fill('#msText', 'PrizePicks\nJosh Allen Over 245.5 Pass Yds\nStefon Diggs Under 64.5 Rec Yds');
+    await page.getByRole('button', { name: 'ADD SLIPS' }).click();
+    await settle(page, w, opts, 200);
+    await page.locator('#msPubBtn').click();
+    await settle(page, w, opts, 100);
+    expect(await page.locator('#msPub').isVisible(), 'PUBLISH RECORD opened nothing');
+    const handle = `e2e_${opts.viewportName.slice(0, 4)}_${String(Date.now()).slice(-6)}`;
+    await page.fill('#msPubHandle', handle);
+    await page.locator('#msPub button', { hasText: /^PUBLISH$/ }).click();
+    await settle(page, w, opts, 600);
+    const pub = await ls(page, 'lr_pub_record');
+    const slips = await ls(page, 'lr_slips');
+    expect(pub?.handle === handle && /^lrr_/.test(pub.key || ''), `no record saved after PUBLISH: ${JSON.stringify(pub)?.slice(0, 120)}`);
+    expect((pub.sent || []).length === slips.length, `${(pub.sent || []).length} of ${slips.length} slips sent`);
+    const panel = await text(page, '#msPub');
+    expect(panel.includes(`/r/${handle}`) && /COPY KEY/.test(panel), `the panel does not show the page link and key: "${panel.slice(0, 160)}"`);
+    expect(/RECORD @/.test(await text(page, '#msPubBtn')), 'the button should name the published handle');
+    // the page: the same for everyone, the disclosure, every slip, nothing broken, fits a phone
+    const p2 = await page.context().newPage();
+    try {
+      await p2.setViewportSize(page.viewportSize());
+      const r = await p2.goto(`${opts.base}/r/${handle}`, { waitUntil: 'domcontentloaded' });
+      expect(r.status() === 200, `/r/${handle} answered ${r.status()}`);
+      const body = await p2.locator('body').innerText();
+      expect(/not placed through Line Reaper/.test(body) && /Josh Allen/.test(body), 'the record page lacks the disclosure or the slip');
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(body), 'the record page shows broken text or a claim');
+      const over = await p2.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over <= 0, `the record page is ${over} px too wide`);
+      const og = await p2.locator('meta[property="og:image"]').getAttribute('content');
+      expect(new RegExp(`/card/record-${handle}\\.png`).test(og || ''), `og:image is not the record card: ${og}`);
+      const csv = await p2.request.get(`${opts.base}/api/records/${handle}/slips.csv`);
+      const rows = csv.ok() ? (await csv.text()).split('\n').filter(Boolean) : [];
+      expect(/^slip_id,/.test(rows[0] || '') && rows.filter(x => /Josh Allen|Stefon Diggs/.test(x)).length >= 2, 'the CSV should hold the pasted legs');
+    } finally { await p2.close(); }
+    // the list of records: take this one off it and back on, then read /r
+    const off = page.locator('#msPub button', { hasText: 'TAKE OFF THE LIST' });
+    await off.waitFor({ timeout: 4000 });
+    await off.click();
+    await settle(page, w, opts, 300);
+    expect(await page.locator('#msPub button', { hasText: 'ADD TO THE LIST' }).count() === 1, 'TAKE OFF THE LIST did not take');
+    await page.locator('#msPub button', { hasText: 'ADD TO THE LIST' }).click();
+    await settle(page, w, opts, 300);
+    const p3 = await page.context().newPage();
+    try {
+      await p3.setViewportSize(page.viewportSize());
+      const r = await p3.goto(`${opts.base}/r`, { waitUntil: 'domcontentloaded' });
+      expect(r.status() === 200, `/r answered ${r.status()}`);
+      const body = await p3.locator('body').innerText();
+      expect(/Bettor records/.test(body) && /never counted/.test(body), 'the list of records lacks its rule');
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(body), 'the list of records shows broken text or a claim');
+      const over = await p3.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over <= 0, `the list of records is ${over} px too wide`);
+      // the leaderboard: its filter is a real form; SHOW reloads with the pick kept
+      expect(/Leaderboard: CLV against Pinnacle's close/.test(body) && /Ranked only with 50 picks/.test(body), 'the leaderboard lacks its rule');
+      await p3.selectOption('#lbw', '7d');
+      await Promise.all([p3.waitForURL(/window=7d/, { timeout: 8000 }), p3.locator('section#board button', { hasText: 'SHOW' }).click()]);
+      expect(await p3.locator('#lbw').inputValue() === '7d', 'the window filter did not stick');
+      const b2 = await p3.locator('body').innerText();
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(b2), 'the leaderboard shows broken text or a claim');
+      const over2 = await p3.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over2 <= 0, `the leaderboard is ${over2} px too wide`);
+      const api = await p3.request.get(`${opts.base}/api/leaderboard?window=7d`);
+      expect(api.ok() && Array.isArray((await api.json()).ranked), '/api/leaderboard did not answer');
+    } finally { await p3.close(); }
+    // unpublish: the first tap asks, the second removes the page
+    await page.locator('#msPub button', { hasText: 'UNPUBLISH' }).click();
+    await settle(page, w, opts, 80);
+    await page.locator('#msPub button', { hasText: 'TAP AGAIN TO UNPUBLISH' }).click();
+    await settle(page, w, opts, 300);
+    expect((await ls(page, 'lr_pub_record'))?.unpublished === true, 'UNPUBLISH did not take');
+    const gone = await (await page.request.get(`${opts.base}/r/${handle}`)).text();
+    expect(/unpublished/.test(gone) && !/Josh Allen/.test(gone), 'the unpublished page still shows slips');
+    // leave the next flow a browser with no record
+    await page.locator('#msPub button', { hasText: 'FORGET THIS HANDLE' }).click();
+    await page.locator('#msPub button', { hasText: 'CLOSE' }).click();
+    await settle(page, w, opts, 60);
   },
 
   async 'import a Pikkit CSV'(page, w, opts) {
@@ -164,6 +695,60 @@ const FLOWS = {
     expect(/PrizePicks/i.test(shown) && /Pick6/i.test(shown), `the Pikkit breakdown does not list the apps: "${shown.slice(0, 160)}"`);
     const slips = await ls(page, 'lr_slips');
     expect(slips.some(s => s.id === 'pk-e2e1') && !slips.some(s => s.id === 'pk-e2e3'), 'the recent Pikkit slips should be added, the 20-day-old one not');
+    // the older bets go to the box-score grader on one tap, with Pikkit's result kept
+    const more = page.locator('#msPikkit button', { hasText: 'FROM BOX SCORES' });
+    expect(await more.count() === 1, 'no GRADE MORE FROM BOX SCORES button under the Pikkit history');
+    await more.first().click();
+    await settle(page, w, opts, 300);
+    const after = await ls(page, 'lr_slips');
+    const old = after.find(s => s.id === 'pk-e2e3');
+    expect(old && old.result === 'loss' && old.legs[0].sport === 'MLB', 'the 20-day-old Pikkit bet should be added with its result and league');
+    expect(await page.locator('#msPikkit button', { hasText: 'FROM BOX SCORES' }).count() === 0, 'the button should go once every bet is in');
+  },
+
+  async 'import an Underdog history file and pasted Sleeper text'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    const d = n => new Date(opts.now - n * 3600e3).toISOString();
+    // a test file in the per-leg layout (entry id, player, stat, line, Higher/Lower); one leg row has no line
+    const csv = `Entry ID,Created At,Entry Type,Entry Fee,Payout,Status,Sport,Player,Stat,Line,Higher/Lower
+e2eU1,${d(5)},Standard,10,0,Lost,NFL,Josh Allen,Passing Yards,245.5,Higher
+e2eU1,${d(5)},Standard,10,0,Lost,NFL,James Cook,Rushing Yards,62.5,Lower
+e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
+    const file = path.join(os.tmpdir(), `lr-e2e-underdog-${process.pid}-${opts.viewportName}.csv`);
+    fs.writeFileSync(file, csv);
+    await page.locator('#page-myslips input[type=file]').setInputFiles(file);
+    await settle(page, w, opts, 300);
+    fs.rmSync(file, { force: true });
+    const imps = await ls(page, 'lr_slip_imports');
+    const ud = imps?.find(x => x.format === 'underdog');
+    expect(ud && ud.rows === 3 && ud.unread.length === 1, `the Underdog import was kept as ${JSON.stringify(ud)?.slice(0, 160)}`);
+    const slips = await ls(page, 'lr_slips');
+    expect(slips.some(s => s.id === 'ud-e2eU1' && s.legs.length === 2 && s.importId === ud.id), 'the Underdog entry with two legs should be a slip');
+    const card = page.locator('#msImports .ms-imp', { hasText: 'Underdog CSV' }).first();
+    const shown = await card.innerText({ timeout: 4000 }).catch(() => '');
+    expect(/Bets read/i.test(shown) && /Legs matched/i.test(shown) && /Record/i.test(shown) && /1-1/.test(shown), `the Underdog import card reads "${shown.slice(0, 200)}"`);
+    // the leg with no line is listed by its row
+    await card.locator('summary').first().click();
+    await settle(page, w, opts, 60);
+    const list = await card.innerText({ timeout: 4000 }).catch(() => '');
+    expect(/Row 4/.test(list) && /no line on this row/.test(list), `the unmatched row is not listed: "${list.slice(-200)}"`);
+    // Sleeper history pasted as copied text
+    await page.locator('#page-myslips .mb-actions button', { hasText: 'PASTE SLIPS' }).click();
+    await page.fill('#msText', 'Sleeper Picks\n$10 · 2 picks · Won $30\nConnor McDavid\nOver 1.5 Points\nAuston Matthews\nUnder 3.5 Shots');
+    await page.getByRole('button', { name: 'ADD SLIPS' }).click();
+    await settle(page, w, opts, 250);
+    const after = await ls(page, 'lr_slips');
+    const sl = after.find(s => s.app === 'sleeper' && s.legs[0]?.player === 'Connor McDavid');
+    expect(sl && sl.legs.length === 2 && sl.result === 'win' && sl.source === 'import', `the pasted Sleeper slip came in as ${JSON.stringify(sl)?.slice(0, 160)}`);
+    expect(await page.locator('#msImports .ms-imp', { hasText: 'Sleeper (copied text)' }).count() === 1, 'no import card for the pasted Sleeper text');
+    // remove takes two taps and takes the import's slips with it
+    const drop = card.locator('button', { hasText: 'REMOVE' });
+    await drop.click();
+    await settle(page, w, opts, 60);
+    await page.locator('#msImports .ms-imp', { hasText: 'Underdog CSV' }).first().locator('button', { hasText: 'TAP AGAIN TO REMOVE' }).click();
+    await settle(page, w, opts, 120);
+    const gone = await ls(page, 'lr_slips');
+    expect(!gone.some(s => s.id === 'ud-e2eU1'), 'removing the import should remove its slips');
   },
 
   async 'save a shopper view, load it, clear it'(page, w, opts) {
@@ -192,6 +777,104 @@ const FLOWS = {
     await page.getByRole('button', { name: 'CLEAR VIEWS' }).click();
     await settle(page, w, opts, 150);
     expect(!(await ls(page, 'lr_shopper_views'))?.length, 'CLEAR VIEWS left views saved');
+  },
+
+  async 'share a saved view and open the link cold'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 250);
+    await openPanel(page, w, opts, 'shpFilters');
+    await page.locator('#shpModes button', { hasText: 'All venues' }).click();
+    await settle(page, w, opts, 250);
+    await page.locator('#shpModes button', { hasText: /^Spread$/ }).click();
+    await settle(page, w, opts, 250);
+    await page.locator('#shpBar select').filter({ has: page.locator('option[value="hold"]') }).selectOption('ev');
+    await settle(page, w, opts, 250);
+    await page.fill('#shpPresetName', 'Share E2E');
+    await page.getByRole('button', { name: 'SAVE VIEW' }).click();
+    await settle(page, w, opts, 150);
+    await page.getByRole('button', { name: 'SHARE VIEW' }).click();
+    await settle(page, w, opts, 150);
+    const toast = page.locator('.toast').last();
+    expect(/^Link copied: view "Share E2E"/.test(await toast.innerText()), `SHARE VIEW toast: ${await toast.innerText()}`);
+    const vw = page.viewportSize().width, box = await toast.boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= vw, `the toast runs off a ${vw} px screen: ${JSON.stringify(box)}`);
+    const viewLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=odds&m=opps&st=all&mk=sp&n=Share\+E2E$/.test(viewLink) && viewLink.length < 200, `view link: ${viewLink}`);
+    // the bar's LINK button: the same screen, without the view's name
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const screenLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(screenLink === viewLink.replace('&n=Share+E2E', ''), `LINK: ${screenLink}`);
+    await page.getByRole('button', { name: 'CLEAR VIEWS' }).click();
+    await settle(page, w, opts, 100);
+
+    // a fresh device: no welcome screen or tour on top, the exact view, nothing of the sender's
+    const local = new URL(opts.base).origin;
+    const cold = (link, check) => openCold(opts, link, check);
+    await cold(viewLink, st => {
+      expect(st.page === 'page-odds', `opened on ${st.page}`);
+      expect(st.shp.mode === 'opps' && st.shp.state === '' && st.shp.markets === 'spread' && st.shp.sort === 'ev', `shopper: ${JSON.stringify(st.shp).slice(0, 200)}`);
+      expect(st.chips.includes('BEST PRICES ABOVE FAIR') && st.chips.includes('All venues') && st.chips.includes('Spread'), `chips: ${st.chips}`);
+      expect(st.shp.stake === '100' && st.shp.fmt === 'american' && !st.shp.favOnly, 'the link changed the stake, odds format or favorites');
+      expect(/Opened a shared view: Share E2E/.test(st.toast), `toast: ${st.toast}`);
+    });
+    // a GAME LINES link and another tab, written by hand as a person would paste them
+    await cold(`${local}/app#lr&t=odds&lg=nba&mk=sp&so=ev`, st => {
+      expect(st.page === 'page-odds' && st.shp.mode === 'lines', `opened ${st.page} ${st.shp.mode}`);
+      expect(st.os.league === 'nba' && st.os.market === 'spread' && st.os.sort === 'ev' && st.osSort === 'ev', `game lines: ${JSON.stringify(st.os)}`);
+      expect(st.chips.includes('GAME LINES'), `chips: ${st.chips}`);
+    });
+    await cold(`${local}/app#lr&t=results`, st => {
+      expect(st.page === 'page-results', `opened on ${st.page}`);
+      expect(/Opened a shared screen/.test(st.toast), `toast: ${st.toast}`);
+    });
+  },
+
+  async 'share PROPS and ESPORTS views and open them cold'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    // the LINK button on PROPS writes the view, app, sport and search
+    await openTab(page, 'props', w, opts);
+    await page.evaluate(() => pbSet('q', 'a')); // eslint-disable-line no-undef
+    await settle(page, w, opts, 250);
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const propsLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    const pv = await page.evaluate(() => pbState.view);
+    expect(/\/app#lr&t=props/.test(propsLink) && /[&]q=a(&|$)/.test(propsLink), `PROPS link: ${propsLink}`);
+    expect(pv === 'lines' ? !/pv=/.test(propsLink) : propsLink.includes(`pv=${pv}`), `PROPS link misses the ${pv} view: ${propsLink}`);
+    await page.evaluate(() => pbSet('q', '')); // eslint-disable-line no-undef
+    await settle(page, w, opts, 200);
+    const local = new URL(opts.base).origin;
+    // Lines view on Underdog with a prop picked
+    await openCold(opts, `${local}/app#lr&t=props&mk=Receptions&q=a`, st => {
+      expect(st.page === 'page-props', `opened on ${st.page}`);
+      expect(st.pb.view === 'lines' && st.pb.lineBook === 'underdog' && st.pb.market === 'Receptions' && st.pb.q === 'a', `props: ${JSON.stringify(st.pb).slice(0, 200)}`);
+      expect(st.pbInputs[0] === 'a' && st.pbInputs[3] === 'Receptions', `PROPS boxes: ${st.pbInputs}`);
+    });
+    // the every-app view with a sport, sort and show picked
+    await openCold(opts, `${local}/app#lr&t=props&pv=cards&sp=TENNIS&so=gap&sh=multi&q=a`, st => {
+      expect(st.pb.view === 'cards' && st.pb.sport === 'TENNIS' && st.pb.sort === 'gap' && st.pb.show === 'multi', `props: ${JSON.stringify(st.pb).slice(0, 200)}`);
+      expect(st.pbInputs[1] === 'gap' && st.pbInputs[2] === 'multi', `PROPS selects: ${st.pbInputs}`);
+    });
+    // ESPORTS: LINK on MATCHUPS, then matchups for one game and SOCCER cold
+    await openTab(page, 'esports', w, opts);
+    await page.locator('#esModeMatchups').click();
+    await settle(page, w, opts, 250);
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const esLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=esports(&st=[a-z]+)?&em=matchups/.test(esLink), `ESPORTS link: ${esLink}`);
+    await page.locator('#esModeMatches').click();
+    await settle(page, w, opts, 150);
+    await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=CS2`, st => {
+      expect(st.page === 'page-esports' && st.es.mode === 'matchups' && st.emu.game === 'CS2', `esports: ${JSON.stringify({ es: st.es, emu: st.emu })}`);
+      expect(st.esChips.join() === 'MATCHUPS', `ESPORTS chips: ${st.esChips}`);
+    });
+    await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=SOCCER`, st => {
+      expect(st.emu.game === 'SOCCER' && st.socShown, `soccer: ${JSON.stringify(st.emu)} shown ${st.socShown}`);
+    });
   },
 
   async 'star a venue and keep it after a reload'(page, w, opts) {
@@ -257,6 +940,557 @@ const FLOWS = {
     await settle(page, w, opts, 120);
     await page.keyboard.press('Escape');
     expect((await order())[0] === first, 'RESET did not bring the order back');
+  },
+
+  async 'search everything from any screen'(page, w, opts) {
+    // a recorded game the odds screen shows for the viewer's state, so the jump lands on a real row
+    const game = await page.evaluate(async () => { try { const d = await (await fetch(`/api/odds-screen${lrState ? `?state=${lrState}` : ''}`)).json(); return (d.games || []).find(g => g.markets?.length) || null; } catch { return null; } });
+    // offline the server's boards are empty: TEST DATA hits stand in, one per
+    // kind, built around that game; the real endpoint is checked below
+    const body = { q: 'e2e', count: 3, note: 'TEST DATA', holds: { game: 1, series: 1, player: 1, market: 0, league: 0 }, state: null, stale: { odds: false },
+      hits: [
+        ...(game ? [{ kind: 'game', id: `g:${game.id}`, title: `${game.away} @ ${game.home}`, sub: game.leagueLabel || '', start: game.start, market: 'Moneyline',
+          prices: [{ label: game.away, venue: 'fanduel', venueName: 'FanDuel', american: 150, decimal: 2.5, point: null }, { label: game.home, venue: null }], go: { tab: 'odds', view: 'lines', game: String(game.id), league: game.league || '', q: game.home } }] : []),
+        { kind: 'series', id: 'mu:LOL:test-series-9', title: 'E2E Alpha vs E2E Bravo', sub: 'LoL · TEST', start: new Date(Date.now() + 3 * 3600e3).toISOString(), exchanges: [{ venue: 'kalshi', venueName: 'Kalshi', costs: [0.45, 0.57] }], go: { tab: 'esports', mode: 'matchups', game: 'LOL', id: 'test-series-9' } },
+        { kind: 'player', id: 'p:NBA|e2e player', title: 'E2E Player', sub: 'NBA · TST', props: 2, apps: ['underdog', 'prizepicks'], lines: [{ market: 'Points', line: 24.5 }], go: { tab: 'props', view: 'cards', sport: 'NBA', q: 'E2E Player' } },
+      ] };
+    const fake = route => (new URL(route.request().url()).searchParams.get('q') || '').length >= 2 ? route.fulfill({ json: body }) : route.continue();
+    if (!opts.live) await page.route('**/api/search?*', fake);
+    try {
+      await openTab(page, 'results', w, opts);
+      await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+      // S opens it from a tab with no search box of its own
+      await page.keyboard.press('s');
+      await page.locator('#gsModal.open').waitFor({ timeout: 4000 });
+      expect(await page.locator('#gsInput').evaluate(el => el === document.activeElement), 'S did not put the cursor in the search box');
+      await settle(page, w, opts, 200);
+      expect(/Type two or more letters/.test(await text(page, '#gsList')), `the empty search box gives no help: "${await text(page, '#gsList')}"`);
+      if (opts.live) {
+        // live: whatever the site holds, the box must answer in words
+        await page.keyboard.type('nba');
+        await settle(page, w, opts, 500);
+        expect((await page.locator('#gsList .gs-row').count()) > 0 || /Nothing the site holds now matches/.test(await text(page, '#gsList')), 'a live search showed neither hits nor a nothing-found line');
+        expect(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)), 'the search box scrolls the page sideways');
+        await page.keyboard.press('Escape');
+        return;
+      }
+      await page.keyboard.type('e2e');
+      await settle(page, w, opts, 300);
+      const rows = page.locator('#gsList .gs-row');
+      expect(await rows.count() === body.hits.length, `search shows ${await rows.count()} rows for ${body.hits.length} hits`);
+      const list = await text(page, '#gsList');
+      expect(/PLAYERS/.test(list) && /ESPORTS SERIES/.test(list), `search does not group its hits: "${list.slice(0, 200)}"`);
+      expect(/45¢/.test(list), 'a series does not show its cost to buy in cents');
+      if (game) expect(/\+150/.test(list), `a game's best price is not in American odds: "${list.slice(0, 200)}"`);
+      // the odds format setting: decimal shows 2.50
+      if (game) {
+        await page.evaluate(() => oddsFmtSet('decimal'));
+        await page.evaluate(() => gsRender());
+        expect(/2\.50/.test(await text(page, '#gsList')), 'search ignores CUSTOMIZE > Odds format');
+        await page.evaluate(() => oddsFmtSet('american'));
+        await page.evaluate(() => gsRender());
+      }
+      expect(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)), 'the search box scrolls the page sideways');
+      // Enter opens the first hit: the game, outlined on ODDS SCREEN
+      if (game) {
+        await page.keyboard.press('Enter');
+        await settle(page, w, opts, 400);
+        expect(!(await page.locator('#gsModal.open').count()), 'Enter did not close the search box');
+        expect(await page.locator('#page-odds.active').count() === 1, 'the game hit did not open ODDS SCREEN');
+        const row = page.locator(`#page-odds [data-sid="g:${game.id}"]`);
+        await row.waitFor({ timeout: 6000 });
+        for (let i = 0; i < 12 && !(await row.evaluate(el => el.classList.contains('gs-flash'))); i++) await settle(page, w, opts, 150);
+        expect(await row.evaluate(el => el.classList.contains('gs-flash')), 'the game row was not outlined');
+        expect(await page.inputValue('#osSearch') === String(game.home).toLowerCase(), 'ODDS SCREEN was not filtered to the team');
+        await page.locator('#osSearch').fill('');
+        await page.evaluate(() => { osUi.q = ''; renderOdds(); });
+      }
+      // Ctrl+K from inside a text box; the player hit opens PROPS on that player
+      await page.locator('#osSearch').focus().catch(() => {});
+      await page.keyboard.press('Control+k');
+      await page.locator('#gsModal.open').waitFor({ timeout: 4000 });
+      await page.locator('#gsInput').fill('e2e');
+      await settle(page, w, opts, 300);
+      await page.locator('#gsList .gs-row', { hasText: 'E2E Player' }).locator('.gs-main').click();
+      await settle(page, w, opts, 300);
+      expect(await page.locator('#page-props.active').count() === 1, 'the player hit did not open PROPS');
+      expect(await page.inputValue('#pbSearch') === 'E2E Player', `PROPS was not filtered to the player: "${await page.inputValue('#pbSearch')}"`);
+      // Esc closes it
+      await page.keyboard.press('s');
+      await page.locator('#gsModal.open').waitFor({ timeout: 4000 });
+      await page.keyboard.press('Escape');
+      expect(!(await page.locator('#gsModal.open').count()), 'Escape did not close the search box');
+      await page.evaluate(() => { pbState.q = ''; const b = document.getElementById('pbSearch'); if (b) b.value = ''; });
+    } finally {
+      if (!opts.live) await page.unroute('**/api/search?*', fake).catch(() => {});
+    }
+    // the real endpoint offline: an empty board finds nothing and says so
+    const real = await page.evaluate(async () => (await fetch('/api/search?q=zz')).json());
+    expect(Array.isArray(real.hits) && real.holds && /no fair or EV/.test(real.note), `/api/search answered ${JSON.stringify(real).slice(0, 200)}`);
+  },
+
+  async 'keyboard shortcuts and compact rows'(page, w, opts) {
+    const active = () => page.locator('.tab.active').first().evaluate(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1] || '');
+    const bar = await page.locator('.tab-row > .tab:not(.tab-end)').evaluateAll(bs => bs.map(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1]).filter(Boolean));
+    await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    await page.keyboard.press('Shift+Slash');
+    await page.locator('#kbdModal.open').waitFor({ timeout: 4000 });
+    expect(/Previous or next tab/.test(await text(page, '#kbdList')), 'the ? list is empty');
+    await page.keyboard.press('2');
+    await settle(page, w, opts, 60);
+    expect(await active() !== bar[1] || bar.length < 2, 'a number key switched tabs under the ? list');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+    expect(!(await page.locator('#kbdModal.open').count()), 'Escape did not close the ? list');
+    if (bar.length >= 2) {
+      await page.keyboard.press('2');
+      await settle(page, w, opts, 120);
+      expect(await active() === bar[1], `2 did not open ${bar[1]}`);
+      await page.keyboard.press(']');
+      await settle(page, w, opts, 120);
+      expect(await active() !== bar[1], '] did not move to the next tab');
+      await page.keyboard.press('[');
+      await settle(page, w, opts, 120);
+      expect(await active() === bar[1], '[ did not move back');
+    }
+    await openTab(page, 'odds', w, opts);
+    const box = page.locator('#osSearch');
+    if (await box.isVisible()) {
+      await page.keyboard.press('/');
+      expect(await box.evaluate(el => el === document.activeElement), '/ did not focus the search box');
+      await page.keyboard.type('1c');
+      await settle(page, w, opts, 80);
+      expect(await active() === 'odds', 'typing in the search box switched tabs');
+      expect(!(await page.locator('#layModal.open').count()), 'typing c in the search box opened CUSTOMIZE');
+      await box.fill('');
+      await box.evaluate(el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.blur(); });
+      await settle(page, w, opts, 80);
+    }
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layCompact').click();
+    await settle(page, w, opts, 80);
+    expect(await page.evaluate(() => document.body.classList.contains('compact')), 'Compact rows did not turn on');
+    expect((await ls(page, 'lr_layout'))?.compact === true, 'Compact rows was not saved');
+    await page.locator('#layCompact').click();
+    await settle(page, w, opts, 80);
+    expect(!(await page.evaluate(() => document.body.classList.contains('compact'))), 'Compact rows did not turn off');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+  },
+
+  async 'AFTER FEES: every price after the venue fee, with the FEES sources'(page, w, opts) {
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `after-fees-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    await openTab(page, 'odds', w, opts);
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect((await text(page, '#layAfterFees')) === 'OFF', 'After fees should start OFF');
+    await page.locator('#layAfterFees').click();
+    await settle(page, w, opts, 250);
+    expect((await text(page, '#layAfterFees')) === 'ON', 'After fees did not turn ON');
+    expect((await page.evaluate(() => localStorage.getItem('lr_after_fees'))) === '1', 'After fees was not saved');
+    await page.keyboard.press('Escape');
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    // GAME LINES: venue cells read as the after-fee chance, an exchange cell carries its fee
+    await page.locator('#osContent .af-v').first().waitFor({ timeout: 6000 });
+    const os = await page.evaluate(() => ({ n: document.querySelectorAll('#osContent .af-v').length, subs: [...document.querySelectorAll('#osContent .af-sub')].map(e => e.textContent) }));
+    expect(os.n > 0 && os.subs.every(t => /^(fee \d+(\.\d)?¢|no fee|fee unknown)$/.test(t)), `game lines after fees: ${JSON.stringify(os).slice(0, 300)}`);
+    expect(await wide() <= 0, `ODDS SCREEN after fees is ${await wide()} px too wide`);
+    await shot('lines');
+    // FEES footnote: every schedule, its status and source
+    const foot = page.locator('#afFoot details');
+    await foot.waitFor({ timeout: 4000 });
+    await foot.locator('summary').click();
+    await settle(page, w, opts, 80);
+    const ft = await text(page, '#afFoot');
+    for (const want of ['Kalshi', 'VERIFIED', 'UNVERIFIED', 'Polymarket US', 'PrizePicks', 'oblin and demon', 'kalshi.com/docs/kalshi-fee-schedule.pdf', 'Sleeper'])
+      expect(ft.includes(want), `FEES footnote misses "${want}"`);
+    expect(await wide() <= 0, `FEES footnote is ${await wide()} px too wide`);
+    await page.locator('#afFoot details').evaluate(el => el.scrollIntoView());
+    await shot('fees');
+    await foot.locator('summary').click();
+    // BEST PRICES (Exchange Shopper): the after-fee chance on screen is the cost the shopper ranks on
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 300);
+    const shp = await page.evaluate(() => {
+      const d = window.shpUi?.data, out = { cells: 0, bad: [] };
+      for (const m of d?.markets || []) for (const sd of m.sides) for (const c of sd.prices) {
+        if (!(c.effective > 1)) continue;
+        // eslint-disable-next-line no-undef
+        const a = LRFees.afterFee({ venue: c.provider, decimal: c.effective });
+        if (!a || a.implied == null) continue;
+        out.cells++;
+        if (Math.abs(a.implied - c.implied) > 2e-4) out.bad.push(`${c.provider} ${a.implied} vs ${c.implied}`);
+      }
+      out.shown = document.querySelectorAll('#shpContent .af-v').length;
+      return out;
+    });
+    expect(!shp.bad.length, `shopper after-fee chance differs from the ranked cost: ${shp.bad.slice(0, 3).join('; ')}`);
+    expect(shp.cells === 0 || shp.shown > 0, 'BEST PRICES shows no after-fee prices');
+    expect(await wide() <= 0, `BEST PRICES after fees is ${await wide()} px too wide`);
+    await shot('shopper');
+    // PROPS: each app's line carries its own break-even
+    await openTab(page, 'props', w, opts);
+    await settle(page, w, opts, 400);
+    const be = await page.locator('#page-props .af-be').count();
+    if (await page.locator('#page-props .pb-bk, #page-props .ln-row').count()) expect(be > 0, 'PROPS lines show no break-even with After fees on');
+    expect(await wide() <= 0, `PROPS after fees is ${await wide()} px too wide`);
+    await shot('props');
+    // off again: raw prices back
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click().catch(() => {});
+    await settle(page, w, opts, 200);
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layAfterFees').click();
+    await settle(page, w, opts, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 200);
+    expect(!(await page.locator('#osContent .af-v').count()), 'After fees off still shows after-fee prices');
+    expect(!(await page.locator('#afFoot details').count()), 'After fees off still shows the FEES footnote');
+    // leave the odds screen on the view the flows before this one left it on
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click().catch(() => {});
+    await settle(page, w, opts, 200);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+
+  async 'EXPORT and PRINT a screen, and the glossary ? and long press'(page, w, opts) {
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `export-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    const wait = async ms => { if (opts.clock) await page.clock.runFor(ms).catch(() => {}); else await page.waitForTimeout(ms); };
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    const parse = csv => {
+      const rows = [];
+      let row = [], f = '', q = false;
+      for (let i = 0; i < csv.length; i++) {
+        const c = csv[i];
+        if (q) { if (c === '"' && csv[i + 1] === '"') { f += '"'; i++; } else if (c === '"') q = false; else f += c; continue; }
+        if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; } else if (c === '\n') { row.push(f.replace(/\r$/, '')); rows.push(row); row = []; f = ''; } else f += c;
+      }
+      if (f || row.length) { row.push(f); rows.push(row); }
+      const [head, ...body] = rows;
+      return { head, rows: body.map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? '']))) };
+    };
+    const exportNow = async (pageId, name) => {
+      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 6000 }), page.locator(`#page-${pageId} > .xp-bar button`, { hasText: 'EXPORT' }).click()]);
+      expect(/^line-reaper-[a-z0-9-]+-\d{4}-\d{2}-\d{2}-\d{4}\.csv$/.test(dl.suggestedFilename()), `the export is named "${dl.suggestedFilename()}"`);
+      const file = path.join(os.tmpdir(), `lr-e2e-xp-${process.pid}-${opts.viewportName}-${name}.csv`);
+      await dl.saveAs(file);
+      const csv = fs.readFileSync(file, 'utf8');
+      fs.rmSync(file, { force: true });
+      await settle(page, w, opts, 60);
+      return { name: dl.suggestedFilename(), ...parse(csv) };
+    };
+    const tagged = sel => page.evaluate(s => [...document.querySelectorAll(`${s} [data-xp]`)].filter(e => e.getClientRects().length).length, sel);
+    // GAME LINES: one row a venue price, exactly the cells on screen
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#osContent [data-xp]').first().waitFor({ timeout: 6000 });
+    let n = await tagged('#osContent');
+    let x = await exportNow('odds', 'lines');
+    for (const c of ['venue', 'price', 'after_fee_breakeven', 'fair', 'fair_source', 'close', 'fill_size_usd', 'read_at', 'filters', 'exported_at'])
+      expect(x.head.includes(c), `the export has no ${c} column: ${x.head.join(',')}`);
+    expect(x.rows.length === n, `GAME LINES shows ${n} prices, the file has ${x.rows.length}`);
+    expect(x.rows.every(r => r.venue && r.price && r.screen === 'ODDS SCREEN' && r.view === 'GAME LINES'), `a row misses its venue or price: ${JSON.stringify(x.rows.find(r => !r.venue || !r.price))}`);
+    expect(x.rows.some(r => /%$/.test(r.after_fee_breakeven)), 'no row carries a break-even after fees');
+    expect(x.rows.some(r => r.read_at), 'no row carries when it was read');
+    expect(x.rows.every(r => r.prices_shown === 'as listed'), 'AFTER FEES is off, so the prices are as listed');
+    // a filter narrows the file the same way it narrows the screen
+    await page.selectOption('#osMarket', 'ml');
+    await settle(page, w, opts, 200);
+    n = await tagged('#osContent');
+    x = await exportNow('odds', 'lines-ml');
+    expect(x.rows.length === n && n > 0, `moneyline only: ${n} on screen, ${x.rows.length} in the file`);
+    expect(new Set(x.rows.map(r => r.market)).size === 1, `moneyline only, but the file holds ${[...new Set(x.rows.map(r => r.market))].join(', ')}`);
+    expect(x.rows.every(r => /Moneyline/.test(r.filters)), `the filter is not written with the rows: "${x.rows[0]?.filters}"`);
+    await page.selectOption('#osMarket', '');
+    await settle(page, w, opts, 200);
+    // BEST PRICES (Exchange Shopper): the ranked rows, venue and fill size where a book was read
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 400);
+    n = await tagged('#shpContent');
+    if (n) {
+      x = await exportNow('odds', 'opps');
+      expect(x.rows.length === n, `BEST PRICES shows ${n} rows, the file has ${x.rows.length}`);
+      expect(x.rows.every(r => r.venue && r.decimal_odds), 'a ranked row misses its venue or odds');
+    }
+    // PROPS: each app's line on the board
+    await openTab(page, 'props', w, opts);
+    await settle(page, w, opts, 400);
+    n = await tagged('#page-props');
+    if (n) {
+      x = await exportNow('props', 'props');
+      expect(x.rows.length === n, `PROPS shows ${n} lines, the file has ${x.rows.length}`);
+      expect(x.rows.some(r => /%$/.test(r.after_fee_breakeven)), "no prop carries its app's break-even");
+    }
+    // RESULTS: a screen with plain tables exports its columns
+    await openTab(page, 'results', w, opts);
+    await settle(page, w, opts, 300);
+    const tables = await page.evaluate(() => [...document.querySelectorAll('#page-results table')].filter(t => t.getClientRects().length).length);
+    if (tables) {
+      x = await exportNow('results', 'results');
+      expect(x.rows.length > 0 && x.head.includes('screen') && x.head.includes('loaded_at'), `RESULTS export: ${x.head.join(',')}`);
+    }
+    // PRINT: a light view with no nav and no controls, the screen and filters at the top
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#page-odds > .xp-bar button', { hasText: 'PRINT' }).click();
+    await settle(page, w, opts, 150);
+    const pv = await page.evaluate(() => ({
+      head: document.getElementById('xpHead')?.innerText || '', nav: getComputedStyle(document.querySelector('.nav')).display, bg: getComputedStyle(document.body).backgroundColor,
+      chips: [...document.querySelectorAll('#page-odds .sport-chip, #page-odds select')].filter(e => e.getClientRects().length).length,
+      rows: [...document.querySelectorAll('#osContent [data-xp]')].filter(e => e.getClientRects().length).length,
+      cell: getComputedStyle(document.querySelector('#osContent td') || document.body).color,
+    }));
+    expect(/LINE REAPER · ODDS SCREEN · GAME LINES/.test(pv.head) && /Printed/.test(pv.head), `the print view header reads "${pv.head.slice(0, 160)}"`);
+    expect(pv.nav === 'none' && pv.chips === 0, `the print view still shows the nav (${pv.nav}) or ${pv.chips} controls`);
+    expect(pv.bg === 'rgb(255, 255, 255)' && pv.cell === 'rgb(17, 17, 17)', `the print view is not light: body ${pv.bg}, text ${pv.cell}`);
+    expect(pv.rows > 0, 'the print view shows no prices');
+    expect(await wide() <= 0, `the print view is ${await wide()} px too wide`);
+    await shot('print-view');
+    await page.emulateMedia({ media: 'print' });
+    const pr = await page.evaluate(() => ({ btns: [...document.querySelectorAll('#xpHead button')].filter(e => e.getClientRects().length).length, bar: [...document.querySelectorAll('.xp-bar')].filter(e => e.getClientRects().length).length }));
+    expect(pr.btns === 0 && pr.bar === 0, `printed, the page still shows ${pr.btns} print buttons and ${pr.bar} export bars`);
+    await page.emulateMedia({ media: null });
+    await page.locator('#xpHead button', { hasText: 'PRINT / SAVE AS PDF' }).click();
+    await settle(page, w, opts, 120);
+    expect(/Save as PDF/.test(await text(page, '#xpHeadSay')), 'PRINT / SAVE AS PDF did not say what it opens');
+    await page.locator('#xpHead button', { hasText: 'CLOSE PRINT VIEW' }).click();
+    await settle(page, w, opts, 120);
+    expect(!(await page.locator('#xpHead').count()) && (await page.locator('.nav').isVisible()), 'CLOSE PRINT VIEW did not bring the app back');
+    // GLOSSARY: the ? beside a label opens its definition, with a link to /learn
+    const q = page.locator('#osContent .gl-q').first();
+    await q.waitFor({ timeout: 6000 });
+    await q.scrollIntoViewIfNeeded();
+    await q.click();
+    await settle(page, w, opts, 80);
+    const pop = await page.evaluate(() => { const p = document.getElementById('glPop'); const r = p?.getBoundingClientRect(); return p && { shown: getComputedStyle(p).display !== 'none', text: p.innerText, href: p.querySelector('a')?.getAttribute('href'), left: r.left, right: r.right }; });
+    expect(pop?.shown && pop.text.length > 40 && /^\/learn#g-[a-z0-9-]+$/.test(pop.href || ''), `the ? did not open a definition: ${JSON.stringify(pop)}`);
+    expect(pop.left >= 0 && pop.right <= (await page.evaluate(() => innerWidth)), 'the definition sticks out of the screen');
+    await shot('glossary-q');
+    await page.locator('#glPop .gl-x').click();
+    expect(!(await page.locator('#glPop').isVisible()), 'the definition did not close');
+    // a long press on a chip opens its definition and does not switch the view
+    const chip = page.locator('#oddsModes button', { hasText: 'MAKER' }).first();
+    await chip.scrollIntoViewIfNeeded();
+    const box = await chip.boundingBox();
+    const before = await page.evaluate(() => window.shpUi?.opts?.mode);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await wait(700);
+    await page.mouse.up();
+    await settle(page, w, opts, 120);
+    const lp = await page.evaluate(() => ({ shown: getComputedStyle(document.getElementById('glPop')).display !== 'none', text: document.getElementById('glPop').innerText, mode: window.shpUi?.opts?.mode }));
+    expect(lp.shown && /Maker/i.test(lp.text), `a long press on MAKER did not open its definition: ${JSON.stringify(lp).slice(0, 200)}`);
+    expect(lp.mode === before, `the long press also switched the view to ${lp.mode}`);
+    await page.keyboard.press('Escape');
+    // the GLOSSARY on /learn: every term at its anchor, on a phone too
+    try {
+      const res = await page.goto(`${opts.base}/learn#g-clv`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/learn answered ${res && res.status()}`);
+      const g = await page.evaluate(() => ({ n: document.querySelectorAll('#glossary ~ dl .gl-i, dl.gloss .gl-i').length, clv: document.getElementById('g-clv')?.innerText || '', wide: document.documentElement.scrollWidth - innerWidth }));
+      expect(g.n >= 40 && /closing line value/i.test(g.clv), `the glossary on /learn: ${JSON.stringify(g).slice(0, 200)}`);
+      expect(g.wide <= 0, `the glossary is ${g.wide} px too wide`);
+      await shot('learn-glossary');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
+  async 'SHARE CARD: pick a row, see the card, copy a link that unfurls, save the image'(page, w, opts) {
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `sharecard-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const imgReady = () => page.waitForFunction(() => { const i = document.querySelector('#scPrev img'); return !i || (i.complete && i.naturalWidth > 0); }, null, { timeout: 15000 }).catch(() => {});
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#page-odds > .xp-bar button', { hasText: 'SHARE CARD' }).click();
+    await settle(page, w, opts, 150);
+    const kinds = await page.locator('#scSheet .sc-opt b').allInnerTexts();
+    expect(kinds.includes('RESULTS'), `the record is always offered: ${kinds}`);
+    expect(await wide() <= 0, 'the SHARE CARD sheet is wider than the screen');
+    // a row's card when the screen has one, else the record
+    const pick = kinds.indexOf('BEST PRICE') >= 0 ? kinds.indexOf('BEST PRICE') : kinds.indexOf('RESULTS');
+    await page.locator('#scSheet .sc-opt').nth(pick).click();
+    await imgReady();
+    const img = await page.evaluate(() => { const i = document.querySelector('#scPrev img'); return i ? { w: i.naturalWidth, h: i.naturalHeight, src: i.getAttribute('src') } : null; });
+    expect(img && img.w === 1200 && img.h === 630, `the card image did not load as 1200x630: ${JSON.stringify(img)}`);
+    expect(!/stake|slip/i.test(img.src), `the card URL carries account data: ${img.src}`);
+    await shot(kinds[pick] === 'BEST PRICE' ? 'price' : 'record');
+    await page.locator('#scSheet button', { hasText: 'COPY LINK' }).click();
+    await settle(page, w, opts, 100);
+    const link = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(kinds[pick] === 'BEST PRICE' ? /\/share\/price\?id=[^&]+&to=%23lr%26t%3Dodds/.test(link) : /\/share\/record$/.test(link), `share link: ${link}`);
+    // the link is a page whose preview is the card, and a button back to this view
+    const html = await (await page.request.get(link)).text();
+    const og = (html.match(/<meta property="og:image" content="([^"]+)"/) || [])[1];
+    expect(og && /\/card\/(price|record)\.png\?/.test(og), `the share page has no card og:image: ${og}`);
+    expect(/<meta name="twitter:card" content="summary_large_image">/.test(html), 'the share page has no Twitter card');
+    expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(html), 'the share page shows broken text or a claim');
+    const ogImg = await page.request.get(og.replace(/&amp;/g, '&').replace(/^https?:\/\/[^/]+/, new URL(opts.base).origin));
+    expect(/image\/png/.test(ogImg.headers()['content-type'] || ''), `the preview image is ${ogImg.headers()['content-type']}`);
+    // SAVE IMAGE downloads the record card as a PNG
+    const rec = kinds.indexOf('RESULTS');
+    await page.locator('#scSheet .sc-opt').nth(rec).click();
+    await imgReady();
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.locator('#scSheet a', { hasText: 'SAVE IMAGE' }).click()]);
+    expect(/^line-reaper-record-[\d-]+\.png$/.test(dl.suggestedFilename()), `the saved image is named "${dl.suggestedFilename()}"`);
+    await dl.cancel().catch(() => {});
+    await shot('record');
+    await page.locator('#scSheet button', { hasText: 'CLOSE' }).click();
+    await settle(page, w, opts, 100);
+    expect(!(await page.locator('#scSheet').count()), 'CLOSE left the sheet open');
+  },
+
+  async 'odds format and My state reach the league pages, share cards and widgets'(page, w, opts) {
+    const st0 = await page.evaluate(() => { const s = lrState; window.lrSetState('TX'); return s; });
+    await settle(page, w, opts, 200);
+    // the viewer's format, set where a viewer sets it: CUSTOMIZE > Odds format
+    await page.evaluate(() => window.layOpen());
+    await settle(page, w, opts, 120);
+    await page.locator('#layOddsFmt').selectOption('decimal');
+    await settle(page, w, opts, 120);
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 80);
+    try {
+      // a share card from the odds screen carries the format, and a league card the state
+      await openTab(page, 'odds', w, opts);
+      await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+      await settle(page, w, opts, 300);
+      await page.locator('#page-odds > .xp-bar button', { hasText: 'SHARE CARD' }).click();
+      await settle(page, w, opts, 150);
+      // eslint-disable-next-line no-undef
+      const opt = await page.evaluate(() => scOptions().map(o => ({ k: o.k, img: scImg(o), link: scLink(o) })));
+      for (const o of opt.filter(x => x.k !== 'record')) expect(/[?&]odds=decimal(&|$)/.test(o.img), `a ${o.k} card does not carry the odds format: ${o.img}`);
+      for (const o of opt.filter(x => x.k === 'league')) expect(/[?&]state=TX(&|$)/.test(o.img) && /[?&]state=TX(&|$)/.test(o.link), `a league card does not carry My state: ${o.link}`);
+      await page.locator('#scSheet button', { hasText: 'CLOSE' }).click();
+      await settle(page, w, opts, 80);
+      const league = opt.find(x => x.k === 'league');
+      if (league) {
+        const html = await (await page.request.get(league.link.replace(/^https?:\/\/[^/]+/, new URL(opts.base).origin))).text();
+        expect(/OPEN THE LEAGUE PAGE/.test(html) && /href="\/[a-z/0-9]+\?state=TX&amp;odds=decimal"/.test(html), 'the league share page does not open the league page in the same state and format');
+      }
+      // a league page in a format and a state: prices, the picker and its links keep both
+      const lp = await page.context().newPage();
+      try {
+        await lp.goto(`${opts.base}/nfl?state=CA&odds=decimal`, { waitUntil: 'domcontentloaded' });
+        expect(await lp.locator('#sto').inputValue() === 'decimal' && await lp.locator('#stp').inputValue() === 'CA', 'the league page picker does not show the picked format and state');
+        const prices = await lp.locator('td[data-l="Price"], td[data-l="Fair"]').allInnerTexts();
+        expect(prices.every(t => !/^[+-]\d{3,}/.test(t.trim())), `a league page price is still American: ${prices.slice(0, 4)}`);
+        expect(await lp.locator('a[href="/nba?state=CA&odds=decimal"]').count() > 0, 'the league list does not keep the state and format');
+        expect(await lp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth) <= 0, 'the league page is wider than the screen');
+        await lp.locator('#sto').selectOption('fractional');
+        await Promise.all([lp.waitForNavigation({ timeout: 8000 }), lp.locator('.st-pick button[type="submit"]').click()]);
+        expect(/[?&]odds=fractional/.test(lp.url()) && /[?&]state=CA/.test(lp.url()), `SHOW did not keep the picks: ${lp.url()}`);
+        // a widget in a format
+        const wd = await (await page.request.get(`${opts.base}/embed/best-price?odds=decimal&n=3`)).text();
+        expect(!/<em>FAIR<\/em>[+-]\d{3}/.test(wd), 'the best-price widget ignores data-odds');
+      } finally { await lp.close(); }
+    } finally {
+      await page.evaluate(s => { window.oddsFmtSet('american'); window.lrSetState(s); }, st0);
+      await settle(page, w, opts, 120);
+    }
+  },
+
+  async 'every ODDS SCREEN mode and the new research views open with plain words'(page, w, opts) {
+    // the crawl's time on a tab runs out in CUSTOMIZE and the bet form before it
+    // reaches the later modes, so each one is opened here: it must show something,
+    // no broken text, nothing wider than a phone, and an empty view in words
+    const look = async (tab, what) => {
+      await settle(page, w, opts, 250);
+      const r = await page.evaluate(t => ({ text: (document.getElementById(`page-${t}`)?.innerText || '').trim(), bad: window.__e2e.textIssues(), wide: document.documentElement.scrollWidth - window.innerWidth,
+        over: window.__e2e.overflow().map(o => `${o.what} ${o.where}`) }), tab);
+      expect(r.text.length > 200, `${what}: the view is blank`);
+      expect(!r.bad.length, `${what}: broken text ${String(JSON.stringify(r.bad[0])).slice(0, 160)}`);
+      expect(r.wide <= 0, `${what}: the page is ${r.wide} px too wide`);
+      if (opts.viewportName === 'phone') expect(!r.over.length, `${what}: sticks out at phone size: ${r.over[0]}`);
+      expect(!/couldn't load|could not load/i.test(r.text) || /try again|retry|in a minute|refresh/i.test(r.text), `${what}: an error that does not say what to do`);
+      return r.text;
+    };
+    await openTab(page, 'odds', w, opts);
+    const mode0 = (await page.locator('#oddsModes button.active').first().innerText().catch(() => '')).trim();
+    const modes = (await page.locator('#oddsModes button').allInnerTexts()).map(t => t.trim()).filter(Boolean);
+    expect(modes.length >= 6, `the ODDS SCREEN has only ${modes.length} modes: ${modes}`);
+    for (const m of modes) {
+      await page.locator('#oddsModes button', { hasText: m }).first().click();
+      await look('odds', `ODDS SCREEN > ${m}`);
+      if (/OUTRIGHTS/i.test(m)) {
+        for (const sub of ['RECORD', 'PRICES NOW', 'SEASON FUTURES']) {
+          const b = page.locator('#ortModes button', { hasText: sub }).first();
+          expect(await b.count(), `OUTRIGHTS has no ${sub} chip`);
+          await b.click();
+          await look('odds', `OUTRIGHTS > ${sub}`);
+        }
+        // back to every sport, as the later flows expect
+        await page.locator('#ortModes button', { hasText: /^ALL$/ }).first().click();
+        await settle(page, w, opts, 120);
+      }
+    }
+    // leave the odds screen on the mode it was on, as the later flows expect
+    if (mode0) { await page.locator('#oddsModes button', { hasText: mode0 }).first().click(); await settle(page, w, opts, 200); }
+    await openTab(page, 'esports', w, opts);
+    const es0 = await page.evaluate(() => document.querySelector('[id^="esMode"].active')?.id || '');
+    await page.locator('#esModeMapUnders').click();
+    await look('esports', 'ESPORTS > MAP UNDERS');
+    if (es0) { await page.locator(`#${es0}`).click(); await settle(page, w, opts, 150); }
+    await openTab(page, 'props', w, opts);
+    await page.locator('#pbView button', { hasText: 'EXCHANGE PROPS' }).first().click();
+    await look('props', 'PROPS > EXCHANGE PROPS');
+    const rec = page.locator('#page-props button[onclick^="xprSet"]', { hasText: 'RECORD' }).first();
+    if (await rec.count()) { await rec.click(); await look('props', 'PROPS > EXCHANGE PROPS > RECORD'); }
+    await page.locator('#pbView button', { hasText: 'LINES' }).first().click();
+    await settle(page, w, opts, 150);
+    // a leg every sharp book lists carries its longest tag (live 10-26: "PIN 11.5 · FD 13.5 · BR 12.5 · KAL 12.5"
+    // ran past the card at 375 px); the recording has none that long, so one row gets it
+    const tagged = await page.evaluate(() => {
+      const n = document.querySelector('#page-props .ln-row .ln-name');
+      if (!n) return false;
+      n.querySelector('.pb-anc')?.remove();
+      n.insertAdjacentHTML('beforeend', '<span class="pb-anc">PIN 11.5 · FD 13.5 · BR 12.5 · KAL 12.5</span>');
+      return true;
+    });
+    if (tagged) await look('props', 'PROPS > LINES with a four-book sharp tag');
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+
+  async 'ESPORTS matches call a price gap a gap, never an edge'(page, w, opts) {
+    // nothing in esports is proven on our record, so a price under fair is a
+    // gap vs the sharp line. TEST DATA when the board has no gap right now: the
+    // first match gets one labelled made-up gap so the gap header, card and
+    // chip render on real markup; the view is then drawn again from the feed.
+    await openTab(page, 'esports', w, opts);
+    await page.evaluate(() => window.setEsMode('matches'));
+    await page.waitForFunction(() => esmState.data, null, { timeout: 15000 }).catch(() => {});
+    await settle(page, w, opts, 300);
+    const got = await page.evaluate(() => {
+      const d = esmState.data, m = d?.matches?.find(x => x.markets?.length);
+      const made = !!(m && !d.matches.some(x => x.edges?.length));
+      if (made) {
+        const mk = m.markets[0], oc = mk.outcomes[0];
+        m.edges = [{ market: mk.key, kind: mk.kind, outcome: oc.name, venue: 'kalshi', cost: 0.4, fair: 0.45, ev: 0.125 }];
+      }
+      esmState.edgesOnly = true; renderEsMatches();
+      const pane = document.getElementById('esMatchesPane');
+      const t = pane ? pane.innerText : '';
+      if (made) m.edges = [];
+      esmState.edgesOnly = false; renderEsMatches();
+      return { t, made, rendered: !!m };
+    });
+    expect(got.t.length > 0, 'the ESPORTS matches view drew nothing');
+    expect(/Gaps only/i.test(got.t), `the filter chip must read "Gaps only": ${got.t.slice(0, 300)}`);
+    expect(/not an edge/i.test(got.t) && /nothing in esports (is|has)/i.test(got.t), 'the matches view must say a gap is not an edge and nothing in esports is proven');
+    const bad = got.t.replace(/\b(is )?not an edge\b/gi, '').match(/\bEdges? (only|now|on this match|count)\b|\bBest prices right now\b|\bEV VS FAIR\b|\bKalshi edges\b|\b(an|the|biggest) edge\b/i);
+    expect(!bad, `the matches view still says "${bad && bad[0]}"`);
+    if (got.rendered) expect(/GAP VS FAIR/i.test(got.t) && /Biggest gaps vs fair, not an edge/i.test(got.t) && /Gaps? vs fair/i.test(got.t), 'a gap card must read GAP VS FAIR under a "not an edge" header');
   },
 
   // runs after the flows above, so this browser already has bets, slips and a saved layout
@@ -366,6 +1600,323 @@ const FLOWS = {
     expect(after && after !== before, 'the calculator output did not change');
     expect(/40(\.0)?%/.test(after), `+150 should read 40% implied: "${after.slice(0, 200)}"`);
   },
+
+  async 'first-run tour: every step, shows once, HELP and CUSTOMIZE reopen it'(page, w, opts) {
+    const tourState = () => page.evaluate(() => ({ open: document.getElementById('tour').classList.contains('open'), step: document.getElementById('tourStep').textContent, title: document.getElementById('tourTitle').textContent }));
+    // inside the window, no wider than the screen, and the ring on something the viewer can see
+    const placed = () => page.evaluate(() => {
+      const c = document.getElementById('tourCard').getBoundingClientRect(), r = document.getElementById('tourRing');
+      const rr = r.getBoundingClientRect();
+      return { card: c.left >= 0 && c.right <= innerWidth + 1 && c.top >= 0 && c.bottom <= innerHeight + 1, ring: !r.classList.contains('none') && rr.width > 4 && rr.height > 4, wide: document.documentElement.scrollWidth <= innerWidth + 1 };
+    });
+    await page.locator('#helpBtn').click();
+    await settle(page, w, opts, 120);
+    let st = await tourState();
+    expect(st.open && st.step === '1 / 6' && st.title === 'ODDS SCREEN', `HELP did not open the tour at step 1: ${JSON.stringify(st)}`);
+    expect(await page.evaluate(() => document.getElementById('page-odds').classList.contains('active')), 'step 1 did not land on ODDS SCREEN');
+    const want = ['ODDS SCREEN', 'EXCHANGE SHOPPER', 'PROPS', 'BET TRACKER AND MY SLIPS', 'RESULTS', 'PUSH ALERTS'];
+    for (let i = 0; i < want.length; i++) {
+      st = await tourState();
+      expect(st.title === want[i] && st.step === `${i + 1} / 6`, `step ${i + 1} reads ${JSON.stringify(st)}`);
+      const pl = await placed();
+      expect(pl.card && pl.ring && pl.wide, `step ${i + 1} (${want[i]}) is placed badly: ${JSON.stringify(pl)}`);
+      const txt = await text(page, '#tourText');
+      if (want[i] === 'EXCHANGE SHOPPER') expect(/MIN BET SIZE/.test(txt) && /not a proven edge/.test(txt), 'the shopper step must name MIN BET SIZE and say a price is not an edge');
+      if (want[i] === 'PUSH ALERTS') expect(/CUSTOMIZE > Phone app > Push alerts/.test(txt), 'the push step must give the taps');
+      if (i === 1) { await page.locator('#tourBack').click(); await settle(page, w, opts, 60); expect((await tourState()).title === want[0], 'BACK did not go back'); await page.locator('#tourNext').click(); await settle(page, w, opts, 60); }
+      if (i < want.length - 1) { await page.locator('#tourNext').click(); await settle(page, w, opts, 120); }
+    }
+    expect((await page.locator('#tourNext').innerText()).trim() === 'DONE', 'the last step should say DONE');
+    await page.locator('#tourNext').click();
+    await settle(page, w, opts, 60);
+    expect(!(await tourState()).open && (await page.evaluate(() => localStorage.getItem('lr_tour'))) === '1', 'DONE did not close the tour and remember it');
+    // shows once: a reload on this device does not bring it back
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await settle(page, w, opts, 300);
+    expect(!(await tourState()).open, 'the tour came back after a reload');
+    // a new device (no lr_tour): it opens by itself, and Escape closes it for good
+    await page.evaluate(() => localStorage.removeItem('lr_tour'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await settle(page, w, opts, 300);
+    expect((await tourState()).open, 'a device that has not seen the tour did not get it');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+    expect(!(await tourState()).open && (await page.evaluate(() => localStorage.getItem('lr_tour'))) === '1', 'Escape did not close the tour and remember it');
+    // CUSTOMIZE > App tour > SHOW, and the last step's OPEN CUSTOMIZE lands on Push alerts
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layTour').click();
+    await settle(page, w, opts, 120);
+    expect((await tourState()).open && !(await page.locator('#layModal.open').count()), 'CUSTOMIZE > App tour did not open the tour');
+    for (let i = 0; i < 5; i++) { await page.locator('#tourNext').click(); await settle(page, w, opts, 80); }
+    await page.locator('#tourAct').click();
+    await settle(page, w, opts, 120);
+    expect(!(await tourState()).open && (await page.locator('#layModal.open').count()) === 1, 'OPEN CUSTOMIZE did not open the panel');
+    expect(await page.locator('#pushBtn').isVisible(), 'the Push alerts row is not in view in CUSTOMIZE');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+  },
+
+  async 'developers page and widgets: key, try it, fit the screen'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    const claimy = /guaranteed|risk[- ]free|sure thing|lock of|undefined|NaN/i;
+    try {
+      const res = await page.goto(`${opts.base}/developers`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/developers answered ${res && res.status()}`);
+      expect(/Public API and widgets/.test(await text(page, 'h1')), 'the developers page heading is missing');
+      expect(await fits(), 'the developers page scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!claimy.test(body), 'the developers page shows a claim or broken text');
+      expect(/GET \/api\/v1\/best-prices/.test(body) && /GET \/api\/v1\/record/.test(body), 'an endpoint is missing from the docs');
+      expect(await page.locator('iframe[data-lr-id]').count() === 3, 'the three widget previews are missing');
+      if (!opts.live) {
+        // TRY IT before a key says to make one, rather than doing nothing
+        const tryBtn = page.locator('[data-try]').first();
+        if (await tryBtn.count()) {
+          await tryBtn.click();
+          expect(/Make a key first/.test(await text(page, '[data-try-msg]')), 'TRY IT without a key gave no answer');
+        }
+        // the Discord feed without a key says to make one, rather than doing nothing
+        await page.locator('#fdCheck').click();
+        expect(/Make a key first/.test(await text(page, '#fdOut')), 'CHECK FEED without a key gave no answer');
+        await page.locator('#btCheck').click();
+        expect(/Make a key first/.test(await text(page, '#btOut')), 'CHECK BOT without a key gave no answer');
+        await page.locator('#kname').fill('e2e site');
+        await page.locator('#mk button[type=submit]').click();
+        await page.locator('#keyText').waitFor({ timeout: 6000 });
+        const key = (await text(page, '#keyText')).trim();
+        expect(/^lr_[\w-]{20,}$/.test(key), `the new key reads "${key}"`);
+        expect(await page.locator('#mine').isVisible(), 'the saved key panel did not show');
+        if (await tryBtn.count()) {
+          await tryBtn.click();
+          await page.waitForFunction(() => /^\d{3} ·/.test(document.querySelector('[data-try-msg]').textContent), null, { timeout: 6000 });
+          expect(/^200 ·/.test(await text(page, '[data-try-msg]')), `TRY IT answered "${await text(page, '[data-try-msg]')}"`);
+        }
+        // the Discord feed with the key: a wrong URL is refused on the page, a
+        // right-looking one is checked with Discord (offline here, so it says so)
+        await page.locator('#fdCheck').click();
+        await page.waitForFunction(() => /No Discord feed on this key/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
+        await page.locator('#fdUrl').fill('https://example.com/not-a-hook');
+        await page.locator('#fd button[type=submit]').click();
+        expect(/not a Discord webhook URL/.test(await text(page, '#fdOut')), `CONNECT with a wrong URL said "${await text(page, '#fdOut')}"`);
+        await page.locator('#fdUrl').fill(`https://discord.com/api/webhooks/123456789012345678/${'e'.repeat(68)}`);
+        await page.locator('#fd button[type=submit]').click();
+        await page.waitForFunction(() => !/Checking the webhook/.test(document.getElementById('fdOut').textContent), null, { timeout: 15000 });
+        expect(/Discord|Connected/.test(await text(page, '#fdOut')), `CONNECT said "${await text(page, '#fdOut')}"`);
+        await page.locator('#fdOff').click();
+        await page.waitForFunction(() => /Disconnected/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
+        expect(await fits(), 'the developers page scrolls sideways after the feed steps');
+        // the Discord bot with the key: checked, a wrong id refused on the page, a
+        // right-looking app sent to Discord (offline or refused here, so it says so)
+        await page.locator('#btCheck').click();
+        await page.waitForFunction(() => /No Discord bot on this key/.test(document.getElementById('btOut').textContent), null, { timeout: 6000 });
+        await page.locator('#btApp').fill('12');
+        await page.locator('#bt button[type=submit]').click();
+        expect(/Application ID/.test(await text(page, '#btOut')), `CONNECT BOT with a wrong id said "${await text(page, '#btOut')}"`);
+        await page.locator('#btApp').fill('123456789012345678');
+        await page.locator('#btKey').fill('a'.repeat(64));
+        await page.locator('#btTok').fill(`MTIzNDU2Nzg5MDEyMzQ1Njc4.Gab12C.${'x'.repeat(38)}`);
+        await page.locator('#bt button[type=submit]').click();
+        await page.waitForFunction(() => !/Adding the commands/.test(document.getElementById('btOut').textContent), null, { timeout: 15000 });
+        expect(/Discord|Commands added|bot token|application id/.test(await text(page, '#btOut')), `CONNECT BOT said "${await text(page, '#btOut')}"`);
+        expect(await page.locator('#btTok').inputValue() === '', 'the bot token stayed in the box');
+        expect(await fits(), 'the developers page scrolls sideways after the bot steps');
+        // the Telegram bot with the key: checked, a malformed token refused on the
+        // page, a right-looking one sent to Telegram (offline or refused here, so it says so)
+        await page.locator('#tgCheck').click();
+        await page.waitForFunction(() => /No Telegram bot on this key/.test(document.getElementById('tgOut').textContent), null, { timeout: 6000 });
+        await page.locator('#tgTok').fill('nope');
+        await page.locator('#tg button[type=submit]').click();
+        expect(/BotFather/.test(await text(page, '#tgOut')), `CONNECT TELEGRAM BOT with a bad token said "${await text(page, '#tgOut')}"`);
+        await page.locator('#tgTok').fill(`123456789:${'x'.repeat(35)}`);
+        await page.locator('#tg button[type=submit]').click();
+        await page.waitForFunction(() => !/Connecting the bot/.test(document.getElementById('tgOut').textContent), null, { timeout: 15000 });
+        expect(/Telegram|Connected|token/.test(await text(page, '#tgOut')), `CONNECT TELEGRAM BOT said "${await text(page, '#tgOut')}"`);
+        expect(await page.locator('#tgTok').inputValue() === '', 'the Telegram token stayed in the box');
+        expect(await fits(), 'the developers page scrolls sideways after the Telegram steps');
+        await page.locator('#mineUse').click();
+        await page.waitForFunction(() => /Used \d+ of/.test(document.getElementById('mineInfo').textContent), null, { timeout: 6000 });
+        await page.locator('#mineRevoke').click();
+        await page.waitForFunction(() => /Revoked/.test(document.getElementById('mkOut').textContent), null, { timeout: 6000 });
+        const r = await page.request.get(`${opts.base}/api/v1/leagues`, { headers: { 'X-API-Key': key } });
+        expect(r.status() === 401, `a revoked key still answers ${r.status()}`);
+        expect(await fits(), 'the developers page scrolls sideways after making a key');
+      }
+      for (const u of ['/embed/best-price?league=nfl&n=3', '/embed/line-move', '/embed/record']) {
+        const wr = await page.goto(`${opts.base}${u}`, { waitUntil: 'domcontentloaded' });
+        expect(wr && wr.status() === 200, `${u} answered ${wr && wr.status()}`);
+        expect(await fits(), `${u} scrolls sideways at this size`);
+        const t = await page.evaluate(() => document.body.innerText);
+        expect(/LINE REAPER|FULL RECORD/.test(t), `${u} has no link back to the site`);
+        expect(!claimy.test(t), `${u} shows a claim or broken text`);
+        expect(!/[^ ]PROVEN|PROVEN/.test(t) || /graded|main lines|Proven here means|RESULTS/i.test(t), `${u} says PROVEN without the record behind it`);
+      }
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
+  async 'pricing page: plans from one table, honest words, fits the screen'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    const claimy = /guaranteed|risk[- ]free|sure thing|lock of|beat the books|undefined|NaN|\{\{/i;
+    try {
+      const res = await page.goto(`${opts.base}/pricing`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/pricing answered ${res && res.status()}`);
+      expect(/Free and Pro/.test(await text(page, 'h1')), 'the pricing page heading is missing');
+      expect(await fits(), 'the pricing page scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!claimy.test(body), 'the pricing page shows a claim or broken text');
+      expect(/Paying buys the tool, not an edge/.test(body), 'the pricing page lost the not-an-edge line');
+      expect(/same alerts/.test(body), 'the pricing page lost the same-alerts line');
+      expect(/What the record backs today/.test(body), 'the record block is missing');
+      // the API row reads the same limits the server enforces
+      expect(/10 a minute, 500 a day/.test(body) && /60 a minute, 5,000 a day/.test(body), 'the API limits are missing from the table');
+      // every button goes somewhere that answers
+      const hrefs = await page.evaluate(() => [...document.querySelectorAll('.card .cta')].map(a => a.getAttribute('href')));
+      expect(hrefs.length === 2 && hrefs.every(h => h && h !== '#'), `the plan buttons are ${JSON.stringify(hrefs)}`);
+      for (const h of hrefs.filter(x => x.startsWith('/'))) {
+        const r = await page.request.get(`${opts.base}${h}`);
+        expect(r.status() === 200, `${h} from the pricing page answered ${r.status()}`);
+      }
+      // PROVEN only with the record behind it
+      expect(!/PROVEN/.test(body), 'the pricing page shouts PROVEN');
+      // the sales page links here, and its plan lists come from the same table
+      await page.goto(`${opts.base}/`, { waitUntil: 'domcontentloaded' });
+      expect(await page.locator('a[href="/pricing"]').count() >= 1, 'the sales page does not link to /pricing');
+      const landing = await page.evaluate(() => document.querySelector('#pricing').innerText);
+      expect(/Sharp Tail \(research\)/.test(landing) && !claimy.test(landing), 'the sales page plan lists are not the plans table');
+      expect(await fits(), 'the sales page scrolls sideways at this size');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+    // CUSTOMIZE > Plans and pricing opens /pricing
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect(await page.locator('#layPricing').getAttribute('href') === '/pricing', 'CUSTOMIZE has no Plans and pricing link');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+  },
+
+  async 'line history: the list, one market\'s chart in the odds format and state picked, the CSV'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    // offline the server's archive holds the recording's own game histories (harness.js); past 30 days they have aged out
+    const fresh = opts.live || (opts.clock && Date.now() - Date.parse(opts.clock) < 29 * 86400e3);
+    try {
+      const res = await page.goto(`${opts.base}/lines`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/lines answered ${res && res.status()}`);
+      expect(/kept 30 days/.test(await text(page, 'h1')), 'the line history heading is missing');
+      expect(await fits(), 'the line history list scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!/guaranteed|risk[- ]free/i.test(body) && !/\bundefined\b|\bNaN\b|\[object Object\]/.test(body), 'the list shows a claim or broken text');
+      expect(/Showing markets priced by at least one venue a TX resident can use/.test(await text(page, '#lhVenues')), 'the list must say it shows Texas venues by default');
+      // the order: not started yet soonest first, then started, most recent first
+      const starts = await page.evaluate(() => [...document.querySelectorAll('ul.mk .sub')].map(e => e.textContent.match(/\b(starts|started) /)?.[1] || ''));
+      expect(starts.indexOf('starts') === -1 || starts.lastIndexOf('starts') < (starts.indexOf('started') === -1 ? Infinity : starts.indexOf('started')), `a started market is listed above one still to start: ${starts.join(',')}`);
+      // "Show every venue" is kept in this browser, then cleared by "Only TX venues"
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('#lhVenues a', { hasText: 'Show every venue' }).click()]);
+      expect(/venues=all/.test(page.url()) && /every venue we read/.test(await text(page, '#lhVenues')), `Show every venue did not turn on: ${page.url()}`);
+      await page.goto(`${opts.base}/lines`, { waitUntil: 'load' });
+      await page.waitForURL(/venues=all/, { timeout: 4000 }).catch(() => {});
+      expect(/venues=all/.test(page.url()), 'Show every venue was not kept in this browser');
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('#lhVenues a', { hasText: 'Only TX venues' }).click()]);
+      await page.goto(`${opts.base}/lines`, { waitUntil: 'load' });
+      expect(!/venues=all/.test(page.url()) && /a TX resident can use/.test(await text(page, '#lhVenues')), 'Only TX venues was not kept');
+      const links = page.locator('ul.mk a');
+      if (!fresh && !(await links.count())) { expect(/No saved market/.test(body), 'an empty list must say so'); return; }
+      expect(await links.count() > 0, 'the line history list is empty although the server holds the recording\'s histories');
+      await links.first().click();
+      await page.waitForLoadState('domcontentloaded');
+      expect(/\/lines\/(game|prop)/.test(page.url()), `the market link went to ${page.url()}`);
+      // a market only venues outside Texas priced says so in words, with the way to see them
+      if (!(await page.locator('#lhChart').count())) {
+        expect(/No venue a TX resident can use/.test(await text(page, 'main')), 'a market page with no chart must say why');
+        expect(!(await page.locator('table td.n').count()), 'a market with nothing to show must not draw a table of dashes');
+        await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('main .empty a', { hasText: 'Show every venue' }).click()]);
+      }
+      expect(await page.locator('#lhChart svg path').count() > 0, 'the chart drew no line');
+      expect(await fits(), 'the market chart page scrolls sideways at this size');
+      const page1 = await page.evaluate(() => document.body.innerText);
+      expect(/Saved since/.test(page1), 'the page must say since when it has history');
+      expect(!/guaranteed|risk[- ]free/i.test(page1) && !/\bundefined\b|\bNaN\b|\[object Object\]/.test(page1), 'the chart page shows a claim or broken text');
+      // the odds format and the state, from the page's own picker
+      await page.locator('#sto').selectOption('decimal');
+      await page.locator('#stp').selectOption('NJ');
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('.st-pick button[type=submit]').click()]);
+      expect(/odds=decimal/.test(page.url()) && /state=NJ/.test(page.url()), `the picker did not reach the URL: ${page.url()}`);
+      const cells = await page.locator('table td.n').allInnerTexts();
+      expect(cells.some(c => /^\d+\.\d{2}$/.test(c.trim())), 'prices are not in decimal odds after picking decimal');
+      expect(await fits(), 'the chart page scrolls sideways after the picker');
+      // the downloads
+      const csvHref = await page.locator('a.go[download]').getAttribute('href');
+      const csv = await page.request.get(`${opts.base}${csvHref}`);
+      expect(csv.status() === 200 && /text\/csv/.test(csv.headers()['content-type'] || ''), `the CSV answered ${csv.status()}`);
+      expect(/^time_utc,event,league,market,side,line,venue,american,decimal,implied_prob,fair_prob/.test(await csv.text()), 'the CSV header is wrong');
+      const jsonHref = await page.locator('a.go', { hasText: 'DOWNLOAD JSON' }).getAttribute('href');
+      const j = await page.request.get(`${opts.base}${jsonHref}`);
+      expect(j.status() === 200 && (await j.json()).series?.length > 0, `the JSON answered ${j.status()}`);
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
+  async 'sales page and Learn claim only what the record proves'(page, w, opts) {
+    // TEST DATA, not a recording: one proven row shaped like /api/claims, so the
+    // page is checked against known numbers. The live check reads the real API.
+    const TEST_CLAIMS = {
+      at: '2026-10-25T20:00:00Z', rule: { graded: 50, clvT: 2 }, building: 41, overall: { graded: 1234, beatPct: 66.6, clv: 1.4 },
+      proven: [{ kind: 'ev', kindLabel: 'Main lines vs the sharp fair', book: 'betrivers', bookName: 'BetRivers', graded: 113, beatPct: 83, clv: 3.01, clv2min: 2.4, clv2minN: 90, wins: 48, losses: 48, units: -0.7, profitShown: false, texas: false, pickem: false, alerts: true }],
+      texas: { name: 'Texas', note: 'No sportsbook is legal in Texas. Pick\'em apps and CFTC exchanges are.', proven: [],
+        pickem: [{ key: 'prizepicks', name: 'PrizePicks', read: true }, { key: 'betr', name: 'Betr', read: false, why: 'needs a login to read its board' }],
+        exchanges: [{ key: 'kalshi', name: 'Kalshi', read: true }, { key: 'polymarketus', name: 'Polymarket US', read: true }, { key: 'gemini', name: 'Gemini', read: true }] },
+      labels: [{ tool: 'NFL model', where: 'ODDS SCREEN > NFL MODEL', tag: 'model, not an edge', why: 'test' }],
+    };
+    let real = null;
+    if (opts.live) real = await (await page.request.get(`${opts.base}/api/claims`)).json();
+    else await page.route('**/api/claims', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_CLAIMS) }));
+    const d = real || TEST_CLAIMS;
+    try {
+      await page.goto(`${opts.base}/`, { waitUntil: 'domcontentloaded' });
+      await page.locator('#trackTable tbody tr').first().waitFor({ timeout: 6000 });
+      await page.waitForFunction(() => !/Loading/.test(document.querySelector('#trackTable tbody').textContent), null, { timeout: 6000 });
+      const got = await page.evaluate(() => ({
+        rows: [...document.querySelectorAll('#trackTable tbody tr')].map(r => r.innerText.replace(/\s+/g, ' ')),
+        hero: document.getElementById('heroProven').textContent, tx: document.getElementById('heroTexas').textContent, claim: document.getElementById('heroClaim').innerText,
+        pickem: document.getElementById('txPickem').innerText, exch: document.getElementById('txExch').innerText, labels: document.getElementById('labelTable').innerText,
+        pm: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /\/\/(www\.)?polymarket\.com/i.test(h)),
+        wide: document.documentElement.scrollWidth <= innerWidth + 1,
+        body: document.body.innerText,
+      }));
+      expect(got.hero === String(d.proven.length) && got.tx === String(d.texas.proven.length), `hero counts ${got.hero}/${got.tx}, API ${d.proven.length}/${d.texas.proven.length}`);
+      if (d.proven.length) {
+        expect(got.rows.length === d.proven.length, `${got.rows.length} record rows for ${d.proven.length} proven`);
+        d.proven.forEach((p, i) => {
+          expect(got.rows[i].includes(p.bookName) && got.rows[i].includes(String(p.graded)), `row ${i + 1} "${got.rows[i]}" is not ${p.bookName} at ${p.graded} graded`);
+          expect(got.rows[i].toLowerCase().includes(p.texas ? 'texas: yes' : 'not a texas venue'), `row ${i + 1} must say whether Texans can bet it`);
+          if (!p.profitShown) expect(/not shown yet/i.test(got.rows[i]), `row ${i + 1} must say profit is not shown yet`);
+        });
+        if (!d.texas.proven.length) expect(/Nothing is proven yet at a venue a Texas resident can use/.test(got.claim), `the hero claim must say nothing is proven for Texas: "${got.claim}"`);
+      } else expect(/Nothing is proven yet/.test(got.rows[0] || ''), 'with nothing proven the table must say so');
+      for (const v of d.texas.pickem) expect(got.pickem.includes(v.name), `Texas pick'em list misses ${v.name}`);
+      for (const v of d.texas.exchanges) expect(got.exch.includes(v.name), `Texas exchange list misses ${v.name}`);
+      for (const l of d.labels) expect(got.labels.includes(l.tool) && got.labels.toLowerCase().includes(l.tag.toLowerCase()), `the label table misses ${l.tool}`);
+      expect(!got.pm.length, `links to polymarket.com: ${got.pm.join(', ')}`);
+      expect(got.wide, 'the sales page scrolls sideways at this size');
+      expect(!/locked profit|guaranteed|risk[- ]free|sure thing|two-minute test/i.test(got.body), 'the sales page makes a claim the record does not back');
+      // Learn's record page reads the same list
+      await page.goto(`${opts.base}/learn/how-the-record-works`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => /Proven:|Nothing is proven yet/.test(document.getElementById('lrClaimsBody').textContent), null, { timeout: 6000 });
+      const learn = await page.evaluate(() => ({ body: document.getElementById('lrClaimsBody').innerText, tx: document.getElementById('lrClaimsTx').innerText, wide: document.documentElement.scrollWidth <= innerWidth + 1 }));
+      for (const p of d.proven) expect(learn.body.includes(p.bookName) && learn.body.includes(`${p.graded} graded`), `Learn misses ${p.bookName}: "${learn.body}"`);
+      expect(/Texas/.test(learn.tx) && learn.wide, 'Learn must say what Texas can place and fit the screen');
+    } finally {
+      if (!opts.live) await page.unroute('**/api/claims').catch(() => {});
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
 };
 
 async function run(context, opts, rep) {
@@ -378,6 +1929,7 @@ async function run(context, opts, rep) {
   await enterApp(page, w, opts, rep);
   for (const [name, fn] of Object.entries(FLOWS)) {
     if (opts.live && /log|paste|import|save|star|push|move/.test(name)) continue; // the live smoke only reads
+    if (process.env.E2E_FLOW_ONLY && !new RegExp(process.env.E2E_FLOW_ONLY, 'i').test(name)) continue; // one flow while working on it
     w.tab = `flow: ${name}`; w.last = w.tab;
     // let the last flow's toast time out, as it would for a viewer
     if (opts.clock) await page.clock.runFor(8000).catch(() => {});

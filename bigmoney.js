@@ -38,7 +38,7 @@
 const { canonName } = require('./ev');
 const { meanFor, pOver, PP_GRADE, PP_ENTRIES } = require('./sportprops');
 const { sameTeam } = require('./pingames');
-const { kalshiFee } = require('./exchanges');
+const fees = require('./fees');
 const { createMemoryStore } = require('./evtrack');
 
 const HOUR = 3600e3;
@@ -150,8 +150,8 @@ function pinFair(game, key) {
 // an exchange's all-in cost of one contract at `ask`
 function exchangeCost(row, ask) {
   if (!(ask > 0 && ask < 1)) return null;
-  if (row.exchange === 'kalshi') return r4(ask + kalshiFee(ask, 100) / 100);
-  if (row.exchange === 'polymarketus') return r4(ask + (row.feeSchedule?.rate ?? 0.0695) * ask * (1 - ask));
+  if (row.exchange === 'kalshi') return fees.allInCost('kalshi', ask);
+  if (row.exchange === 'polymarketus') return fees.allInCost('polymarketus', ask, { rate: row.feeSchedule?.rate ?? null });
   return null;
 }
 const midOf = row => (row.yesAsk > 0 && row.yesAsk < 1 && row.noAsk > 0 && row.noAsk < 1 ? r4((row.yesAsk + 1 - row.noAsk) / 2) : null);

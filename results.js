@@ -137,8 +137,8 @@ const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK P
 // research rows and the stale-line legs (stalelines.js, their own record on
 // the +EV tab) never count toward the sports props headline or its plays
 // leads with records of their own (stale lines, the books' fair) stay out of the verdict
-const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'shop-any', 'shop-pp', 'shop-p6', 'shop-mid', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3', 'combo', 'p6-combo', 'nba-model', 'p6-nba-model', 'cfb-model', 'p6-cfb-model', 'mlb-pin', 'p6-mlb-pin', 'ud-mlb-pin', 'sl-mlb-pin', 'mlb-even', 'p6-mlb-even', 'ud-mlb-even', 'sl-mlb-even']);
-const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus', 'nba-model': 'NBA model', 'p6-nba-model': 'Pick6 NBA model', 'cfb-model': 'CFB model', 'p6-cfb-model': 'Pick6 CFB model', 'mlb-pin': 'MLB vs Pinnacle, PrizePicks', 'p6-mlb-pin': 'MLB vs Pinnacle, Pick6', 'ud-mlb-pin': 'MLB vs Pinnacle, Underdog', 'sl-mlb-pin': 'MLB vs Pinnacle, Sleeper', 'mlb-even': 'MLB at Pinnacle\'s number, PrizePicks', 'p6-mlb-even': 'MLB at Pinnacle\'s number, Pick6', 'ud-mlb-even': 'MLB at Pinnacle\'s number, Underdog', 'sl-mlb-even': 'MLB at Pinnacle\'s number, Sleeper' };
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'shop-any', 'shop-pp', 'shop-p6', 'shop-mid', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3', 'combo', 'p6-combo', 'nba-model', 'p6-nba-model', 'ud-nba-model', 'cfb-model', 'p6-cfb-model', 'ud-cfb-model', 'cbb-model', 'p6-cbb-model', 'ud-cbb-model', 'far-nba', 'p6-far-nba', 'ud-far-nba', 'far-cfb', 'p6-far-cfb', 'ud-far-cfb', 'mlb-pin', 'p6-mlb-pin', 'ud-mlb-pin', 'sl-mlb-pin', 'mlb-even', 'p6-mlb-even', 'ud-mlb-even', 'sl-mlb-even', 'injury-stale', 'p6-injury-stale', 'ud-injury-stale', 'sl-injury-stale']);
+const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus', 'nba-model': 'NBA model', 'p6-nba-model': 'Pick6 NBA model', 'ud-nba-model': 'Underdog NBA model', 'cfb-model': 'CFB model', 'p6-cfb-model': 'Pick6 CFB model', 'ud-cfb-model': 'Underdog CFB model', 'cbb-model': 'CBB model', 'p6-cbb-model': 'Pick6 CBB model', 'ud-cbb-model': 'Underdog CBB model', 'far-nba': 'NBA line far from projection', 'p6-far-nba': 'Pick6 NBA line far from projection', 'ud-far-nba': 'Underdog NBA line far from projection', 'far-cfb': 'CFB line far from projection', 'p6-far-cfb': 'Pick6 CFB line far from projection', 'ud-far-cfb': 'Underdog CFB line far from projection', 'mlb-pin': 'MLB vs Pinnacle, PrizePicks', 'p6-mlb-pin': 'MLB vs Pinnacle, Pick6', 'ud-mlb-pin': 'MLB vs Pinnacle, Underdog', 'sl-mlb-pin': 'MLB vs Pinnacle, Sleeper', 'mlb-even': 'MLB at Pinnacle\'s number, PrizePicks', 'p6-mlb-even': 'MLB at Pinnacle\'s number, Pick6', 'ud-mlb-even': 'MLB at Pinnacle\'s number, Underdog', 'sl-mlb-even': 'MLB at Pinnacle\'s number, Sleeper', 'injury-stale': 'NBA injury news, PrizePicks', 'p6-injury-stale': 'NBA injury news, Pick6', 'ud-injury-stale': 'NBA injury news, Underdog', 'sl-injury-stale': 'NBA injury news, Sleeper' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';
   const clv = r.closeEv != null ? r.closeEv / 100 : null;
@@ -147,16 +147,59 @@ const sportPropBet = r => {
     line: graded && r.closeFair != null && r.signalDecimal != null ? { win: r.outcome === 'win', p: r.closeFair, d: r.signalDecimal } : null,
     labels: { kind: SPORT_KIND[r.kind] || 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
 };
+const NFL_KIND = { 'nfl-ml': 'NFL model moneyline', 'nfl-spread': 'NFL model spread', 'nfl-total': 'NFL model total' };
+const nflModelBet = r => {
+  const graded = r.status === 'graded' && r.outcome !== 'push';
+  return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv: r.clv ?? null, game: `${r.gameId}|${day(r.start)}`,
+    line: graded && r.closeOk && r.pinClose > 0 && r.cost > 0 ? { win: r.outcome === 'win', p: r.pinClose, d: 1 / r.cost } : null,
+    labels: { kind: NFL_KIND[r.kind] || r.kind } };
+};
+const SOCCER_KIND = { 'soccer-1x2-kalshi': 'Soccer model 1X2 on Kalshi', 'soccer-1x2-pmus': 'Soccer model 1X2 on Polymarket US' };
+const soccerModelBet = r => {
+  const graded = r.status === 'graded';
+  return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv: r.clv ?? null, game: `${r.gameId}|${day(r.start)}`,
+    line: graded && r.closeOk && r.pinClose > 0 && r.cost > 0 ? { win: r.outcome === 'win', p: r.pinClose, d: 1 / r.cost } : null,
+    labels: { kind: SOCCER_KIND[r.kind] || r.kind } };
+};
+// Kalshi maker bids (kmaker.js): only a bid a print went through counts, at its bid + maker fee
+const kalshiMakerBet = r => {
+  const graded = r.status === 'graded' && r.filled === true;
+  return { profit: graded ? r.profit ?? null : null, staked: graded && r.outcome !== 'push' ? 1 : 0, clv: r.filled === true ? r.clv ?? null : null, game: `${r.event}|${day(r.start)}`,
+    line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
+    labels: { kind: r.kind === 'kalshi-maker-nhl' || (r.sport === 'nhl' && r.market !== 'h2h') ? 'Kalshi maker bid, NHL spread/total (no maker fee)' : 'Kalshi maker bid', sport: r.sport, market: r.market } };
+};
+// Kalshi player-prop rungs vs Pinnacle (exprops.js): a taker flag counts as placed, a maker bid only when a print went through it
+const PROP_STAT = { rec_yds: 'receiving yards', receptions: 'receptions', rush_yds: 'rushing yards', pass_yds: 'passing yards', pass_tds: 'passing TDs', pass_comp: 'completions', pass_att: 'pass attempts', pass_ints: 'interceptions', rush_att: 'rush attempts', anytime_td: 'touchdowns', pra: 'pts+reb+ast' };
+const exchangePropBet = r => {
+  const live = r.role === 'taker' || r.filled === true;
+  const graded = live && r.status === 'graded';
+  return { profit: graded ? r.profit ?? null : null, staked: graded && r.outcome !== 'push' ? 1 : 0, clv: live ? r.clv ?? null : null, game: `${r.event || r.ticker}|${day(r.start)}`,
+    line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
+    labels: { kind: `Kalshi ${r.league} ${PROP_STAT[r.mkey] || r.mkey}, ${r.role === 'maker' ? 'resting bid' : 'taken at the ask'}`, role: r.role, league: r.league } };
+};
+// exchange outrights (outrights.js): the first $50 fill at +3% over Pinnacle's fair, CLV on Pinnacle's close, per sport
+const outrightBet = r => {
+  const settled = r.status === 'settled' && r.outcome != null;
+  return { profit: settled ? r.profit ?? null : null, staked: settled && r.outcome !== 'push' ? 1 : 0, clv: r.clv ?? null, game: `${r.pinMarket}|${day(r.cutoff)}`,
+    line: settled && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
+    labels: { kind: `exchange-outrights:${r.sport}`, venue: r.venue, type: `${r.sport} ${r.type}` } };
+};
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
 });
 
 const BIG_VENUES = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', fanduel: 'FanDuel', betrivers: 'BetRivers' };
+// pin: the same ticket graded on Pinnacle's no-vig close (sharpEv), counted
+// only when the close was read within the hour before the start (closeOk);
+// game: one per Pinnacle game and day, the unit the strict rule counts in
 const bigMoneyBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';
   const clv = r.closeEv != null ? r.closeEv / 100 : null;
+  const pinOk = r.sharpEv != null && r.closeOk !== false;
   return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
+    pin: pinOk ? r.sharpEv / 100 : null, execOk: r.execOk === true, game: `${String(r.betKey || r.title || '').split('|')[0]}|${day(r.start)}`,
+    line: graded && pinOk && r.sharpFair > 0 && r.decimal > 1 ? { win: r.outcome === 'win', p: r.sharpFair, d: r.decimal } : null,
     labels: { flow: r.flow || 'bettor', venue: BIG_VENUES[r.venue] || r.venue, kind: r.kind === 'prop' ? 'player prop' : 'game line', line: r.sameLine === false ? 'other line' : 'same line' } };
 };
 // A tail counts once it settles, or as CLV only (no profit yet) once its
@@ -199,6 +242,20 @@ const SOURCES = {
   bigMoney: { label: 'Big money', done: r => r.status === 'graded' || r.status === 'locked', open: r => r.status === 'open', bet: bigMoneyBet,
     cuts: [['flow'], ['venue'], ['kind'], ['line'], ['flow', 'venue'], ['kind', 'flow']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
+  // our NFL game-line model vs Kalshi (nflgl.js): a contract frozen in the hour
+  // before kickoff, CLV on Pinnacle's no-vig close, graded on the final
+  nflModel: { label: 'NFL model', done: r => r.status === 'locked' || r.status === 'graded', open: r => r.status === 'open', bet: nflModelBet, cuts: [['kind']] },
+  // our soccer match model vs Kalshi and Polymarket US (soccergl.js): one venue per kind
+  soccerModel: { label: 'Soccer model', done: r => r.status === 'locked' || r.status === 'graded', open: r => r.status === 'open', bet: soccerModelBet, cuts: [['kind']] },
+  // resting Kalshi bids under Pinnacle's fair (kmaker.js): research, judged on fills through the bid
+  kalshiMaker: { label: 'Kalshi maker bids', done: r => r.status === 'graded' && r.filled === true, open: r => r.status === 'open' || r.status === 'closed' || r.status === 'filled',
+    bet: kalshiMakerBet, cuts: [['kind'], ['sport'], ['market']] },
+  // Kalshi player-prop rungs on Pinnacle's line (exprops.js): research, one kind per role x league x stat
+  exchangeProps: { label: 'Kalshi player props', done: r => r.status === 'graded' && (r.role === 'taker' || r.filled === true), open: r => r.status === 'open' || r.status === 'closed' || r.status === 'filled',
+    bet: exchangePropBet, cuts: [['kind'], ['role'], ['league']] },
+  // F1 and golf outrights on Kalshi and Polymarket US vs Pinnacle's fair (outrights.js): research, one kind a sport
+  exchangeOutrights: { label: 'Exchange outrights', done: r => (r.status === 'closed' || r.status === 'settled') && r.clv != null, open: r => r.status === 'open',
+    bet: outrightBet, cuts: [['kind'], ['kind', 'venue'], ['type']] },
 };
 // sportsbook records whose proven mark must come from one book's own sample
 const BOOK_SOURCES = new Set(['ev', 'sportsProps']);
@@ -221,6 +278,38 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
   if (s.verdict === 'avoid') return s;
   if (s.verdict === 'proven' && KILLED_SOURCES[source]) return cap(s, KILLED_SOURCES[source]);
   if (s.verdict === 'proven' && s.avgClv != null && s.avgClv <= 0) return cap(s, `not proven: closes ${(s.avgClv * 100).toFixed(1)}% CLV, the price did not beat the close`);
+  if (source === 'bigMoney' && s.verdict === 'proven') return bigMoneyGuard(by, s, bets, vals);
+  // the NFL model: one kind alone, 50 games, results not 1.5 sd under the close
+  if (source === 'soccerModel' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind') return cap(s, 'not proven: pooled across Kalshi and Polymarket US', { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
+  if (source === 'exchangeOutrights' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind+venue') return cap(s, 'not proven: judged one sport on one exchange at a time', { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} markets`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
+  // research record: a kind that clears the bar still waits for a raw re-check, pooled cuts never count
+  if (source === 'exchangeProps' && s.verdict === 'proven') return cap(s, by === 'kind' ? 'not proven: research record, a raw re-check comes first' : 'not proven: judged one league and stat at a time');
+  if (source === 'kalshiMaker' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind') return cap(s, 'not proven: a cut of the maker record, judged only whole', { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
+  if (source === 'nflModel' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind') return cap(s, `not proven: pooled across moneyline, spread and total`, { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
   if (!BOOK_SOURCES.has(source)) return s;
   // pick'em legs: flagged legs do not beat Pinnacle's price (10-24 checks), nothing here is proven
   if (source === 'sportsProps' && s.verdict === 'proven') return cap(s, "not proven: flagged pick'em legs have not beaten Pinnacle's price on results (10-24 checks)");
@@ -240,6 +329,32 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
     : !strictClv ? `not proven yet: ${games} graded${clv}, CLV t ${s.clvT ?? 'n/a'}`
     : `not proven yet: ${games} graded${clv}${relayed ? ', price copied via Action Network, never checked at the book' : ''}`;
   return cap(s, why, { games });
+}
+// Big money (10-25 re-check, checks/brmoney-recheck-2026-10-25): its own CLV
+// is the ticket against the exchange's mid, and its cuts pool game lines with
+// props and count every line on a game. It reads proven only on the strict
+// rule: a cut naming one venue, game lines only, 50+ games (one per Pinnacle
+// game and day), Pinnacle's close beaten at a t of 2+ on the bets still up two
+// minutes on (all bets until 8 have that grade), results not 1.5 sd under it.
+function bigMoneyGuard(by, s, bets, vals) {
+  const cuts = by ? by.split('+') : [];
+  const venue = vals && cuts.includes('venue') ? vals[cuts.indexOf('venue')] : null;
+  const list = bets || [];
+  const props = list.filter(b => b.labels?.kind !== 'game line').length;
+  const exec = list.filter(b => b.execOk && b.pin != null);
+  const use = exec.length >= EXEC_MIN_N ? exec : list.filter(b => b.pin != null);
+  const g = new Map();
+  for (const b of use) { if (!g.has(b.game)) g.set(b.game, []); g.get(b.game).push(b.pin); }
+  const per = [...g.values()].map(mean);
+  const pinClv = per.length ? r4(mean(per)) : null, pinT = tStat(per);
+  const short = resultsShortfall(list.map(b => b.line).filter(Boolean));
+  const extra = { games: per.length, pinClv, pinT };
+  const pc = pinClv != null ? `${pinClv > 0 ? '+' : ''}${(pinClv * 100).toFixed(1)}%` : 'n/a';
+  if (!venue) return cap(s, `not proven: pooled across venues, ${per.length} games`, extra);
+  if (props) return cap(s, `not proven: pools ${props} player props with game lines`, extra);
+  if (short.short) return cap(s, short.note, extra);
+  if (per.length < PROVEN_BOOK_N || !(pinT >= 2) || !(pinClv > 0)) return cap(s, `not proven yet: ${per.length} games, ${pc} vs Pinnacle's close${exec.length >= EXEC_MIN_N ? ' two minutes on' : ''}, t ${pinT ?? 'n/a'}`, extra);
+  return { ...s, ...extra };
 }
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 

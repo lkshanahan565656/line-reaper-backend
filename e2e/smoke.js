@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
 const { crawl, makeReport, TABS } = require('./crawl');
 const { READ_ONLY_POSTS } = require('./live-safety');
 
-const FAIL = new Set(['page-error', 'console-error', 'bad-text', 'http-5xx', 'http-404', 'broken-link', 'tab-missing', 'tab-open', 'forbidden-link', 'welcome', 'sweep-crash', 'left-site']);
+const FAIL = new Set(['page-error', 'console-error', 'bad-text', 'http-5xx', 'http-404', 'broken-link', 'tab-missing', 'tab-open', 'forbidden-link', 'welcome', 'tour', 'sweep-crash', 'left-site']);
 
 async function waitForVersion(base, want, maxMin = 25) {
   const t0 = Date.now();
@@ -42,7 +42,7 @@ async function main() {
     const provenN = (results?.plays || []).filter(p => p.verdict === 'proven').length;
     const browser = await chromium.launch();
     const reports = [];
-    const VP = { desktop: { viewport: { width: 1280, height: 860 } }, phone: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } };
+    const VP = { desktop: { viewport: { width: 1280, height: 860 } }, phone: { viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true } };
     await Promise.all(Object.entries(VP).flatMap(([vp, cfg]) => [0, 1, 2].map(async s => {
       const context = await browser.newContext({ ...cfg, serviceWorkers: 'block', timezoneId: 'America/Chicago' });
       await context.route('**/*', route => {

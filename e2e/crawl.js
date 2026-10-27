@@ -34,7 +34,8 @@ function watch(page, rep, opts) {
   page.on('response', r => {
     const u = r.url();
     if (!u.startsWith(opts.base)) return;
-    if (r.status() >= 500 && !(opts.allow5xx || []).some(re => re.test(u))) issue(rep, 'http-5xx', { url: u.slice(opts.base.length), status: r.status(), tab: w.tab });
+    // w.forced5xx: a flow is answering the API with 502s itself, to check the down copy
+    if (r.status() >= 500 && !w.forced5xx && !(opts.allow5xx || []).some(re => re.test(u))) issue(rep, 'http-5xx', { url: u.slice(opts.base.length), status: r.status(), tab: w.tab });
     if (r.status() === 404 && /\/(api|learn)\b/.test(u)) issue(rep, 'http-404', { url: u.slice(opts.base.length), tab: w.tab });
   });
   page.on('dialog', d => { w.dialogs++; d.dismiss().catch(() => {}); });
@@ -69,6 +70,15 @@ async function settle(page, w, opts, min = 120) {
 
 async function openTab(page, name, w, opts) {
   w.tab = name;
+  // the tour (opened by HELP, or its NEXT switching tabs) covers the bar: close it as a viewer would
+  if (await page.locator('#tour.open').count().catch(() => 0)) { await page.keyboard.press('Escape'); await settle(page, w, opts, 60); }
+  // a PRINT view left open by the last tab's clicks hides the tab bar: close it as a viewer would
+  if (await page.evaluate(() => document.body.classList.contains('xp-pv')).catch(() => false)) {
+    const close = page.locator('button', { hasText: 'CLOSE PRINT VIEW' }).first();
+    if (await close.isVisible().catch(() => false)) await close.click({ timeout: 3000 }).catch(() => {});
+    else await page.evaluate(() => window.xpPrintClose?.(true)).catch(() => {});
+    await settle(page, w, opts, 60);
+  }
   const how = await page.evaluate(n => {
     const want = `showTab('${n}',this)`;
     const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === want);
@@ -96,11 +106,27 @@ async function learnNoise(page, opts) {
 }
 
 async function checkText(page, rep, where) {
-  const [bad, claims] = await page.evaluate(() => [window.__e2e.textIssues(), window.__e2e.provenClaims()]);
+  const [bad, claims, links] = await page.evaluate(() => [window.__e2e.textIssues(), window.__e2e.provenClaims(), window.__e2e.venueLinks()]);
   for (const b of bad) issue(rep, 'bad-text', { ...b, after: where });
+  for (const l of links) {
+    const key = `${l.what}|${l.where || l.href || ''}`;
+    if (!rep.issues.some(i => i.kind === 'venue-link' && i.key === key)) issue(rep, 'venue-link', { key, ...l, after: where });
+  }
   for (const c of claims) {
     const key = c.word + '|' + c.text;
     if (!rep.proven.some(p => p.key === key)) rep.proven.push({ key, ...c, after: where });
+  }
+}
+
+// at phone size: nothing may stick out past the screen's sides (overflowIssues
+// in page-helpers.js), checked as each tab opens and after every click
+async function checkOverflow(page, rep, tab, where, opts) {
+  if (opts.viewportName !== 'phone') return;
+  const list = await page.evaluate(() => window.__e2e.overflow()).catch(() => []);
+  for (const o of list) {
+    const key = `${tab}|${o.what}|${o.where || ''}`;
+    if (rep.issues.some(i => i.kind === 'phone-overflow' && i.key === key)) continue;
+    issue(rep, 'phone-overflow', { key, tab, ...o, after: where });
   }
 }
 
@@ -125,7 +151,16 @@ async function clickOne(page, c, w, opts) {
       await page.evaluate(() => window.__e2e.off());
       return { skipped: 'file input (filled by the form flows)' };
     } else {
-      await loc.click({ timeout: 2500 });
+      try { await loc.click({ timeout: 2500 }); }
+      catch (e) {
+        // a board that draws again after the scroll (PROPS, ESPORTS) can move a
+        // chip under the header for a moment: scroll it back and try once more;
+        // a control that is still covered then is reported
+        if (!/intercepts pointer events/.test(String(e.message || e))) throw e;
+        await settle(page, w, opts, 120);
+        await loc.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {});
+        await loc.click({ timeout: 2500 });
+      }
     }
   } catch (e) {
     await page.evaluate(() => window.__e2e.off()).catch(() => {});
@@ -263,6 +298,7 @@ async function sweepTab(page, name, rep, w, opts) {
       await openTab(page, name, w, opts);
     }
     await checkText(page, rep, w.last);
+    await checkOverflow(page, rep, name, w.last, opts);
     // a control that switched to another tab (a link into MY BETS, say): come back
     if (!(await page.evaluate(n => document.getElementById('page-' + n)?.classList.contains('active'), name).catch(() => true))) {
       T.switched = (T.switched || 0) + 1;
@@ -298,6 +334,18 @@ async function enterApp(page, w, opts, rep) {
     await settle(page, w, opts, 150);
     if (await page.evaluate(() => document.getElementById('welcome')?.classList.contains('open'))) issue(rep, 'welcome', { message: 'Enter did not close the welcome screen' });
   }
+  // the first-run tour: a new device must get it, and SKIP must close it for good
+  const seen = await page.evaluate(() => { try { return !!localStorage.getItem('lr_tour'); } catch { return true; } });
+  if (!seen) {
+    const tourUp = await page.locator('#tour.open').waitFor({ timeout: 3000 }).then(() => true, () => false);
+    if (!tourUp) issue(rep, 'tour', { message: 'the first-run tour did not open on a new device' });
+    else {
+      await page.locator('#tourSkip').click();
+      await settle(page, w, opts, 80);
+      const after = await page.evaluate(() => ({ open: document.getElementById('tour').classList.contains('open'), kept: localStorage.getItem('lr_tour') }));
+      if (after.open || !after.kept) issue(rep, 'tour', { message: `SKIP left the tour ${after.open ? 'open' : 'closed'} and ${after.kept ? 'remembered' : 'not remembered'}` });
+    }
+  }
   await checkText(page, rep, 'app load');
 }
 
@@ -313,6 +361,7 @@ async function crawl(context, opts, rep = makeReport(), tabs = TABS) {
     (rep.tabs[name] ||= { clicks: 0, families: {}, dead: 0, views: 0 }).opened = how;
     await learnNoise(page, opts);
     await checkText(page, rep, `open ${name}`);
+    await checkOverflow(page, rep, name, `open ${name}`, opts);
     // empty states as the tab first opens, before any filter is touched
     const em = await page.evaluate(sel => window.__e2e.empties(sel), `#page-${name}`).catch(() => []);
     for (const e of em) rep.empties.push({ tab: name, ...e, viewport: opts.viewportName });
@@ -324,4 +373,4 @@ async function crawl(context, opts, rep = makeReport(), tabs = TABS) {
   return rep;
 }
 
-module.exports = { clickOne, sweepTab, crawl, makeReport, watch, settle, openTab, enterApp, newAppPage, checkText, issue, TABS, installE2E };
+module.exports = { checkOverflow, clickOne, sweepTab, crawl, makeReport, watch, settle, openTab, enterApp, newAppPage, checkText, issue, TABS, installE2E };

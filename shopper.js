@@ -22,6 +22,7 @@ const ranker = require('./oddsrank');
 const venues = require('./venues');
 const { canonName } = require('./ev');
 const depthbook = require('./depthbook');
+const fees = require('./fees');
 
 const SHARP_WEIGHTS = { pinnacle: 1, matchbook: 0.6 };
 const MIN_CONSENSUS = 4;
@@ -106,9 +107,14 @@ function priceCell(q, { fair, stake, now, bettable }) {
   const age = q.updatedAt ? now - ms(q.updatedAt) : null;
   const eff = q.effectiveDecimal;
   const feeUnknown = q.commission?.type === 'commission' && q.commission.rate == null;
+  // an exchange quote that kept its all-in cost (Kalshi: ask + fee, fees.js)
+  // is ranked on that cost, so the EV here is fees.edge(fair, cost): the same
+  // number the exchange records grade CLV with (xsize.js, outrights.js)
+  const cost = q.originalFormat === 'probability' && q.originalPrice > 0 && q.originalPrice < 1 && Math.abs(q.originalPrice - 1 / eff) < 1e-3 ? q.originalPrice : (eff > 1 ? 1 / eff : null);
+  const ev = fair == null || cost == null ? null : fees.edge(fair, cost);
   return {
     provider: q.providerId, name: p?.name || q.providerId, type: p?.type || null, decimal: r4(q.decimal), effective: r4(eff), american: schema.fromDecimal(eff, 'american'),
-    implied: r4(1 / eff), ev: fair == null ? null : r4(engine.ev(fair, eff)), evAmount: fair == null ? null : r2(engine.evAmount(fair, eff, stake)),
+    implied: r4(cost ?? 1 / eff), ev, evAmount: ev == null ? null : r2(ev * stake),
     ref: !!p?.reference, secondHand: p?.access === 'second_hand', texas: !!p?.texas, oneWay: !!q.oneWay, bettable: bettable(q.providerId),
     fee: q.commission?.type || 'none', feeUnknown, freshness: schema.freshness(age, { access: p?.access }), ageSec: age == null ? null : Math.round(age / 1000),
     liquidity: q.liquidity, maxStake: q.maxStake, url: q.sourceIds?.url || null, sourceIds: q.sourceIds || null, line: q.line,
@@ -128,7 +134,7 @@ function sizeCell(c, q, { fair, stake, depth, minSize }) {
     c.sizeOk = true;
     c.listed = c.effective;
     c.effective = f.decimal; c.american = schema.fromDecimal(f.decimal, 'american'); c.implied = r4(1 / f.decimal);
-    c.ev = fair == null ? null : r4(engine.ev(fair, f.decimal)); c.evAmount = fair == null ? null : r2(engine.evAmount(fair, f.decimal, stake));
+    c.ev = fair == null ? null : fees.edge(fair, 1 / f.decimal); c.evAmount = c.ev == null ? null : r2(c.ev * stake);
     c.sizedAt = minSize;
   }
   return c;
@@ -297,7 +303,10 @@ function freeSize(z) {
 // with a fair or at least two venues are kept, at most maxSeries (the soonest
 // to start win), and a market is dropped keepMs after it starts.
 // series: { id: market key, event, start, player, stat, line, pts: [[t, fairOver, { venue: [overAm, underAm] }]] }
-function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 120, maxSeries = 3000 } = {}) {
+// A dropped market goes to onDrop first (linehist.js keeps it 30 days); past
+// maxPts the older reads are thinned to the biggest moves, never cut from the front.
+function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 120, maxSeries = 3000, onDrop = null } = {}) {
+  const { thin, propDiff } = require('./linehist');
   const series = new Map();
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   // views: viewMarket outputs (any market type; only player_prop is kept)
@@ -326,11 +335,17 @@ function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepM
       const moved = !last || last[1] !== pt[1] || !same(last[2], pt[2]);
       if (!last || (moved && now - last[0] >= minGapMs) || now - last[0] >= heartbeatMs) {
         x.pts.push(pt); added++;
-        if (x.pts.length > maxPts) x.pts.splice(0, x.pts.length - maxPts);
+        x.reads = (x.reads || x.pts.length - 1) + 1;
+        if (x.pts.length > maxPts) shrink(x);
       }
     }
     prune(now);
     return added;
+  }
+  function shrink(x) {
+    const recent = Math.floor(maxPts / 4);
+    x.pts = thin(x.pts, Math.floor(maxPts * 0.8), { diff: propDiff, start: x.start, protectFrom: x.pts.length - recent });
+    x.thinned = true;
   }
   // full: make room for a market starting at `start` by dropping the one that starts last, if later
   function evictFor(start) {
@@ -341,25 +356,29 @@ function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepM
     return true;
   }
   function prune(now = Date.now()) {
-    for (const [k, x] of series) if (ms(x.start) != null && ms(x.start) < now - keepMs) series.delete(k);
+    for (const [k, x] of series) {
+      if (ms(x.start) == null || ms(x.start) >= now - keepMs) continue;
+      series.delete(k);
+      if (onDrop) { try { onDrop(x); } catch { /* the archive's problem */ } }
+    }
   }
   // one market as the odds screen's chart reads it: a series per side,
   // points [t, line, fair chance of that side, { venue: american }]
   function forMarket(key) {
     const x = series.get(String(key));
     if (!x) return null;
-    const side = (i, label) => ({ id: `${x.id}|${i ? 'under' : 'over'}`, label, market: 'prop',
-      pts: x.pts.map(([t, f, px]) => [t, x.line, f == null ? null : r4(i ? 1 - f : f), Object.fromEntries(Object.entries(px).filter(([, a]) => a[i] != null).map(([v, a]) => [v, a[i]]))]) });
-    return { id: x.id, event: x.event, start: x.start, player: x.player, stat: x.stat, line: x.line, series: [side(0, `Over ${x.line}`), side(1, `Under ${x.line}`)] };
+    return { id: x.id, event: x.event, league: x.league, start: x.start, player: x.player, stat: x.stat, line: x.line, thinned: !!x.thinned, reads: x.reads || x.pts.length,
+      series: require('./linehist').propSides(x) };
   }
   const dump = () => [...series.values()];
   function load(docs) {
     for (const d of docs || []) {
       if (!d || !d.id || !Array.isArray(d.pts)) continue;
       const had = series.get(d.id);
-      if (!had) { if (series.size < maxSeries) series.set(d.id, { ...d, pts: d.pts.slice(-maxPts) }); continue; }
+      if (!had) { if (series.size < maxSeries) { const x = { ...d, pts: d.pts.slice() }; if (x.pts.length > maxPts) shrink(x); series.set(d.id, x); } continue; }
       const first = had.pts[0]?.[0] ?? Infinity;
-      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts].slice(-maxPts);
+      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts];
+      if (had.pts.length > maxPts) shrink(had);
     }
   }
   return { observe, prune, forMarket, dump, load, has: k => series.has(String(k)), size: () => series.size, points: () => [...series.values()].reduce((a, x) => a + x.pts.length, 0) };

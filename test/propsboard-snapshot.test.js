@@ -46,7 +46,8 @@ async function views() {
   const rows = [];
   for (let off = 0; ; off += 500) {
     const d = await get(`/api/props/board?sport=ALL&sort=start&limit=500&offset=${off}`);
-    rows.push(...d.rows);
+    // the anchor tag (anchor.js) came after the recording: checked on its own below
+    rows.push(...d.rows.map(({ anchor, ...r }) => r));
     if (d.rows.length < 500) { const { counts, total } = d; const cov = await get('/api/props/coverage'); delete cov.updated; return { rows, counts, total, coverage: cov }; }
   }
 }
@@ -80,4 +81,19 @@ test('a view asked for while a build runs gets the last board and one build runs
   assert.equal(srv.propsBoardRows(), last);
   await a;
   assert.notEqual(srv.propsBoardRows(), last);
+});
+
+test('every row carries its anchor tag, and with no sharp source in the recording every leg is unanchored', async () => {
+  const d = await get('/api/props/board?sport=ALL&sort=start&limit=500');
+  assert.ok(d.rows.every(r => r.anchor && Array.isArray(r.anchor.books)), 'every row tagged');
+  // coverage: 0 sharp-priced legs in this recording (no Pinnacle, books or priced Kalshi rung)
+  assert.equal(fix.expect.coverage.total.sharp, 0);
+  assert.ok(srv.propsBoardRows().rows.every(r => r.anchor.books.length === 0));
+  assert.equal(d.anchor.now.total.unanchored, d.anchor.now.total.legs);
+  assert.equal(d.anchor.now.total.legs, fix.expect.coverage.total.legs + srv.propsBoardRows().rows.filter(r => r.esports).reduce((a, r) => a + Object.keys(r.books).length, 0));
+  assert.ok(d.anchor.label === 'research, not an edge' && /No side cleared/.test(d.anchor.backtest?.verdict || ''));
+  const none = await get('/api/props/board?sport=ALL&anchor=none&limit=1');
+  const sharp = await get('/api/props/board?sport=ALL&anchor=sharp&limit=1');
+  assert.equal(none.total, d.total);
+  assert.equal(sharp.total, 0);
 });

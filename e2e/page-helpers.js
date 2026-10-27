@@ -174,7 +174,7 @@ module.exports = function installE2E() {
     return (pg ? pg.id + ' ' : '') + parts.join('>');
   }
   // "proven" said as a claim, not as "not proven"/"unproven"/"until proven"
-  var NEG = /(not|n't|no|never|un|until|before|nothing|none|isn't|aren't|wasn't|yet to be|whether|if|once|only|needs?|to be|ever|anything|until it is|count as|what counts as|read|reads|marks?|call|called|rule|kinds? of play|proven so far|stays?|still)\s*[\w\s,'-]{0,24}$/i;
+  var NEG = /(not|n't|no|never|un|until|before|nothing|none|isn't|aren't|wasn't|yet to be|whether|if|once|only|needs?|to be|ever|anything|until it is|count as|what counts as|read|reads|marks?|call|called|rule|kinds? of play|proven so far|stays?|still|can be|may be|could be)\s*[\w\s,'-]{0,24}$/i;
   function provenClaims() {
     var out = [];
     var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -205,7 +205,66 @@ module.exports = function installE2E() {
     });
     return out;
   }
+  // what sticks out past the screen's sides where nothing scrolls it into
+  // view: the page itself scrolling sideways, or an element cut off by the
+  // body (which hides overflow) or by a card that hides it. Wide tables inside
+  // a sideways scroller that itself fits are fine; ellipsis text is meant to clip.
+  function overflowIssues() {
+    var vw = window.innerWidth, out = [];
+    var sw = document.documentElement.scrollWidth;
+    if (sw > vw + 1) out.push({ what: 'page scrolls sideways', width: sw, screen: vw });
+    var roots = [document.querySelector('header'), document.querySelector('.page.active')];
+    document.querySelectorAll('.lay-modal.open > *, .acct-modal.open > *, #moreMenu, #pkTray, #esSlipBar').forEach(function (e) { roots.push(e); });
+    var hit = [];
+    roots.forEach(function (root) {
+      if (!root || !visible(root)) return;
+      root.querySelectorAll('*').forEach(function (e) {
+        if (out.length > 12) return;
+        var r = e.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        var cs = getComputedStyle(e);
+        if (cs.visibility === 'hidden' || cs.textOverflow === 'ellipsis' || cs.position === 'fixed') return;
+        for (var i = 0; i < hit.length; i++) if (hit[i].contains(e)) return;
+        var clip = null, lim = { left: 0, right: vw };
+        for (var p = e.parentElement; p; p = p.parentElement) {
+          var ps = getComputedStyle(p);
+          if (/auto|scroll/.test(ps.overflowX)) { clip = 'scroll'; lim = p.getBoundingClientRect(); break; }
+          if (/hidden|clip/.test(ps.overflowX)) { clip = p === document.body || p === document.documentElement ? 'screen' : 'card'; if (clip === 'card') lim = p.getBoundingClientRect(); break; }
+          if (ps.position === 'fixed') { clip = 'screen'; break; }
+        }
+        var bad = clip === 'scroll' ? (lim.right > vw + 2 || lim.left < -2) && !(r.right <= vw + 1 && r.left >= -1)
+          : r.right > Math.min(lim.right, vw) + 2 || r.left < Math.max(lim.left, 0) - 2;
+        if (!bad) return;
+        // decorative bits (glows, rings) carry no text or control
+        if (!norm(e.innerText) && !/^(BUTTON|INPUT|SELECT|A|TEXTAREA|CANVAS|SVG|IMG|TABLE)$/i.test(e.tagName)) return;
+        hit.push(e);
+        out.push({ what: clip === 'scroll' ? 'scroller wider than the screen' : clip === 'card' ? 'cut off by its card' : 'cut off at the screen edge', where: where(e), text: norm(e.innerText).slice(0, 60), left: Math.round(r.left), right: Math.round(r.right), limit: Math.round(Math.min(lim.right, vw)) });
+      });
+    });
+    return out;
+  }
+  // tap-to-venue: every priced row (data-vrow) carries a venue link (a.vlink)
+  // whose host belongs to that venue (venuelinks.js, window.LRVenue), opens in
+  // a new tab and carries nothing a bet slip could use (no stake or amount)
+  function venueLinkIssues() {
+    var out = [], V = window.LRVenue;
+    if (!V) return [{ what: 'window.LRVenue missing: venuelinks.js was not inlined' }];
+    document.querySelectorAll('.page.active [data-vrow]').forEach(function (row) {
+      if (out.length > 8 || !visible(row)) return;
+      if (!row.querySelector('a.vlink')) out.push({ what: 'priced row without a venue link', where: where(row), text: norm(row.innerText).slice(0, 80) });
+    });
+    document.querySelectorAll('a.vlink').forEach(function (a) {
+      if (out.length > 8) return;
+      var href = a.getAttribute('href') || '', v = a.getAttribute('data-venue');
+      if (!V.validFor(v, href)) out.push({ what: 'venue link host does not belong to ' + v, href: href, where: where(a) });
+      else if (a.getAttribute('target') !== '_blank') out.push({ what: 'venue link opens in the same window', href: href });
+      else if (/[?&](stake|amount|wager|size|qty|quantity)=/i.test(href)) out.push({ what: 'venue link carries a stake', href: href });
+    });
+    return out;
+  }
   window.__e2e = {
+    overflow: overflowIssues,
+    venueLinks: venueLinkIssues,
     cands: cands, state: state, textIssues: textIssues, provenClaims: provenClaims, empties: empties, overlay: function () { var o = overlay(); return o ? (o.id || String(o.className)) : null; },
     learn: function () { mode = 'learn'; },
     off: function () { mode = 'off'; },

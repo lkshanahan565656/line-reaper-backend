@@ -14,6 +14,7 @@ const engine = require('./oddsengine');
 const calc = require('./calc');
 const results = require('./results');
 const pmus = require('./pmus');
+const glossary = require('./glossary');
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const am = d => { const a = calc.decimalToAmerican(d); return a == null ? '—' : (a > 0 ? `+${Math.round(a)}` : `${Math.round(a)}`); };
@@ -205,12 +206,34 @@ ${tool('Open the pick’em calculator')}`;
 <li>Kinds are never pooled to reach ${results.PROVEN_N}, and alternate lines, stale lines and pick’em props are judged on their own.</li>
 </ul>
 <p>Everything else is a <b>lead</b>: a price the math likes that the record has not yet backed. The app labels every ranked row LEAD or PROVEN, and the Results tab shows the count for each kind as it builds.</p>
+<h2 id="today">Today</h2>
+${LIVE_CLAIMS}
 <h2 id="limits">What it does not mean</h2>
 <p>Proven means a kind of bet has beaten the close over the sample so far. It does not promise future results, and a proven kind can stop working as venues adjust. Bet only what you can afford to lose.</p>
 ${tool('Open Results', '/app?start=results')}`;
     },
   },
 };
+// What the record proves today, read live from /api/claims (claims.js) when the
+// page opens, so the cached page never states a stale record. Without script
+// it says where to look instead of showing a number.
+const LIVE_CLAIMS = `<div class="ex" id="lrClaims"><div class="ex-h">What the record proves today</div>
+<p id="lrClaimsBody">The live record shows in the app's Results tab.</p>
+<p class="note" id="lrClaimsTx">In Texas no sportsbook is legal: pick’em apps and CFTC exchanges (Kalshi, Polymarket US, Gemini) are.</p></div>
+<script>
+fetch('/api/claims').then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
+  function e(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function p(x) { return (x > 0 ? '+' : '') + Number(x).toFixed(1) + '%'; }
+  var pr = d.proven || [], tx = d.texas || {};
+  var body = pr.length
+    ? 'Proven: ' + pr.map(function (r) { return '<b>' + e(r.kindLabel) + ' at ' + e(r.bookName) + '</b> (' + r.graded + ' graded games, ' + p(r.clv) + ' CLV' + (r.profitShown ? '' : ', profit not shown yet') + (r.texas ? '' : ', not a Texas venue') + ')'; }).join('; ') + '. Everything else is a lead, a model or research.'
+    : 'Nothing is proven yet. ' + (d.building || 0) + ' kinds of bet are still building their samples.';
+  document.getElementById('lrClaimsBody').innerHTML = body + ' <a href="/app?start=results">Full record</a>.';
+  var names = function (l) { return (l || []).filter(function (v) { return v.read; }).map(function (v) { return e(v.name); }).join(', '); };
+  document.getElementById('lrClaimsTx').innerHTML = e(tx.note || '') + ' We price ' + names(tx.pickem) + ' and ' + names(tx.exchanges) + '. '
+    + ((tx.proven || []).length ? 'Proven at a Texas venue: ' + tx.proven.map(function (r) { return e(r.kindLabel) + ' at ' + e(r.bookName); }).join(', ') + '.' : 'Nothing is proven yet at a Texas venue.');
+}).catch(function () {});
+</script>`;
 const ORDER = ['no-vig-fair-odds', 'expected-value', 'closing-line-value', 'hold-and-arbitrage', 'middles', 'kelly-criterion', 'exchange-fees', 'pickem-math', 'how-the-record-works'];
 const ALIASES = { 'no-vig': 'no-vig-fair-odds', devig: 'no-vig-fair-odds', ev: 'expected-value', clv: 'closing-line-value', arbs: 'hold-and-arbitrage', arbitrage: 'hold-and-arbitrage', hold: 'hold-and-arbitrage',
   middle: 'middles', kelly: 'kelly-criterion', fees: 'exchange-fees', pickem: 'pickem-math', record: 'how-the-record-works' };
@@ -219,7 +242,7 @@ const LOGO = '<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"
 const FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E";
 // the app's dark terminal palette
 const CSS = `
-:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#8391a7; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
 * { box-sizing:border-box; }
 html { -webkit-text-size-adjust:100%; }
 body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
@@ -254,6 +277,12 @@ ul.index li { margin:0; border-bottom:1px solid var(--border); }
 ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
 ul.index a b { display:block; font-size:16px; }
 ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
 nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
 .note { color:var(--muted); font-size:13px; }
 footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
@@ -295,7 +324,7 @@ function render(slug = '', { origin = '' } = {}) {
   if (!slug) {
     return shell({ title: 'The math behind sharp betting', kicker: 'Learn', canonical: o ? `${o}/learn` : null,
       lead: 'Short guides to every number Line Reaper shows: fair prices, EV, CLV, hold, arbs, middles, staking, exchange fees and pick’em break-evens. Each example is worked with the same code the app runs.',
-      body: `<ul class="index">${ORDER.map(k => `<li><a href="/learn/${k}"><b>${esc(PAGES[k].title)}</b><span>${esc(PAGES[k].lead)}</span></a></li>`).join('')}</ul>` });
+      body: `<ul class="index">${ORDER.map(k => `<li><a href="/learn/${k}"><b>${esc(PAGES[k].title)}</b><span>${esc(PAGES[k].lead)}</span></a></li>`).join('')}<li><a href="#glossary"><b>Glossary</b><span>Every label and badge in the app, in one or two plain sentences.</span></a></li></ul>${LIVE_CLAIMS}${glossaryHtml()}` });
   }
   const key = ALIASES[slug] || slug;
   const page = PAGES[key];
@@ -306,6 +335,16 @@ function render(slug = '', { origin = '' } = {}) {
   return shell({ title: page.title, lead: page.lead, kicker: 'Learn', canonical: o ? `${o}/learn/${key}` : null, body: page.body() + pn });
 }
 
+// GLOSSARY: every label and badge in the app (glossary.js), one or two plain
+// sentences each, A to Z. The app's ? beside a label links to #g-<id> here.
+function glossaryHtml() {
+  const list = [...glossary.TERMS].sort((a, b) => a.term.replace(/^the /i, '').localeCompare(b.term.replace(/^the /i, ''), 'en', { sensitivity: 'base' }));
+  const seen = list.map(t => t.labels.filter(l => !glossary.norm(t.term).startsWith(glossary.norm(l))).slice(0, 4));
+  return `<h2 id="glossary">Glossary</h2>
+<p class="note">Every label and badge in the app, in plain words. In the app, tap the <b>?</b> beside a label, or press and hold it on a phone, for the same definition.</p>
+<dl class="gloss">${list.map((t, i) => `<div class="gl-i" id="g-${esc(t.id)}"><dt>${esc(t.term)}${seen[i].length ? ` <span class="gl-also">${seen[i].map(esc).join(' · ')}</span>` : ''}</dt><dd>${esc(t.def)}${t.learn && PAGES[t.learn] ? ` <a href="/learn/${t.learn}">${esc(PAGES[t.learn].title)} →</a>` : ''}</dd></div>`).join('')}</dl>`;
+}
+
 const canonicalOf = slug => (ALIASES[slug] ? ALIASES[slug] : PAGES[slug] ? slug : null);
 
-module.exports = { PAGES, ORDER, ALIASES, render, canonicalOf };
+module.exports = { PAGES, ORDER, ALIASES, render, canonicalOf, glossaryHtml, CSS, LOGO, FAVICON, esc };

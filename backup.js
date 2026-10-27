@@ -109,7 +109,7 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
   const stores = new Map();   // name → { store, appendOnly }
   const restored = {};        // name → records added from the snapshot
   let state = key ? 'pending' : 'off';   // pending → ready | retrying; off without a key
-  let snapshotAt = null, note = null, cached = null, loading = null, building = null;
+  let snapshotAt = null, note = null, cached = null, loading = null, building = null, lastExportAt = null;
 
   async function fetchSnapshot() {
     let lastErr = null;
@@ -203,11 +203,12 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
     }
     const body = { v: 1, at: new Date(now()).toISOString(), keyId: keyIdOf(key), counts, other, ...(await sealAsync(key, payload)) };
     cached = { t: now(), body };
+    lastExportAt = body.at;
     return body;
   }
 
   function status() {
-    return { state, snapshotAt, note, restored: { ...restored }, stores: [...stores.keys()] };
+    return { state, snapshotAt, note, restored: { ...restored }, stores: [...stores.keys()], lastExportAt };
   }
 
   return { wrap, load, exportSnapshot, status };

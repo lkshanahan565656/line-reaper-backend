@@ -314,7 +314,7 @@ function evOf(row, book) {
   const v = book ? row.books[book]?.ev?.ev : row.best?.ev;
   return v == null ? -1e9 : v;
 }
-function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, sharp3 = false, combo = false, market = '' } = {}) {
+function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, sharp3 = false, combo = false, market = '', anchor = '' } = {}) {
   const s = String(sport || '').toUpperCase();
   const needle = String(q || '').toLowerCase().trim();
   let out = rows;
@@ -330,6 +330,9 @@ function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = f
   if (sharp3) out = out.filter(r => r.threeSharp && (!book || r.threeSharp.plays.some(p => p.book === book)));
   // combos priced off FanDuel, BetRivers and Pinnacle's parts, every source past break-even
   if (combo) out = out.filter(r => r.combo && (!book || r.combo.plays.some(p => p.book === book)));
+  // no sharp book lists the player and stat at any number (anchor.js), or one does
+  if (anchor === 'none') out = out.filter(r => r.anchor && !r.anchor.books?.length);
+  else if (anchor === 'sharp') out = out.filter(r => r.anchor?.books?.length);
   if (needle) out = out.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(needle));
   if (market) out = out.filter(r => r.market === market);
   return [...out].sort((SORTS[sort] || SORTS.ev)(book));

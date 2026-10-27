@@ -22,6 +22,7 @@ const { canonName } = require('./ev');
 const { sportMarketKey, boardSport } = require('./propsboard');
 const { idOf, CODE, legDecimal: appLegDecimal } = require('./sporttrack');
 const { legDecimal: slipLegDecimal } = require('./slips');
+const { sourceLabel } = require('./slipgrade');
 
 const KIND = 'slip';
 const ESPORTS = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'COD', 'R6', 'HALO', 'RL', 'OW']);
@@ -89,6 +90,7 @@ function view(b, leg) {
     closeEv: b.status === 'open' ? null : b.closeEv ?? null, evNow: b.status === 'open' && b.closeFair != null ? Math.round((b.closeFair * b.signalDecimal - 1) * 1e4) / 100 : null,
     fairMove: b.fairMove ?? null, closeOk: b.closeOk ?? null, closeAgeMin: b.closeAgeMin ?? null, appClose, lineMove, closeLines: b.closeLines || null,
     outcome: b.outcome || null, result: b.result ?? null, voidReason: b.voidReason || null,
+    gradeSource: b.status === 'graded' ? sourceLabel(b.gradeSource) : null,
   };
 }
 
