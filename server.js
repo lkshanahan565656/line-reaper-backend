@@ -10944,6 +10944,17 @@ if (require.main === module || process.env.LR_DESKTOP) {
   };
   process.once('SIGTERM', () => shutdown('SIGTERM'));
   process.once('SIGINT', () => shutdown('SIGINT'));
+  // A promise rejection nothing caught (a feed's parse, a fire-and-forget
+  // write) used to stop the whole server, and every board and in-memory state
+  // with it. It is logged and counted under /api/ops faults instead.
+  process.on('unhandledRejection', e => ops.fault('unhandledRejection', e));
+  // A thrown error nothing caught leaves the process in an unknown state: log
+  // it, put pending record writes on disk, and exit so Railway restarts us.
+  process.once('uncaughtException', e => {
+    ops.fault('uncaughtException', e);
+    setTimeout(() => process.exit(1), 5000).unref();
+    require('./jsonstore').flushAll().catch(() => {}).finally(() => process.exit(1));
+  });
 }
 
 module.exports = {
