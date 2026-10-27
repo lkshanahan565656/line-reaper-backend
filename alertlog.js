@@ -242,7 +242,7 @@ function view(docs, { rows = {}, labelOf = () => null, now = Date.now(), started
 }
 
 // ── the public page: /alerts ──
-const LABEL_COLOR = { proven: '#34d399', building: '#fbbf24', 'too early': '#94a3b8', 'losing to the close': '#f87171', research: '#a78bfa', 'copied book': '#94a3b8', 'no sharp close': '#64748b', 'not graded yet': '#64748b', [LABEL_NONE]: '#64748b' };
+const LABEL_COLOR = { proven: '#34d399', building: '#fbbf24', 'too early': '#94a3b8', 'losing to the close': '#f87171', research: '#a78bfa', 'copied book': '#94a3b8', 'no sharp close': '#8391a7', 'not graded yet': '#8391a7', [LABEL_NONE]: '#8391a7' };
 function renderPage(v, { origin = '' } = {}) {
   const learn = require('./learn');
   const { esc } = learn;

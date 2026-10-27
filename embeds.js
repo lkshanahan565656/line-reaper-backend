@@ -15,7 +15,7 @@ const { esc } = learn;
 
 const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e0b', kalshi: '#10b981', polymarketus: '#a78bfa', gemini: '#22d3ee', matchbook: '#f472b6',
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
-const colorOf = v => VENUE_COLOR[v] || '#64748b';
+const colorOf = v => VENUE_COLOR[v] || '#8391a7';
 const cleanOrigin = o => String(o || '').replace(/[^\w.:/-]/g, '').replace(/\/+$/, '');
 // American odds in the widget's format (data-odds: american, decimal, fractional or probability)
 const am = (a, fmt = 'american') => (a == null || !Number.isFinite(Number(a)) ? '—' : oddsFmt.fromAm(Number(a), fmt));
@@ -26,7 +26,7 @@ const usd = n => `$${Math.round(n).toLocaleString('en-US')}`;
 const impliedOf = a => (a == null || !Number.isFinite(a) || a === 0 ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 
 const WIDGET_CSS = `
-:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
+:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#8391a7; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
 * { box-sizing:border-box; }
 html, body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
 .w { border:1px solid var(--border); border-radius:8px; background:var(--card); padding:10px 12px; min-width:0; overflow:hidden; }
@@ -124,8 +124,8 @@ function chartSvg(points, { w = 420, h = 210, withFair = true } = {}) {
   const ticks = [0, 0.5, 1].map(f => y0 + f * (y1 - y0));
   const xt = [x0, (x0 + x1) / 2, x1];
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Implied win chance at each venue over time">
-${ticks.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#1e2738"/><text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">${(v * 100).toFixed(1)}%</text>`).join('')}
-${xt.map((t, i) => `<text x="${X(t).toFixed(1)}" y="${h - 6}" fill="#64748b" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}" font-family="monospace">${new Date(t).toISOString().slice(11, 16)}</text>`).join('')}
+${ticks.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#1e2738"/><text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" fill="#8391a7" font-size="10" text-anchor="end" font-family="monospace">${(v * 100).toFixed(1)}%</text>`).join('')}
+${xt.map((t, i) => `<text x="${X(t).toFixed(1)}" y="${h - 6}" fill="#8391a7" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}" font-family="monospace">${new Date(t).toISOString().slice(11, 16)}</text>`).join('')}
 ${fair.length ? `<path d="${path(fair)}" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>` : ''}
 ${lines.map(l => `<path d="${path(l.pts)}" fill="none" stroke="${colorOf(l.v)}" stroke-width="2"/>`).join('')}
 </svg>`;
@@ -238,7 +238,7 @@ function developersPage({ origin = '', endpoints = [], examples = {}, limits, wi
   const exampleOf = p => {
     const ex = examples[p];
     if (!ex) return '<p class="note">No live example: this endpoint needs a value from another (an id or a week).</p>';
-    return `<div class="h3s">Live example: <code>GET ${esc(ex.url)}</code>, read ${esc(hhmm(ex.at))}</div><pre data-ex="${esc(p)}">${esc(JSON.stringify(ex.body, null, 2))}</pre>`;
+    return `<div class="h3s">Live example: <code>GET ${esc(ex.url)}</code>, read ${esc(hhmm(ex.at))}</div><pre data-ex="${esc(p)}" tabindex="0" aria-label="Example response from ${esc(p)}">${esc(JSON.stringify(ex.body, null, 2))}</pre>`;
   };
   const eps = endpoints.map(e => `<section class="ep" id="ep-${esc(e.path.replace(/[^\w]+/g, '-'))}">
 <h3>${esc(e.title)}</h3>
@@ -252,8 +252,8 @@ ${examples[e.path] ? `<button class="btn" type="button" data-try="${esc(examples
   const frame = (kind, q, h) => `<iframe src="${o}/embed/${kind}${q}" title="Line Reaper ${kind.replace('-', ' ')}" style="width:100%;height:${h}px;border:0" loading="lazy"></iframe>`;
   const widget = (kind, title, about, attrs, q, h) => `<div class="wg"><h3 style="margin:0 0 6px">${esc(title)}</h3><p style="color:var(--text2);font-size:14px">${esc(about)}</p>
 <iframe src="/embed/${kind}${q}${q ? '&' : '?'}_id=pv-${kind}" data-lr-id="pv-${kind}" title="${esc(title)} preview" style="height:${h}px" loading="lazy"></iframe>
-<div class="h3s">With the script (sizes itself)</div><pre>${esc(snippet(kind, attrs))}</pre><button class="btn" type="button" data-copy="${esc(snippet(kind, attrs))}">COPY</button>
-<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>${esc(frame(kind, q, h))}</pre><button class="btn" type="button" data-copy="${esc(frame(kind, q, h))}">COPY</button></div>`;
+<div class="h3s">With the script (sizes itself)</div><pre tabindex="0">${esc(snippet(kind, attrs))}</pre><button class="btn" type="button" data-copy="${esc(snippet(kind, attrs))}">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre tabindex="0">${esc(frame(kind, q, h))}</pre><button class="btn" type="button" data-copy="${esc(frame(kind, q, h))}">COPY</button></div>`;
   const lic = licences && licences.kalshi === false ? '<li>Kalshi prices are left out of the API and widgets until Kalshi gives written permission to show its data to other people; Polymarket the same.</li>' : '';
   return `<!doctype html>
 <html lang="en">
@@ -292,7 +292,7 @@ ${lic}</ul>
 
 <h2 id="auth">Using it</h2>
 <p>Send the key in an <code>X-API-Key</code> header (or as <code>?key=</code> where a header is awkward). Any site may call it from a browser: CORS is open to every origin.</p>
-<pre>curl -H "X-API-Key: lr_…" ${esc(o)}/api/v1/best-prices?league=nfl</pre>
+<pre tabindex="0">curl -H "X-API-Key: lr_…" ${esc(o)}/api/v1/best-prices?league=nfl</pre>
 <ul>
 <li><b>Limits:</b> ${planLimits ? `Pro keys ${planLimits.pro.apiPerMinute} calls a minute and ${planLimits.pro.apiPerDay.toLocaleString('en-US')} a day (UTC); Free keys ${planLimits.free.apiPerMinute} a minute and ${planLimits.free.apiPerDay.toLocaleString('en-US')} a day. A key takes the plan of the account it was made from (<a href="/pricing">plans</a>)` : `${limits.perMinute} calls a minute and ${limits.perDay.toLocaleString('en-US')} a day (UTC) per key`}. Every answer says where you are in <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code> (seconds) and <code>X-RateLimit-Daily-Remaining</code>. Over the limit is a 429 with <code>Retry-After</code>. Counts restart when the server redeploys.</li>
 <li id="lines"><b>Line history:</b> every market's prices at each venue we read, Pinnacle included, kept 30 days after the start, as JSON or CSV (<code>?format=csv</code>) from <code>/api/v1/lines</code>. ${planLimits ? `Pro keys read all ${planLimits.pro.historyDays} days; Free keys the last ${planLimits.free.historyDays}.` : 'Every key reads all 30 days.'} The same charts are public at <a href="/lines">/lines</a>.</li>

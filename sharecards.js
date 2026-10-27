@@ -26,11 +26,11 @@ const FONT = 'JetBrains Mono';
 // JetBrains Mono is monospaced: every glyph is 600/1000 of the font size wide,
 // so text is cut to fit exactly, with no measuring
 const CHAR = 0.6;
-const C = { bg: '#080b10', card: '#0d121b', border: '#1e2738', text: '#e2e8f0', text2: '#94a3b8', muted: '#64748b', green: '#10b981', green2: '#34d399', amber: '#f59e0b', red: '#f87171', blue: '#60a5fa', violet: '#a78bfa' };
+const C = { bg: '#080b10', card: '#0d121b', border: '#1e2738', text: '#e2e8f0', text2: '#94a3b8', muted: '#8391a7', green: '#10b981', green2: '#34d399', amber: '#f59e0b', red: '#f87171', blue: '#60a5fa', violet: '#a78bfa' };
 const TONE = { proven: C.green2, lead: C.amber, info: C.blue, research: C.violet, losing: C.red, plain: C.text2 };
 const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e0b', kalshi: '#10b981', polymarketus: '#a78bfa', gemini: '#22d3ee', matchbook: '#f472b6',
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
-const colorOf = v => VENUE_COLOR[v] || '#64748b';
+const colorOf = v => VENUE_COLOR[v] || '#8391a7';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // strip control characters (resvg draws nothing for them; a feed name could carry one)
@@ -470,7 +470,7 @@ p { color:#94a3b8; margin:0 0 10px; overflow-wrap:anywhere; }
 .btns { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
 a.btn { font:700 12px 'JetBrains Mono', ui-monospace, Menlo, monospace; letter-spacing:.08em; color:#06110d; background:#34d399; border-radius:6px; padding:10px 14px; text-decoration:none; }
 a.btn.ghost { color:#34d399; background:transparent; border:1px solid rgba(52,211,153,.45); }
-.note { font-size:12px; color:#64748b; }
+.note { font-size:12px; color:#8391a7; }
 </style>
 </head>
 <body>

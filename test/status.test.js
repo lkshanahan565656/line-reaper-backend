@@ -89,3 +89,12 @@ test('the page shows the live check and escapes feed text', () => {
   assert.match(html, /X &lt;b&gt;/);
   assert.match(html, /1 of 1 feeds are not reading/);
 });
+
+test('the page reloads itself each minute with a pause button, and no meta refresh (WCAG 2.2.1)', () => {
+  const { b } = board(() => [{ key: 'pin', name: 'Pinnacle', group: 'sharp', enabled: true, okAt: null, staleMs: MIN }]);
+  const html = renderPage(b.view({ uptimeS: 90 }));
+  assert.doesNotMatch(html, /http-equiv="refresh"/);
+  assert.match(html, /<button type="button" id="rl"[^>]*>PAUSE RELOADING<\/button>/);
+  assert.match(html, /<script id="reload">[\s\S]*location\.reload\(\)[\s\S]*<\/script>/);
+  assert.match(html, /<div class="scroll" tabindex="0" role="region"/);
+});

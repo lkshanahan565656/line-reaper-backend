@@ -139,7 +139,7 @@ function createStatusBoard({ probe, now = () => Date.now(), version = () => null
 }
 
 // ── the public page ──────────────────────────────────────────────────────────
-const STATE_COLOR = { up: '#34d399', stale: '#fbbf24', down: '#f87171', off: '#64748b' };
+const STATE_COLOR = { up: '#34d399', stale: '#fbbf24', down: '#f87171', off: '#8391a7' };
 const pct = u => (u ? `${(u.pct * 100).toFixed(u.pct >= 0.999 || u.pct === 0 ? 0 : 1)}%` : 'no data yet');
 function ago(s) {
   if (s == null) return 'never';
@@ -174,7 +174,6 @@ function renderPage(v, { origin = '' } = {}) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="60">
 <title>Status | Line Reaper</title>
 <meta name="description" content="Live feed health for every venue Line Reaper reads: last good read, staleness and uptime.">
 ${o ? `<link rel="canonical" href="${esc(o)}/status">` : ''}
@@ -192,6 +191,7 @@ td.n, th.n { text-align:right; white-space:nowrap; }
 .feeds td:first-child { overflow-wrap:anywhere; }
 .strip { display:inline-flex; gap:2px; }
 .strip i { display:block; width:5px; height:16px; border-radius:1px; }
+.rl { font:600 10px var(--mono); letter-spacing:.08em; color:var(--text2); background:none; border:1px solid var(--border); border-radius:6px; padding:3px 8px; cursor:pointer; margin-left:4px; }
 .tiles { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
 .tiles div { flex:1 1 160px; min-width:0; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
 .tiles span { display:block; font:600 10px var(--mono); letter-spacing:.1em; color:var(--muted); }
@@ -205,17 +205,28 @@ td.n, th.n { text-align:right; white-space:nowrap; }
 <main>
 <p class="kicker">Status</p>
 <h1 style="color:${headColor}">${esc(headline)}</h1>
-<p class="lead">Every venue and recorder this server reads, from its own state. Read ${esc(v.at.slice(0, 16).replace('T', ' '))} UTC; this page reloads every minute.</p>
+<p class="lead">Every venue and recorder this server reads, from its own state. Read ${esc(v.at.slice(0, 16).replace('T', ' '))} UTC; this page reloads every minute. <button type="button" id="rl" class="rl" aria-pressed="false">PAUSE RELOADING</button></p>
 <div class="tiles">
 <div><span>FEEDS UP NOW</span><b>${s.up} / ${s.on}</b><i>${s.stale} stale · ${s.down} down · ${s.off} off here</i></div>
 <div><span>SITE UP 24H</span>${siteTxt}</div>
 <div><span>VERSION</span><b>v${esc(v.version || '?')}</b><i>running ${v.uptimeS != null ? esc(ago(v.uptimeS).replace(' ago', '')) : '—'}</i></div>
 <div><span>LAST LIVE CHECK</span>${lcText}</div>
 </div>
-${tables}
+${tables.replace(/<div class="scroll">/g, '<div class="scroll" tabindex="0" role="region" aria-label="Feed table">')}
 <p class="note">How to read it: UP means the last good read is younger than the feed's stale limit; STALE means it read before but not inside the limit; DOWN means it is on but has not read since this server started; OFF means it is switched off on this server. Uptime is the share of 5-minute samples a feed was up, among the samples it was on, kept ${site.keepDays} days. Site uptime is the share of 5-minute slots with a sample since the first one; a slot with none means the server was not running, and samples taken in the minutes before a deploy can be lost before the backup saves them. Nothing here is a price or a pick.</p>
 <p><a class="go" href="/api/uptime">THE SAME AS JSON →</a></p>
 </main>
+<script id="reload">
+(function () {
+  // reload every minute unless the viewer paused it (WCAG 2.2.1), or the tab is in the background
+  var paused = false, b = document.getElementById('rl');
+  try { paused = localStorage.getItem('lr_status_pause') === '1'; } catch (e) {}
+  function show() { b.textContent = paused ? 'RESUME RELOADING' : 'PAUSE RELOADING'; b.setAttribute('aria-pressed', String(paused)); }
+  b.onclick = function () { paused = !paused; try { localStorage.setItem('lr_status_pause', paused ? '1' : '0'); } catch (e) {} show(); };
+  show();
+  setInterval(function () { if (!paused && !document.hidden) location.reload(); }, 60000);
+})();
+</script>
 <footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/learn">Learn</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
 <div>Line Reaper is an information service, not a sportsbook. It does not take bets. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
 </body>

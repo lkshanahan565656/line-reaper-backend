@@ -142,7 +142,7 @@ function pushText(d, { origin = '' } = {}) {
 // ─── THE SHARE PAGE: /digest/<week> ──────────────────────────────────────────
 // Read-only and public, under the sales page's rule: it says proven only of a
 // row RESULTS marks proven and a profit only where RESULTS shows one.
-const LABEL_COLOR = { proven: '#34d399', building: '#fbbf24', 'too early': '#94a3b8', 'losing to the close': '#f87171', research: '#a78bfa', 'copied book': '#94a3b8', 'no sharp close': '#64748b', 'not graded yet': '#64748b' };
+const LABEL_COLOR = { proven: '#34d399', building: '#fbbf24', 'too early': '#94a3b8', 'losing to the close': '#f87171', research: '#a78bfa', 'copied book': '#94a3b8', 'no sharp close': '#8391a7', 'not graded yet': '#8391a7' };
 const CHANGE_COLOR = { 'newly proven': '#34d399', 'no longer proven': '#f87171', 'newly losing to the close': '#f87171', 'reached 50 graded': '#60a5fa' };
 const t1 = x => (x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(1)}`);
 function renderPage(d, { origin = '', frozen = null, sentAt = null } = {}) {

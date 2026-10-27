@@ -63,3 +63,21 @@ branch. Its workflow waits for the site to show that version, runs
 (`POST /api/ops/smoke`; the server fetches the file from GitHub itself, so the
 caller cannot post a result). The command waits for the result, prints it, and
 exits 0 on a pass. The last result is in `/api/ops` under `liveCheck`.
+
+## Accessibility (`npm run a11y`)
+
+`a11y.js` boots the same offline server and runs axe-core (WCAG 2.1 A and AA
+rules) on every app tab, the welcome screen, the tour, CUSTOMIZE, SEARCH (empty
+and with results), the shortcut list, the bet form and the log-in box, and on
+every public page (sales page, /learn, /pricing, /developers, /leagues and two
+league pages, /r, /alerts, /lines and a game's history, /status, /digest,
+/terms), at phone and desktop size. It also opens each of them in a 640 px
+window, which is a 1280 px desktop at 200% zoom, and fails if the page scrolls
+sideways there.
+
+A serious or critical finding fails the run unless `a11y-baseline.json` lists
+it (page, rule, the most nodes allowed and a reason). The baseline is empty:
+nothing is left on purpose. `A11Y_UPDATE=1` writes the current findings into it
+(each new entry needs its reason filled in), `A11Y_PAGES=app:odds,page:/pricing`
+checks only those, and the full report is `e2e/out/a11y.json`. CI runs it right
+after `npm run e2e`.
