@@ -105,3 +105,21 @@ test('the gc gauge is always in the state', () => {
   const { gc } = ops.state();
   assert.deepEqual(Object.keys(gc).sort(), ['count', 'maxMs', 'over100', 'over250', 'over500', 'recent', 'totalMs']);
 });
+
+test('faults: an unhandled rejection is counted, logged with its stack top, newest first, at most 20 kept', () => {
+  const lines = [];
+  const ops = createOps({ log: { error: l => lines.push(l) } });
+  ops.fault('unhandledRejection', new Error('feed parse failed'));
+  ops.fault('unhandledRejection', 'a plain string');
+  const f = ops.state().faults;
+  assert.equal(f.unhandled, 2);
+  assert.equal(f.recent[0].message, 'a plain string');
+  assert.equal(f.recent[1].message, 'feed parse failed');
+  assert.match(f.recent[1].stack, /ops\.test\.js/);
+  assert.match(lines[0], /^unhandledRejection: feed parse failed/);
+  for (let i = 0; i < 30; i++) ops.fault('unhandledRejection', new Error(`e${i}`));
+  assert.equal(ops.state().faults.recent.length, 20);
+  ops.fault('uncaughtException', new Error('boom'));
+  assert.equal(ops.state().faults.unhandled, 32, 'only rejections count as unhandled');
+  assert.equal(ops.state().faults.recent[0].kind, 'uncaughtException');
+});
