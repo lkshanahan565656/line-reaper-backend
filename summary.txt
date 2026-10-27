@@ -1,0 +1,48 @@
+3.220.0
+{
+ "on": true,
+ "scans": 303,
+ "lastScan": "2026-10-27T14:08:51.299Z",
+ "sides": 2863,
+ "candidates": {
+  "polymarketus": 1
+ },
+ "reads": {
+  "polymarketus": 81,
+  "gemini": 221,
+  "kalshi": 388
+ },
+ "flags": 39,
+ "errors": [
+  "polymarketus: 429",
+  "polymarketus: 429",
+  "polymarketus: 429",
+  "polymarketus: 429",
+  "polymarketus: 429"
+ ],
+ "byVenue": {
+  "gemini": {
+   "sides": 403,
+   "atFair": 5,
+   "mainAtFlag": 1,
+   "bestEv": 0.0129
+  },
+  "polymarketus": {
+   "sides": 624,
+   "atFair": 13,
+   "mainAtFlag": 4,
+   "bestEv": 0.0171
+  },
+  "kalshi": {
+   "sides": 1836,
+   "atFair": 14,
+   "mainAtFlag": 1,
+   "bestEv": 0.0374
+  }
+ },
+ "lastScanMs": 966,
+ "results": {
+  "due": 0,
+  "graded": 0
+ }
+}
