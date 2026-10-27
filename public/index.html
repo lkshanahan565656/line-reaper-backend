@@ -1383,6 +1383,9 @@ body.no-help .clv-info { display:none; }
 .ms-imp ol { margin:6px 0 0; padding-left:18px; color:var(--text2); }
 .ms-imp li { margin:3px 0; overflow-wrap:anywhere; }
 .ms-imp li small { display:block; color:var(--muted2); }
+.ms-unread { margin:6px 0 0; padding-left:18px; color:var(--text2); font-size:12px; }
+.ms-unread li { margin:3px 0; overflow-wrap:anywhere; }
+.ms-unread li small { display:block; color:var(--muted2); }
 .ms-imp .ms-imp-foot { padding:0 12px 9px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
 .mb-auto { display:inline-block; margin-left:6px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:#7dd3fc; border:1px solid rgba(125,211,252,.35); border-radius:4px; padding:1px 4px; vertical-align:1px; }
 .mb-act { display:flex; gap:6px; justify-content:flex-end; align-items:center; }
@@ -4144,16 +4147,22 @@ function msPasteToggle(on) {
   el.style.display = show ? '' : 'none';
   if (show) document.getElementById('msText').focus();
 }
+// lines the paste reader left out, each with its reason in plain words
+function msUnreadHtml(unread, n = 3) {
+  if (!unread?.length) return '';
+  const li = unread.slice(0, n).map(u => `<li>${u.row != null ? `<b>Line ${u.row}:</b> ` : ''}${escAttr(u.text)}<small>${escAttr(u.why || '')}</small></li>`).join('');
+  return `<ol class="ms-unread">${li}</ol>${unread.length > n ? `<div class="mb-hint">and ${unread.length - n} more</div>` : ''}`;
+}
 async function msPasteSave() {
   if (!(await msReady())) return;
   const text = document.getElementById('msText').value;
   const hint = document.getElementById('msHint');
   const r = LRSlips.importText(text, { name: 'pasted text' });
   if (r.error) { hint.textContent = r.error; return; }
-  if (!r.slips.length && !r.bets.length) { hint.textContent = 'No legs found. Write each leg as: Player Over 24.5 Stat'; return; }
+  if (!r.slips.length && !r.bets.length) { hint.innerHTML = `No legs found. Write each leg as: Player Over 24.5 Stat.${r.unread.length ? ` Not read:${msUnreadHtml(r.unread)}` : ''}`; return; }
   const added = msAddImport(r, 'pasted text');
   document.getElementById('msText').value = '';
-  hint.textContent = r.unread.length ? `Added ${added} slip${added === 1 ? '' : 's'}. Not read: ${r.unread.slice(0, 3).map(u => u.text).join(' / ')}${r.unread.length > 3 ? ` and ${r.unread.length - 3} more, listed under Imports` : ''}` : '';
+  hint.innerHTML = r.unread.length ? `Added ${added} slip${added === 1 ? '' : 's'}. Not read (all listed under Imports):${msUnreadHtml(r.unread)}` : '';
   if (!r.unread.length) msPasteToggle(false);
   showToast(`${added} slip${added === 1 ? '' : 's'} added, ${r.slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
   renderMySlips();
@@ -4175,7 +4184,7 @@ async function msLogcCheck() {
   if (!(await msReady())) { out.innerHTML = '<div class="mb-hint">My Slips could not load from the server.</div>'; return; }
   const r = LRSlips.importText(text, { name: 'copied slip' });
   if (r.kind === 'csv') { out.innerHTML = '<div class="mb-hint">That looks like a spreadsheet. IMPORT CSV takes files; LOG A SLIP takes one slip you just placed.</div>'; return; }
-  if (!r.slips.length) { out.innerHTML = `<div class="mb-hint">No picks found. Each pick needs a player, More or Less (Higher or Lower) and a line with its stat, like: Josh Allen / More 245.5 Pass Yards.${r.unread.length ? ` Not read: ${escAttr(r.unread.slice(0, 3).map(u => u.text).join(' / '))}` : ''}</div>`; return; }
+  if (!r.slips.length) { out.innerHTML = `<div class="mb-hint">No picks found. Each pick needs a player, More or Less (Higher or Lower) and a line with its stat, like: Josh Allen / More 245.5 Pass Yards.${r.unread.length ? ' Not read:' : ''}</div>${msUnreadHtml(r.unread)}`; return; }
   btn.disabled = true;
   const parts = [];
   let logged = 0;
@@ -4185,7 +4194,7 @@ async function msLogcCheck() {
       parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">This slip says it was placed ${escAttr(new Date(sl.placedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}. LOG A SLIP is for a slip you're placing now; PASTE SLIPS adds older ones to MY SLIPS (a public record shows them LATE, not counted).</div></div>`);
       continue;
     }
-    if (sl.legs.length < 2) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">Only one pick was read; an app slip has 2 or more.${r.unread.length ? ` Not read: ${escAttr(r.unread.slice(0, 3).map(u => u.text).join(' / '))}` : ''}</div></div>`); continue; }
+    if (sl.legs.length < 2) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">Only one pick was read; an app slip has 2 or more.${r.unread.length ? ' Not read:' : ''}</div>${msUnreadHtml(r.unread)}</div>`); continue; }
     let st;
     try { st = await msStamp(sl.app, sl.legs); }
     catch (e) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">The server couldn't check it (${escAttr(lrErr(e))}). Tap CHECK AND LOG again.</div></div>`); continue; }
@@ -4209,7 +4218,7 @@ async function msLogcCheck() {
     showToast(`Logged ${logged} slip${logged === 1 ? '' : 's'}${p && !p.unpublished ? ` to your record @${p.handle}` : ' to MY SLIPS'}`);
     renderMySlips(); msGrade(true);
   }
-  out.innerHTML = parts.join('') + (r.unread.length && logged ? `<div class="mb-hint">Lines not read as picks: ${escAttr(r.unread.slice(0, 3).map(u => u.text).join(' / '))}</div>` : '');
+  out.innerHTML = parts.join('') + (r.unread.length && logged ? `<div class="mb-hint">Lines not read as picks:</div>${msUnreadHtml(r.unread)}` : '');
 }
 // text shared to the installed app (manifest share_target → /app?share_text=...)
 function msShareIn() {
