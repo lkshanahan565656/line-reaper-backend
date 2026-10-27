@@ -2899,6 +2899,17 @@ async function osToggle(id) {
 const osVenueName = v => (osUi.data?.venues || []).find(x => x.key === v)?.name || (window.shpUi?.data?.providers || []).find(x => x.id === v)?.name || v;
 // implied chance of an American price (the fee is already in an exchange's)
 const osProb = a => (a == null ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+// the market's own page (/lines, linehist.js) in this viewer's state and odds format
+function osFullHistory(h, s) {
+  const q = new URLSearchParams();
+  if (h.player) q.set('key', h.id || '');
+  else q.set('market', s.market || '');
+  q.set('side', s.id || '');
+  if (lrState && lrState !== 'TX') q.set('state', lrState);
+  if (!lrState) q.set('venues', 'all');
+  if (oddsFmtCur !== 'american') q.set('odds', oddsFmtCur);
+  return h.player ? `/lines/prop?${q}` : `/lines/game/${encodeURIComponent(String(s.id || '').split('|')[0])}?${q}`;
+}
 function osDrawChart(id) {
   const el = document.getElementById('osc-' + id); if (!el) return;
   const h = osUi.hist[id]; if (!h) return;
@@ -2931,7 +2942,7 @@ function osDrawChart(id) {
   const legend = lines.filter(l => l.key === 'fair').map(l => `<button disabled><i style="background:${l.color}"></i>${escAttr(l.name)}</button>`).join('') +
     venuesIn.map(v => `<button class="${shown.includes(v) ? '' : 'off'}" onclick="osLegend('${escAttr(id)}','${v}')" aria-pressed="${shown.includes(v)}"><i style="background:${OS_COLORS[v]}"></i>${escAttr(osVenueName(v))}</button>`).join('');
   el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px">${sideChips}</div><div style="position:relative">${svg}<div class="os-tip"></div></div><div class="os-legend">${legend}</div>` +
-    `<div class="os-note">Chance each price implies (fees in), over time. Lower means a better price for this side. Up to four venues at once; tap one to swap it in. ${s.pts.length} reads since ${new Date(s.pts[0][0]).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</div>`;
+    `<div class="os-note">Chance each price implies (fees in), over time. Lower means a better price for this side. Up to four venues at once; tap one to swap it in. ${s.pts.length} reads since ${new Date(s.pts[0][0]).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}. <a href="${escAttr(osFullHistory(h, s))}" style="color:var(--green2)">Full history, every venue and a CSV, kept 30 days →</a></div>`;
   osUi.chart = osUi.chart || {}; osUi.chart[id] = { lines, X, t0, t1, W, L, R, shown, venuesIn };
 }
 // a venue on: shown (the oldest shown one makes room past four); on again: hidden

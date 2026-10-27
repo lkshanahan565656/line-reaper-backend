@@ -50,6 +50,19 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   for (const t of cron.getTasks().values()) t.stop();
 
   const responses = snapshot.responses || {};
+  // the line history pages (/lines, linehist.js) are drawn by the server, so
+  // the recording's own game histories go into its 30-day archive, with the
+  // game's names from the recorded odds screen: real recorded reads
+  try {
+    const board = JSON.parse(responses['/api/odds-screen']?.body || '{}').games || [];
+    for (const [k, r] of Object.entries(responses)) {
+      if (!k.startsWith('/api/odds-screen/history/')) continue;
+      for (const x of JSON.parse(r.body).series || []) {
+        const g = board.find(b => b.id === x.game);
+        S.lineArchive.add('game', { ...x, ...(g ? { event: `${g.away} @ ${g.home}`, league: g.league, leagueLabel: g.leagueLabel } : {}) });
+      }
+    }
+  } catch (e) { log(`line archive seed: ${e.message}`); }
   // the same path with other query strings, for a request the snapshot has no exact match for
   const byPath = {};
   for (const k of Object.keys(responses)) (byPath[k.split('?')[0]] ||= []).push(k);

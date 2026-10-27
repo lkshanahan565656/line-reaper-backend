@@ -1625,6 +1625,50 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     await settle(page, w, opts, 60);
   },
 
+  async 'line history: the list, one market\'s chart in the odds format and state picked, the CSV'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    // offline the server's archive holds the recording's own game histories (harness.js); past 30 days they have aged out
+    const fresh = opts.live || (opts.clock && Date.now() - Date.parse(opts.clock) < 29 * 86400e3);
+    try {
+      const res = await page.goto(`${opts.base}/lines`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/lines answered ${res && res.status()}`);
+      expect(/kept 30 days/.test(await text(page, 'h1')), 'the line history heading is missing');
+      expect(await fits(), 'the line history list scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!/guaranteed|risk[- ]free/i.test(body) && !/\bundefined\b|\bNaN\b|\[object Object\]/.test(body), 'the list shows a claim or broken text');
+      const links = page.locator('ul.mk a');
+      if (!fresh && !(await links.count())) { expect(/No saved market/.test(body), 'an empty list must say so'); return; }
+      expect(await links.count() > 0, 'the line history list is empty although the server holds the recording\'s histories');
+      await links.first().click();
+      await page.waitForLoadState('domcontentloaded');
+      expect(/\/lines\/(game|prop)/.test(page.url()), `the market link went to ${page.url()}`);
+      expect(await page.locator('#lhChart svg path').count() > 0, 'the chart drew no line');
+      expect(await fits(), 'the market chart page scrolls sideways at this size');
+      const page1 = await page.evaluate(() => document.body.innerText);
+      expect(/Saved since/.test(page1), 'the page must say since when it has history');
+      expect(!/guaranteed|risk[- ]free/i.test(page1) && !/\bundefined\b|\bNaN\b|\[object Object\]/.test(page1), 'the chart page shows a claim or broken text');
+      // the odds format and the state, from the page's own picker
+      await page.locator('#sto').selectOption('decimal');
+      await page.locator('#stp').selectOption('NJ');
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('.st-pick button[type=submit]').click()]);
+      expect(/odds=decimal/.test(page.url()) && /state=NJ/.test(page.url()), `the picker did not reach the URL: ${page.url()}`);
+      const cells = await page.locator('table td.n').allInnerTexts();
+      expect(cells.some(c => /^\d+\.\d{2}$/.test(c.trim())), 'prices are not in decimal odds after picking decimal');
+      expect(await fits(), 'the chart page scrolls sideways after the picker');
+      // the downloads
+      const csvHref = await page.locator('a.go[download]').getAttribute('href');
+      const csv = await page.request.get(`${opts.base}${csvHref}`);
+      expect(csv.status() === 200 && /text\/csv/.test(csv.headers()['content-type'] || ''), `the CSV answered ${csv.status()}`);
+      expect(/^time_utc,event,league,market,side,line,venue,american,decimal,implied_prob,fair_prob/.test(await csv.text()), 'the CSV header is wrong');
+      const jsonHref = await page.locator('a.go', { hasText: 'DOWNLOAD JSON' }).getAttribute('href');
+      const j = await page.request.get(`${opts.base}${jsonHref}`);
+      expect(j.status() === 200 && (await j.json()).series?.length > 0, `the JSON answered ${j.status()}`);
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
   async 'sales page and Learn claim only what the record proves'(page, w, opts) {
     // TEST DATA, not a recording: one proven row shaped like /api/claims, so the
     // page is checked against known numbers. The live check reads the real API.
