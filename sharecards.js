@@ -388,7 +388,6 @@ function renderPng(svg) {
     ? r.renderAsync(svg, { font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: FONT }, fitTo: { mode: 'original' } }).then(img => img.asPng())
     : Promise.resolve(new r.Resvg(svg, { font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: FONT } }).render().asPng());
 }
-const pngReady = () => !!loadResvg();
 
 // ── link previews: Open Graph and Twitter tags ──
 // meta: { title, description, image, url, alt }. image and url absolute.
@@ -497,4 +496,4 @@ function safeOpen(to) {
 }
 
 module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, boardCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
-  renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };
+  renderPng, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };
