@@ -11,4 +11,14 @@ jobs:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
           echo "health:"; curl -s -m 20 $U/api/health | head -c 600; echo
+          echo "stall jobs (last 20):"; curl -s -m 30 $U/api/ops | python3 -c "
+          import json,sys,collections
+          j=json.load(sys.stdin); c=collections.Counter()
+          for s in j['stalls']['recent']: [c.update([x[:70]]) for x in s['jobs']]
+          print('stalls',j['stalls']['count'],'worst',j['stalls']['worstMs']); print(json.dumps(c.most_common(15),indent=0))
+          print('jobs by max ms'); [print(x['name'][:70],x.get('maxMs'),x.get('lastMs'),x.get('runs')) for x in j['jobs']['byMaxMs'][:20]]
+          print('loop',json.dumps({k:v for k,v in j['loop'].items() if k!='recent'})); print('gc',json.dumps({k:v for k,v in j['gc'].items() if k!='recent'})); print('mem',j['memory'])"
+          echo "profile 30s:"; curl -s -m 60 "$U/api/ops/profile?s=30" | python3 -c "
+          import json,sys
+          j=json.load(sys.stdin); print('busy%',j.get('busyPct')); [print(json.dumps(r)[:200]) for r in j.get('top',[])[:30]]"
           echo "ops liveCheck:"; curl -s -m 30 $U/api/ops | python3 -c "import json,sys;j=json.load(sys.stdin);print(json.dumps({'uptimeS':j.get('uptimeS'),'liveCheck':j.get('liveCheck')})[:800])"
