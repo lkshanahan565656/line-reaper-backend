@@ -1079,6 +1079,67 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     }
   },
 
+  async 'every ODDS SCREEN mode and the new research views open with plain words'(page, w, opts) {
+    // the crawl's time on a tab runs out in CUSTOMIZE and the bet form before it
+    // reaches the later modes, so each one is opened here: it must show something,
+    // no broken text, nothing wider than a phone, and an empty view in words
+    const look = async (tab, what) => {
+      await settle(page, w, opts, 250);
+      const r = await page.evaluate(t => ({ text: (document.getElementById(`page-${t}`)?.innerText || '').trim(), bad: window.__e2e.textIssues(), wide: document.documentElement.scrollWidth - window.innerWidth,
+        over: window.__e2e.overflow().map(o => `${o.what} ${o.where}`) }), tab);
+      expect(r.text.length > 200, `${what}: the view is blank`);
+      expect(!r.bad.length, `${what}: broken text ${String(JSON.stringify(r.bad[0])).slice(0, 160)}`);
+      expect(r.wide <= 0, `${what}: the page is ${r.wide} px too wide`);
+      if (opts.viewportName === 'phone') expect(!r.over.length, `${what}: sticks out at phone size: ${r.over[0]}`);
+      expect(!/couldn't load|could not load/i.test(r.text) || /try again|retry|in a minute|refresh/i.test(r.text), `${what}: an error that does not say what to do`);
+      return r.text;
+    };
+    await openTab(page, 'odds', w, opts);
+    const mode0 = (await page.locator('#oddsModes button.active').first().innerText().catch(() => '')).trim();
+    const modes = (await page.locator('#oddsModes button').allInnerTexts()).map(t => t.trim()).filter(Boolean);
+    expect(modes.length >= 6, `the ODDS SCREEN has only ${modes.length} modes: ${modes}`);
+    for (const m of modes) {
+      await page.locator('#oddsModes button', { hasText: m }).first().click();
+      await look('odds', `ODDS SCREEN > ${m}`);
+      if (/OUTRIGHTS/i.test(m)) {
+        for (const sub of ['RECORD', 'PRICES NOW', 'SEASON FUTURES']) {
+          const b = page.locator('#ortModes button', { hasText: sub }).first();
+          expect(await b.count(), `OUTRIGHTS has no ${sub} chip`);
+          await b.click();
+          await look('odds', `OUTRIGHTS > ${sub}`);
+        }
+        // back to every sport, as the later flows expect
+        await page.locator('#ortModes button', { hasText: /^ALL$/ }).first().click();
+        await settle(page, w, opts, 120);
+      }
+    }
+    // leave the odds screen on the mode it was on, as the later flows expect
+    if (mode0) { await page.locator('#oddsModes button', { hasText: mode0 }).first().click(); await settle(page, w, opts, 200); }
+    await openTab(page, 'esports', w, opts);
+    const es0 = await page.evaluate(() => document.querySelector('[id^="esMode"].active')?.id || '');
+    await page.locator('#esModeMapUnders').click();
+    await look('esports', 'ESPORTS > MAP UNDERS');
+    if (es0) { await page.locator(`#${es0}`).click(); await settle(page, w, opts, 150); }
+    await openTab(page, 'props', w, opts);
+    await page.locator('#pbView button', { hasText: 'EXCHANGE PROPS' }).first().click();
+    await look('props', 'PROPS > EXCHANGE PROPS');
+    const rec = page.locator('#page-props button[onclick^="xprSet"]', { hasText: 'RECORD' }).first();
+    if (await rec.count()) { await rec.click(); await look('props', 'PROPS > EXCHANGE PROPS > RECORD'); }
+    await page.locator('#pbView button', { hasText: 'LINES' }).first().click();
+    await settle(page, w, opts, 150);
+    // a leg every sharp book lists carries its longest tag (live 10-26: "PIN 11.5 · FD 13.5 · BR 12.5 · KAL 12.5"
+    // ran past the card at 375 px); the recording has none that long, so one row gets it
+    const tagged = await page.evaluate(() => {
+      const n = document.querySelector('#page-props .ln-row .ln-name');
+      if (!n) return false;
+      n.querySelector('.pb-anc')?.remove();
+      n.insertAdjacentHTML('beforeend', '<span class="pb-anc">PIN 11.5 · FD 13.5 · BR 12.5 · KAL 12.5</span>');
+      return true;
+    });
+    if (tagged) await look('props', 'PROPS > LINES with a four-book sharp tag');
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');
