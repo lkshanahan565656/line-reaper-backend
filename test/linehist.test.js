@@ -208,3 +208,29 @@ test('the chart function is self-contained (the page inlines its source)', () =>
   assert.match(svg, />start</);
   assert.equal(draw({ title: 't', lines: [] }, 340), '');
 });
+
+test('a prop reads its stat in words, and a market no venue in the state priced says so instead of a table of dashes', () => {
+  assert.equal(lh.statLabel('pass_att'), 'pass attempts');
+  assert.equal(lh.statLabel('rec_yds'), 'receiving yards');
+  assert.equal(lh.statLabel('longest_rush_yds'), 'longest rush yards', 'an unknown key still reads as words');
+  assert.equal(lh.statLabel('Points'), 'Points');
+  const t = Date.parse('2026-10-27T08:00:00Z');
+  const pts = [0, 1, 2].map(i => [t + i * 1800e3, 30.5, null, { draftkings: -114, bet365: -115 }]);
+  const data = { kind: 'prop', id: 'pin-1|prop|pass_att|kyler|30.5', meta: { event: 'Vikings @ Lions', league: 'nfl', player: 'Kyler Murray', stat: 'pass_att', line: 30.5, start: '2026-11-01T18:00:00Z' },
+    series: [{ id: 'o', market: 'prop', label: 'Over 30.5', pts }], pro: true, now: t + 3 * 3600e3, keepDays: 30, windowDays: 30 };
+  const tx = lh.marketPage(data, { st: 'TX', states: [['TX', 'Texas']] });
+  assert.match(tx, /<h1>Kyler Murray pass attempts 30\.5: line<\/h1>/);
+  assert.match(tx, /No venue a TX resident can use on our venue table priced this prop: (bet365|DraftKings), (bet365|DraftKings)\./);
+  assert.match(tx, /Show every venue/);
+  assert.doesNotMatch(tx, /Every read<\/h2>/, 'no table of dashes');
+  assert.doesNotMatch(tx, /id="lhChart"/, 'no empty chart');
+  assert.doesNotMatch(tx, BAD);
+  const all = lh.marketPage(data, { st: 'TX', allVenues: true, states: [['TX', 'Texas']] });
+  assert.match(all, /Every read<\/h2>/);
+  assert.match(all, /id="lhChart"/);
+  assert.match(all, /-114/);
+  const idx = lh.indexPage({ rows: [{ kind: 'prop', key: 'k', player: 'Kyler Murray', stat: 'pass_att', line: 30.5, event: 'Vikings @ Lions', league: 'nfl', start: '2026-11-01T18:00:00Z', firstAt: '2026-10-27T08:00:00Z', lastAt: '2026-10-27T09:00:00Z', reads: 3 }],
+    total: 1, leagues: [], since: '2026-10-26T00:00:00Z', now: Date.parse('2026-10-27T10:00:00Z') }, { states: [['TX', 'Texas']] });
+  assert.match(idx, /Kyler Murray pass attempts 30\.5/);
+  assert.match(idx, /1 day so far/);
+});

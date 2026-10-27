@@ -1676,6 +1676,12 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
       await links.first().click();
       await page.waitForLoadState('domcontentloaded');
       expect(/\/lines\/(game|prop)/.test(page.url()), `the market link went to ${page.url()}`);
+      // a market only venues outside Texas priced says so in words, with the way to see them
+      if (!(await page.locator('#lhChart').count())) {
+        expect(/No venue a TX resident can use/.test(await text(page, 'main')), 'a market page with no chart must say why');
+        expect(!(await page.locator('table td.n').count()), 'a market with nothing to show must not draw a table of dashes');
+        await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('main .empty a', { hasText: 'Show every venue' }).click()]);
+      }
       expect(await page.locator('#lhChart svg path').count() > 0, 'the chart drew no line');
       expect(await fits(), 'the market chart page scrolls sideways at this size');
       const page1 = await page.evaluate(() => document.body.innerText);

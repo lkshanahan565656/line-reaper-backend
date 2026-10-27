@@ -57,7 +57,7 @@ test('/lines lists it and /lines/game/{id} charts it', async () => {
   assert.match(h, /Kalshi <em>TX: yes<\/em>/);
   assert.doesNotMatch(h, />(undefined|NaN|null)</);
   const none = await fetch(`${base}/lines/game/nope`);
-  assert.equal(none.status, 200);
+  assert.equal(none.status, 404, "an id with no saved prices is a 404");
   assert.match(await none.text(), /No saved prices for this market/);
   const j = await (await fetch(`${base}/api/lines?kind=game`)).json();
   assert.ok(j.rows.some(x => x.key === 'pin-e2e-1' && x.market === 'ml'));

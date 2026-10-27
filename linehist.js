@@ -301,6 +301,13 @@ const SPARE = ['#f97316', '#84cc16', '#06b6d4', '#ec4899', '#a3a3a3', '#facc15']
 const REFS = new Set(['pinnacle', 'matchbook', 'polymarket']);
 const nameOf = v => venues.NAMES[v] || { pinnacle: 'Pinnacle', matchbook: 'Matchbook', polymarketus: 'Polymarket US', pick6: 'DK Pick6' }[v] || v;
 const MARKET_LABEL = { ml: 'Moneyline', spread: 'Spread', total: 'Total', prop: 'Player prop' };
+// a prop's stat key in words: 'pass_att' → 'pass attempts' (the key stays as is in the API and the CSV)
+const STAT_LABEL = { pass_att: 'pass attempts', pass_comp: 'completions', pass_yds: 'passing yards', pass_tds: 'passing TDs', pass_ints: 'interceptions', rush_att: 'rush attempts',
+  rush_yds: 'rushing yards', rush_tds: 'rushing TDs', rec_yds: 'receiving yards', rush_rec_yds: 'rushing + receiving yards', pass_rush_yds: 'passing + rushing yards', receptions: 'receptions',
+  targets: 'targets', anytime_td: 'anytime TD', pra: 'pts + reb + ast', pr: 'pts + reb', pa: 'pts + ast', ra: 'reb + ast', threes: '3-pointers', blocks_steals: 'blocks + steals',
+  sog: 'shots on goal', shots_on_goal: 'shots on goal', saves: 'saves', hits_runs_rbis: 'hits + runs + RBIs', total_bases: 'total bases', strikeouts: 'strikeouts', fg_made: 'field goals made' };
+const WORD = { yds: 'yards', tds: 'TDs', td: 'TD', att: 'attempts', comp: 'completions', ints: 'interceptions', rec: 'receiving', pts: 'points', reb: 'rebounds', ast: 'assists', rbis: 'RBIs' };
+const statLabel = k => (k == null || k === '' ? '' : STAT_LABEL[k] || String(k).split('_').filter(Boolean).map(w => WORD[w] || w).join(' '));
 const whenUtc = t => { const x = ms(typeof t === 'number' ? new Date(t).toISOString() : t); return x == null ? '—' : new Date(x).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; };
 const dateUtc = t => { const x = typeof t === 'number' ? t : ms(t); return x == null ? '—' : new Date(x).toISOString().slice(0, 10); };
 
@@ -420,7 +427,7 @@ function marketPage(data, { st = 'TX', fmt = 'american', allVenues = false, stat
   const keep = viewQs(st, fmt, allVenues);
   const title = kind === 'game'
     ? `${meta.event || 'Game'}: ${MARKET_LABEL[market] || market || 'line'} history`
-    : `${meta.player || 'Player'} ${meta.stat || ''} ${meta.line ?? ''}: line history`.replace(/\s+/g, ' ');
+    : `${meta.player || 'Player'} ${statLabel(meta.stat)} ${meta.line ?? ''}: line history`.replace(/\s+/g, ' ');
   const description = side ? `Every saved price for ${title.replace(/ history$/, '')} at each venue we read, Pinnacle included, from ${dateUtc(side.pts[0][0])}. Kept ${data.keepDays} days after the start.` : `Line history at Line Reaper: kept ${data.keepDays} days after the start.`;
   const canonical = origin && side ? `${origin}${base}${keepQs({ ...keyQ, market: kind === 'game' ? market : null })}` : null;
   const back = `<p class="kicker"><a href="/lines${esc(keepQs({ state: keep.state, odds: keep.odds }))}" style="color:inherit;text-decoration:none">Line history</a>${meta.leagueLabel || meta.league ? ` · ${esc(meta.leagueLabel || String(meta.league).toUpperCase())}` : ''}</p>`;
@@ -460,6 +467,9 @@ ${foot()}
   const hiddenV = vin.filter(v => !shown.includes(v));
   const vToggle = hiddenV.length || allVenues
     ? `<p class="note">${allVenues ? `Showing every venue, ${esc(st)} or not. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, false) }))}">Only ${esc(st)} venues</a>.` : `Not shown, not open to a ${esc(st)} resident on our venue table: ${hiddenV.map(v => esc(nameOf(v))).join(', ')}. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, true) }))}">Show every venue</a>.`}</p>` : '';
+  // every venue that priced it is hidden for this state and there is no fair to draw: say so, no empty chart or table of dashes
+  const nothingShown = !allVenues && !lines.length && hiddenV.length > 0;
+  const showAllHref = base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, true) });
   const first = side.pts[0][0], last = side.pts[side.pts.length - 1][0];
   const span = (now - first) / DAY;
   const since = `Saved since ${whenUtc(first)}${span < data.keepDays ? ` (${span < 1 ? 'less than a day' : `${Math.floor(span)} day${Math.floor(span) === 1 ? '' : 's'}`} of history, shorter than ${data.keepDays} days because that is when this market first showed up${data.windowDays && data.windowDays < data.keepDays ? ' or your plan\'s window starts' : ''})` : ''}. Last read ${whenUtc(last)}.`;
@@ -483,17 +493,17 @@ ${back}
 <p class="lead">${esc(kind === 'game' ? `${meta.event || ''}` : `${meta.event || ''}`)}${meta.start ? ` · ${start != null && start < now ? 'started' : 'starts'} ${esc(whenUtc(meta.start))}` : ''}</p>
 ${pickerForm(base, { ...keyQ, market: kind === 'game' ? market : null, side: side.id, venues: allVenues ? 'all' : null }, { st, fmt, states })}
 ${mChips}${sChips}
-<div class="chart" id="lhChart">${chartSvg(chartData, 720)}</div>
-${legend}
+${nothingShown ? `<div class="empty">No venue a ${esc(st)} resident can use on our venue table priced this ${kind === 'prop' ? 'prop' : 'market'}: ${hiddenV.map(v => esc(nameOf(v))).join(', ')}. <a href="${esc(showAllHref)}">Show every venue</a>.</div>` : `<div class="chart" id="lhChart">${chartSvg(chartData, 720)}</div>
+${legend}`}
 <p class="note">The chance each price implies, over time, fees in: lower is a better price for ${esc(side.label)}. ${esc(since)}${esc(thinNote)}${esc(fairNote)}${esc(lineNote)}</p>
-${vToggle}
+${nothingShown ? '' : vToggle}
 <div class="links"><a class="go" href="${esc(dl('csv'))}" download>DOWNLOAD CSV</a><a class="go" href="${esc(dl('json'))}">DOWNLOAD JSON</a><a class="go" href="/developers#lines">IN THE API →</a></div>
-<h2>Every read</h2>
-${table}
+${nothingShown ? '' : `<h2>Every read</h2>
+${table}`}
 <p class="note">A line move is information, not a proven edge. Venues still at an old number have graded as no edge against the close on our record.</p>
 </main>
 ${foot()}
-<script>(function(){var draw=${chartSvg.toString()};var d=${JSON.stringify(chartData).replace(/</g, '\\u003c')};var el=document.getElementById('lhChart');function go(){var w=Math.max(280,Math.round(el.clientWidth-20));el.innerHTML=draw(d,w)}go();var t;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(go,150)})})();</script>
+<script>(function(){var draw=${chartSvg.toString()};var d=${JSON.stringify(chartData).replace(/</g, '\\u003c')};var el=document.getElementById('lhChart');if(!el)return;function go(){var w=Math.max(280,Math.round(el.clientWidth-20));el.innerHTML=draw(d,w)}go();var t;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(go,150)})})();</script>
 ${prefsScript()}
 </body>
 </html>`;
@@ -506,11 +516,11 @@ function indexPage({ rows = [], total = 0, leagues = [], q = {}, since = null, k
   const href = r => r.kind === 'game' ? `/lines/game/${encodeURIComponent(r.key)}${keepQs({ market: r.market, ...keep })}` : `/lines/prop${keepQs({ key: r.key, ...keep })}`;
   const item = r => {
     const s = ms(r.start);
-    const what = r.kind === 'game' ? `${r.event || r.key} · ${MARKET_LABEL[r.market] || r.market}` : `${r.player || ''} ${r.stat || ''} ${r.line ?? ''} · ${r.event || ''}`.replace(/\s+/g, ' ');
+    const what = r.kind === 'game' ? `${r.event || r.key} · ${MARKET_LABEL[r.market] || r.market}` : `${r.player || ''} ${statLabel(r.stat)} ${r.line ?? ''} · ${r.event || ''}`.replace(/\s+/g, ' ');
     return `<li><a href="${esc(href(r))}"><b>${esc(what)}</b><span class="sub">${esc(String(r.leagueLabel || r.league || '').toUpperCase())}${r.start ? ` · ${s != null && s < now ? 'started' : 'starts'} ${esc(whenUtc(r.start))}` : ''} · ${r.reads} read${r.reads === 1 ? '' : 's'} since ${esc(dateUtc(r.firstAt))}${r.archived ? ' · closed' : ' · on the board'}</span></a></li>`;
   };
   const form = `<form class="st-pick" method="get" action="/lines"><label for="lq">Find</label><input id="lq" name="q" value="${esc(q.q || '')}" placeholder="team or player" maxlength="60"><label for="ll">League</label><select id="ll" name="league"><option value="">All</option>${leagues.map(([k, l, n]) => `<option value="${esc(k)}"${k === q.league ? ' selected' : ''}>${esc(l)} (${n})</option>`).join('')}</select><label for="lk">Kind</label><select id="lk" name="kind"><option value="">Both</option><option value="game"${q.kind === 'game' ? ' selected' : ''}>Game lines</option><option value="prop"${q.kind === 'prop' ? ' selected' : ''}>Props</option></select><label for="stp">Betting from</label><select id="stp" name="state">${states.map(([c, n]) => `<option value="${esc(c)}"${c === st ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><label for="sto">Odds</label><select id="sto" name="odds">${oddsFmt.OPTIONS.map(([v, n]) => `<option value="${esc(v)}"${v === fmt ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><button type="submit">SHOW</button></form>`;
-  const sinceTxt = since ? `We started keeping ${keepDays} days on ${dateUtc(since)}, so the oldest market here is from then${(now - ms(since)) / DAY < keepDays ? `: ${Math.max(0, Math.floor((now - ms(since)) / DAY))} days so far` : ''}.` : 'Nothing is saved yet.';
+  const sinceTxt = since ? `We started keeping ${keepDays} days on ${dateUtc(since)}, so the oldest market here is from then${(now - ms(since)) / DAY < keepDays ? `: ${(n => `${n} day${n === 1 ? '' : 's'}`)(Math.max(0, Math.floor((now - ms(since)) / DAY)))} so far` : ''}.` : 'Nothing is saved yet.';
   const dropTxt = status && (status.dropped.removedForRoom || status.dropped.thinnedHarder) ? ` To stay small, ${status.dropped.thinnedHarder} older market${status.dropped.thinnedHarder === 1 ? ' was' : 's were'} thinned harder and ${status.dropped.removedForRoom} removed early.` : '';
   return `${head({ title: 'Line history: every market\'s prices for 30 days | Line Reaper', description: `Every game line and player prop we read, Pinnacle included, with each venue's price over time, kept ${keepDays} days after the start. Chart, table and CSV download.`, canonical: origin ? `${origin}/lines` : null })}
 <body>
@@ -544,5 +554,5 @@ function filterIndex(rows, { q = '', league = '', kind = '', before = null, limi
   return { rows: page, total, next: out.length > limit ? page[page.length - 1].start : null };
 }
 
-module.exports = { KEEP_DAYS, LIVE_KEEP_HOURS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
+module.exports = { statLabel, KEEP_DAYS, LIVE_KEEP_HOURS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
   CSV_COLUMNS, toCsv, toJson, chartSvg, marketPage, indexPage, filterIndex, venueRole, nameOf };
