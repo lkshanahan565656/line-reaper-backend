@@ -929,6 +929,7 @@ const promoTracker = createSportTracker({
 promoTracker.ready().catch(e => console.error('Promo tracker: store failed to initialise:', e.message));
 const slipLog = require('./sliplog').createSlipLog({ tracker: slipLegTracker });
 const sliplogSideOf = require('./sliplog').sideOf;
+const slipstamp = require('./slipstamp');
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -5154,7 +5155,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.208.3', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.209.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8443,6 +8444,41 @@ app.post('/api/slips/grade', async (req, res) => {
   if (!legs) return res.status(400).json({ error: 'legs needed' });
   try { res.json(await gradeSlipLegs(legs)); } catch (e) { sendErr(res, e); }
 });
+// One slip, checked at the moment it is logged (slipstamp.js): each leg goes
+// into the slip log now (its sharp price followed from this second to the
+// close) and comes back ok (with the server time, the start, the app's line
+// and multiplier on the board now, the sharp fair and Pinnacle's own fair at
+// that exact line), started (refused, in plain words) or unmatched (no board
+// lists it now, so its start is checked later from the box score).
+app.post('/api/slips/stamp', async (req, res) => {
+  const c = slipstamp.cleanLegs(req.body);
+  if (c.error) return res.status(400).json({ error: c.error });
+  try {
+    const now = Date.now(), at = new Date(now).toISOString();
+    const key = `st${now.toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+    const ids = c.legs.map((l, i) => `${key}-${i}`);
+    const valid = c.legs.map((l, i) => ({ l, i })).filter(({ l }) => l.side && Number.isFinite(l.line) && l.player && l.market);
+    const out = valid.length ? await gradeSlipLegs(valid.map(({ l, i }) => ({ id: ids[i], app: c.app, sport: l.sport || null, player: l.player, market: l.market, side: l.side, line: l.line, betAt: at, betAtExact: true, ...(l.opp ? { opp: l.opp } : {}) }))) : { results: {} };
+    const { rows } = propsBoardRows();
+    const idx = require('./sliplog').indexRows((rows || []).filter(r => !r.esports));
+    const verdicts = c.legs.map((l, i) => {
+      const g = out.results[ids[i]] || (valid.some(v => v.i === i) ? null : { status: 'nohistory', reason: 'unread' });
+      let extra = null;
+      if (g?.matched?.start && !g.esports) {
+        const m = require('./sliplog').matchLeg({ ...l, app: c.app, betAt: at }, idx, { now });
+        const row = m.row, cell = row?.books?.[c.app];
+        if (row) {
+          const pin = sharpQuotes(row).find(q => q.book === 'pinnacle' && Number(q.line) === l.line);
+          const mult = cell ? Number(l.side === 'Over' ? cell.over : cell.under) : NaN;
+          extra = { appLine: cell?.line ?? null, mult: mult > 0 && cell?.line === l.line ? mult : null,
+            pin: pin && Number.isFinite(pin.pOver) ? Math.round((l.side === 'Over' ? pin.pOver : 1 - pin.pOver) * 1e4) / 1e4 : null };
+        }
+      }
+      return slipstamp.verdict(l, g, { now, extra });
+    });
+    res.json({ ...slipstamp.stamp(c.legs, verdicts, { now }), app: c.app });
+  } catch (e) { sendErr(res, e); }
+});
 // legs (gradeRequest's shape, at most 300) → { results: { id: view }, at, tables }:
 // MY SLIPS and the public bettor records (pubrecord.js) grade the same way
 async function gradeSlipLegs(legs) {
@@ -9001,7 +9037,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.208.3',
+  version: '3.209.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

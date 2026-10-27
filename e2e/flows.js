@@ -8,6 +8,7 @@
 // view by link and open it cold on a fresh device, export and print a screen,
 // and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
+/* global pk, renderPkTray, pkClear -- the app's own slip tray, read in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -370,16 +371,62 @@ const FLOWS = {
     expect(await tray.isVisible(), 'the slip tray did not open');
     expect(/2 PICKS/.test(await tray.innerText()), `the tray should say 2 PICKS: "${(await tray.innerText()).slice(0, 120)}"`);
     const before = (await ls(page, 'lr_slips'))?.length || 0;
+    // a pick whose game has started is refused in words, and nothing is logged
+    const start0 = await page.evaluate(() => { const s = pk.legs[0].start; pk.legs[0].start = new Date(Date.now() - 3600e3).toISOString(); return s; });
+    await page.locator('#pkTray button', { hasText: 'LOG SLIP' }).click();
+    await settle(page, w, opts, 150);
+    expect(/Not logged\..*started at/.test(await tray.innerText()), `a started pick should be refused in the tray: "${(await tray.innerText()).slice(0, 200)}"`);
+    expect(((await ls(page, 'lr_slips'))?.length || 0) === before, 'a slip with a started pick was logged');
+    // back to the real start; the offline recording is days old, so its games read as started:
+    // there they are moved two hours ahead (live, the board's own starts are ahead already)
+    await page.evaluate(s => { const ahead = new Date(Date.now() + 2 * 3600e3).toISOString(); for (const l of pk.legs) if (!(Date.parse(l.start) > Date.now())) l.start = ahead; if (Date.parse(s) > Date.now()) pk.legs[0].start = s; pk.refused = ''; renderPkTray(); }, start0);
+    // offline, the server's board is the recording, days old, so it rightly refuses
+    // these games as started: TEST DATA, its stamp answer is replaced by one that
+    // passes every leg (test/slipstamp.test.js and slipgrade-server cover the server)
+    const fakeStamp = async route => { const b = route.request().postDataJSON(); await route.fulfill({ json: { at: new Date().toISOString(), ok: true, started: 0, unmatched: 0, why: null, app: b.app,
+      legs: b.legs.map((l, i) => ({ i, ...l, status: 'ok', start: l.start, matchTitle: 'TEST', fair: 0.55, pin: 0.54, mult: null, appLine: l.line })) } }); };
+    if (!opts.live) await page.route('**/api/slips/stamp', fakeStamp);
     // type the stake the way a viewer does, then tap LOG SLIP straight away
     await tray.locator('input[type=number]').first().click();
     await page.keyboard.type('10');
     await page.locator('#pkTray button', { hasText: 'LOG SLIP' }).click();
     await settle(page, w, opts, 250);
+    if (!opts.live) await page.unroute('**/api/slips/stamp', fakeStamp);
+    // live, a row whose game is under way is refused in words: the right answer, not a failure
+    if (opts.live && /Not logged\..*started at/.test(await tray.innerText().catch(() => ''))) { await page.evaluate(() => pkClear()); return; }
     const slips = await ls(page, 'lr_slips');
     expect(slips?.length === before + 1, `lr_slips went from ${before} to ${slips?.length}`);
     expect(slips[0].legs.length === 2 && slips[0].stake === 10, `the logged slip has ${slips[0].legs.length} legs, stake ${slips[0].stake}`);
+    // checked by the server at the tap: its clock, a verdict for every pick
+    expect(slips[0].stamp?.at && Math.abs(Date.parse(slips[0].stamp.at) - Date.parse(slips[0].placedAt)) < 1000 && slips[0].stamp.legs.length === 2, `the logged slip carries no server stamp: ${JSON.stringify(slips[0].stamp)}`);
     await openTab(page, 'myslips', w, opts);
     expect((await text(page, '#msList')).includes(slips[0].legs[0].player), 'MY SLIPS does not show the logged slip');
+  },
+
+  async 'LOG A SLIP: a copied app slip checked and logged, an old one refused, one shared to the app'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    const before = (await ls(page, 'lr_slips'))?.length || 0;
+    await page.locator('#msLogcBtn').click();
+    // TEST DATA: made-up players, as PrizePicks' entry text reads when copied
+    await page.fill('#msLogcText', 'PrizePicks 2-Pick Power Play\nTesta Onefake\nMore 24.5 Points\nTesta Twofake\nLess 7.5 Rebounds');
+    await page.locator('#msLogcGo').click();
+    await settle(page, w, opts, 250);
+    const out = await text(page, '#msLogcOut');
+    expect(/logged at/.test(out) && /NOT ON A BOARD/.test(out), `LOG A SLIP should log the slip and say the picks aren't on a board: "${out.slice(0, 300)}"`);
+    const slips = await ls(page, 'lr_slips');
+    expect(slips?.length === before + 1 && slips[0].stamp?.at && slips[0].source === 'paste', `LOG A SLIP saved ${slips?.length - before} slips, stamp ${JSON.stringify(slips?.[0]?.stamp)?.slice(0, 80)}`);
+    expect(/checked by the server/.test(await text(page, '#msList')), 'MY SLIPS does not say the slip was checked by the server');
+    // a slip whose text shows an old placing time is history, not a fresh log
+    await page.fill('#msLogcText', 'PrizePicks Oct 1, 2026, 12:58 PM\nTesta Onefake\nMore 24.5 Points\nTesta Twofake\nLess 7.5 Rebounds');
+    await page.locator('#msLogcGo').click();
+    await settle(page, w, opts, 150);
+    expect(/not logged/.test(await text(page, '#msLogcOut')) && ((await ls(page, 'lr_slips'))?.length === before + 1), 'an old slip should be refused by LOG A SLIP');
+    // shared from the app's Share sheet to the installed app
+    await page.goto(`${opts.base}/app?share_text=${encodeURIComponent('Underdog\nTesta Threefake\nHigher 1.5 Kills\nTesta Fourfake\nLower 30.5 Kills')}`, { waitUntil: 'domcontentloaded' });
+    await settle(page, w, opts, 300);
+    expect(await page.locator('#msLogc').isVisible(), 'a shared slip should open LOG A SLIP');
+    expect(/Testa Threefake/.test(await page.locator('#msLogcText').inputValue()), 'the shared text is not in the box');
+    expect(!/share_text/.test(page.url()), 'the shared text stays in the address bar');
   },
 
   async 'paste slips into MY SLIPS'(page, w, opts) {
