@@ -79,6 +79,10 @@
     {
       "key": "^/api/search(\\?|$)",
       "why": "new in v3.214.0 (SEARCH on the bar, search.js): the recording predates it, so the offline server answers from its own empty board (nothing found, nothing made up); the search flow checks the box against a labelled TEST DATA body built around a recorded game, and search tests check the hits"
+    },
+    {
+      "key": "^/api/lines(/|\\?|$)",
+      "why": "new in v3.215.0 (line history, linehist.js): the recording predates it, so the offline server answers from its own 30-day archive, seeded with the recording's own game histories; the line history flow downloads the CSV and JSON, and linehist tests check the rows"
     }
   ],
   "mustHaveData": [

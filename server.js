@@ -5090,7 +5090,7 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /pricing\nAllow: /leagues\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /pricing\nAllow: /leagues\nAllow: /lines\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 // ── LEAGUE PAGES (leagues.js) ──
 // /nfl ... /esports/dota2 and /leagues: public, server-rendered from the live
 // board and the strict public record, the same for everyone (the webhook's
@@ -5188,7 +5188,7 @@ app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async 
 });
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/pricing', '/learn', '/status', '/developers', '/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/pricing', '/learn', '/status', '/developers', '/leagues', '/lines', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -5200,7 +5200,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.214.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.215.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7435,7 +7435,19 @@ app.get('/api/soccer/model/ratings', (req, res) => {
 // copies. ?league=nfl&state=TX&q=cowboys. Free: prices; Pro: fair and EV.
 // The line history behind each row's chart rides the results backup.
 const oddsScreen = require('./oddsscreen');
-const oddsHistory = oddsScreen.createHistory();
+// LINE HISTORY (linehist.js): what the odds screen's and the shopper's line
+// histories drop 6 hours after a start is kept here for 30 days, thinned to
+// the biggest moves and kept compact, riding the results backup as
+// 'lineArchive'. /lines, /api/lines and /api/v1/lines read it.
+const lineHist = require('./linehist');
+const lineArchive = lineHist.createArchive();
+let lineArchiveBooted = false;
+const lineArchiveStore = resultsBackup.wrap('lineArchive', {
+  init: async () => {}, all: async () => (lineArchiveBooted ? lineArchive.dump() : []),
+  put: async d => { lineArchive.load([d]); }, putMany: async ds => { lineArchive.load(ds); },
+}, { appendOnly: false });
+lineArchiveStore.init().catch(e => console.warn('Line archive: restore failed:', e.message)).finally(() => { lineArchiveBooted = true; });
+const oddsHistory = oddsScreen.createHistory({ onDrop: x => lineArchive.add('game', x) });
 let oddsHistoryBooted = false;
 const oddsHistoryStore = resultsBackup.wrap('oddsHistory', {
   init: async () => {}, all: async () => (oddsHistoryBooted ? oddsHistory.dump() : []),
@@ -7579,12 +7591,116 @@ app.get('/api/search', (req, res) => {
   res.set('Cache-Control', 'no-store').json(regionSafe(searchBody(req, { limit })));
 });
 // one game's line history: every side's fair and venue prices over time
+// (a game gone from the board is read from the 30-day line archive)
 app.get('/api/odds-screen/history/:id', (req, res) => {
   const id = String(req.params.id || '').slice(0, 80);
   const lic = licenceOf(req), pro = hasPro(req);
-  const series = oddsHistory.forGame(id).map(x => ({ ...x, pts: x.pts.map(([t, point, fair, px]) => [t, point, pro ? fair : null,
-    lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
-  res.json({ id, series, pro });
+  const live = oddsHistory.forGame(id);
+  const series = lineHist.cutGame(live.length ? live : lineArchive.gameSeries(id), { pro, kalshi: !!lic.kalshi });
+  res.json({ id, series, pro, page: `/lines/game/${encodeURIComponent(id)}` });
+});
+// ─── LINE HISTORY PAGES AND DOWNLOADS (linehist.js) ───────────────────────────
+// /lines lists every market kept (on the board now, or closed in the last 30
+// days); /lines/game/{id}?market= and /lines/prop?key= chart one market at
+// every venue we read, Pinnacle included, in the viewer's odds format and My
+// state (?odds=, ?state=). /api/lines/... gives the same as JSON or CSV. The
+// fair is Pro; Kalshi needs its data licence; with the paywall on, the Free
+// plan sees the last limitsOf('free').historyDays days.
+const lineHistDays = plan => (PAYWALL ? plans.limitsOf(plan).historyDays : lineHist.KEEP_DAYS);
+function lineGame(id, { pro, kalshi, days }) {
+  const live = oddsHistory.forGame(id);
+  let series = live.length ? live : lineArchive.gameSeries(id);
+  series = lineHist.windowed(lineHist.cutGame(series, { pro, kalshi }), days);
+  const x = series[0] || {};
+  return { kind: 'game', id, live: !!live.length, meta: { event: x.event || null, league: x.league || null, leagueLabel: x.leagueLabel || null, start: x.start || null }, series };
+}
+function lineProp(key, { pro, kalshi, days }) {
+  const live = propHistory.forMarket(key);
+  const x = live || (() => { const a = lineArchive.propSeries(key); return a ? { ...a, series: lineHist.propSides(a) } : null; })();
+  if (!x) return { kind: 'prop', id: key, live: false, meta: {}, series: [] };
+  const series = lineHist.windowed(lineHist.cutGame(x.series.map(s => ({ ...s, archived: !live, thinned: x.thinned, reads: x.reads })), { pro, kalshi }), days);
+  return { kind: 'prop', id: key, live: !!live, meta: { event: x.event || null, league: x.league || null, start: x.start || null, player: x.player || null, stat: x.stat || null, line: x.line ?? null }, series };
+}
+// every market kept, one row each (a game's market groups its sides); 60 s memo
+let lineIndexMemo = { at: 0, rows: [] };
+function lineIndexRows() {
+  if (Date.now() - lineIndexMemo.at < 60e3) return lineIndexMemo.rows;
+  const rows = new Map();
+  for (const x of oddsHistory.dump()) {
+    if (!x.pts.length) continue;
+    const k = `game:${x.game}|${x.market}`;
+    const first = new Date(x.pts[0][0]).toISOString(), last = new Date(x.pts[x.pts.length - 1][0]).toISOString();
+    const r = rows.get(k);
+    if (r) { r.reads += x.reads || x.pts.length; if (first < r.firstAt) r.firstAt = first; if (last > r.lastAt) r.lastAt = last; continue; }
+    rows.set(k, { kind: 'game', key: String(x.game), market: x.market, event: x.event || null, league: x.league || null, leagueLabel: x.leagueLabel || null, start: x.start || null, firstAt: first, lastAt: last, reads: x.reads || x.pts.length, archived: false });
+  }
+  for (const x of propHistory.dump()) {
+    if (!x.pts.length) continue;
+    rows.set(`prop:${x.id}`, { kind: 'prop', key: x.id, event: x.event || null, league: x.league || null, start: x.start || null, player: x.player || null, stat: x.stat || null, line: x.line ?? null,
+      firstAt: new Date(x.pts[0][0]).toISOString(), lastAt: new Date(x.pts[x.pts.length - 1][0]).toISOString(), reads: x.reads || x.pts.length, archived: false });
+  }
+  for (const r of lineArchive.index()) { const k = r.kind === 'game' ? `game:${r.key}|${r.market}` : `prop:${r.key}`; if (!rows.has(k)) rows.set(k, r); }
+  lineIndexMemo = { at: Date.now(), rows: [...rows.values()] };
+  return lineIndexMemo.rows;
+}
+const lineQuery = q => ({ q: String(q.q || '').slice(0, 60), league: /^[a-z0-9]{1,20}$/.test(String(q.league || '')) ? String(q.league) : '', kind: /^(game|prop)$/.test(String(q.kind || '')) ? String(q.kind) : '',
+  before: typeof q.before === 'string' && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(q.before) ? q.before : null });
+function lineLeagues(rows) {
+  const n = new Map();
+  for (const r of rows) if (r.league) { const k = String(r.league).toLowerCase(); const e = n.get(k) || [k, r.leagueLabel || k.toUpperCase(), 0]; e[2]++; n.set(k, e); }
+  return [...n.values()].sort((a, b) => b[2] - a[2]);
+}
+function lineIndexBody(q, { days = lineHist.KEEP_DAYS, limit = 100 } = {}) {
+  const cut = new Date(Date.now() - days * lineHist.DAY).toISOString();
+  const all = lineIndexRows().filter(r => r.lastAt >= cut);
+  const f = lineHist.filterIndex(all, { ...q, limit });
+  return { ...f, leagues: lineLeagues(all), since: lineArchive.status().since || all.reduce((o, r) => (!o || r.firstAt < o ? r.firstAt : o), null), keepDays: lineHist.KEEP_DAYS, windowDays: days };
+}
+function lineDownload(req, res, d, days) {
+  const meta = { kind: d.kind, id: d.id, ...d.meta, onBoard: d.live, keepDays: lineHist.KEEP_DAYS, windowDays: days, fairShown: hasPro(req),
+    note: 'Every point is a price we read. Reads older than 6 hours after the start are thinned to the biggest moves; nothing is filled in.' };
+  if (!d.series.length) return res.status(404).json({ error: 'No saved prices for that market in your window.', keepDays: lineHist.KEEP_DAYS, windowDays: days });
+  const name = `line-history-${String(d.id).replace(/[^\w.-]+/g, '-').slice(0, 60)}`;
+  if (req.query.format === 'csv') return res.set({ 'Content-Disposition': `attachment; filename="${name}.csv"`, 'Cache-Control': 'private, max-age=60' }).type('text/csv; charset=utf-8').send(lineHist.toCsv(meta, d.series));
+  res.set('Cache-Control', 'private, max-age=60').json(lineHist.toJson(meta, d.series));
+}
+const lineMarketOf = q => (/^(ml|spread|total)$/.test(String(q.market || '')) ? String(q.market) : null);
+app.get('/api/lines', (req, res) => {
+  const days = lineHistDays(planOfReq(req));
+  res.set('Cache-Control', 'private, max-age=60').json(lineIndexBody(lineQuery(req.query), { days, limit: Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 100)) }));
+});
+app.get('/api/lines/game/:id', (req, res) => {
+  const days = lineHistDays(planOfReq(req));
+  const d = lineGame(String(req.params.id || '').slice(0, 80), { pro: hasPro(req), kalshi: !!licenceOf(req).kalshi, days });
+  const m = lineMarketOf(req.query);
+  lineDownload(req, res, m ? { ...d, series: d.series.filter(x => x.market === m) } : d, days);
+});
+app.get('/api/lines/prop', (req, res) => {
+  const days = lineHistDays(planOfReq(req));
+  lineDownload(req, res, lineProp(String(req.query.key || '').slice(0, 300), { pro: hasPro(req), kalshi: !!licenceOf(req).kalshi, days }), days);
+});
+const lineView = req => ({ st: venues.stateOf(req.query.state) || 'TX', fmt: oddsFmt.fmtOf(req.query.odds), allVenues: req.query.venues === 'all', states: leagueStates(), origin: siteOrigin(req) });
+app.get('/lines', (req, res) => {
+  try {
+    const days = lineHistDays(planOfReq(req)), q = lineQuery(req.query);
+    const body = lineIndexBody(q, { days });
+    res.set('Cache-Control', 'private, max-age=60').type('html').send(lineHist.indexPage({ ...body, q, status: lineArchive.status() }, lineView(req)));
+  } catch (e) { console.warn('Line history page:', e.message); res.status(500).type('text/plain').send('The line history could not be read just now. Try again in a minute.'); }
+});
+function sendLinePage(req, res, d, days) {
+  try {
+    const v = lineView(req);
+    const html = lineHist.marketPage({ ...d, market: lineMarketOf(req.query), side: String(req.query.side || ''), pro: hasPro(req), keepDays: lineHist.KEEP_DAYS, windowDays: days }, v);
+    res.set('Cache-Control', 'private, max-age=60').type('html').send(html);
+  } catch (e) { console.warn('Line history page:', e.message); res.status(500).type('text/plain').send('This chart could not be built just now. Try again in a minute.'); }
+}
+app.get('/lines/game/:id', (req, res) => {
+  const days = lineHistDays(planOfReq(req));
+  sendLinePage(req, res, lineGame(String(req.params.id || '').slice(0, 80), { pro: hasPro(req), kalshi: !!licenceOf(req).kalshi, days }), days);
+});
+app.get('/lines/prop', (req, res) => {
+  const days = lineHistDays(planOfReq(req));
+  sendLinePage(req, res, lineProp(String(req.query.key || '').slice(0, 300), { pro: hasPro(req), kalshi: !!licenceOf(req).kalshi, days }), days);
 });
 // ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ──────────────────────────────
 // Today's largest moves since we first saw each market, in the last 3 hours
@@ -7752,7 +7868,7 @@ app.get('/api/shopper', (req, res) => {
 // rebuild, at most every 3 minutes, each prop market's fair and venue prices
 // are noted, a few hundred markets at a time with a yield between. Rides the
 // results backup like the odds screen's game-line history.
-const propHistory = shopper.createLineHistory();
+const propHistory = shopper.createLineHistory({ onDrop: x => lineArchive.add('prop', x) });
 let propHistoryBooted = false;
 const propHistoryStore = resultsBackup.wrap('propHistory', {
   init: async () => {}, all: async () => (propHistoryBooted ? propHistory.dump() : []),
@@ -7808,7 +7924,9 @@ async function readShopDepth() {
 app.get('/api/shopper/history', (req, res) => {
   const key = String(req.query.key || '').slice(0, 300);
   const lic = licenceOf(req), pro = hasPro(req);
-  const h = key ? propHistory.forMarket(key) : null;
+  let h = key ? propHistory.forMarket(key) : null;
+  // gone from the board: the 30-day line archive
+  if (!h && key) { const a = lineArchive.propSeries(key); if (a) h = { id: a.id, event: a.event, league: a.league, start: a.start, player: a.player, stat: a.stat, line: a.line, thinned: a.thinned, archived: true, series: lineHist.propSides(a) }; }
   if (!h) return res.json({ key, series: [], pro, note: 'No saved prices for this market yet: prop prices are saved every few minutes from when a market first shows up.' });
   res.json({ ...h, pro, series: h.series.map(x => ({ ...x, pts: x.pts.map(([t, line, fair, px]) => [t, line, pro ? fair : null,
     lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) })) });
@@ -9269,7 +9387,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.214.0',
+  version: '3.215.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9287,6 +9405,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
   lineBets: lineBets.counts(),
   esBets: esBets.counts(),
+  lineArchive: lineArchive.status(),
   propHistory: { series: propHistory.size(), points: propHistory.points(), observedAt: propHistoryState.observedAt, markets: propHistoryState.markets, ms: propHistoryState.ms, error: propHistoryState.error },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
@@ -9551,9 +9670,10 @@ const v1 = {
     const id = String(gameId || '').slice(0, 80);
     const market = v1Str(q.market, /^(ml|spread|total)$/, 'market');
     const lic = webhookLicence();
-    let series = oddsHistory.forGame(id).filter(x => !market || x.market === market);
+    const live = oddsHistory.forGame(id);
+    let series = (live.length ? live : lineArchive.gameSeries(id)).filter(x => !market || x.market === market);
     if (!lic.kalshi) series = series.map(x => ({ ...x, pts: x.pts.map(([t, p, f, px]) => [t, p, f, Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
-    if (!series.length) throw new V1Error(404, 'not_found', 'No saved prices for that game: an id comes from /api/v1/moves or /api/v1/leagues/{league}, and history is kept until 6 hours after the start.');
+    if (!series.length) throw new V1Error(404, 'not_found', `No saved prices for that game: an id comes from /api/v1/moves, /api/v1/lines or /api/v1/leagues/{league}, and history is kept ${lineHist.KEEP_DAYS} days after the start (/api/v1/lines/game/{gameId} has it as CSV too).`);
     const g = oddsScreenFor({ kalshiOk: !!lic.kalshi }).games.find(x => x.id === id);
     return { gameId: id, game: g ? { event: `${g.away} @ ${g.home}`, league: g.league, leagueLabel: g.leagueLabel, start: g.start } : null, fairShown: v1FullTier(),
       series: publicApi.historySeries(series, { withFair: v1FullTier() }) };
@@ -9691,6 +9811,43 @@ app.get('/api/v1/states/:state', v1Auth, v1Route(req => v1.states(req.params.sta
 app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
 app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
 app.get('/api/v1/alerts', v1Auth, v1Route(req => v1.alerts(req.query)));
+// line history (linehist.js): the plan's window (limitsOf(plan).historyDays), JSON or ?format=csv
+const v1LineDays = req => (PAYWALL ? plans.limitsOf(req.apiPlan).historyDays : lineHist.KEEP_DAYS);
+const v1LineFormat = q => v1Str(q.format, /^(json|csv)$/, 'format') || 'json';
+function v1LinesBody(query, plan, days) {
+  const q = { ...lineQuery(query), league: v1Str(query.league, /^[a-z0-9]{1,20}$/, 'league') || '', kind: v1Str(query.kind, /^(game|prop)$/, 'kind') || '' };
+  const b = lineIndexBody(q, { days, limit: v1Int(query.limit, 1, 500, 100, 'limit') });
+  return { at: new Date().toISOString(), keepDays: b.keepDays, windowDays: days, plan, since: b.since, total: b.total, next: b.next,
+    markets: b.rows.map(r => ({ ...r, history: r.kind === 'game' ? `/api/v1/lines/game/${encodeURIComponent(r.key)}?market=${r.market}` : `/api/v1/lines/prop?key=${encodeURIComponent(r.key)}`,
+      page: r.kind === 'game' ? `/lines/game/${encodeURIComponent(r.key)}?market=${r.market}` : `/lines/prop?key=${encodeURIComponent(r.key)}` })) };
+}
+app.get('/api/v1/lines', v1Auth, v1Route(req => v1LinesBody(req.query, req.apiPlan, v1LineDays(req))));
+function v1LineSend(req, res, d, days) {
+  try {
+    const format = v1LineFormat(req.query);
+    if (!d.series.length) throw new V1Error(404, 'not_found', `No saved prices for that market in your window (${days} days${days < lineHist.KEEP_DAYS ? `; Pro keys get ${lineHist.KEEP_DAYS}: /pricing` : ''}). Ids come from /api/v1/lines.`);
+    const meta = { kind: d.kind, id: d.id, ...d.meta, onBoard: d.live, keepDays: lineHist.KEEP_DAYS, windowDays: days, plan: req.apiPlan, fairShown: v1FullTier(),
+      note: 'Every point is a price we read. Reads older than 6 hours after the start are thinned to the biggest moves; nothing is filled in.' };
+    if (format === 'csv') return publicApi.sendCached(req, res, lineHist.toCsv(meta, d.series), { type: 'text/csv; charset=utf-8' });
+    publicApi.sendCached(req, res, v1Safe(lineHist.toJson(meta, d.series)));
+  } catch (e) { v1Fail(res, e); }
+}
+app.get('/api/v1/lines/game/:gameId', v1Auth, (req, res) => {
+  const days = v1LineDays(req);
+  let d;
+  try {
+    const market = v1Str(req.query.market, /^(ml|spread|total)$/, 'market');
+    d = lineGame(String(req.params.gameId || '').slice(0, 80), { pro: v1FullTier(), kalshi: !!webhookLicence().kalshi, days });
+    if (market) d = { ...d, series: d.series.filter(x => x.market === market) };
+  } catch (e) { return v1Fail(res, e); }
+  v1LineSend(req, res, d, days);
+});
+app.get('/api/v1/lines/prop', v1Auth, (req, res) => {
+  const days = v1LineDays(req);
+  const key = String(req.query.key || '').slice(0, 300);
+  if (!key) return v1Fail(res, new V1Error(400, 'bad_parameter', 'key: a prop market key from /api/v1/lines?kind=prop.'));
+  v1LineSend(req, res, lineProp(key, { pro: v1FullTier(), kalshi: !!webhookLicence().kalshi, days }), days);
+});
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
 // the app's SEARCH box: games, esports series, players, markets and leagues the site holds now
 app.get('/api/v1/search', v1Auth, v1Route(req => { if (searchLib.cleanQ(req.query.q).length < 2) throw new V1Error(400, 'bad_param', 'q: two or more letters, e.g. q=lakers'); return searchBody(req, { limit: v1Int(req.query.limit, 1, 60, 30, 'limit') }); }));
@@ -10078,6 +10235,12 @@ async function developerExamples() {
   await add('/api/v1/moves', '/api/v1/moves?limit=2', () => (moves = v1.moves({ limit: 20 })));
   const gid = moves?.rows.find(r => r.gameId)?.gameId;
   if (gid) await add('/api/v1/moves/{gameId}', `/api/v1/moves/${encodeURIComponent(gid)}?market=ml`, () => v1.moveHistory(gid, { market: 'ml' }));
+  let lx = null;
+  await add('/api/v1/lines', '/api/v1/lines?limit=2', () => (lx = v1LinesBody({ limit: '50' }, 'pro', lineHist.KEEP_DAYS)));
+  const lg0 = lx?.markets.find(r => r.kind === 'game'), lp0 = lx?.markets.find(r => r.kind === 'prop');
+  const lineEx = d => lineHist.toJson({ kind: d.kind, id: d.id, ...d.meta, onBoard: d.live, keepDays: lineHist.KEEP_DAYS }, d.series);
+  if (lg0) await add('/api/v1/lines/game/{gameId}', `/api/v1/lines/game/${encodeURIComponent(lg0.key)}?market=${lg0.market}`, () => { const d = lineGame(lg0.key, { pro: v1FullTier(), kalshi: !!webhookLicence().kalshi, days: lineHist.KEEP_DAYS }); return lineEx({ ...d, series: d.series.filter(x => x.market === lg0.market) }); });
+  if (lp0) await add('/api/v1/lines/prop', `/api/v1/lines/prop?key=${encodeURIComponent(lp0.key)}`, () => lineEx(lineProp(lp0.key, { pro: v1FullTier(), kalshi: !!webhookLicence().kalshi, days: lineHist.KEEP_DAYS })));
   let lgs = null;
   await add('/api/v1/leagues', '/api/v1/leagues', () => (lgs = v1.leagues()), 4);
   const lg = lgs?.leagues[0]?.key;
@@ -10459,4 +10622,5 @@ module.exports = {
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
   propsBoardRows, propsBoardRebuild, runEvScreenAsync, trackSportProps,
   scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState, shopState, propHistory, propHistoryState, observePropHistory, shopDepth, readShopDepth,
+  oddsHistory, lineArchive,
 };

@@ -17,8 +17,8 @@ const learn = require('./learn');
 const { LIMITS: API_PRO } = require('./publicapi');
 
 const LIMITS = {
-  free: { apiPerMinute: 10, apiPerDay: 500, apiKeys: 1, discordFeed: false, liveAlerts: false, pushAlerts: false },
-  pro: { apiPerMinute: API_PRO.perMinute, apiPerDay: API_PRO.perDay, apiKeys: 5, discordFeed: true, liveAlerts: true, pushAlerts: true },
+  free: { apiPerMinute: 10, apiPerDay: 500, apiKeys: 1, discordFeed: false, liveAlerts: false, pushAlerts: false, historyDays: 3 },
+  pro: { apiPerMinute: API_PRO.perMinute, apiPerDay: API_PRO.perDay, apiKeys: 5, discordFeed: true, liveAlerts: true, pushAlerts: true, historyDays: 30 },
 };
 const PLAN_IDS = Object.keys(LIMITS);
 
@@ -28,6 +28,7 @@ const PLAN_IDS = Object.keys(LIMITS);
 const FEATURES = [
   { id: 'screen', group: 'Odds', label: 'Odds screen: every venue we read, side by side', where: 'ODDS SCREEN', free: true, pro: true, gate: 'none' },
   { id: 'fair', group: 'Odds', label: 'Pinnacle no-vig fair price, EV and line history', where: 'ODDS SCREEN, SHOPPER', free: 'How many prices sit above the fair', pro: true, gate: 'oddsScreen.stripPro, shopper.stripPro' },
+  { id: 'history', group: 'Odds', label: 'Line history: every market\'s prices at each venue, Pinnacle included, with a chart and a CSV or JSON download', where: '/lines, /api/v1/lines', free: `The last ${LIMITS.free.historyDays} days`, pro: `${LIMITS.pro.historyDays} days`, gate: 'limitsOf(plan).historyDays' },
   { id: 'shopper', group: 'Odds', label: 'Exchange Shopper ranked list, with what the order book fills at your stake', where: 'SHOPPER', free: 'Prices only', pro: true, gate: 'shopper.stripPro' },
   { id: 'best', group: 'Odds', label: 'Best Plays, ranked by their own record', where: 'BEST PLAYS', free: 'Top 3', pro: 'Every play', gate: 'BEST_FREE_PREVIEW' },
   { id: 'arbs', group: 'Odds', label: 'Arbs and middles with legs, prices and stakes', where: 'ARBS', free: 'Count and profit %', pro: true, gate: '/api/xarbs free view' },
