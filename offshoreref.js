@@ -60,6 +60,7 @@ const DEFAULTS = {
   target: 50,
   lot: 100,
   pmusConcurrency: 6,
+  pmusEvery: 5,               // each Polymarket US book is read every 5th minute (a fifth of them a minute), through the shared polite queue
   tickBudgetMs: 45e3,         // a tick stops starting Polymarket US reads after this, so one minute never runs into the next
 };
 const VENUE_NAME = { kalshi: 'Kalshi', pmus: 'Polymarket US' };
@@ -220,6 +221,8 @@ function parseOffshoreMids(payload) {
 
 function createOffshoreRef({ http, post = null, pairs = [], store, now = () => Date.now(), log = console, opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
+  // Polymarket US points come every pmusEvery minutes, so the 15-minute look-back may be that old
+  const oPmus = { ...o, maxQuoteAgeMs: Math.max(o.maxQuoteAgeMs, (Math.max(1, o.pmusEvery | 0) + 1) * 60e3) };
   const hist = new Map();      // `${pairId}|${venue}` → [{ t, m, ask, bid }]
   const lastFlag = new Map();
   const open = new Map();
@@ -252,17 +255,24 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
     }
     return out;
   }
-  // every Polymarket US book, six at a time (47 books a minute is under 1 request a second)
+  // a fifth of the Polymarket US books each minute (about 10), six at a time
   async function readPmus(t0) {
     const out = new Map();
-    const slugs = [...new Set(pairs.map(p => p.u?.slug).filter(Boolean))];
+    const all = [...new Set(pairs.map(p => p.u?.slug).filter(Boolean))];
+    const every = Math.max(1, o.pmusEvery | 0);
+    const slugs = all.filter((_, k) => k % every === state.ticks % every);
     let i = 0, fails = 0, lastErr = null;
     await Promise.all(Array.from({ length: Math.min(o.pmusConcurrency, slugs.length) }, async () => {
       while (i < slugs.length) {
         if (now() - t0 > o.tickBudgetMs) return;
         const slug = slugs[i++];
         try {
-          const res = await http.get(`${GATEWAY}/v1/markets/${encodeURIComponent(slug)}/book`, { timeout: 6000 });
+          // a backed-up queue cannot hold the tick past its budget
+          let timer;
+          const res = await Promise.race([
+            http.get(`${GATEWAY}/v1/markets/${encodeURIComponent(slug)}/book`, { timeout: 6000 }),
+            new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('tick budget')), Math.max(0, o.tickBudgetMs - (now() - t0))); }),
+          ]).finally(() => clearTimeout(timer));
           const b = pmus.parseBook(res?.data);
           if (b) out.set(slug, b);
         } catch (e) { fails++; lastErr = e; }
@@ -326,7 +336,7 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
         hist.set(key, h);
         if (q.status && !/^(active|open)$/i.test(q.status)) continue;
         if (q.open === false) continue;
-        for (const f of detect(h, pair, venue, lastFlag, o)) fresh.push([f, pair]);
+        for (const f of detect(h, pair, venue, lastFlag, venue === 'pmus' ? oPmus : o)) fresh.push([f, pair]);
       }
     }
     for (const [f, pair] of fresh) {
@@ -362,7 +372,7 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
     for (const pair of pairs) for (const venue of ['kalshi', 'pmus']) {
       const h = hist.get(`${pair.id}|${venue}`);
       const p = h?.[h.length - 1];
-      if (!p || p.m == null || now() - p.t > 5 * 60e3) continue;
+      if (!p || p.m == null || now() - p.t > (venue === 'pmus' ? Math.max(5, (o.pmusEvery | 0) + 1) : 5) * 60e3) continue;
       for (const side of ['yes', 'no']) {
         const c = sideCost(p, side, venue, pair, o);
         if (!c) continue;

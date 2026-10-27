@@ -139,7 +139,7 @@ test('createOffshoreRef: a tick still running is skipped, and a slow tick stops 
     return { data: { marketData: { bids: [{ px: { value: '0.49' }, qty: '1' }], offers: [{ px: { value: '0.50' }, qty: '1' }], state: 'MARKET_STATE_OPEN' } } };
   } };
   const post = async () => ({ data: [] });
-  const r = ref.createOffshoreRef({ http, post, pairs, store: createMemoryStore(), now: () => t, log: { warn() {} }, opts: { pmusConcurrency: 1, tickBudgetMs: 45e3 } });
+  const r = ref.createOffshoreRef({ http, post, pairs, store: createMemoryStore(), now: () => t, log: { warn() {} }, opts: { pmusConcurrency: 1, pmusEvery: 1, tickBudgetMs: 45e3 } });
   await r.ready;
   const first = r.tick();
   await new Promise(res => setImmediate(res));
@@ -150,6 +150,21 @@ test('createOffshoreRef: a tick still running is skipped, and a slow tick stops 
   assert.ok(books < 12 && books >= 5, `stopped at the budget, read ${books}`);
   assert.equal(r.state().cut, 1);
   assert.equal(r.state().ticks, 1);
+});
+
+test('createOffshoreRef: Polymarket US books go round-robin, a fifth a minute', async () => {
+  let t = T0;
+  const read = [];
+  const pairs = Array.from({ length: 10 }, (_, i) => ({ ...PAIR, id: `fed|y|${i}`, u: { slug: `s${i}`, fee: 0.0695 } }));
+  const http = { get: async url => {
+    if (url.endsWith('/markets')) return { data: { markets: [] } };
+    read.push(url.split('/markets/')[1].split('/')[0]);
+    return { data: { marketData: { bids: [{ px: { value: '0.49' }, qty: '1' }], offers: [{ px: { value: '0.50' }, qty: '1' }], state: 'MARKET_STATE_OPEN' } } };
+  } };
+  const r = ref.createOffshoreRef({ http, post: async () => ({ data: [] }), pairs, store: createMemoryStore(), now: () => t, log: { warn() {} } });
+  for (let m = 0; m < 5; m++) { t = T0 + m * 60e3; read.length = 0; await r.tick(); assert.equal(read.length, 2, `minute ${m}`); }
+  t = T0 + 5 * 60e3; read.length = 0; await r.tick();
+  assert.deepEqual(read.sort(), ['s0', 's5']);
 });
 
 test('seeds: every pair has an offshore token and at least one US contract, ids unique', () => {

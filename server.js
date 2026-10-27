@@ -4434,10 +4434,11 @@ const offshoreref = require('./offshoreref');
 const OFFSHORE_PAIRS = require('./seeds/offshore-pairs.json');
 const offshoreRefOn = () => !/^(off|0|false|no)$/i.test(String(process.env.OFFSHORE_REF || '').trim());
 const offshoreRef = offshoreref.createOffshoreRef({
-  // straight to the venues, not through the shared polite queue: its backlog on the
-  // Polymarket US host held a tick to 137-145 s live (10-26, 10-27). About 50 calls a minute,
-  // and a tick stops starting new reads after 45 s (offshoreref DEFAULTS.tickBudgetMs).
-  http: { get: (url, cfg) => axios.get(url, cfg) }, post: (url, body, cfg) => axios.post(url, body, cfg), pairs: OFFSHORE_PAIRS.pairs,
+  // through the shared polite queue (per-host gap, Retry-After on 429): about 12 GETs a
+  // minute, a fifth of the Polymarket US books each minute. All 47 a minute behind the
+  // queue's backlog held a tick to 137-145 s live (10-26, 10-27); a tick now gives up
+  // after 45 s (offshoreref DEFAULTS.tickBudgetMs) and the next minute is skipped while one runs.
+  http: upstream, post: (url, body, cfg) => axios.post(url, body, cfg), pairs: OFFSHORE_PAIRS.pairs,
   store: resultsBackup.wrap('offshoreRef', createPickFileStore(process.env.OFFSHORE_REF_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'offshore-ref.json'))),
 });
 offshoreRef.ready.catch(e => console.error('Offshore reference: store failed to initialise:', e.message));
