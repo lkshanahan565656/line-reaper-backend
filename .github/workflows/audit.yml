@@ -1,0 +1,25 @@
+name: audit1027
+on: { push: { branches: [diag-audit-1027] } }
+permissions: { contents: write }
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy: { fail-fast: false, matrix: { parts: ['api,pages,v1,links,static,share', 'inapp', 'matrix', 'crawl'] } }
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save --no-audit --no-fund playwright@1.63.0 && npx playwright install --with-deps --only-shell chromium
+      - run: PARTS='${{ matrix.parts }}' node audit.js "$SITE" out || true
+        timeout-minutes: 32
+        continue-on-error: true
+      - if: always()
+        run: |
+          git config user.email audit@line-reaper; git config user.name audit
+          N=$(echo '${{ matrix.parts }}' | tr -c 'a-z\n' '-' | cut -c1-12)
+          mkdir -p /tmp/o && cp -r out /tmp/o/ || true
+          git checkout --orphan diag-audit1027-out-$N; git rm -rqf --cached .; git clean -fdq
+          cp -r /tmp/o/out . || mkdir out; git add -f out; git commit -qm "audit $N $(date -u +%FT%TZ)" --allow-empty
+          git push -f origin diag-audit1027-out-$N
