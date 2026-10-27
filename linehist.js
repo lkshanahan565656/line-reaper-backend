@@ -30,7 +30,7 @@ const venues = require('./venues');
 
 const DAY = 86400e3;
 const KEEP_DAYS = 30;
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const prob = a => (a == null || !Number.isFinite(a) ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 

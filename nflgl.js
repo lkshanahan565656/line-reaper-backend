@@ -30,8 +30,7 @@ const CLOSE_OK_MIN = 60;          // a close read more than this before kickoff 
 const NFLVERSE_EVERY_MS = 6 * 3600e3;
 const KINDS = { ml: 'nfl-ml', spread: 'nfl-spread', total: 'nfl-total' };
 const KIND_LABEL = { 'nfl-ml': 'NFL model moneyline', 'nfl-spread': 'NFL model spread', 'nfl-total': 'NFL model total' };
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r1 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
+const { r4OrNull: r4, r1OrNull: r1 } = require('./mathutil');
 const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const isNfl = b => /^nfl$/i.test(String(b?.league || '')) || /^nfl$/i.test(String(b?.game?.league || ''));
 

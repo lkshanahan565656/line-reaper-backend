@@ -85,11 +85,9 @@ function createStoreFromEnv(env = process.env, { table = 'tail_signals', fileVar
 }
 const createFreshStoreFromEnv = (env = process.env) => createStoreFromEnv(env, { table: 'fresh_signals', fileVar: 'FRESH_TRACK_FILE', file: 'fresh-signals.json' });
 
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r2OrNull: r2, r4OrNull: r4, numNoBool: num } = require('./mathutil');
 const r6 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e6) / 1e6);
 const iso = ms => new Date(ms).toISOString();
-const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 const inUnit = x => x > 0 && x < 1;
 
 // Taker fee a contract at the recommended venue, when the venue doesn't say.

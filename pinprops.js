@@ -39,7 +39,7 @@ function parseDescription(desc) {
   return { player: m[1].trim(), mkey };
 }
 
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+const { toProb } = require('./mathutil');
 // power devig: p^k + q^k = 1, so the longshot gives up more of the margin
 function devigPower(po, pu) {
   let lo = 0.5, hi = 2;

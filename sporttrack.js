@@ -27,7 +27,7 @@ const BOOK_FAIR = new Set(['book-fair', 'book-fair-single', 'book-consensus']);
 const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35, P6_BE = 0.5503;
 // Pick6 legs carry their own kinds (p6-sharp, p6-gap, ...): the same play, its own record
 const baseKind = k => String(k || '').replace(/^p6-/, '');
-const r2 = x => Math.round(x * 100) / 100;
+const { r2, r4 } = require('./mathutil');
 // The close counts only when the fair was still being read near the start
 // (as in evtrack.js): closeSeenAt is the last read that priced the leg, saved
 // at most every SEEN_SAVE_MS (exact in memory); at the lock closeOk says it
@@ -41,7 +41,6 @@ function closeState(b, freshMs = CLOSE_FRESH_MS) {
   if (!Number.isFinite(start) || !Number.isFinite(seen)) return 'unverified';
   return start - seen <= freshMs ? 'ok' : b.closeSeenAt ? 'stale' : 'unverified';
 }
-const r4 = x => Math.round(x * 1e4) / 1e4;
 
 // What one leg pays per unit if it wins, as decimal odds: the book's own
 // per-leg price (PrizePicks legs are priced at

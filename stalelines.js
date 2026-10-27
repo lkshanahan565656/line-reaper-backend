@@ -64,9 +64,7 @@ const APP_VENUES = ['prizepicks', 'underdog', 'sleeper', 'pick6'];
 const VENUES = [...BOOK_VENUES, ...APP_VENUES];
 const CONFIRM = ['kalshi', 'fanduel', 'betrivers'];
 
-const r1 = x => Math.round(x * 10) / 10;
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r1, r2, r4 } = require('./mathutil');
 const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 // the game's day on the US clock (6 hours behind UTC), so one player's two games stay apart
 const dayOf = t => { const x = ms(t); return x == null ? '' : new Date(x - 6 * 3600e3).toISOString().slice(0, 10); };

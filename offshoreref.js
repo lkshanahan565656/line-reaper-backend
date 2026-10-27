@@ -61,8 +61,7 @@ const DEFAULTS = {
   lot: 100,
 };
 const VENUE_NAME = { kalshi: 'Kalshi', pmus: 'Polymarket US' };
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { r4OrNull: r4, num } = require('./mathutil');
 
 // per-contract taker fee in dollars at a 100 lot
 function feeOf(venue, price, pair = {}, o = DEFAULTS) {

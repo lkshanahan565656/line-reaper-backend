@@ -21,8 +21,7 @@ const { outcomeOf } = require('./evtrack');
 
 const MKEY = { ml: 'h2h', spread: 'spreads', total: 'totals' };
 const CLOSE_FRESH_MS = 60 * 60e3, SEEN_SAVE_MS = 10 * 60e3;
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r2 = x => Math.round(x * 100) / 100;
+const { r4OrNull: r4, r2 } = require('./mathutil');
 const numOrNull = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 
 // a track reference from the browser → the clean key fields, or null

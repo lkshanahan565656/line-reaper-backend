@@ -23,8 +23,7 @@ const LIMITS = { perMinute: 60, perDay: 5000 };
 const WIDGET_PER_MINUTE = 120;
 const KEY_CREATE = { perHour: 5, max: 20000 };
 const sha256 = s => crypto.createHash('sha256').update(String(s)).digest('hex');
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r2OrNull: r2, r4OrNull: r4 } = require('./mathutil');
 const cleanName = s => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
 
 // ── keys ──
