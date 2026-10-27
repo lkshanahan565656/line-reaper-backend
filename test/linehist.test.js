@@ -194,6 +194,33 @@ test('an unknown market says so plainly, and the index lists and filters', () =>
   assert.equal(lh.filterIndex(rows, {}).rows[0].kind, 'prop', 'newest start first');
   const paged = lh.filterIndex(rows, { limit: 1 });
   assert.equal(paged.next, '2026-10-22T00:00:00Z');
+  // the page's order: not started yet soonest first, then started, most recent first
+  const T = Date.parse('2026-10-23T00:00:00Z');
+  const mk = (key, h, venues) => ({ kind: 'game', key, market: 'ml', event: key, league: 'nfl', start: new Date(T + h * 3600e3).toISOString(), firstAt: '2026-10-19T00:00:00Z', lastAt: '2026-10-22T00:00:00Z', reads: 2, venues });
+  const many = [mk('past-old', -48, ['kalshi']), mk('soon-late', 30, ['kalshi']), mk('past-new', -2, ['kalshi']), mk('soon-first', 1, ['kalshi']), mk('pin-only', 5, ['pinnacle']), mk('nj-only', 6, ['fanduel', 'pinnacle'])];
+  const soon = lh.filterIndex(many, { order: 'soon', now: T });
+  assert.deepEqual(soon.rows.map(r => r.key), ['soon-first', 'pin-only', 'nj-only', 'soon-late', 'past-new', 'past-old']);
+  assert.equal(soon.upcoming, 4);
+  const p2 = lh.filterIndex(many, { order: 'soon', now: T, limit: 4 });
+  assert.equal(p2.next, 4);
+  assert.deepEqual(lh.filterIndex(many, { order: 'soon', now: T, limit: 4, from: 4 }).rows.map(r => r.key), ['past-new', 'past-old']);
+  // a market counts for Texas only when a venue open there priced it; Pinnacle is a reference, FanDuel is not in Texas
+  const tx = lh.filterIndex(many, { order: 'soon', now: T, usable: r => lh.usableIn(r, 'TX') });
+  assert.deepEqual(tx.rows.map(r => r.key), ['soon-first', 'soon-late', 'past-new', 'past-old']);
+  assert.equal(tx.hidden, 2);
+  assert.ok(lh.usableIn(many[5], 'NJ'));
+  assert.ok(!lh.usableIn(many[0], 'TX', { kalshi: false }), 'Kalshi does not count where the viewer may not see its prices');
+  const page = lh.indexPage({ ...tx, now: T, since: '2026-10-19T00:00:00Z' }, { states: [['TX', 'Texas']] });
+  assert.ok(page.indexOf('Not started yet, soonest first') < page.indexOf('soon-first') && page.indexOf('soon-late') < page.indexOf('Started, most recent first') && page.indexOf('Started, most recent first') < page.indexOf('past-new'));
+  assert.match(page, /2 markets priced only elsewhere are left out/);
+  assert.match(page, /href="\/lines\?venues=all">Show every venue/);
+  const gone = lh.indexPage({ rows: [], total: 0, hidden: 3, since: '2026-10-19T00:00:00Z', now: T }, { states: [['TX', 'Texas']] });
+  assert.match(gone, /No saved market was priced by a venue a TX resident can use on our venue table: 3 markets were priced only elsewhere\. <a href="\/lines\?venues=all">Show every venue/);
+  assert.match(gone, /We started keeping 30 days on/, 'the plain saved-since wording stays');
+  const allOn = lh.indexPage({ rows: soon.rows, total: 6, now: T, next: 4 }, { allVenues: true, states: [['TX', 'Texas']] });
+  assert.match(allOn, /href="\/lines\?venues=state">Only TX venues/);
+  assert.match(allOn, /href="\/lines\?venues=all&amp;from=4">MORE MARKETS/);
+  assert.match(allOn, /href="\/lines\/game\/soon-first\?market=ml&amp;venues=all"/, 'market links keep the toggle');
   const html = lh.indexPage({ rows, total: 2, leagues: [['nfl', 'NFL', 1]], since: '2026-10-19T00:00:00Z', now: Date.parse('2026-10-23T00:00:00Z') }, { states: [['TX', 'Texas']] });
   assert.match(html, /Bills @ Chiefs · Moneyline/);
   assert.match(html, /href="\/lines\/prop\?key=k"/);

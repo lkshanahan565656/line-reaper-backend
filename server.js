@@ -5204,7 +5204,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.218.3', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.219.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7635,30 +7635,32 @@ function lineIndexRows() {
     const k = `game:${x.game}|${x.market}`;
     const first = new Date(x.pts[0][0]).toISOString(), last = new Date(x.pts[x.pts.length - 1][0]).toISOString();
     const r = rows.get(k);
-    if (r) { r.reads += x.reads || x.pts.length; if (first < r.firstAt) r.firstAt = first; if (last > r.lastAt) r.lastAt = last; continue; }
-    rows.set(k, { kind: 'game', key: String(x.game), market: x.market, event: x.event || null, league: x.league || null, leagueLabel: x.leagueLabel || null, start: x.start || null, firstAt: first, lastAt: last, reads: x.reads || x.pts.length, archived: false });
+    const vs = [...new Set(x.pts.flatMap(p => Object.keys(p[3] || {})))];
+    if (r) { r.reads += x.reads || x.pts.length; if (first < r.firstAt) r.firstAt = first; if (last > r.lastAt) r.lastAt = last; for (const v of vs) if (!r.venues.includes(v)) r.venues.push(v); continue; }
+    rows.set(k, { kind: 'game', key: String(x.game), market: x.market, event: x.event || null, league: x.league || null, leagueLabel: x.leagueLabel || null, start: x.start || null, firstAt: first, lastAt: last, reads: x.reads || x.pts.length, venues: vs, archived: false });
   }
   for (const x of propHistory.dump()) {
     if (!x.pts.length) continue;
     rows.set(`prop:${x.id}`, { kind: 'prop', key: x.id, event: x.event || null, league: x.league || null, start: x.start || null, player: x.player || null, stat: x.stat || null, line: x.line ?? null,
-      firstAt: new Date(x.pts[0][0]).toISOString(), lastAt: new Date(x.pts[x.pts.length - 1][0]).toISOString(), reads: x.reads || x.pts.length, archived: false });
+      firstAt: new Date(x.pts[0][0]).toISOString(), lastAt: new Date(x.pts[x.pts.length - 1][0]).toISOString(), reads: x.reads || x.pts.length, venues: [...new Set(x.pts.flatMap(p => Object.keys(p[2] || {})))], archived: false });
   }
   for (const r of lineArchive.index()) { const k = r.kind === 'game' ? `game:${r.key}|${r.market}` : `prop:${r.key}`; if (!rows.has(k)) rows.set(k, r); }
   lineIndexMemo = { at: Date.now(), rows: [...rows.values()] };
   return lineIndexMemo.rows;
 }
 const lineQuery = q => ({ q: String(q.q || '').slice(0, 60), league: /^[a-z0-9]{1,20}$/.test(String(q.league || '')) ? String(q.league) : '', kind: /^(game|prop)$/.test(String(q.kind || '')) ? String(q.kind) : '',
-  before: typeof q.before === 'string' && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(q.before) ? q.before : null });
+  before: typeof q.before === 'string' && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(q.before) ? q.before : null, from: Math.min(1e6, Math.max(0, parseInt(q.from, 10) || 0)) });
 function lineLeagues(rows) {
   const n = new Map();
   for (const r of rows) if (r.league) { const k = String(r.league).toLowerCase(); const e = n.get(k) || [k, r.leagueLabel || k.toUpperCase(), 0]; e[2]++; n.set(k, e); }
   return [...n.values()].sort((a, b) => b[2] - a[2]);
 }
-function lineIndexBody(q, { days = lineHist.KEEP_DAYS, limit = 100 } = {}) {
+// order 'soon' and usable: the /lines page (soonest first, the viewer's state); the API keeps newest first
+function lineIndexBody(q, { days = lineHist.KEEP_DAYS, limit = 100, order = 'newest', usable = null } = {}) {
   const cut = new Date(Date.now() - days * lineHist.DAY).toISOString();
   const all = lineIndexRows().filter(r => r.lastAt >= cut);
-  const f = lineHist.filterIndex(all, { ...q, limit });
-  return { ...f, leagues: lineLeagues(all), since: lineArchive.status().since || all.reduce((o, r) => (!o || r.firstAt < o ? r.firstAt : o), null), keepDays: lineHist.KEEP_DAYS, windowDays: days };
+  const f = lineHist.filterIndex(all, { ...q, limit, order, usable });
+  return { ...f, leagues: lineLeagues(usable ? all.filter(usable) : all), since: lineArchive.status().since || all.reduce((o, r) => (!o || r.firstAt < o ? r.firstAt : o), null), keepDays: lineHist.KEEP_DAYS, windowDays: days };
 }
 function lineDownload(req, res, d, days) {
   const meta = { kind: d.kind, id: d.id, ...d.meta, onBoard: d.live, keepDays: lineHist.KEEP_DAYS, windowDays: days, fairShown: hasPro(req),
@@ -7686,9 +7688,11 @@ app.get('/api/lines/prop', (req, res) => {
 const lineView = req => ({ st: venues.stateOf(req.query.state) || 'TX', fmt: oddsFmt.fmtOf(req.query.odds), allVenues: req.query.venues === 'all', states: leagueStates(), origin: siteOrigin(req) });
 app.get('/lines', (req, res) => {
   try {
-    const days = lineHistDays(planOfReq(req)), q = lineQuery(req.query);
-    const body = lineIndexBody(q, { days });
-    res.set('Cache-Control', 'private, max-age=60').type('html').send(lineHist.indexPage({ ...body, q, status: lineArchive.status() }, lineView(req)));
+    const days = lineHistDays(planOfReq(req)), q = lineQuery(req.query), v = lineView(req);
+    // by default only markets a venue open in My state priced, as on the market pages and the VENUES strip
+    const kalshi = !!licenceOf(req).kalshi;
+    const body = lineIndexBody(q, { days, order: 'soon', usable: v.allVenues ? null : r => lineHist.usableIn(r, v.st, { kalshi }) });
+    res.set('Cache-Control', 'private, max-age=60').type('html').send(lineHist.indexPage({ ...body, q, status: lineArchive.status() }, v));
   } catch (e) { console.warn('Line history page:', e.message); res.status(500).type('text/plain').send('The line history could not be read just now. Try again in a minute.'); }
 });
 function sendLinePage(req, res, d, days) {
@@ -9392,7 +9396,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.218.3',
+  version: '3.219.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

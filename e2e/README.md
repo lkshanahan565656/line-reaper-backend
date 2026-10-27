@@ -22,7 +22,8 @@ What it checks, and fails on:
   the screen (`overflowIssues` in `page-helpers.js`). Ellipsis text and wide
   tables inside a scroller that fits are fine.
 - **Wording**: "PROVEN" shows only while `/api/results` (results.js) marks a
-  play proven; "guaranteed" and "risk-free" claims are flagged.
+  play proven; "guaranteed" and "risk-free" claims are flagged; ESPORTS matches
+  call a price under fair a gap, never an edge (nothing in esports is proven).
 - **Data**: the main views (`allow.json`, `mustHaveData`) must not show their
   empty state, since the recording has rows for them; a request the recording
   has no answer for fails as a fixture miss.
