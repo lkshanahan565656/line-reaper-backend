@@ -6,9 +6,10 @@
 // alerts without a real push service, use the TOOLS calculator, and move and
 // hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
 // view by link and open it cold on a fresh device, export and print a screen,
-// and open a label's glossary definition. The crawl clicks everything; these check results.
+// open a label's glossary definition, and search everything from any screen.
+// The crawl clicks everything; these check results.
 'use strict';
-/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState -- the app's own functions, called in page.evaluate */
+/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState, oddsFmtSet, gsRender, osUi, renderOdds, pbState, lrState -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -69,7 +70,6 @@ async function openCold(opts, link, check) {
     const st = await p2.evaluate(() => ({
       welcome: document.getElementById('welcome')?.classList.contains('open'), tour: document.getElementById('tour')?.classList.contains('open'),
       page: document.querySelector('.page.active')?.id, hash: location.hash, toast: [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '),
-      // eslint-disable-next-line no-undef
       shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
       chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
       osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
@@ -823,7 +823,7 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     await page.locator('#linkBtn').click();
     await settle(page, w, opts, 100);
     const propsLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
-    const pv = await page.evaluate(() => pbState.view); // eslint-disable-line no-undef
+    const pv = await page.evaluate(() => pbState.view);
     expect(/\/app#lr&t=props/.test(propsLink) && /[&]q=a(&|$)/.test(propsLink), `PROPS link: ${propsLink}`);
     expect(pv === 'lines' ? !/pv=/.test(propsLink) : propsLink.includes(`pv=${pv}`), `PROPS link misses the ${pv} view: ${propsLink}`);
     await page.evaluate(() => pbSet('q', '')); // eslint-disable-line no-undef
@@ -922,6 +922,93 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     await settle(page, w, opts, 120);
     await page.keyboard.press('Escape');
     expect((await order())[0] === first, 'RESET did not bring the order back');
+  },
+
+  async 'search everything from any screen'(page, w, opts) {
+    // a recorded game the odds screen shows for the viewer's state, so the jump lands on a real row
+    const game = await page.evaluate(async () => { try { const d = await (await fetch(`/api/odds-screen${lrState ? `?state=${lrState}` : ''}`)).json(); return (d.games || []).find(g => g.markets?.length) || null; } catch { return null; } });
+    // offline the server's boards are empty: TEST DATA hits stand in, one per
+    // kind, built around that game; the real endpoint is checked below
+    const body = { q: 'e2e', count: 3, note: 'TEST DATA', holds: { game: 1, series: 1, player: 1, market: 0, league: 0 }, state: null, stale: { odds: false },
+      hits: [
+        ...(game ? [{ kind: 'game', id: `g:${game.id}`, title: `${game.away} @ ${game.home}`, sub: game.leagueLabel || '', start: game.start, market: 'Moneyline',
+          prices: [{ label: game.away, venue: 'fanduel', venueName: 'FanDuel', american: 150, decimal: 2.5, point: null }, { label: game.home, venue: null }], go: { tab: 'odds', view: 'lines', game: String(game.id), league: game.league || '', q: game.home } }] : []),
+        { kind: 'series', id: 'mu:LOL:test-series-9', title: 'E2E Alpha vs E2E Bravo', sub: 'LoL · TEST', start: new Date(Date.now() + 3 * 3600e3).toISOString(), exchanges: [{ venue: 'kalshi', venueName: 'Kalshi', costs: [0.45, 0.57] }], go: { tab: 'esports', mode: 'matchups', game: 'LOL', id: 'test-series-9' } },
+        { kind: 'player', id: 'p:NBA|e2e player', title: 'E2E Player', sub: 'NBA · TST', props: 2, apps: ['underdog', 'prizepicks'], lines: [{ market: 'Points', line: 24.5 }], go: { tab: 'props', view: 'cards', sport: 'NBA', q: 'E2E Player' } },
+      ] };
+    const fake = route => (new URL(route.request().url()).searchParams.get('q') || '').length >= 2 ? route.fulfill({ json: body }) : route.continue();
+    if (!opts.live) await page.route('**/api/search?*', fake);
+    try {
+      await openTab(page, 'results', w, opts);
+      await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+      // S opens it from a tab with no search box of its own
+      await page.keyboard.press('s');
+      await page.locator('#gsModal.open').waitFor({ timeout: 4000 });
+      expect(await page.locator('#gsInput').evaluate(el => el === document.activeElement), 'S did not put the cursor in the search box');
+      await settle(page, w, opts, 200);
+      expect(/Type two or more letters/.test(await text(page, '#gsList')), `the empty search box gives no help: "${await text(page, '#gsList')}"`);
+      if (opts.live) {
+        // live: whatever the site holds, the box must answer in words
+        await page.keyboard.type('nba');
+        await settle(page, w, opts, 500);
+        expect((await page.locator('#gsList .gs-row').count()) > 0 || /Nothing the site holds now matches/.test(await text(page, '#gsList')), 'a live search showed neither hits nor a nothing-found line');
+        expect(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)), 'the search box scrolls the page sideways');
+        await page.keyboard.press('Escape');
+        return;
+      }
+      await page.keyboard.type('e2e');
+      await settle(page, w, opts, 300);
+      const rows = page.locator('#gsList .gs-row');
+      expect(await rows.count() === body.hits.length, `search shows ${await rows.count()} rows for ${body.hits.length} hits`);
+      const list = await text(page, '#gsList');
+      expect(/PLAYERS/.test(list) && /ESPORTS SERIES/.test(list), `search does not group its hits: "${list.slice(0, 200)}"`);
+      expect(/45¢/.test(list), 'a series does not show its cost to buy in cents');
+      if (game) expect(/\+150/.test(list), `a game's best price is not in American odds: "${list.slice(0, 200)}"`);
+      // the odds format setting: decimal shows 2.50
+      if (game) {
+        await page.evaluate(() => oddsFmtSet('decimal'));
+        await page.evaluate(() => gsRender());
+        expect(/2\.50/.test(await text(page, '#gsList')), 'search ignores CUSTOMIZE > Odds format');
+        await page.evaluate(() => oddsFmtSet('american'));
+        await page.evaluate(() => gsRender());
+      }
+      expect(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)), 'the search box scrolls the page sideways');
+      // Enter opens the first hit: the game, outlined on ODDS SCREEN
+      if (game) {
+        await page.keyboard.press('Enter');
+        await settle(page, w, opts, 400);
+        expect(!(await page.locator('#gsModal.open').count()), 'Enter did not close the search box');
+        expect(await page.locator('#page-odds.active').count() === 1, 'the game hit did not open ODDS SCREEN');
+        const row = page.locator(`#page-odds [data-sid="g:${game.id}"]`);
+        await row.waitFor({ timeout: 6000 });
+        for (let i = 0; i < 12 && !(await row.evaluate(el => el.classList.contains('gs-flash'))); i++) await settle(page, w, opts, 150);
+        expect(await row.evaluate(el => el.classList.contains('gs-flash')), 'the game row was not outlined');
+        expect(await page.inputValue('#osSearch') === String(game.home).toLowerCase(), 'ODDS SCREEN was not filtered to the team');
+        await page.locator('#osSearch').fill('');
+        await page.evaluate(() => { osUi.q = ''; renderOdds(); });
+      }
+      // Ctrl+K from inside a text box; the player hit opens PROPS on that player
+      await page.locator('#osSearch').focus().catch(() => {});
+      await page.keyboard.press('Control+k');
+      await page.locator('#gsModal.open').waitFor({ timeout: 4000 });
+      await page.locator('#gsInput').fill('e2e');
+      await settle(page, w, opts, 300);
+      await page.locator('#gsList .gs-row', { hasText: 'E2E Player' }).locator('.gs-main').click();
+      await settle(page, w, opts, 300);
+      expect(await page.locator('#page-props.active').count() === 1, 'the player hit did not open PROPS');
+      expect(await page.inputValue('#pbSearch') === 'E2E Player', `PROPS was not filtered to the player: "${await page.inputValue('#pbSearch')}"`);
+      // Esc closes it
+      await page.keyboard.press('s');
+      await page.locator('#gsModal.open').waitFor({ timeout: 4000 });
+      await page.keyboard.press('Escape');
+      expect(!(await page.locator('#gsModal.open').count()), 'Escape did not close the search box');
+      await page.evaluate(() => { pbState.q = ''; const b = document.getElementById('pbSearch'); if (b) b.value = ''; });
+    } finally {
+      if (!opts.live) await page.unroute('**/api/search?*', fake).catch(() => {});
+    }
+    // the real endpoint offline: an empty board finds nothing and says so
+    const real = await page.evaluate(async () => (await fetch('/api/search?q=zz')).json());
+    expect(Array.isArray(real.hits) && real.holds && /no fair or EV/.test(real.note), `/api/search answered ${JSON.stringify(real).slice(0, 200)}`);
   },
 
   async 'keyboard shortcuts and compact rows'(page, w, opts) {
@@ -1247,7 +1334,6 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
   },
 
   async 'odds format and My state reach the league pages, share cards and widgets'(page, w, opts) {
-    // eslint-disable-next-line no-undef
     const st0 = await page.evaluate(() => { const s = lrState; window.lrSetState('TX'); return s; });
     await settle(page, w, opts, 200);
     // the viewer's format, set where a viewer sets it: CUSTOMIZE > Odds format
