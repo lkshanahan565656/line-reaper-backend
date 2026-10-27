@@ -1936,8 +1936,8 @@ body::before { display:none !important; }
 
 <div class="page" id="page-gas">
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">GAS LOCKS</strong> — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalshi, at or under the price shown.<br>
-    <span style="color:#94a3b8;font-size:11px">Not risk-free: a refinery outage can push a state's price past the line overnight, and one loss at 97¢ costs about 32 wins. Same plays for everyone; size each one so a loss is a small part of your bankroll.</span>
+    <strong style="color:#e8e8e8">GAS LOCKS</strong> <span class="nflm-tag">RESEARCH, NOT A BET</span> Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. This tab logs that favourite at its first price and grades it, to test whether the pattern holds. It isn't proven under the 50-graded rule, so no units or profit are shown and nothing here is a bet to place.<br>
+    <span style="color:#94a3b8;font-size:11px">Not risk-free: a refinery outage can push a state's price past the line overnight, and one loss at 97¢ costs about 32 wins. Same list for everyone. No alerts.</span>
   </div>
   <div id="gasContent"></div>
 </div>
@@ -9741,9 +9741,9 @@ function renderGas() {
       <div style="font-size:20px;font-weight:800;margin-top:2px;color:${good == null ? '#e8e8e8' : good ? 'var(--green)' : '#f87171'}">${val}</div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div></div>`;
   const tiles = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">
-      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${pct(r.roi)} a bet · ${r.units >= 0 ? '+' : ''}${r.units}u` : `${r.open || 0} open, graded the morning after`, r.graded ? r.roi > 0 : null)}
+      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${r.graded} of 50 graded · not proven, no units shown${r.open ? ` · ${r.open} open` : ''}` : `${r.open || 0} open, graded the morning after`, null)}
       ${tile('CLOSE OUR WAY', r.clvN ? pct(r.avgClv) : '—', r.clvN ? `average CLV over ${r.clvN}` : 'our side\'s last mid before trading stops', r.clvN ? r.avgClv > 0 : null)}
-      ${oos.bets ? tile(oos.method === 'walk-forward' ? 'BACKTEST (WALK-FORWARD)' : 'BACKTEST (HELD OUT)', pct(oos.roi), `${oos.bets.toLocaleString()} bets, ${oos.losses ?? 0} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}`, true) : tile('BACKTEST', '—', 'No backtest on file on this server', null)}
+      ${oos.bets ? tile(oos.method === 'walk-forward' ? 'BACKTEST (WALK-FORWARD)' : 'BACKTEST (HELD OUT)', pct(oos.roi), `${oos.bets.toLocaleString()} bets, ${oos.losses ?? 0} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}; a backtest, not the live record`, null) : tile('BACKTEST', '—', 'No backtest on file on this server', null)}
     </div>`;
   const rule = d.rule || {};
   const note = `<div class="xa-sub" style="margin:0 0 10px">The rule: ${escAttr((rule.states || []).join(', '))}; the side asked ${c(rule.minPrice || 0.9)} to ${c(rule.maxPrice || 0.98)}, ${rule.fromHours || 12} to ${rule.toHours || 19} hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $${rule.minDepthUsd || 100}+ resting at the price and the book no wider than ${c(rule.maxSpread || 0.05)} (a 95¢ ask over a 30¢ bid isn't a real favourite; those lost about 13% a bet in the backtest).${bt.allNights ? ` Backtest on every market ${escAttr(bt.from || '')} to ${escAttr(bt.to || '')}: picking the states each week from the weeks before went ${pct(oos.roi)} a bet, about one loss in 50, and only about two standard errors over zero, so the live record decides. Losses bunch: on ${escAttr(bt.worstNight?.day || '')} ${bt.worstNight?.losses} bets lost together (${pct(bt.worstNight?.roi)} on the night). The other states went ${pct(bt.otherStates?.roi)} and Kalshi's national gas market ${pct(bt.national?.roi)}, so neither is listed. Book depth isn't in the history; tonight's depth is shown live.` : ''} Price includes Kalshi's fee on a 100-contract order.</div>`;
@@ -9755,14 +9755,14 @@ function renderGas() {
   else {
     const rows = d.plays.slice().sort((a, b) => a.price - b.price).map(p => `<tr>
         <td><b>${tailLink(p.url, escAttr(p.state))}</b><div class="xa-sub">${escAttr(day(p.day))}</div></td>
-        <td>${p.side === 'yes' ? 'Above' : 'At or below'} $${Number(p.strike).toFixed(3)}<div class="xa-sub">buy ${p.side.toUpperCase()}</div></td>
-        <td class="xs-p"><b>${c(p.price)}</b><div class="xa-sub">${pct(1 / p.cost - 1)} if it wins</div></td>
+        <td>${p.side === 'yes' ? 'Above' : 'At or below'} $${Number(p.strike).toFixed(3)}<div class="xa-sub">favourite: ${p.side.toUpperCase()}</div></td>
+        <td class="xs-p"><b>${c(p.price)}</b><div class="xa-sub">fee in</div></td>
         <td class="xs-p">${p.depth ? `$${p.depth.usd.toLocaleString()}` : '<span style="color:var(--text2)">logged</span>'}</td></tr>`).join('');
     plays = `<div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>State</th><th>Bet</th><th style="text-align:right">Price</th><th style="text-align:right">At the price</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   const recent = (d.recent || []).slice(0, 15).map(x => `<tr><td>${escAttr(x.state)} <span class="xa-sub">${escAttr(day(x.day))}</span></td><td>${x.side === 'yes' ? 'Above' : 'At or below'} $${Number(x.strike).toFixed(3)}</td><td class="xs-p">${c(x.price)}</td>
-      <td class="xs-p" style="color:${x.outcome === 'win' ? 'var(--green)' : '#f87171'}">${x.outcome === 'win' ? 'WON' : 'LOST'} ${pct(x.profit)}</td></tr>`).join('');
-  el.innerHTML = tiles + note + `<div class="arb-sec-head">TONIGHT</div>` + plays
+      <td class="xs-p" style="color:${x.outcome === 'win' ? 'var(--green)' : '#f87171'}">${x.outcome === 'win' ? 'WON' : 'LOST'}</td></tr>`).join('');
+  el.innerHTML = tiles + note + `<div class="arb-sec-head">TONIGHT'S FAVOURITES (LOGGED, NOT A BET)</div>` + plays
     + (recent ? `<div class="arb-sec-head" style="margin-top:14px">GRADED</div><div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>State</th><th>Bet</th><th style="text-align:right">Price</th><th style="text-align:right">Result</th></tr></thead><tbody>${recent}</tbody></table></div>` : '')
     + (d.updated ? `<div class="xa-sub" style="margin-top:8px">Scanned ${escAttr(new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}, every 10 minutes.</div>` : '');
 }
