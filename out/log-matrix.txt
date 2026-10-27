@@ -1,0 +1,3 @@
+matrix rows 140
+resultsBackup at end {"state":"ready","snapshotAt":"2026-10-27T09:44:32.296Z","note":null,"restored":{"steamHistory":1904,"lineArchive":177,"oddsHistory":424,"propHistory":970,"statusHistory":233,"alertLog":23,"ev":8429,"evAlt":16560,"evEsports":493,"evStale":656,"evLeadLag":1,"sportProps":15658,"propCloses":3,"appCard"
+done in 420 s
