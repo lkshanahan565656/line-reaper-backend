@@ -1,0 +1,18 @@
+name: diag-a11y-ops
+on: { push: { branches: [diag-a11y-ops] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - run: |
+          mkdir o; cd o
+          curl -s -m 30 "$SITE/api/status" -o status.json -w 'status %{http_code}\n' > codes.txt || true
+          curl -s -m 30 "$SITE/api/ops" -o ops.json -w 'ops %{http_code}\n' >> codes.txt || true
+          curl -s -m 30 "$SITE/api/health" -o health.json -w 'health %{http_code}\n' >> codes.txt || true
+          date -u >> codes.txt
+          git init -q; git checkout -q -b diag-a11y-ops-out; git add -A
+          git -c user.email=d@lr -c user.name=diag commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-a11y-ops-out
