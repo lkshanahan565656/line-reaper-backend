@@ -153,13 +153,13 @@ function sideLine(s, { withFair, fmt }) {
   if (others.length) parts.push(`also ${others.map(v => priceText(v, fmt)).join(', ')}`);
   return `${safe(s.label)}: ${parts.join(' · ')}`;
 }
-function oddsMessage({ q, games = [], more = [], stale = false, linesAt = null, withFair = false, state = null, stateName = null, origin = '', fmt = a => String(a), hasHistory = () => false, now = Date.now() } = {}) {
+function oddsMessage({ q, games = [], more = [], stale = false, linesAt = null, withFair = false, state = null, stateName = null, origin = '', fmt = a => String(a), hasHistory = () => false, setter = 'a server manager', now = Date.now() } = {}) {
   const o = origin0(origin);
   if (stale) return note('Prices are not fresh', 'The price feeds have not read in the last few minutes, so nothing is shown rather than an old price. Try again shortly.');
   if (!games.length) return note('No game found', `Nothing on the board in the next 48 hours matches "${safe(q)}". Try a team name, like Lakers or Chiefs.`, { color: COLOR.settings });
   const g = games[0];
   const fields = (g.markets || []).map(m => ({ name: m.label, value: m.sides.map(s => sideLine(s, { withFair, fmt })).join('\n') }));
-  const where = state ? `Venues a ${stateName || state} resident can use, by our state table (check with the venue).` : 'Every US venue we read: a server manager can set the state with /settings.';
+  const where = state ? `Venues a ${stateName || state} resident can use, by our state table (check with the venue).` : `Every US venue we read: ${setter} can set the state with /settings.`;
   const desc = [`${g.leagueLabel || g.league} · starts ${when(g.start)}`, where,
     withFair ? 'Fair is Pinnacle\'s no-vig price. A price beside the fair is information, not a proven edge.' : 'Pinnacle\'s own price is shown; its no-vig fair is for subscribers while the paywall is on.'];
   if (more.length) desc.push(`Also found: ${more.slice(0, 3).map(x => safe(`${x.away} @ ${x.home}`)).join('; ')}.`);

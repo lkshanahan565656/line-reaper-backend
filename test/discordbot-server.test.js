@@ -15,7 +15,7 @@ function pair() {
 const OWNER = pair(), CUSTOMER = pair();
 const OWNER_APP = '111111111111111111', CUSTOMER_APP = '222222222222222222';
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-bot-'));
-for (const k of ['DATABASE_URL', 'ODDS_API_KEY', 'OWLS_API_KEY', 'ALERT_WEBHOOK_URL', 'PAYWALL', 'PUBLIC_URL']) delete process.env[k];
+for (const k of ['DATABASE_URL', 'ODDS_API_KEY', 'OWLS_API_KEY', 'ALERT_WEBHOOK_URL', 'PAYWALL', 'PUBLIC_URL', 'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_IDS']) delete process.env[k];
 Object.assign(process.env, { LR_DATA_DIR: DIR, TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'), API_KEYS_FILE: path.join(DIR, 'api-keys.json'),
   OUT_FEED_FILE: path.join(DIR, 'out-feed.json'), ESPORTS_CALIBRATION: 'off',
   DISCORD_APP_ID: OWNER_APP, DISCORD_PUBLIC_KEY: OWNER.hex, DISCORD_BOT_TOKEN: `MTExMTExMTExMTExMTExMTEx.Gab12C.${'y'.repeat(38)}` });
@@ -145,6 +145,14 @@ test('a customer\'s own app: connect with a key (token used once), answer at its
   const del = await fetch(`${base}/api/v1/bot/discord`, { method: 'DELETE', headers: h }).then(r => r.json());
   assert.equal(del.discord.connected, false);
   assert.equal((await interact(CUSTOMER, { type: 1 }, `/discord/interactions/${CUSTOMER_APP}`)).status, 404);
+});
+
+test('without TELEGRAM_BOT_TOKEN the Telegram webhook is off and nothing is sent', async () => {
+  const r = await fetch(`${base}/telegram/webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ update_id: 1, message: { message_id: 1, chat: { id: 1, type: 'private' }, text: '/odds owls' } }) });
+  assert.equal(r.status, 404);
+  const s = await fetch(`${base}/api/status`).then(x => x.json());
+  assert.equal(s.telegramBot.on, false);
+  assert.equal(s.telegramBot.owner.webhook, null);
 });
 
 test('/api/status shows the bot without any secret', async () => {
