@@ -41,6 +41,11 @@ app.get('/api/ops/profile', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await profiler.profile(parseFloat(req.query.s) || 20)); }
   catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
+const heapSampler = require('./ops').createHeapSampler();
+app.get('/api/ops/heap', async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json(await heapSampler.sample(parseFloat(req.query.s) || 30)); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
 
 // Keys come from the environment only (Railway variables / local .env).
 // Never commit a fallback key: anything in source ships to every buyer.
@@ -801,12 +806,12 @@ const { createBackup, axiosFetchJson } = require('./backup');
 const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on.
 // The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
-const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' });
+const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json', user: true });
 const push = require('./push').createPush({ store: process.env.DATABASE_URL ? pushStore : resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
 // Every alert as it went out (alertlog.js): /alerts and RESULTS > ALERT HISTORY
 // grade the bets each one named. Append-only on the results backup, so a deploy keeps it.
 const alertLogLib = require('./alertlog');
-const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLog', require('./evtrack').createStoreFromEnv(process.env, { table: 'alert_log', fileVar: 'ALERT_LOG_FILE', file: 'alert-log.json' })) });
+const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLog', require('./evtrack').createStoreFromEnv(process.env, { table: 'alert_log', fileVar: 'ALERT_LOG_FILE', file: 'alert-log.json', user: true })) });
 const webhook = require('./push').withPush(webhookOnly, push, {
   onSent: ({ text, what, kind, meta, webhooks, phones }) => alertLog.record({ text, title: what, kind, reached: { webhooks, phones }, items: meta?.items || [] }),
 });
@@ -925,7 +930,7 @@ const appScoreResults = appScore.createResults({
 // scores (slipgrade.js); finished results kept for everyone who logs that leg
 const slipLate = require('./slipgrade');
 const lateSlipGrader = slipLate.createLateGrader({
-  store: resultsBackup.wrap('slipLate', createEvStoreFromEnv(process.env, { table: 'slip_late', fileVar: 'SLIP_LATE_FILE', file: 'slip-late.json' })),
+  store: resultsBackup.wrap('slipLate', createEvStoreFromEnv(process.env, { table: 'slip_late', fileVar: 'SLIP_LATE_FILE', file: 'slip-late.json', user: true })),
   book: propCloseBook, grader: sportGrader, scan: slipLate.createBoxScan({ http: axios }),
 });
 // SHOP (appshop.js): the softest number across the apps and the middles
@@ -7502,7 +7507,7 @@ function observeOddsHistory() {
 // number to the start, then graded from ESPN's final. Rows hold the line, never
 // the user, the price or the stake.
 const lineBets = require('./linebets').createLineBets({
-  store: resultsBackup.wrap('lineBets', createEvStoreFromEnv(process.env, { table: 'line_bets', fileVar: 'LINE_BETS_FILE', file: 'line-bets.json' })),
+  store: resultsBackup.wrap('lineBets', createEvStoreFromEnv(process.env, { table: 'line_bets', fileVar: 'LINE_BETS_FILE', file: 'line-bets.json', user: true })),
 });
 lineBets.ready().catch(e => console.error('Line bets: store failed to initialise:', e.message));
 // MATCHUPS' esports series bets (esbets.js): a team logged from a MATCHUPS card
@@ -7511,7 +7516,7 @@ lineBets.ready().catch(e => console.error('Line bets: store failed to initialise
 // otherwise) and graded from the engine's finished series.
 const esBetsLib = require('./esbets');
 const esBets = esBetsLib.createEsBets({
-  store: resultsBackup.wrap('esBets', createEvStoreFromEnv(process.env, { table: 'es_bets', fileVar: 'ES_BETS_FILE', file: 'es-bets.json' })),
+  store: resultsBackup.wrap('esBets', createEvStoreFromEnv(process.env, { table: 'es_bets', fileVar: 'ES_BETS_FILE', file: 'es-bets.json', user: true })),
 });
 esBets.ready().catch(e => console.error('Esports bets: store failed to initialise:', e.message));
 // the engine's own series (start, teams, state); every viewer sees the same board for this
@@ -9606,7 +9611,7 @@ app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html
 const publicApi = require('./publicapi');
 const embeds = require('./embeds');
 const shareCards = require('./sharecards');
-const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json' })) });
+const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json', user: true })) });
 apiKeys.init().catch(e => console.warn('API keys: store failed to initialise:', e.message));
 const apiLimiter = publicApi.createLimiter();
 const widgetLimiter = publicApi.createLimiter({ perMinute: publicApi.WIDGET_PER_MINUTE, perDay: 0 });
@@ -10105,7 +10110,7 @@ app.get('/results', widgetGate, (req, res) => sendSharePage(req, res, 'record', 
 // only its SHA-256 is kept. Kept across deploys by the results backup.
 const pubRecord = require('./pubrecord');
 const leaderboard = require('./leaderboard');
-const pubRecords = pubRecord.createRecordStore({ store: resultsBackup.wrap('pubRecords', createEvStoreFromEnv(process.env, { table: 'pub_records', fileVar: 'PUB_RECORDS_FILE', file: 'pub-records.json' })),
+const pubRecords = pubRecord.createRecordStore({ store: resultsBackup.wrap('pubRecords', createEvStoreFromEnv(process.env, { table: 'pub_records', fileVar: 'PUB_RECORDS_FILE', file: 'pub-records.json', user: true })),
   perHour: parseInt(process.env.PUB_RECORDS_PER_HOUR, 10) || undefined });
 pubRecords.init().catch(e => console.warn('Public records: store failed to initialise:', e.message));
 const pubRecordState = { lastRun: null, lastMs: null, legs: 0, changed: 0, error: null, running: false };

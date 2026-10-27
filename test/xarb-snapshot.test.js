@@ -50,3 +50,8 @@ test('snapshot: no Polymarket yes/no market means no Kalshi title is read', () =
   // the Polymarket US list is games only: its pass skips the title match outright
   assert.deepStrictEqual(xarb.matchMarkets(fix.kalshi.filter(r => r.kind === 'yesno'), [], opts), []);
 });
+
+test('snapshot: a pass with every title key already kept finds the same pairs', () => {
+  xarb.matchMarkets(fix.kalshi, fix.polymarket, opts);
+  assert.deepStrictEqual(fp(xarb.matchMarkets(fix.kalshi, fix.polymarket, opts)), fix.expect.intl);
+});

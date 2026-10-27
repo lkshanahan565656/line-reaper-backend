@@ -105,3 +105,20 @@ test('the gc gauge is always in the state', () => {
   const { gc } = ops.state();
   assert.deepEqual(Object.keys(gc).sort(), ['count', 'maxMs', 'over100', 'over250', 'over500', 'recent', 'totalMs']);
 });
+
+test('a sampling heap profile adds up by function, self and inclusive', () => {
+  const { summarizeHeap } = require('../ops');
+  const f = (functionName, url, lineNumber) => ({ functionName, url, lineNumber });
+  const p = { head: { callFrame: f('(root)', '', -1), selfSize: 0, children: [
+    { callFrame: f('scan', '/app/server.js', 9), selfSize: 1048576, children: [
+      { callFrame: f('parse', 'node:internal/json', 0), selfSize: 2 * 1048576, children: [] },
+      { callFrame: f('keep', '/app/xarb.js', 99), selfSize: 1048576, children: [] },
+    ] },
+  ] } };
+  const r = summarizeHeap(p);
+  assert.equal(r.sampledMb, 4);
+  assert.deepEqual(r.self[0], { fn: 'parse json:1', mb: 2 });
+  assert.deepEqual(r.inclusive.find(x => x.fn === 'scan server.js:10'), { fn: 'scan server.js:10', mb: 4 });
+  assert.deepEqual(r.inclusive.find(x => x.fn === 'keep xarb.js:100'), { fn: 'keep xarb.js:100', mb: 1 });
+  assert.deepEqual(summarizeHeap(null), { sampledMb: 0, self: [], inclusive: [] });
+});

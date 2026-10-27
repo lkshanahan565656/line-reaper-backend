@@ -518,6 +518,31 @@ function titleKey(text) {
   return { words, nums, years, months, polarity, sig: `${sorted(nums)}|${sorted(months)}|${sorted(polarity)}` };
 }
 
+// Market titles barely change from one scan to the next, so their keys are
+// kept in two generations: the current one and the one before. Every 10
+// minutes the current one becomes the old one, and a title nobody looked up
+// for 10 to 20 minutes is dropped. (Not per scan: the server matches twice a
+// scan, against Polymarket and against Polymarket US, with different titles.)
+// Keys are read, never changed, so one object can serve every scan.
+const TITLE_GEN_MS = 10 * 60e3;
+let titleKeysNow = new Map(), titleKeysLast = new Map(), titleGenAt = Date.now();
+function startTitleScan() {
+  if (Date.now() - titleGenAt < TITLE_GEN_MS) return;
+  titleKeysLast = titleKeysNow; titleKeysNow = new Map(); titleGenAt = Date.now();
+}
+function cachedTitleKey(text) {
+  let v = titleKeysNow.get(text);
+  if (v === undefined) {
+    if ((v = titleKeysLast.get(text)) === undefined) {
+      // only what the matcher reads (titleSimilarity): the words, years and signature
+      const k = titleKey(text);
+      v = { words: k.words, years: k.years, sig: k.sig };
+    }
+    titleKeysNow.set(text, v);
+  }
+  return v;
+}
+
 // Jaccard of the content words, or null when a number, month, direction or
 // year differs. A year only counts when both titles state one (the close-date
 // check already pins the year).
@@ -699,10 +724,22 @@ const NAME_FILLER = new Set(['fc', 'cf', 'sc', 'sv', 'afc', 'bv', 'ac', 'as', 's
 const NAME_ALIAS = { munchen: 'munich', koln: 'cologne', utd: 'united', man: 'manchester', saint: 'st' };
 // A last "St." is State: Kalshi's "Ohio St." is Polymarket's "Ohio State"
 // (a first one is Saint: "St. Louis"). Apostrophes go: "Hawai'i", "St. John's".
-const nameWords = s => {
+const nameWordsOnce = s => {
   const words = norm(String(s || '').replace(/['’]/g, '')).split(' ').filter(Boolean);
   return words.map((t, i) => (t === 'st' && i > 0 && i === words.length - 1 ? 'state' : NAME_ALIAS[t] || t))
     .filter(t => t && !NAME_FILLER.has(t) && !/^\d+$/.test(t));
+};
+// team and player names come round every scan: kept like norm's (callers only read the list)
+const nameWordsMemo = new Map();
+const nameWords = s => {
+  if (typeof s !== 'string' || s.length > NORM_MEMO_LEN) return nameWordsOnce(s);
+  let v = nameWordsMemo.get(s);
+  if (v === undefined) {
+    v = nameWordsOnce(s);
+    if (nameWordsMemo.size >= NORM_MEMO_MAX) nameWordsMemo.clear();
+    nameWordsMemo.set(s, v);
+  }
+  return v;
 };
 const endsState = w => w[w.length - 1] === 'state';
 // "Ohio" and "Ohio St." are two schools, whatever the city rules say
@@ -862,6 +899,7 @@ function* matchSteps(kalshiRows, polyRows, opts = {}) {
   const teams = teamContext(o.games);
   const out = [];
   let steps = 0;
+  startTitleScan();
 
   // sports games: both teams line up, the same game number when both say,
   // start times within 4h (any time on the ticker's date for sports outside
@@ -982,7 +1020,7 @@ function* matchSteps(kalshiRows, polyRows, opts = {}) {
     if (++steps % MATCH_STEP === 0) yield;
     const t = ms(p.closeTime);
     if (p.kind !== 'yesno' || p.game3 || t == null || raced.has(p.id)) continue;
-    const key = titleKey(proposition(p));
+    const key = cachedTitleKey(proposition(p));
     if (key.words.size) push(index, `${key.sig}|${Math.floor(t / DAY)}`, { r: p, key, t, subject: null });
   }
   const span = Math.ceil(o.titleWindowMs / DAY);
@@ -993,7 +1031,7 @@ function* matchSteps(kalshiRows, polyRows, opts = {}) {
     if (++steps % MATCH_STEP === 0) yield;
     const t = ms(k.closeTime);
     if (k.kind !== 'yesno' || k.game3 || t == null || raced.has(k.id)) continue;
-    const key = titleKey(proposition(k));
+    const key = cachedTitleKey(proposition(k));
     if (!key.words.size) continue;
     let subject = null;
     const day = Math.floor(t / DAY);
