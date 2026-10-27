@@ -238,6 +238,8 @@ const ENDPOINTS = [
   { path: '/api/v1/digest/{week}', title: 'Weekly digest: one week', params: [], about: "One week (the date of its Monday): what graded, the move toward the 50 bar, and what became proven or started losing to the close." },
   { path: '/api/v1/alerts', title: 'Alert history', params: [['days', 'last N days'], ['kind', 'one push kind: ev, sharp, exchange, tail, esports, gas or other'], ['limit', '1 to 500, default 100'], ['before', 'an ISO time: older alerts (paging)']],
     about: "Every alert the site sent since it began storing them, with the time, the text, how many phones and webhooks it reached, and each bet it named graded like RESULTS: CLV at the alert's price, Pinnacle's own close where kept, the result and the RESULTS label. With the paywall on, an alert's bets show once their games start." },
+  { path: '/api/v1/search', title: 'Search', params: [['q', 'a team, player, league, market or esports series (2+ letters)'], ['kind', 'game, series, player, market or league (comma list)'], ['state', 'two-letter US state code, e.g. TX: best prices only at venues a source says a resident can use'], ['limit', '1 to 60, default 30']],
+    about: "What the app's SEARCH box finds, from what the site holds now: games with each side's best bettable price, esports series with the cost to buy each side, players and their props, markets and leagues. No fair or EV." },
   { path: '/api/v1/status', title: 'Feed status', params: [], about: "Every venue's last good read, staleness and uptime, the same as /status." },
   { path: '/api/v1/key', title: 'This key', params: [], about: "Your key's name, when it was made and what it has used this minute and today." },
 ];

@@ -75,6 +75,10 @@
     {
       "key": "^/api/states(/|\\?|$)",
       "why": "new in v3.207.0 (My state): the recording predates it, and the offline server answers from venuestates.js, which is pure data with no feed behind it, so the answer is the real one"
+    },
+    {
+      "key": "^/api/search(\\?|$)",
+      "why": "new in v3.214.0 (SEARCH on the bar, search.js): the recording predates it, so the offline server answers from its own empty board (nothing found, nothing made up); the search flow checks the box against a labelled TEST DATA body built around a recorded game, and search tests check the hits"
     }
   ],
   "mustHaveData": [

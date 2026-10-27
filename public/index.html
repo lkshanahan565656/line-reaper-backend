@@ -1606,6 +1606,29 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
   body.compact .mb-row, body.compact .ms-leg { padding-top:4px; padding-bottom:4px; }
 }
 /* keyboard shortcuts overlay (? on a keyboard, or CUSTOMIZE > Keyboard shortcuts) */
+.gs-modal { align-items:flex-start; padding-top:8vh; }
+.gs-box { max-width:640px; padding:14px; display:flex; flex-direction:column; max-height:84vh; overflow:hidden; }
+.gs-top { display:flex; gap:8px; align-items:center; }
+.gs-input { flex:1 1 auto; min-width:0; font:500 15px 'JetBrains Mono',monospace; color:var(--text); background:#0b0f16; border:1px solid var(--border2); border-radius:8px; padding:10px 12px; outline:none; }
+.gs-input:focus { border-color:var(--green); }
+.gs-x { flex:0 0 auto; }
+.gs-meta { font-size:11px; color:var(--muted2); line-height:1.5; margin:8px 2px 6px; }
+.gs-list { overflow-y:auto; min-height:0; flex:1 1 auto; }
+.gs-h { font:700 10px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:#64748b; margin:10px 2px 4px; }
+.gs-row { display:flex; gap:8px; align-items:flex-start; border:1px solid transparent; border-radius:8px; padding:7px 8px; cursor:pointer; }
+.gs-row:hover, .gs-row.sel { background:rgba(16,185,129,.08); border-color:rgba(16,185,129,.35); }
+.gs-main { flex:1 1 auto; min-width:0; background:none; border:0; color:inherit; text-align:left; padding:0; cursor:pointer; font:inherit; }
+.gs-t { font-size:13px; font-weight:700; color:var(--text); overflow-wrap:anywhere; }
+.gs-s { font-size:11px; color:var(--muted2); margin-top:2px; overflow-wrap:anywhere; }
+.gs-p { font:500 11px 'JetBrains Mono',monospace; color:#cbd5e1; margin-top:3px; overflow-wrap:anywhere; }
+.gs-p b { color:#34d399; font-weight:600; }
+.gs-side { display:flex; flex-direction:column; gap:4px; flex:0 0 auto; }
+.gs-side .os-btn, .gs-side a { font:600 9px 'JetBrains Mono',monospace; letter-spacing:.5px; }
+.gs-side a { color:#34d399; text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:4px 7px; text-align:center; }
+.gs-empty { font-size:12px; color:var(--text2); line-height:1.6; padding:10px 4px; }
+[data-sid] { scroll-margin-top:132px; }
+.gs-flash { outline:2px solid var(--green) !important; outline-offset:2px; transition:outline-color 1.2s; }
+@media (max-width:480px) { .gs-modal { padding:8px; padding-top:8px; } .gs-box { max-height:calc(100vh - 16px); } .gs-input { font-size:16px; } }
 .kbd-list { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:12px; color:var(--text2); margin:0 0 14px; }
 .kbd-list kbd { font:600 11px 'JetBrains Mono',monospace; color:var(--text); background:#161c28; border:1px solid var(--border2); border-radius:4px; padding:1px 6px; white-space:nowrap; justify-self:start; }
 /* EXPORT and PRINT bar on each data screen */
@@ -1717,7 +1740,7 @@ body::before { display:none !important; }
   <div class="nav-header">
     <div class="logo"><svg class="lr-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span class="logo-word">LINE<b>REAPER</b></span></div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center"><button class="help-btn" id="linkBtn" onclick="lrShareScreen()" title="Copy a link to this screen (L)">LINK</button><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center"><button class="help-btn" id="gsBtn" onclick="gsOpen()" title="Search every game, series, player, market and league (S or Ctrl+K)" aria-label="Search everything">SEARCH</button><button class="help-btn" id="linkBtn" onclick="lrShareScreen()" title="Copy a link to this screen (L)">LINK</button><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
       <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#64748b;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
       <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
@@ -2847,7 +2870,7 @@ function osGame(g, cols, pro) {
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
-  return `<div class="os-game"><div class="os-gh"><div><div class="os-gt">${escAttr(g.away)} @ ${escAttr(g.home)}</div><div class="os-gm">${escAttr(g.leagueLabel)} · ${osWhen(g.start)}${pro && g.maxEv > 0 ? ` · best ${osPct(g.maxEv)}` : ''}</div></div>` +
+  return `<div class="os-game" data-sid="g:${escAttr(g.id)}"><div class="os-gh"><div><div class="os-gt">${escAttr(g.away)} @ ${escAttr(g.home)}</div><div class="os-gm">${escAttr(g.leagueLabel)} · ${osWhen(g.start)}${pro && g.maxEv > 0 ? ` · best ${osPct(g.maxEv)}` : ''}</div></div>` +
     `<button class="os-btn${open ? ' on' : ''}" onclick="osToggle('${escAttr(g.id)}')">${open ? 'HIDE MOVES' : 'LINE MOVES'}</button></div>` +
     `<div class="os-scroll"><table class="os-tbl">${head}${rows}</table></div>${open ? `<div class="os-chart" id="osc-${escAttr(g.id)}"><div class="os-note">Loading the line history...</div></div>` : ''}</div>`;
 }
@@ -5683,21 +5706,23 @@ function layClose() { document.getElementById('layModal').classList.remove('open
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const open = id => document.getElementById(id)?.classList.contains('open');
-  if (open('kbdModal')) kbdClose();
+  if (open('gsModal')) gsClose();
+  else if (open('kbdModal')) kbdClose();
   else if (open('mybModal')) mybFormClose();
   else if (open('acctModal')) acctClose();
   else if (open('layModal')) layClose();
   else if (open('moreMenu')) document.getElementById('moreMenu').classList.remove('open');
 });
 // ── KEYBOARD SHORTCUTS (desktop) ────────────────────────────────────────────
-// 1-9 the tabs on the bar, [ and ] the previous and next tab, / the search box
-// on this tab, F the Favorites filter, C CUSTOMIZE, L copy a link to this
+// 1-9 the tabs on the bar, [ and ] the previous and next tab, S (or Ctrl+K or Cmd+K)
+// search everything, / the search box on this tab, F the Favorites filter, C CUSTOMIZE, L copy a link to this
 // screen, ? this list. None of them
 // fire while typing in a box, with Ctrl, Alt or Cmd held, or under a pop-up.
 const KBD = [
   ['1 – 9', 'Open the tab in that spot on the bar'],
   ['[  ]', 'Previous or next tab (MORE tabs included)'],
-  ['/', 'Jump to the search box on this tab'],
+  ['S', 'Search everything: games, esports series, players, markets and leagues (also Ctrl+K or Cmd+K)'],
+  ['/', 'Jump to the search box on this tab (Search everything where a tab has none)'],
   ['F', 'Turn the ★ Favorites filter on or off (ODDS SCREEN, where you starred leagues or venues)'],
   ['C', 'Open CUSTOMIZE'],
   ['L', 'Copy a link to this screen (ODDS SCREEN keeps its view and filters)'],
@@ -5722,7 +5747,7 @@ function kbdSearch() {
   const pg = document.querySelector('.page.active');
   const box = pg && [...pg.querySelectorAll('input[type="search"], input[placeholder]')].find(i => kbdVisible(i) && (i.type === 'search' || /search|team|player/i.test(i.placeholder)));
   if (box) { box.focus(); box.select?.(); return; }
-  showToast('This tab has no search box.');
+  gsOpen();
 }
 function kbdFav() {
   const pg = document.querySelector('.page.active');
@@ -5751,9 +5776,176 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (k === '/') { e.preventDefault(); kbdSearch(); return; }
+  if (k === 's' || k === 'S') { e.preventDefault(); gsOpen(); return; }
   if (k === 'f' || k === 'F') { e.preventDefault(); kbdFav(); return; }
   if (k === 'c' || k === 'C') { e.preventDefault(); layOpen(); return; }
   if (k === 'l' || k === 'L') { e.preventDefault(); lrShareScreen(); }
+});
+// ─── SEARCH EVERYTHING (SEARCH on the bar, S or Ctrl+K or Cmd+K, /api/search) ────
+// One box on every screen over what the site holds now (search.js on the
+// server): games with each side's best bettable price in your state, esports
+// series, players on the props board, markets and leagues. Picking a hit opens
+// its own screen with the filter that shows it (ODDS SCREEN and its line moves,
+// PROPS, ESPORTS > MATCHUPS or MATCHES) and outlines the row. Prices follow
+// CUSTOMIZE > Odds format and AFTER FEES; exchange contracts stay in cents.
+// The same for everyone: nothing about the viewer is sent but the state.
+const gsUi = { q: '', hits: [], sel: 0, seq: 0, timer: null, holds: null, data: null, err: null };
+const GS_KIND = { game: 'GAMES', series: 'ESPORTS SERIES', player: 'PLAYERS', market: 'MARKETS', league: 'LEAGUES' };
+const GS_APP = { underdog: 'Underdog', prizepicks: 'PrizePicks', sleeper: 'Sleeper', pick6: 'DK Pick6' };
+function gsOpen() {
+  const m = document.getElementById('gsModal');
+  if (!m) return;
+  document.getElementById('moreMenu')?.classList.remove('open');
+  m.classList.add('open');
+  const box = document.getElementById('gsInput');
+  box.value = gsUi.q;
+  // at once, inside the tap: a phone only raises its keyboard for a focus the tap made
+  box.focus(); box.select();
+  if (gsUi.q.replace(/\s/g, '').length >= 2) gsFetch(gsUi.q); else gsFetch('');
+}
+function gsClose() { document.getElementById('gsModal')?.classList.remove('open'); }
+function gsType(v) {
+  gsUi.q = v;
+  clearTimeout(gsUi.timer);
+  gsUi.timer = setTimeout(() => gsFetch(v), 160);
+}
+async function gsFetch(q) {
+  const seq = ++gsUi.seq;
+  const qs = new URLSearchParams({ q: q.trim() });
+  if (lrState) qs.set('state', lrState);
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/search?${qs}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (seq !== gsUi.seq) return;   // a newer search already went out
+    gsUi.data = d; gsUi.hits = d.hits || []; gsUi.holds = d.holds || gsUi.holds; gsUi.sel = 0; gsUi.err = null;
+  } catch (e) {
+    if (seq !== gsUi.seq) return;
+    gsUi.err = lrErr(e); gsUi.hits = [];
+  }
+  gsRender();
+}
+const gsWhen = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
+function gsPrice(p) {
+  if (!p.venue) return `${escAttr(p.label)} <span style="color:#64748b">no venue to bet${lrState ? ` in ${escAttr(lrStateName())}` : ''}</span>`;
+  const px = p.american != null ? afAm(p.venue, p.american, oA(p.american)) : afPx(p.venue, p.decimal, oD(p.decimal));
+  return `${escAttr(p.label)} <b>${px}</b> ${escAttr(p.venueName || p.venue)}`;
+}
+function gsDetail(h) {
+  if (h.kind === 'game') return `<div class="gs-s">${escAttr(h.sub)}${h.start ? ` · ${gsWhen(h.start)}` : ''}${h.venues ? ` · ${h.venues} venues` : ''}</div>` +
+    (h.prices?.length ? `<div class="gs-p">${escAttr(h.market || 'Price')}, best price:<br>${h.prices.map(gsPrice).join('<br>')}</div>` : '');
+  if (h.kind === 'series') return `<div class="gs-s">${escAttr(h.sub)}${h.live ? ' · <span style="color:#f87171">LIVE</span>' : h.start ? ` · ${gsWhen(h.start)}` : ''}</div>` +
+    (h.exchanges?.length ? `<div class="gs-p">${h.exchanges.map(x => `${escAttr(x.venueName)} to buy ${x.costs.map((c, i) => `${escAttr((h.title.split(' vs ')[i]) || '')} <b>${esmCents(c)}</b>`).join(' · ')}`).join(' &nbsp; ')} <span style="color:#64748b">fee in</span></div>` : '');
+  if (h.kind === 'player') return `<div class="gs-s">${escAttr(h.sub)}${h.start ? ` · ${gsWhen(h.start)}` : ''} · ${h.props} prop${h.props === 1 ? '' : 's'} on ${escAttr(h.apps.map(a => GS_APP[a] || a).join(', '))}</div>` +
+    (h.lines?.length ? `<div class="gs-p">${h.lines.map(l => `${escAttr(l.market)}${l.line != null ? ` <b>${l.line}</b>` : ''}`).join(' · ')}</div>` : '');
+  if (h.kind === 'market') return `<div class="gs-s">${escAttr(h.sub)} · ${h.count} ${escAttr(h.countWord)}</div>`;
+  if (h.kind === 'league') { const c = h.counts || {}; return `<div class="gs-s">${escAttr(h.sub ? h.sub + ' · ' : '')}${[c.games ? `${c.games} games` : '', c.series ? `${c.series} series` : '', c.props ? `${c.props} props` : ''].filter(Boolean).join(' · ')}</div>`; }
+  return '';
+}
+function gsRender() {
+  const list = document.getElementById('gsList'), meta = document.getElementById('gsMeta');
+  if (!list || !meta) return;
+  const d = gsUi.data, hd = gsUi.holds || {};
+  const holds = [['game', 'games'], ['series', 'esports series'], ['player', 'players'], ['market', 'markets'], ['league', 'leagues']].filter(([k]) => hd[k]).map(([k, w]) => `${hd[k].toLocaleString()} ${w}`).join(', ');
+  const stTxt = lrState ? `Prices: the best you can bet in ${escAttr(lrStateName())} (CUSTOMIZE > My state).` : 'Prices: the best at any venue we read (pick your state in CUSTOMIZE > My state).';
+  meta.innerHTML = gsUi.err ? `<span style="color:#fbbf24">Search could not reach the server: ${escAttr(gsUi.err)}</span>`
+    : `${holds ? `Searching what the site holds now: ${holds}.` : d ? 'The site holds nothing to search right now: the boards load a minute after a restart.' : 'Loading...'} ${stTxt}${d?.stale?.odds ? ' <span style="color:#f87171">Game prices are stale.</span>' : ''}`;
+  const q = gsUi.q.replace(/\s/g, '');
+  if (!q || q.length < 2) {
+    list.innerHTML = `<div class="gs-empty">Type two or more letters: a team (<i>Chiefs</i>, <i>T1</i>), a player, a league (<i>NBA</i>, <i>CS2</i>) or a market (<i>Pass Yards</i>, <i>Kills</i>). ↑ ↓ to move, Enter to open, Esc to close.</div>`;
+    return;
+  }
+  if (!gsUi.hits.length) { list.innerHTML = gsUi.err ? '' : `<div class="gs-empty">Nothing the site holds now matches “${escAttr(gsUi.q.trim())}”. A game shows once a venue we read prices it; a player once an app posts their props.</div>`; return; }
+  let html = '', kind = null;
+  gsUi.hits.forEach((h, i) => {
+    if (h.kind !== kind) { kind = h.kind; html += `<div class="gs-h">${GS_KIND[kind] || kind.toUpperCase()}</div>`; }
+    const side = [];
+    if (h.kind === 'game') side.push(`<button class="os-btn" onclick="event.stopPropagation();gsGo(${i},'moves')" title="Open the game on ODDS SCREEN with its line history">LINE MOVES</button>`);
+    if (h.kind === 'league' && h.page) side.push(`<a href="${escAttr(BACKEND_URL + h.page)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="The public ${escAttr(h.title)} page">PAGE</a>`);
+    html += `<div class="gs-row${i === gsUi.sel ? ' sel' : ''}" role="option" aria-selected="${i === gsUi.sel}" data-gs="${i}" onmouseenter="gsUi.sel=${i}"><button class="gs-main" onclick="gsGo(${i})"><div class="gs-t">${escAttr(h.title)}</div>${gsDetail(h)}</button>${side.length ? `<div class="gs-side">${side.join('')}</div>` : ''}</div>`;
+  });
+  list.innerHTML = html;
+}
+function gsKey(e) {
+  const n = gsUi.hits.length;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!n) return;
+    e.preventDefault();
+    gsUi.sel = (gsUi.sel + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
+    document.querySelectorAll('#gsList .gs-row').forEach(r => { const on = +r.dataset.gs === gsUi.sel; r.classList.toggle('sel', on); r.setAttribute('aria-selected', on); if (on) r.scrollIntoView({ block: 'nearest' }); });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    clearTimeout(gsUi.timer);
+    if (n) gsGo(gsUi.sel);
+  }
+}
+// outline the row once its screen has drawn it; say so when it is gone
+function gsReveal(sel, what) {
+  const t0 = Date.now();
+  const tick = () => {
+    const el = document.querySelector(`.page.active ${sel}`);
+    if (el && el.offsetParent !== null) {
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      el.classList.add('gs-flash');
+      setTimeout(() => el.classList.remove('gs-flash'), 2600);
+      return;
+    }
+    if (Date.now() - t0 < 9000) setTimeout(tick, 250);
+    else showToast(`${what} is not on this screen any more: it may have started or come off the board.`);
+  };
+  setTimeout(tick, 120);
+}
+function gsGo(i, action) {
+  const h = gsUi.hits[i];
+  if (!h) return;
+  const g = h.go || {};
+  gsClose();
+  if (g.tab === 'odds') {
+    if (window.shpUi && shpUi.opts.mode && shpUi.opts.mode !== 'lines') { shpUi.opts.mode = 'lines'; shpSave(); }
+    osUi.league = g.league && h.kind === 'league' ? g.league : '';
+    osUi.market = g.market || '';
+    osUi.q = h.kind === 'game' ? String(g.q || '').toLowerCase() : '';
+    if (g.game && action === 'moves') osUi.open[g.game] = true;
+    osSave();
+    const box = document.getElementById('osSearch'); if (box) box.value = osUi.q;
+    const mk = document.getElementById('osMarket'); if (mk) mk.value = osUi.market;
+    kbdGo('odds');
+    if (g.game) gsReveal(`[data-sid="g:${CSS.escape(g.game)}"]`, h.title);
+    else showToast(h.kind === 'league' ? `ODDS SCREEN: ${h.title}` : `ODDS SCREEN: ${h.title} on every game`);
+    return;
+  }
+  if (g.tab === 'props') {
+    Object.assign(pbState, { view: g.view || 'cards', sport: g.sport || 'ALL', q: g.q || '', market: '', book: '', show: 'all', anchor: '', limit: 150 });
+    try { localStorage.setItem('lr_pb_view', pbState.view); } catch {}
+    const box = document.getElementById('pbSearch'); if (box) box.value = pbState.q;
+    const sh = document.getElementById('pbShow'); if (sh) sh.value = 'all';
+    kbdGo('props');
+    showToast(h.kind === 'league' ? `PROPS: every ${h.title} prop` : `PROPS: ${h.title} on every app`);
+    return;
+  }
+  if (g.tab === 'esports') {
+    esmState.mode = g.mode === 'matches' ? 'matches' : 'matchups';
+    lsSet('lr_es_mode', esmState.mode);
+    if (esmState.mode === 'matchups') {
+      if (g.game && EMU_GAMES[g.game] && g.game !== emuState.game) { emuState.game = g.game; lsSet('lr_emu_game', g.game); emuState.data = null; emuState.ratings = null; emuState.loading = false; }
+      emuState.league = 'ALL'; lsSet('lr_emu_league', 'ALL');
+      if (g.id) emuState.open.add(g.id);
+    } else {
+      esmState.game = 'ALL'; esmState.hideLive = false; lsSet('lr_esm_game', 'ALL'); lsSet('lr_esm_live', '0');
+      if (g.id) esmState.open.add(g.id);
+    }
+    kbdGo('esports');
+    if (g.id) gsReveal(`[data-sid="${esmState.mode === 'matchups' ? 'mu' : 'es'}:${CSS.escape(g.id)}"]`, h.title);
+    else showToast(`ESPORTS: ${h.title}`);
+  }
+}
+// Ctrl+K or Cmd+K opens it from anywhere, typing included; S does on the keyboard list
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) {
+    e.preventDefault();
+    if (document.getElementById('gsModal')?.classList.contains('open')) document.getElementById('gsInput')?.focus();
+    else gsOpen();
+  }
 });
 function layRenderList() {
   const names = layNames();
@@ -7893,7 +8085,7 @@ function esmMatchCard(m) {
       <td class="${oc.quotes.polymarket?.edge ? 'good' : ''}">${oc.quotes.polymarket?.ask != null ? esmCents(oc.quotes.polymarket.cost) : '—'}</td>
       <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${oc.quotes.pinnacle ? esmPct(oc.quotes.pinnacle.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
   }</table></div>${esmH2hDetail(m)}${m.rating ? `<div class="esm-sub">Ratings: ${escEs(m.teams[0])} ${m.rating.ratings[0]} (${m.rating.games[0]} maps), ${escEs(m.teams[1])} ${m.rating.ratings[1]} (${m.rating.games[1]} maps)${m.rating.scale != null && m.rating.scale !== 1 ? `, calibrated to the market (gap x${m.rating.scale.toFixed(2)})` : ''}. Prices include each venue's taker fee.</div>` : '<div class="esm-sub">Prices include each venue\'s taker fee.</div>'}` : '';
-  return `<div class="esm-card ${m.edges.length ? 'edge' : ''} ${m.live ? 'live' : ''}">
+  return `<div class="esm-card ${m.edges.length ? 'edge' : ''} ${m.live ? 'live' : ''}" data-sid="es:${escEs(m.id)}">
     <div class="esm-top"><span class="esm-game">${escEs(m.label)}</span>${m.live ? '<span class="esm-live">LIVE</span>' : ''}<span>${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-rows">${rows}</div>${meter}
     <div class="esm-sub">${esmH2hLine(m)}${move}${sharps}${vol ? `<span>$${Math.round(vol).toLocaleString()} traded</span>` : ''}${m.locked ? '<span><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> Edge on this match: Pro</span>' : ''}<button class="esm-more" onclick="toggleEsmOpen('${escEs(m.id)}')">${open ? 'Hide markets' : `All ${m.markets.length} market${m.markets.length > 1 ? 's' : ''}`}</button></div>
@@ -8032,7 +8224,7 @@ function emuCard(mu) {
     <div class="emu-cols">${mu.teams.map((t, i) => `<div><h4>${escEs(t.name)}: recent series</h4><div class="emu-hist">${emuHist(tv[i])}</div></div>`).join('')}</div>
     ${mu.markets?.polymarketRef != null ? `<div class="esm-sub">Polymarket's global book (reference only, not a US venue): ${escEs(mu.teams[0].name)} ${esmPct(mu.markets.polymarketRef)}</div>` : ''}
 ` : '';
-  return `<div class="esm-card"${k || u ? ' data-vrow="1"' : ''}>
+  return `<div class="esm-card"${k || u ? ' data-vrow="1"' : ''} data-sid="mu:${escEs(mu.id)}">
     <div class="esm-top"><span class="esm-game">${escEs(gl)}</span><span class="emu-conf ${conf}">${confLabel}</span><span>${escEs(mu.league || '')}${mu.block ? ` · ${escEs(mu.block)}` : ''}${mu.bestOf ? ` · Bo${mu.bestOf}` : mu.bestOfAssumed ? ` · Bo${mu.bestOfAssumed}?` : ''}</span><span class="esm-time">${esmWhen(mu.start)}</span></div>
     <div class="esm-rows">${rows}</div>${meter}
     <div class="esm-sub">${sub.join('')}<button class="esm-more" onclick="toggleEmuOpen('${escEs(mu.id)}')">${open ? 'Hide' : 'Why'}</button></div>
@@ -12449,6 +12641,13 @@ function shpArbSize(a) {
       <p id="pushTestNote" style="margin:4px 0 0"></p>
     </div>
     <div class="lay-foot"><button onclick="layReset()">RESET</button><button class="primary" onclick="layClose()">DONE</button></div>
+  </div>
+</div>
+<div class="lay-modal gs-modal" id="gsModal" onclick="if(event.target===this)gsClose()">
+  <div class="lay-box gs-box" role="dialog" aria-label="Search everything">
+    <div class="gs-top"><input type="search" id="gsInput" class="gs-input" placeholder="Search a team, player, league, market or series" autocomplete="off" spellcheck="false" aria-label="Search everything" aria-controls="gsList" oninput="gsType(this.value)" onkeydown="gsKey(event)"/><button class="lay-b gs-x" onclick="gsClose()" aria-label="Close search">CLOSE</button></div>
+    <div class="gs-meta" id="gsMeta"></div>
+    <div class="gs-list" id="gsList" role="listbox" aria-label="Search results"></div>
   </div>
 </div>
 <div class="lay-modal" id="kbdModal" onclick="if(event.target===this)kbdClose()">

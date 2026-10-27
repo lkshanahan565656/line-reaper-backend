@@ -258,6 +258,7 @@ const ANCHOR_INFO = (() => {
     note: 'A leg with no sharp line is one Pinnacle, FanDuel, BetRivers and Kalshi do not list at any number: the app\'s line has no sharp price to copy or check it against.', backtest };
 })();
 const venues = require('./venues');
+const searchLib = require('./search');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
 // 2026-10-13). The whole board is about 19k lines and 23 MB, so it's pulled
@@ -5199,7 +5200,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.213.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.214.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7530,6 +7531,53 @@ app.get('/api/odds-screen', (req, res) => {
   const body = { ...(pro ? screen : oddsScreen.stripPro(screen)), pro, state, stateInfo: state ? venues.stateInfo(state) : null };
   res.json(regionSafe(body));
 });
+// ─── GLOBAL SEARCH (the app's SEARCH box, search.js) ─────────────────────────
+// One look-up over what the server holds now: odds-screen games (best price
+// a side for the picked state), props-board players and markets, esports
+// series (MATCHUPS and the board) and leagues. The same for everyone with
+// the same state and licence; no fair or EV. Built at most every 30 s.
+const searchCache = new Map();
+function searchEntries(req) {
+  const lic = licenceOf(req), pro = hasPro(req);
+  const state = venues.stateOf(req.query.state);
+  // a new read of any board builds afresh; otherwise at most every 30 s
+  const key = `${state || ''}|${lic.kalshi ? 1 : 0}|${lic.polymarket ? 1 : 0}|${pro ? 1 : 0}|${freeBooksState.gamesAt || ''}|${propsBoardCache.at || 0}|${esportsBoard.state?.updated || ''}`;
+  const hit = searchCache.get(key);
+  if (hit && Date.now() - hit.at < 30e3) return hit;
+  for (const [k, v] of searchCache) if (Date.now() - v.at >= 30e3) searchCache.delete(k);
+  let screen = null, propRows = [], matchups = [], esMatches = [];
+  const errors = [];
+  try { screen = oddsScreenFor({ state, kalshiOk: !!lic.kalshi }); } catch (e) { errors.push(`odds screen: ${e.message}`); }
+  try { propRows = propsBoardRows().rows || []; } catch (e) { errors.push(`props: ${e.message}`); }
+  try { esMatches = esportsBoardFor(req) || []; } catch (e) { errors.push(`esports board: ${e.message}`); }
+  for (const [game, E] of Object.entries(matchupEngines)) {
+    try {
+      for (const mu of E.list({ days: 8, board: esMatches })) {
+        const m = { ...mu, game: mu.game || game, markets: { kalshi: lic.kalshi ? mu.markets?.kalshi : null, pmus: lic.polymarket ? mu.markets?.pmus : null } };
+        matchups.push(m);
+      }
+    } catch (e) { errors.push(`${game} matchups: ${e.message}`); }
+  }
+  const entries = searchLib.build({ screen, propRows, matchups, esMatches, leagues: leagues.LEAGUES });
+  const out = { at: Date.now(), entries, state, errors,
+    updated: { odds: screen?.updated || null, props: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null, esports: esportsBoard.state?.updated || null },
+    stale: { odds: !!screen?.stale } };
+  searchCache.set(key, out);
+  if (searchCache.size > 120) searchCache.delete(searchCache.keys().next().value);
+  return out;
+}
+function searchBody(req, { limit = 30 } = {}) {
+  const q = searchLib.cleanQ(req.query.q);
+  const kinds = String(req.query.kind || '').split(',').filter(k => searchLib.KINDS.includes(k));
+  const S = searchEntries(req);
+  const hits = searchLib.query(S.entries, q, { limit, kinds, perKind: kinds.length === 1 ? limit : 8 });
+  return { q, count: hits.length, hits, holds: searchLib.summary(S.entries), kinds: searchLib.KIND_LABEL, state: S.state, stateInfo: S.state ? venues.stateInfo(S.state) : null,
+    updated: S.updated, stale: S.stale, builtAt: new Date(S.at).toISOString(), note: 'Only what the site holds now: prices are each venue\'s own, best bettable for the state picked, with no fair or EV.' };
+}
+app.get('/api/search', (req, res) => {
+  const limit = Math.min(60, Math.max(1, parseInt(req.query.limit, 10) || 30));
+  res.set('Cache-Control', 'no-store').json(regionSafe(searchBody(req, { limit })));
+});
 // one game's line history: every side's fair and venue prices over time
 app.get('/api/odds-screen/history/:id', (req, res) => {
   const id = String(req.params.id || '').slice(0, 80);
@@ -9221,7 +9269,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.213.0',
+  version: '3.214.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9644,6 +9692,8 @@ app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
 app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
 app.get('/api/v1/alerts', v1Auth, v1Route(req => v1.alerts(req.query)));
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
+// the app's SEARCH box: games, esports series, players, markets and leagues the site holds now
+app.get('/api/v1/search', v1Auth, v1Route(req => { if (searchLib.cleanQ(req.query.q).length < 2) throw new V1Error(400, 'bad_param', 'q: two or more letters, e.g. q=lakers'); return searchBody(req, { limit: v1Int(req.query.limit, 1, 60, 30, 'limit') }); }));
 
 // ── widgets: no key, a per-address limit, the same bodies as the API ──
 function widgetGate(req, res, next) {
