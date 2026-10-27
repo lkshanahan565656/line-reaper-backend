@@ -3103,6 +3103,15 @@ const mapUndersModelTracker = createTracker({
   graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: -1000, fairProb: mapUnderFair, idSuffix: p => p.appKey,
 });
 mapUndersModelTracker.ready().catch(e => console.error('Map unders model tracker: store failed to initialise:', e.message));
+// rows recorded twice from two listings of one match (before v3.222.0): voided, the first signal kept
+async function voidMapUnderDupes() {
+  const out = {};
+  for (const [name, t] of [['rule', mapUndersTracker], ['model', mapUndersModelTracker]]) {
+    const dup = new Set(mapunders.duplicateRows(await t.list({ limit: 1e6 })).map(r => r.id));
+    out[name] = dup.size ? await t.voidWhere(r => dup.has(r.id), 'Duplicate: the app listed this match twice; the first signal is kept') : 0;
+  }
+  return out;
+}
 // the app's break-even for the Under at its read payout, or null when the Under is closed
 function mapUnderBe(p, app, line) {
   if (app === 'PP') return sportProps.PP_GRADE.be;
@@ -3130,7 +3139,8 @@ function runMapUnders(picks, now = Date.now()) {
       st.legs++;
     }
   }
-  const groups = mapunders.flagGroups(legs, (id, game, n) => mapunders.pinAnchor(matches.get(id)?.ladders, game, n));
+  // one leg per app and player: an app can list one match twice (10-27: Underdog's own title and a PrizePicks-style one)
+  const groups = mapunders.flagGroups(mapunders.dedupeLegs(legs), (id, game, n) => mapunders.pinAnchor(matches.get(id)?.ladders, game, n));
   // kill shares for LoL and Dota: each team's players with stats on any app (sharemodel.teamShares)
   const shares = new Map();
   const shareOf = leg => {
@@ -3180,7 +3190,7 @@ function runMapUnders(picks, now = Date.now()) {
         ppLine: x.leg.line, udLine: app === 'UD' ? x.leg.line : null, sleeperLine: app === 'SL' ? x.leg.line : null,
         modelPred: x.leg.mean ?? null, predSource: 'map unders', marketPred: x.leg.mean ?? null, fairSource: x.fair != null ? (x.leg.muFair?.kind || null) : null,
         context: p.context || null, appKey: app, muFair: x.leg.muFair || null,
-        trackExtra: { appKey: app, game: g.game, span: g.map, be: x.be, signalDecimal: +(1 / x.be).toFixed(4), appSum: g.appSum, anchor: g.anchor.kills,
+        trackExtra: { appKey: app, game: g.game, span: g.map, matchKey: `${g.game}|${g.matchId}`, be: x.be, signalDecimal: +(1 / x.be).toFixed(4), appSum: g.appSum, anchor: g.anchor.kills,
           anchorSrc: g.anchor.src, gapPct: g.gapPct, under5: g.under5, modelProb: x.fair, modelEdge: x.edge, share: x.leg.share ?? null,
           teamKills: x.leg.teamKills ?? null, players: g.teams.map(t => t.n) },
       };
@@ -5206,7 +5216,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.221.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.222.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -9398,7 +9408,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.221.1',
+  version: '3.222.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9539,6 +9549,7 @@ schedule('*/5 * * * *', async () => {
     trackerHealth.esSlipLegs = { locked: await esSlipTracker.lockStarted(), ...(await esSlipTracker.gradeDue()) };
     trackerHealth.mapUnders = { locked: await mapUndersTracker.lockStarted(), ...(await mapUndersTracker.gradeDue()) };
     trackerHealth.mapUndersModel = { locked: await mapUndersModelTracker.lockStarted(), ...(await mapUndersModelTracker.gradeDue()) };
+    trackerHealth.mapUndersDup = await voidMapUnderDupes();
     trackerHealth.pinTotals = await gradePinTotals().catch(e => ({ error: e.message }));
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;

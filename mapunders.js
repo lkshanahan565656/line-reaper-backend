@@ -142,7 +142,73 @@ function priceGroup(group, { model, be, margin = DEFAULTS.modelMargin } = {}) {
 // → per game × app: graded legs, record, hit rate vs the mean break-even,
 // units at each leg's break-even (signalDecimal = 1 / be), distinct matches,
 // z naive and z by match (each match's legs move together), and the label
-function matchOf(r) { return `${r.game || r.sport}|${r.gameId ?? ''}|${String(r.matchTitle || '').toLowerCase()}|${String(r.startTime || '').slice(0, 13)}`; }
+// One real match per row. An app can list one match twice (Underdog's
+// "Astralis vs Fnatic" at 16:30 and PrizePicks-style "fnatic MAPS 1-2" at
+// 16:00 on 10-27), and a title names only the opponent, so a title is not a
+// match. Rows join one match when they share Pinnacle's match (matchKey), the
+// same anchor on the same day, or a team within 3 hours. → Map(row → id)
+const nameKey = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const dayOf = r => String(r.startTime || '').slice(0, 10);
+function matchIds(rows) {
+  const list = rows || [];
+  const parent = list.map((_, i) => i);
+  const find = i => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const join = (a, b) => { const x = find(a), y = find(b); if (x !== y) parent[x] = y; };
+  const first = new Map();
+  const link = (k, i) => { if (first.has(k)) join(first.get(k), i); else first.set(k, i); };
+  list.forEach((r, i) => {
+    const g = r.game || r.sport;
+    if (r.matchKey) link(`k|${r.matchKey}`, i);
+    if (r.anchor != null) link(`a|${g}|${r.span ?? ''}|${r.anchor}|${dayOf(r)}`, i);
+    if (r.matchTitle) link(`t|${g}|${r.gameId ?? ''}|${String(r.matchTitle).toLowerCase()}|${String(r.startTime || '').slice(0, 13)}`, i);
+  });
+  // a team plays one match at a time: the same team within 3 hours is the same match
+  const byTeam = new Map();
+  list.forEach((r, i) => { const k = `${r.game || r.sport}|${nameKey(r.team)}`; if (!nameKey(r.team)) return; if (!byTeam.has(k)) byTeam.set(k, []); byTeam.get(k).push(i); });
+  for (const idx of byTeam.values()) {
+    idx.sort((a, b) => Date.parse(list[a].startTime) - Date.parse(list[b].startTime));
+    for (let j = 1; j < idx.length; j++) if (Date.parse(list[idx[j]].startTime) - Date.parse(list[idx[j - 1]].startTime) <= 3 * 3600e3) join(idx[j - 1], idx[j]);
+  }
+  const out = new Map();
+  list.forEach((r, i) => out.set(r, find(i)));
+  return out;
+}
+// The same app's leg twice (one player, span and app within 3 hours, from two
+// listings of one match): every row after the first signal is a duplicate.
+// → the rows to void
+function duplicateRows(rows) {
+  const groups = new Map();
+  for (const r of rows || []) {
+    if (r.status === 'void') continue;
+    const k = `${r.game || r.sport}|${r.appKey || r.signalBook}|${r.span ?? r.mapN ?? ''}|${nameKey(r.player)}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const dup = [];
+  for (const g of groups.values()) {
+    g.sort((a, b) => String(a.signalAt).localeCompare(String(b.signalAt)) || String(a.id).localeCompare(String(b.id)));
+    const kept = [];
+    for (const r of g) {
+      if (kept.some(k => Math.abs(Date.parse(k.startTime) - Date.parse(r.startTime)) <= 3 * 3600e3)) dup.push(r); else kept.push(r);
+    }
+  }
+  return dup;
+}
+// Board legs: one per app, game, span and player within 3 hours, the app's own listing first
+function dedupeLegs(legs) {
+  const own = { PP: 'pp', UD: 'ud', SL: 'sl' };
+  const sorted = (legs || []).slice().sort((a, b) => (b.p?.lineSource === own[b.app]) - (a.p?.lineSource === own[a.app]));
+  const kept = new Map();
+  for (const l of sorted) {
+    const k = `${l.app}|${l.game}|${l.map}|${nameKey(l.player)}`;
+    const t = Date.parse(l.start || l.p?.startTime || '');
+    const prev = kept.get(k) || [];
+    if (prev.some(x => !(Math.abs(x.t - t) > 3 * 3600e3))) continue;
+    prev.push({ t, l });
+    kept.set(k, prev);
+  }
+  return (legs || []).filter(l => [...kept.values()].some(v => v.some(x => x.l === l)));
+}
 function cell(rows, o = {}) {
   const opt = { ...DEFAULTS, ...o };
   const g = rows.filter(r => r.status === 'graded' && (r.outcome === 'win' || r.outcome === 'loss' || r.outcome === 'push'));
@@ -151,11 +217,12 @@ function cell(rows, o = {}) {
   const beSum = dec.reduce((a, r) => a + r.be, 0);
   const varSum = dec.reduce((a, r) => a + r.be * (1 - r.be), 0);
   const units = g.reduce((a, r) => a + (r.outcome === 'win' ? 1 / r.be - 1 : r.outcome === 'loss' ? -1 : 0), 0);
+  const ids = matchIds(rows);
   const byMatch = new Map();
-  for (const r of dec) { const k = matchOf(r); byMatch.set(k, (byMatch.get(k) || 0) + ((r.outcome === 'win' ? 1 : 0) - r.be)); }
+  for (const r of dec) { const k = ids.get(r); byMatch.set(k, (byMatch.get(k) || 0) + ((r.outcome === 'win' ? 1 : 0) - r.be)); }
   const s = [...byMatch.values()];
   const s2 = s.reduce((a, x) => a + x * x, 0);
-  const matches = new Set(g.map(matchOf)).size;
+  const matches = new Set(g.map(r => ids.get(r))).size;
   const z = varSum > 0 ? r2((w - beSum) / Math.sqrt(varSum)) : null;
   const zMatch = s.length >= 5 && s2 > 0 ? r2(s.reduce((a, x) => a + x, 0) / Math.sqrt(s2)) : null;
   const graded = g.length;
@@ -187,4 +254,4 @@ function mapRecord(rows, o = {}) {
   return { all: cell(list, o), cells, target: o.target || DEFAULTS.target, minMatches: o.minMatches || DEFAULTS.minMatches };
 }
 
-module.exports = { spanMaps, spanLabel, DEFAULTS, KPR, TEAM_SD, ROUNDS_SD, PIN_GAME, APP_NAME, GAME_LABEL, ladderMean, pinAnchor, flagGroups, priceGroup, mapRecord };
+module.exports = { matchIds, duplicateRows, dedupeLegs, spanMaps, spanLabel, DEFAULTS, KPR, TEAM_SD, ROUNDS_SD, PIN_GAME, APP_NAME, GAME_LABEL, ladderMean, pinAnchor, flagGroups, priceGroup, mapRecord };
