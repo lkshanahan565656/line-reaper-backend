@@ -962,6 +962,12 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
   .sb-act { flex-wrap:wrap; } .sb-in { flex:1 1 0; min-width:0; } .sb-in input { flex:1 1 0; width:0 !important; min-width:0; }
   .sb-note { display:none; }
 }
+.sb-note.sb-refused { display:block; color:#fca5a5; font-size:11px; overflow-wrap:anywhere; }
+.ms-stamp { color:#34d399; }
+.ms-lc-leg { display:flex; gap:8px; align-items:baseline; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; overflow-wrap:anywhere; }
+.ms-lc-leg .st { flex:0 0 auto; font-weight:800; font-size:10px; letter-spacing:1px; }
+.ms-lc-leg .st.ok { color:#34d399; } .ms-lc-leg .st.no { color:#f87171; } .ms-lc-leg .st.q { color:#fbbf24; }
+.ms-lc-leg small { display:block; color:var(--text2); }
 .slip-btn { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text);
   border-radius:8px; padding:8px 14px; font-size:11px; font-weight:800; letter-spacing:1px; font-family:'Inter',sans-serif; }
 .slip-btn:hover { border-color:#10b981; color:#34d399; }
@@ -1993,10 +1999,17 @@ body::before { display:none !important; }
     <div><div class="tl-title">MY SLIPS</div>
       <div class="tl-blurb">Paste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.</div></div>
     <div class="mb-actions">
-      <button class="mb-btn primary" onclick="msPasteToggle()">PASTE SLIPS</button>
+      <button class="mb-btn primary" id="msLogcBtn" onclick="msLogcToggle()" title="Paste or share the slip you just placed on PrizePicks, Underdog or Sleeper: checked by the server and logged before its games start">LOG A SLIP</button>
+      <button class="mb-btn" onclick="msPasteToggle()">PASTE SLIPS</button>
       <label class="mb-btn" title="A CSV from Pikkit, Juice Reel or Bettor IQ, or the history file PrizePicks, Underdog or Sleeper gives you">IMPORT CSV<input type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden onchange="msImport(this)"></label>
       <button class="mb-btn" id="msPubBtn" onclick="msPubToggle()" title="A public page of your slips, graded against Pinnacle's close">PUBLISH RECORD</button>
     </div>
+  </div>
+  <div class="ms-paste" id="msLogc" style="display:none">
+    <div class="ms-help" style="margin:0 0 8px"><b>Log the slip you just placed.</b> In PrizePicks, Underdog or Sleeper, open the entry, select and copy its text (or use the app's Share and pick Line Reaper once it's installed on your phone), paste it here and tap CHECK AND LOG. The server checks every pick against the boards that second: a pick whose game has started is refused, with the reason, and the rest of the slip is logged with the server's time, your line, the app's multiplier and Pinnacle's price. A logged slip goes to MY SLIPS and, if you published one, your public record.</div>
+    <textarea id="msLogcText" placeholder="PrizePicks 3-Pick Power Play&#10;Josh Allen&#10;More 245.5 Pass Yards&#10;Stefon Diggs&#10;Less 64.5 Receiving Yards&#10;Bo Nix&#10;More 220.5 Pass Yards"></textarea>
+    <div class="mb-actions"><button class="mb-btn primary" id="msLogcGo" onclick="msLogcCheck()">CHECK AND LOG</button><button class="mb-btn" onclick="msLogcToggle(false)">CANCEL</button></div>
+    <div id="msLogcOut" aria-live="polite"></div>
   </div>
   <div class="ms-paste ms-pub" id="msPub" style="display:none"></div>
   <div class="ms-paste" id="msPaste" style="display:none">
@@ -4035,6 +4048,19 @@ function msReady() {
   return ms.loading;
 }
 function msSave() { lsSet(MS_KEY, JSON.stringify(ms.slips)); lsSet(MS_GRADES, JSON.stringify(ms.grades)); lsSet(MS_IMP, JSON.stringify(ms.imports)); if (typeof msPubSync === 'function') msPubSync(); }
+// POST /api/slips/stamp (slipstamp.js): the server checks a slip the moment
+// it is logged, puts every leg in the slip log from that second, and refuses
+// a leg whose game started. Legs: { player, market, side, line, sport?, start? }
+async function msStamp(app, legs) {
+  const r = await fetch(`${BACKEND_URL}/api/slips/stamp`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ app, legs: legs.map(l => ({ player: l.player, market: l.market, side: l.side, line: l.line, ...(l.sport ? { sport: l.sport } : {}), ...(l.opp ? { opp: l.opp } : {}), ...(l.start ? { start: l.start } : {}) })) }) });
+  let j = {};
+  try { j = await r.json(); } catch {}
+  if (!r.ok) throw new Error(j.error || `The server answered ${r.status}`);
+  return j;
+}
+// what a slip keeps of its stamp: the server time and, per leg, what was on the board then
+const msStampKeep = st => ({ at: st.at, legs: (st.legs || []).map(l => ({ status: l.status, start: l.start || null, fair: l.fair ?? null, pin: l.pin ?? null, mult: l.mult ?? null, appLine: l.appLine ?? null, ...(l.moved ? { moved: l.moved } : {}) })) });
 async function msOpen() {
   const el = document.getElementById('msList');
   if (!ms.ready && el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading your slips...</div></div>`;
@@ -4083,6 +4109,70 @@ async function msPasteSave() {
   showToast(`${added} slip${added === 1 ? '' : 's'} added, ${r.slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
   renderMySlips();
   msGrade(true);
+}
+// LOG A SLIP: one slip copied from an app (or shared to the installed app),
+// read with the importer, checked by the server and logged at once. A slip
+// whose text shows an older placing time is history: PASTE SLIPS takes it.
+function msLogcToggle(on) {
+  const el = document.getElementById('msLogc');
+  const show = on ?? el.style.display === 'none';
+  el.style.display = show ? '' : 'none';
+  if (show) document.getElementById('msLogcText').focus();
+}
+async function msLogcCheck() {
+  const out = document.getElementById('msLogcOut'), btn = document.getElementById('msLogcGo');
+  const text = document.getElementById('msLogcText').value;
+  if (!text.trim()) { out.innerHTML = '<div class="mb-hint">Paste the slip\'s text first.</div>'; return; }
+  if (!(await msReady())) { out.innerHTML = '<div class="mb-hint">My Slips could not load from the server.</div>'; return; }
+  const r = LRSlips.importText(text, { name: 'copied slip' });
+  if (r.kind === 'csv') { out.innerHTML = '<div class="mb-hint">That looks like a spreadsheet. IMPORT CSV takes files; LOG A SLIP takes one slip you just placed.</div>'; return; }
+  if (!r.slips.length) { out.innerHTML = `<div class="mb-hint">No picks found. Each pick needs a player, More or Less (Higher or Lower) and a line with its stat, like: Josh Allen / More 245.5 Pass Yards.${r.unread.length ? ` Not read: ${escAttr(r.unread.slice(0, 3).map(u => u.text).join(' / '))}` : ''}</div>`; return; }
+  btn.disabled = true;
+  const parts = [];
+  let logged = 0;
+  for (const sl of r.slips) {
+    const head = `<b>${escAttr(LRSlips.appLabel(sl.app))}</b> ${sl.legs.length}-pick${sl.flex ? ' flex' : ''}`;
+    if (sl.timed && Date.parse(sl.placedAt) < Date.now() - 30 * 60e3) {
+      parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">This slip says it was placed ${escAttr(new Date(sl.placedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}. LOG A SLIP is for a slip you're placing now; PASTE SLIPS adds older ones to MY SLIPS (a public record shows them LATE, not counted).</div></div>`);
+      continue;
+    }
+    if (sl.legs.length < 2) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">Only one pick was read; an app slip has 2 or more.${r.unread.length ? ` Not read: ${escAttr(r.unread.slice(0, 3).map(u => u.text).join(' / '))}` : ''}</div></div>`); continue; }
+    let st;
+    try { st = await msStamp(sl.app, sl.legs); }
+    catch (e) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">The server couldn't check it (${escAttr(lrErr(e))}). Tap CHECK AND LOG again.</div></div>`); continue; }
+    const legs = (st.legs || []).map(l => {
+      const tag = l.status === 'ok' ? '<span class="st ok">OK</span>' : l.status === 'started' ? '<span class="st no">STARTED</span>' : l.status === 'unread' ? '<span class="st no">UNREAD</span>' : '<span class="st q">NOT ON A BOARD</span>';
+      const info = l.status === 'ok' ? [l.matchTitle, l.start ? `starts ${new Date(l.start).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : '', l.mult ? `pays ${l.mult}x` : '', l.pin != null ? `Pinnacle ${(l.pin * 100).toFixed(1)}%` : l.fair != null ? `sharp fair ${(l.fair * 100).toFixed(1)}%` : '', l.moved || ''].filter(Boolean).join(' · ') : l.why || '';
+      return `<div class="ms-lc-leg">${tag}<div>${escAttr(l.player)} ${l.side} ${l.line} ${escAttr(l.market)}<small>${escAttr(info)}</small></div></div>`;
+    }).join('');
+    if (!st.ok) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">${escAttr(st.why || '')}</div>${legs}</div>`); continue; }
+    const slip = LRSlips.makeSlip({ app: sl.app, legs: sl.legs, stake: sl.stake, payout: sl.payout, mult: sl.mult, flex: sl.flex, placedAt: st.at, source: 'paste' });
+    if (!slip) { parts.push(`<div class="ms-lc"><div>${head}: <b class="neg">not logged</b></div><div class="mb-hint">One of the picks couldn't be read.</div></div>`); continue; }
+    slip.stamp = msStampKeep(st);
+    ms.slips.unshift(slip); logged++;
+    parts.push(`<div class="ms-lc"><div>${head}: <b class="pos">logged</b> at ${escAttr(new Date(st.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }))}</div>${legs}</div>`);
+  }
+  btn.disabled = false;
+  if (logged) {
+    msSave(); msPubSync(true);
+    document.getElementById('msLogcText').value = '';
+    const p = msPubGet();
+    showToast(`Logged ${logged} slip${logged === 1 ? '' : 's'}${p && !p.unpublished ? ` to your record @${p.handle}` : ' to MY SLIPS'}`);
+    renderMySlips(); msGrade(true);
+  }
+  out.innerHTML = parts.join('') + (r.unread.length && logged ? `<div class="mb-hint">Lines not read as picks: ${escAttr(r.unread.slice(0, 3).map(u => u.text).join(' / '))}</div>` : '');
+}
+// text shared to the installed app (manifest share_target → /app?share_text=...)
+function msShareIn() {
+  const q = new URLSearchParams(location.search);
+  const text = [q.get('share_title'), q.get('share_text'), q.get('share_url')].filter(Boolean).join('\n').trim();
+  if (!text) return;
+  history.replaceState(null, '', location.pathname);
+  const tab = [...document.querySelectorAll('.tab')].find(x => x.getAttribute('onclick') === "showTab('myslips',this)");
+  showTab('myslips', tab);
+  msLogcToggle(true);
+  document.getElementById('msLogcText').value = text.slice(0, 5000);
+  document.getElementById('msLogcOut').innerHTML = '<div class="mb-hint">Shared from your app. Check it reads right, then tap CHECK AND LOG.</div>';
 }
 function msMark(id, r) {
   const sl = ms.slips.find(x => x.id === id);
@@ -4384,6 +4474,15 @@ function renderMySlips() {
   msRenderPikkit();
   msRenderPub();
 }
+// ' · checked 7:02:13 PM, before every start' for a slip the server stamped
+function msStampLine(id) {
+  const st = ms.slips.find(x => x.id === id)?.stamp;
+  if (!st?.at) return '';
+  const t = new Date(st.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  const unk = (st.legs || []).filter(l => l.status === 'unmatched').length;
+  const pin = (st.legs || []).filter(l => l.pin != null).length;
+  return ` · <span class="ms-stamp" title="The server's clock when you logged it${pin ? `; Pinnacle priced ${pin} of the picks at your exact line then` : ''}">checked by the server ${t}${unk ? `, ${unk} pick${unk === 1 ? '' : 's'} not on a board then` : ', before every start'}</span>`;
+}
 function msSlipHtml(v) {
   const L = LRSlips;
   const when = new Date(v.placedAt);
@@ -4398,7 +4497,7 @@ function msSlipHtml(v) {
   const sg = (who ? `<div class="ms-meta">${who}${chk}${v.be ? ` · break-even ${(v.be * 100).toFixed(1)}% a leg` : ''}</div>` : '') + (v.reprice ? `<div class="ms-sg">Linked picks from one game: payout taken as our repriced estimate ${v.reprice.mult}x (standard ${v.reprice.standard}x). Paste the slip with the app's real payout (to win $X) if it differs. Slip CLV prices legs independently, a rough guide here.</div>`
     : v.sameGame > 1 ? `<div class="ms-sg">${v.sameGame} legs from one game: the slip CLV (legs priced independently) is a rough guide and the app may pay less than its table.</div>` : '');
   const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
-  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'import' ? ` · from ${escAttr(LRSlips.FORMATS[v.format] || 'an import')}` : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
+  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${msStampLine(v.id)}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'import' ? ` · from ${escAttr(LRSlips.FORMATS[v.format] || 'an import')}` : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
   const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
   return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l, v)).join('')}</div>`;
 }
@@ -5666,6 +5765,8 @@ function welcomeInit() {
   if (LR_SHARED) { showToast(LR_SHARED.name ? `Opened a shared view: ${LR_SHARED.name}` : 'Opened a shared screen'); return; }
   // links from the sales page: /app?start=signup|login|app skip this screen,
   // and signup/login open the account form when accounts are on
+  // a slip shared from PrizePicks, Underdog or Sleeper to the installed app
+  if (/[?&]share_(text|title|url)=/.test(location.search)) { try { sessionStorage.setItem('lr_welcomed', '1'); } catch {} msShareIn(); return; }
   const start = new URLSearchParams(location.search).get('start');
   if (start) {
     const qs = new URLSearchParams(location.search); qs.delete('start');
@@ -6314,7 +6415,7 @@ function pkAdd(rk, book) {
   // a leg already in the slip comes out, whichever list it was added from (PROMOS legs have no board row)
   const i0 = pk.legs.findIndex(l => l.rk === rk);
   if (pk.app === book && i0 >= 0) {
-    pk.legs.splice(i0, 1); if (!pk.legs.length) pk.app = null; pk.payout = ''; pkSave(); renderPkTray();
+    pk.legs.splice(i0, 1); if (!pk.legs.length) pk.app = null; pk.payout = ''; pk.refused = ''; pkSave(); renderPkTray();
     if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'injury') renderPropsBoard();
     renderPromos();
     return;
@@ -6332,12 +6433,12 @@ function pkAdd(rk, book) {
     pk.legs.push({ rk, player: r.player, market: r.market, line: c.line, side, sport: r.sport, team: r.team || '', start: r.startTime || null, game: r.matchTitle || (r.startTime ? `${r.sport}|${r.startTime}` : ''), prob: c.ev?.fair != null ? (c.ev.side === side ? c.ev.fair : 100 - c.ev.fair) / 100 : null, over: c.over ?? null, under: c.under ?? null });
   }
   if (!pk.legs.length) pk.app = null;
-  pk.payout = '';
+  pk.payout = ''; pk.refused = '';
   pkSave(); renderPkTray();
   if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'injury') renderPropsBoard();
 }
 function pkFlip(i) { const l = pk.legs[i]; if (!l) return; l.side = l.side === 'Over' ? 'Under' : 'Over'; if (l.prob != null) l.prob = 1 - l.prob; pk.payout = ''; pkSave(); renderPkTray(); }
-function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'injury') renderPropsBoard(); }
+function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pk.refused = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'injury') renderPropsBoard(); }
 // what the slip pays per $1 when every pick hits, from the app's own table
 function pkMult() {
   const n = pk.legs.length;
@@ -6374,7 +6475,8 @@ function renderPkTray() {
       <label class="sb-in">${pk.flex ? 'TOP PAYOUT' : 'PAYOUT'} $<input class="key-input" id="pkPay" type="number" min="0" step="any" inputmode="decimal" value="${escAttr(pay)}" onchange="pk.payout=this.value"/></label>
       <span class="sb-btns"><button class="slip-btn primary" onclick="pkLog()" ${n < 2 ? 'disabled' : ''}>＋ LOG SLIP</button></span>
     </div>
-    <div class="sb-note">${rp ? `<b style="color:#fbbf24">Linked picks from one game:</b> payout set to our repriced estimate (${rp.mult}x, standard ${std}x). Change it to what the app shows. ` : same ? '<b style="color:#fbbf24">Picks from one game:</b> no measured link between these stats, so the standard table is used; the app may still pay less. ' : ''}Logged to MY SLIPS: every pick is followed on the sharp price at your line from now to the start, then graded from the box score. Payout is the app's standard table at your stake; change it to what the app shows.</div></div>`;
+    ${pk.refused ? `<div class="sb-note sb-refused" role="alert"><b>Not logged.</b> ${escAttr(pk.refused)}</div>` : ''}
+    <div class="sb-note">${rp ? `<b style="color:#fbbf24">Linked picks from one game:</b> payout set to our repriced estimate (${rp.mult}x, standard ${std}x). Change it to what the app shows. ` : same ? '<b style="color:#fbbf24">Picks from one game:</b> no measured link between these stats, so the standard table is used; the app may still pay less. ' : ''}LOG SLIP checks every pick with the server first: the time, your line, the app's multiplier and Pinnacle's price are kept from that second, a pick whose game has started is refused, and the slip goes to MY SLIPS (and your public record, if published). Each pick is then followed to the close and graded from the box score. Payout is the app's standard table at your stake; change it to what the app shows.</div></div>`;
 }
 // typing a stake only refreshes the payout box: rebuilding the tray on its
 // change event swapped the LOG SLIP button out from under the tap that blurred
@@ -6386,13 +6488,23 @@ function pkStake(v) {
   if (box) box.value = stake > 0 && mult > 0 ? (stake * mult).toFixed(2) : '';
 }
 async function pkLog() {
-  if (pk.legs.length < 2) return;
+  if (pk.legs.length < 2 || pk.busy) return;
+  // a leg whose game already started can't go on a record: refused here, never kept to show LATE later
+  const gone = pk.legs.filter(l => l.start && Date.parse(l.start) <= Date.now());
+  if (gone.length) { pk.refused = gone.map(l => `${l.player} ${l.side} ${l.line} ${l.market}: its game started at ${new Date(l.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. A leg goes on your record only before its game starts.`).join(' '); renderPkTray(); return; }
   if (!(await msReady())) { showToast('My Slips could not load from the server', 'danger'); return; }
   const stake = parseFloat(pk.stake), payout = parseFloat(document.getElementById('pkPay')?.value);
-  const slip = LRSlips.makeSlip({ app: pk.app, legs: pk.legs, stake: stake > 0 ? stake : null, payout: !pk.flex && payout > 0 ? payout : null, flex: pk.flex });
+  pk.busy = true;
+  let st;
+  try { st = await msStamp(pk.app, pk.legs); }
+  catch (e) { pk.busy = false; showToast(`Not logged: the server couldn't check the slip (${lrErr(e)}). Try again.`, 'danger'); return; }
+  pk.busy = false;
+  if (!st.ok) { pk.refused = st.why; renderPkTray(); return; }
+  const slip = LRSlips.makeSlip({ app: pk.app, legs: pk.legs, stake: stake > 0 ? stake : null, payout: !pk.flex && payout > 0 ? payout : null, flex: pk.flex, placedAt: st.at });
   if (!slip) { showToast('Could not read one of the picks', 'danger'); return; }
-  ms.slips.unshift(slip); msSave();
-  showToast(`Logged a ${slip.legs.length}-pick ${LRSlips.appLabel(slip.app)} slip to MY SLIPS${stake > 0 ? ` ($${stake})` : ''}`);
+  slip.stamp = msStampKeep(st);
+  ms.slips.unshift(slip); msSave(); msPubSync(true);
+  showToast(`Logged a ${slip.legs.length}-pick ${LRSlips.appLabel(slip.app)} slip at ${new Date(st.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}${stake > 0 ? ` ($${stake})` : ''}. ${msPubGet() && !msPubGet().unpublished ? `On your record @${msPubGet().handle}` : 'In MY SLIPS'}`);
   pkClear();
   msGrade(true);
 }
@@ -11079,7 +11191,7 @@ function esAdd(i) {
   if (esportsState.slip.length >= 6) { showToast('Slip is full — 6 legs max', 'danger'); return; }
   esportsState.slip.push({
     key, player: p.player, market: p.market, side: p.side, line: p.ppLine,
-    model: p.modelPred, sport: p.sport, prob,
+    model: p.modelPred, sport: p.sport, prob, ...(p.startTime ? { startTime: p.startTime } : {}),
     evs: { prizepicks: p.ppEv ?? null, underdog: p.udEv ?? null, betr: p.betrEv ?? null, parlayplay: p.parlayEv ?? null, sleeper: p.sleeperEv ?? null },
     mults: { underdog: parseFloat(p.udMultiplier) || null, sleeper: parseFloat(p.sleeperMultiplier) || null }
   });
@@ -11357,10 +11469,16 @@ async function esLogSlip() {
   if (!(sel.fullMult > 1)) { showToast('Payout multiplier looks off: check ES_BOOKS', 'danger'); return; }
   // an app MY SLIPS knows: logged leg by leg there, so every pick is followed to the close and graded
   if (['prizepicks', 'underdog', 'sleeper', 'betr'].includes(esportsState.slipBook) && (await msReady())) {
+    const legs = esportsState.slip.map(l => ({ player: l.player, market: l.market, line: l.line, side: /^u/i.test(l.side) ? 'Under' : 'Over', sport: l.sport, ...(l.startTime ? { start: l.startTime } : {}) }));
+    let st;
+    try { st = await msStamp(esportsState.slipBook, legs); }
+    catch (e) { showToast(`Not logged: the server couldn't check the slip (${lrErr(e)}). Try again.`, 'danger'); return; }
+    if (!st.ok) { showToast(`Not logged. ${st.why}`, 'danger', 12000); return; }
     const slip = LRSlips.makeSlip({ app: esportsState.slipBook, stake, flex: sel.mode === 'FLEX', payout: sel.mode === 'FLEX' ? null : Math.round(stake * sel.fullMult * 100) / 100,
-      legs: esportsState.slip.map(l => ({ player: l.player, market: l.market, line: l.line, side: /^u/i.test(l.side) ? 'Under' : 'Over', sport: l.sport })) });
+      legs, placedAt: st.at });
     if (slip) {
-      ms.slips.unshift(slip); msSave(); msGrade(true);
+      slip.stamp = msStampKeep(st);
+      ms.slips.unshift(slip); msSave(); msPubSync(true); msGrade(true);
       showToast(`Logged ${sel.n}-leg ${sel.book.name} to MY SLIPS: $${stake} to win $${(stake * (sel.fullMult - 1)).toFixed(2)}, every pick followed to the close`);
       return;
     }
