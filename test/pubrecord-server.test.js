@@ -73,3 +73,24 @@ test('publish, add slips, read the page, download, card, unpublish', async () =>
   assert.match(gone, /unpublished/);
   assert.ok(!/Made Up One/.test(gone));
 });
+
+test('game-line bets: added with the key, on the page, and checked at save', async () => {
+  const pub = await (await post('/api/records', { handle: 'line_bettor' })).json();
+  const bets = [{ id: 'b1', venue: 'kalshi', venueName: 'Kalshi', event: 'Made Up @ Also Made Up', pick: 'Also Made Up ML', decimal: 1.9, stake: 50,
+    track: { kind: 'line', game: 'nogame', league: 'NBA', market: 'ml', side: 'Also Made Up', point: null, start: new Date(Date.now() + 3600e3).toISOString() } }];
+  assert.equal((await post('/api/records/line_bettor/bets', { bets })).status, 403, 'no key');
+  const add = await (await post('/api/records/line_bettor/bets', { bets }, pub.token)).json();
+  assert.equal(add.added, 1);
+  const chk = await (await post('/api/records/line_bettor/check', null, pub.token)).json();
+  assert.equal(chk.bets, 1);
+  const v = await (await fetch(`${base}/api/records/line_bettor`)).json();
+  assert.equal(v.bets.counts.bets, 1);
+  assert.ok(!JSON.stringify(v).includes('"stake"'), 'no stake in the public record');
+  assert.match(await (await fetch(`${base}/r/line_bettor`)).text(), /Game-line bets/);
+  // the save-time check: a game no odds screen lists can't be confirmed, a started one is refused
+  assert.equal((await post('/api/bets/stamp', { track: { kind: 'prop' } })).status, 400);
+  const unk = await (await post('/api/bets/stamp', { track: bets[0].track })).json();
+  assert.equal(unk.ok, true); assert.equal(unk.status, 'unknown'); assert.match(unk.why, /not on the odds screen/);
+  const past = await (await post('/api/bets/stamp', { track: { ...bets[0].track, start: new Date(Date.now() - 3600e3).toISOString() } })).json();
+  assert.equal(past.ok, false); assert.equal(past.status, 'started'); assert.match(past.why, /A bet goes on your record only before its game starts/);
+});
