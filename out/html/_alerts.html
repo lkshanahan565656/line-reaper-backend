@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alert history | Line Reaper</title>
+<meta name="description" content="22 alerts sent since 2026-10-27, 0 bets graded against the close.">
+<meta property="og:title" content="Line Reaper alert history">
+<meta property="og:description" content="22 alerts sent since 2026-10-27, 0 bets graded against the close.">
+<meta property="og:image" content="https://line-reaper-backend-production.up.railway.app/card/alerts.png"><link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/alerts">
+<meta name="theme-color" content="#080b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+.lab { font:700 10px var(--mono); letter-spacing:.06em; white-space:nowrap; }
+.sub { color:var(--muted); font-size:11px; }
+td.n, th.n { text-align:right; white-space:nowrap; }
+.muted { color:var(--muted); }
+.alert { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin:0 0 10px; min-width:0; }
+.alert pre { white-space:pre-wrap; word-break:break-word; font:12px/1.5 var(--mono); color:var(--text2); margin:6px 0; }
+.ah { display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; }
+.tiles { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.tiles div { flex:1 1 140px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.tiles span { display:block; font:600 10px var(--mono); letter-spacing:.1em; color:var(--muted); }
+.tiles b { display:block; font-size:20px; margin:2px 0; }
+.tiles i { font-style:normal; color:var(--text2); font-size:12px; }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app?start=alerts">OPEN IN THE APP</a></div></header>
+<main>
+<p class="kicker">Alert history</p>
+<h1>Every alert we sent, graded</h1>
+<p class="lead">22 alerts sent since 2026-10-27, 0 bets graded against the close. The same alert went to everyone: no per-person sizing.</p>
+<p class="note">Alerts are kept from 2026-10-27 06:49 UTC, when the site started storing them. Nothing before that is shown or rebuilt.</p>
+<div class="tiles">
+<div><span>ALERTS SENT</span><b>22</b><i>3 bets named</i></div>
+<div><span>GRADED</span><b>0</b><i>3 still open</i></div>
+<div><span>CLV AT THE ALERT'S PRICE</span><b>—</b><i>every label pooled: never a claim</i></div>
+<div><span>VS PINNACLE'S OWN CLOSE</span><b>—</b><i>0 with Pinnacle's close kept</i></div>
+</div>
+<h2>By label</h2>
+<div class="scroll"><table><thead><tr><th></th><th class="n">Alerts</th><th class="n">Bets</th><th class="n">Graded</th><th class="n">CLV</th><th class="n">W-L</th></tr></thead><tbody><tr><td><span class="lab" style="color:#34d399">PROVEN</span></td><td class="n">1</td><td class="n">1</td><td class="n">0</td><td class="n">—<div class="sub">beat —</div></td><td class="n">—<div class="sub">—</div></td></tr><tr><td><span class="lab" style="color:#a78bfa">RESEARCH</span></td><td class="n">2</td><td class="n">2</td><td class="n">0</td><td class="n">—<div class="sub">beat —</div></td><td class="n">—<div class="sub">—</div></td></tr><tr><td><span class="lab" style="color:#64748b">NO GRADE</span></td><td class="n">19</td><td class="n">0</td><td class="n">0</td><td class="n">—<div class="sub">beat —</div></td><td class="n">—<div class="sub">—</div></td></tr></tbody></table></div>
+<p class="note">Each bet an alert named is graded by the tracker that records it, with the same code and label as RESULTS, which marks a kind proven only at a venue where it clears the rule. CLV is the close against the price the alert showed. Units are 1u at that price, a profit only where RESULTS shows one. * marks units that are not a profit claim.</p>
+<h2>Alerts, newest first</h2>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 09:35 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Morgan MAPS 1-2 Kills (was +5.1%)
+Edge gone: Quid MAPS 1-2 Kills (was +5.1%)
+Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%)
+Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Tail alerts</b> <span class="sub">2026-10-27 09:34 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>B-grade Gooooooollllllllll bought Legacy on &quot;Counter-Strike: TheMongolz vs Legacy (BO3) - PGL Masters Bucharest Group Stage&quot; at 56¢ ($14,000) · Bid at Kalshi: YES Legacy 56¢ limit · 0.25u · fills only if it trades down to you · cancel at the start</pre><p class="sub">Sharp Tail is research: it is graded when its market settles (SHARP TAIL record), not against Pinnacle&#39;s close.</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 09:34 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Kills · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED
+New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 09:10 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD)
+New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 09:01 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Morgan MAPS 1-2 Kills (was +5.1%)
+Edge gone: Quid MAPS 1-2 Kills (was +5.1%)
+Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%)
+Line ↓ 7.5 → 7: Josedeodo MAPS 1-2 Kills · market moving our way, edge shrinking · now -18.5% · SIDE FLIPPED
+Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Esports edges</b> <span class="sub">2026-10-27 08:50 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#a78bfa">RESEARCH</span></div><pre>CS2 · Nemiga vs DENDELE CS (Bo3, Tue 7:00 AM ET): DENDELE CS to win map 1 on Kalshi at 46.7¢, fair 48.6¢ (+4.0%), $500 on the book at that price</pre><div class="scroll"><table><thead><tr><th>Bet</th><th class="n">Price shown</th><th class="n">CLV</th><th class="n">Result</th></tr></thead><tbody><tr><td>DENDELE CS · Kalshi<div class="sub">CS2 · CS2</div><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td class="n">+114<div class="sub">2.139</div></td>
+<td class="n">open<div class="sub">Pinnacle —</div></td>
+<td class="n">—<div class="sub">—</div></td></tr></tbody></table></div></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 08:43 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Morgan MAPS 1-2 Kills (was +5.1%)
+Edge gone: Quid MAPS 1-2 Kills (was +5.1%)
+Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%)
+Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Tail alerts</b> <span class="sub">2026-10-27 08:40 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>B-grade gregbeast bought Gentle Mates GC on &quot;Valorant: MIBR GC vs Gentle Mates GC (BO3) - VCT Game Changers Championship Playoffs&quot; at 49¢ ($2,450) · No US venue found yet: watch only</pre><p class="sub">Sharp Tail is research: it is graded when its market settles (SHARP TAIL record), not against Pinnacle&#39;s close.</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 08:40 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Kills · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED
+New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 08:13 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Quid MAPS 1-2 Kills (was +5.1%)
+Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%)
+Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 08:10 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>Edge gone: knight MAPS 1-2 Kills (was +6.4%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 08:10 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Kills · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED
+New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 10 → 10.5: knight MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED
+New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 08:05 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>Line ↓ 9.5 → 9: Yeon MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.0%
+Line ↓ 11 → 10.5: Caliste MAPS 1-2 Kills · market moving our way, edge shrinking · now +5.4%
+Line ↓ 6.5 → 5.5: Doran MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.7%
+Edge gone: Doran MAPS 1-2 Kills (was +6.3%)
+Line ↓ 6 → 5.5: Morgan MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.5%
+Edge gone: Morgan MAPS 1-2 Kills (was +8.1%)
+Line ↓ 9 → 8.5: JiaQi MAPS 1-2 Kills · market moving our way, edge shrinking · now +3.5%
+Edge gone: JiaQi MAPS 1-2 Kills (was +6.9%)
+Line ↓ 9.5 → 9: Gumayusi MAPS 1-2 Kills · market moving our way, edge shrinking · now +3.4%
+Edge gone: Gumayusi MAPS 1-2 Kills (was +6.3%)
+…and 4 more</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 07:56 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>Line ↓ 9.5 → 9: Yeon MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.0%
+Line ↓ 6 → 5.5: Morgan MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.5%
+Edge gone: Morgan MAPS 1-2 Kills (was +8.1%)
+Line ↓ 9 → 8.5: JiaQi MAPS 1-2 Kills · market moving our way, edge shrinking · now +3.5%
+Edge gone: JiaQi MAPS 1-2 Kills (was +6.9%)
+Line ↓ 9.5 → 9: Gumayusi MAPS 1-2 Kills · market moving our way, edge shrinking · now +3.4%
+Edge gone: Gumayusi MAPS 1-2 Kills (was +6.3%)
+Line ↓ 6.5 → 6: Duduhh MAPS 1-2 Kills · market moving our way, edge shrinking · now +3.1%
+Edge gone: Duduhh MAPS 1-2 Kills (was +6.9%)
+Line ↓ 5.5 → 5: Inspired MAPS 1-2 Kills · market moving our way, edge shrinking · now -12.1% · SIDE FLIPPED
+…and 1 more</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Esports edges</b> <span class="sub">2026-10-27 07:52 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#a78bfa">RESEARCH</span></div><pre>LoL · Hanwha Life Esports vs G2 Esports (Bo3, Fri 7:00 PM ET): Hanwha Life Esports to win map 2 on Kalshi at 70.5¢, fair 74.2¢ (+5.2%), $1,802 on the book at that price</pre><div class="scroll"><table><thead><tr><th>Bet</th><th class="n">Price shown</th><th class="n">CLV</th><th class="n">Result</th></tr></thead><tbody><tr><td>Hanwha Life Esports · Kalshi<div class="sub">LOL · LoL</div><span class="lab" style="color:#a78bfa">RESEARCH</span></td>
+<td class="n">-239<div class="sub">1.418</div></td>
+<td class="n">open<div class="sub">Pinnacle —</div></td>
+<td class="n">—<div class="sub">—</div></td></tr></tbody></table></div></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 07:44 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>Edge gone: Peyz MAPS 1-2 Kills (was +6.0%, pulled from the board)
+Edge gone: Zeus MAPS 1-2 Kills (was +5.3%, pulled from the board)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Board alerts</b> <span class="sub">2026-10-27 07:42 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>Second chance: 4 sharps (4B) hold No on &quot;US imports Russian diesel by November 30?&quot; at 49.8¢ avg; it&#39;s 13¢ now · No US venue found yet: watch only</pre><p class="sub">Sharp Tail is research: it is graded when its market settles (SHARP TAIL record), not against Pinnacle&#39;s close.</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 07:32 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Quid MAPS 1-2 Kills (was +5.1%)
+Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%)
+Edge gone: knight MAPS 1-2 Kills (was +6.4%)
+Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 07:30 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Kills · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED
+New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 10 → 10.5: knight MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED
+New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 07:05 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Quid MAPS 1-2 Kills (was +5.1%)
+Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%)
+Edge gone: knight MAPS 1-2 Kills (was +6.4%)
+Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>Alerts</b> <span class="sub">2026-10-27 07:00 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#64748b">NO GRADE</span></div><pre>New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Kills · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED
+New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD)
+Line ↑ 10 → 10.5: knight MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED
+New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP)
+New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP)
+Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%)</pre><p class="sub">A pick&#39;em board move: a pick&#39;em leg has no price of its own to grade here (the PROPS record grades legs).</p></div>
+<div class="alert"><div class="ah"><b>EV alerts</b> <span class="sub">2026-10-27 06:59 UTC · reached 0 phones, 0 webhooks</span> <span class="lab" style="color:#34d399">PROVEN</span></div><pre>+3.2% Golden State Valkyries @ Atlanta Dream spreads Atlanta Dream -2.5 @ betrivers -121 (fair -130)</pre><div class="scroll"><table><thead><tr><th>Bet</th><th class="n">Price shown</th><th class="n">CLV</th><th class="n">Result</th></tr></thead><tbody><tr><td>Atlanta Dream -2.5 · BetRivers<div class="sub">WNBA · Golden State Valkyries @ Atlanta Dream</div><span class="lab" style="color:#34d399">PROVEN</span></td>
+<td class="n">-121<div class="sub">1.826</div></td>
+<td class="n">open<div class="sub">Pinnacle —</div></td>
+<td class="n">—<div class="sub">—</div></td></tr></tbody></table></div></div>
+
+<p><a class="go" href="/api/alerts/history">DOWNLOAD JSON</a> <a class="go" href="/app?start=results">SEE THE FULL RECORD →</a></p>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/pricing">Pricing</a><a href="/learn/how-the-record-works">How the record works</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take bets. This page reports what was sent; it is not advice to bet. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>

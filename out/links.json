@@ -1,0 +1,642 @@
+{
+ "/pricing": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/app": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/app?start=results": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/alerts": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/r#board": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/refunds": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/data-sources": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/learn": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/developers": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/terms": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/privacy": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/disclaimer": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/responsible-gambling": {
+  "from": "/pricing",
+  "status": 200,
+  "loc": null
+ },
+ "/app?start=alerts": {
+  "from": "/alerts",
+  "status": 200,
+  "loc": null
+ },
+ "/api/alerts/history": {
+  "from": "/alerts",
+  "status": 200,
+  "loc": null
+ },
+ "/learn/how-the-record-works": {
+  "from": "/alerts",
+  "status": 200,
+  "loc": null
+ },
+ "/lines": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/app?start=odds": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_att%7Ckylermurray%7C30.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_tds%7Cjaredgoff%7C1.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_tds%7Ckylermurray%7C1.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_yds%7Cjaredgoff%7C267.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_yds%7Ckylermurray%7C213.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crec_yds%7Camonrastbrown%7C78.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crec_yds%7Cjamesonwilliams%7C51.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crec_yds%7Cjordanaddison%7C38.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crec_yds%7Cjustinjefferson%7C75.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crec_yds%7Csamlaporta%7C50.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crec_yds%7Ctjhockenson%7C37.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Camonrastbrown%7C7.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Cjahmyrgibbs%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Cjamesonwilliams%7C3.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Cjordanaddison%7C3.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Cjustinjefferson%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Csamlaporta%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Creceptions%7Ctjhockenson%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crush_yds%7Cjahmyrgibbs%7C86.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Crush_yds%7Cjahmyrgibbs%7C87.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_comp%7Cbryceyoung%7C36.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_comp%7Cjordanlove%7C38.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Cchristianwatson%7C26.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Cchubahubbard%7C9.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Cjalencoker%7C22.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Cjalencoker%7C23.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Cjoshjacobs%7C8.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Cmatthewgolden%7C23.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Csavionwilliams%7C12.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rec%7Ctuckerkraft%7C17.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rush%7Cbryceyoung%7C8.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rush%7Cjordanlove%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rush%7Cjoshjacobs%7C14.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rush%7Cmarshawnlloyd%7C7.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Clongest_rush%7Cmarshawnlloyd%7C8.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_att%7Cbryceyoung%7C35.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_att%7Cjordanlove%7C35.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_ints%7Cbryceyoung%7C0.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_ints%7Cjordanlove%7C0.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_rush_yds%7Cbryceyoung%7C265.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_rush_yds%7Cjordanlove%7C268.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_tds%7Cbryceyoung%7C1.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_tds%7Cjordanlove%7C1.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_yds%7Cbryceyoung%7C246.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_yds%7Cbryceyoung%7C250.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Cpass_yds%7Cjordanlove%7C258.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cchristianwatson%7C66.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cchristianwatson%7C68.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cchristianwatson%7C69.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cchristianwatson%7C70.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cchubahubbard%7C13.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cchubahubbard%7C14.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cdarrenwaller%7C18.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cdarrenwaller%7C19.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cdarrenwaller%7C20.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjalencoker%7C60.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjalencoker%7C62.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjalencoker%7C63.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjalencoker%7C64.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjoshjacobs%7C14.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjoshjacobs%7C15.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cjoshjacobs%7C16.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cmarshawnlloyd%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cmatthewgolden%7C62.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Cmatthewgolden%7C64.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Csavionwilliams%7C21.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Csavionwilliams%7C22.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Ctetairoamcmillan%7C71.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Ctetairoamcmillan%7C72.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Ctetairoamcmillan%7C73.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Ctuckerkraft%7C41.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Ctuckerkraft%7C42.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crec_yds%7Ctuckerkraft%7C43.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cchristianwatson%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cchubahubbard%7C2.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cdarrenwaller%7C2.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cjalencoker%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cjalencoker%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cjoshjacobs%7C2.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cmarshawnlloyd%7C1.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Cmatthewgolden%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Csavionwilliams%7C2.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Ctetairoamcmillan%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Creceptions%7Ctuckerkraft%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_att%7Cchubahubbard%7C15.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_att%7Cjoshjacobs%7C14.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_att%7Cmarshawnlloyd%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_att%7Cmarshawnlloyd%7C6.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_rec_yds%7Cchubahubbard%7C85.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_rec_yds%7Cchubahubbard%7C88.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_rec_yds%7Cjoshjacobs%7C75.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_rec_yds%7Cjoshjacobs%7C76.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_rec_yds%7Cjoshjacobs%7C77.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cbryceyoung%7C10.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cbryceyoung%7C9.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cchubahubbard%7C69.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cchubahubbard%7C70.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cjordanlove%7C4.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cjordanlove%7C5.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines/prop?key=pin-1638339263%7Cprop%7Crush_yds%7Cjoshjacobs%7C56.5": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines?before=2026-10-30T00%3A15%3A00.000Z": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/developers#lines": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/leagues": {
+  "from": "/lines",
+  "status": 200,
+  "loc": null
+ },
+ "/lines?kind=prop&before=2026-10-30T00%3A15%3A00.000Z": {
+  "from": "/lines?kind=prop",
+  "status": 200,
+  "loc": null
+ },
+ "/app?start=myslips": {
+  "from": "/r",
+  "status": 200,
+  "loc": null
+ },
+ "/api/leaderboard": {
+  "from": "/r",
+  "status": 200,
+  "loc": null
+ },
+ "/share/leaderboard": {
+  "from": "/r",
+  "status": 200,
+  "loc": null
+ },
+ "/results": {
+  "from": "/r",
+  "status": 200,
+  "loc": null
+ },
+ "/status": {
+  "from": "/developers",
+  "status": 200,
+  "loc": null
+ }
+}

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pricing: Free and Pro | Line Reaper</title>
+<meta name="description" content="Line Reaper's plans: a free odds screen and public record, and Pro with fair prices, EV, live alerts and more API calls. Paying buys the tool, not an edge.">
+<link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/pricing">
+<meta name="theme-color" content="#080b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+main { max-width:900px; }
+.top-in { max-width:900px; }
+.early { border:1px solid rgba(52,211,153,.35); background:rgba(16,185,129,.07); border-radius:10px; padding:12px 14px; margin:0 0 20px; font-size:15px; }
+.cards { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; margin:0 0 22px; }
+.card { border:1px solid var(--border); background:var(--card); border-radius:12px; padding:18px 18px 16px; min-width:0; display:flex; flex-direction:column; }
+.card.pro { border-color:rgba(52,211,153,.45); }
+.pname { font:600 11px var(--mono); letter-spacing:.14em; color:var(--text2); }
+.card.pro .pname { color:var(--green2); }
+.price { font-size:40px; font-weight:700; letter-spacing:-1px; line-height:1.1; margin:6px 0 2px; }
+.price span { font-size:14px; font-weight:500; color:var(--text2); letter-spacing:0; margin-left:4px; }
+.intro { font-size:13px; color:var(--green2); min-height:20px; }
+.card ul { list-style:none; padding:0; margin:12px 0 16px; font-size:14px; flex:1; }
+.card li { display:flex; gap:8px; align-items:flex-start; overflow-wrap:anywhere; }
+.card li svg { flex:0 0 12px; margin-top:6px; }
+.cta { display:block; text-align:center; font:600 12px var(--mono); letter-spacing:.06em; color:var(--text); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:10px 14px; }
+.card.pro .cta { color:#04130c; background:var(--green); border-color:var(--green); }
+.cta-note { font-size:12px; color:var(--muted); margin:8px 0 0; text-align:center; }
+.cmp td, .cmp th { overflow-wrap:anywhere; }
+.cmp td { font-family:inherit; font-size:13px; }
+.cmp td:first-child { width:52%; }
+.cmp .grp td { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); padding-top:16px; }
+.cmp .where { display:block; font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; margin-top:2px; }
+.yes svg, .no svg { vertical-align:middle; }
+.sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.rec { border:1px solid var(--border); background:var(--card); border-radius:10px; padding:12px 14px; margin:0 0 16px; font-size:14px; }
+.rec ul { margin:6px 0 0; }
+.rules li { color:var(--text2); }
+@media (max-width:640px) { .cards { grid-template-columns:minmax(0, 1fr); } .price { font-size:34px; } .cmp td:first-child { width:46%; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app">OPEN THE APP</a></div></header>
+<main>
+<p class="kicker">Pricing</p>
+<h1>Free and Pro</h1>
+<p class="lead">Start free with the odds screen and the full public record. Pro adds the fair price and EV on every line, live alerts, the Discord feed and more API calls.</p>
+<div class="early" id="early"><b>Early access:</b> every Pro feature is free while we finish launch. Nobody is charged until the paywall goes on.</div>
+<div class="cards">
+  <div class="card" id="planFree">
+    <div class="pname">FREE</div>
+    <div class="price">$0<span>/ month</span></div>
+    <div class="intro"></div>
+    <ul>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Odds screen: every venue we read, side by side</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Pinnacle no-vig fair price, EV and line history: How many prices sit above the fair</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Line history: every market&#39;s prices at each venue, Pinnacle included, with a chart and a CSV or JSON download: The last 3 days</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Exchange Shopper ranked list, with what the order book fills at your stake: Prices only</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Best Plays, ranked by their own record: Top 3</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Arbs and middles with legs, prices and stakes: Count and profit %</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Pick&#39;em and props boards, priced against the sharp number: The board; picks on lines above the fair hidden</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Esports match boards and our ratings (tagged model, not an edge): Match boards</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Sharp Tail (research): big accounts&#39; entries with the trader and price: 30 minute delay</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Line Reaper slash commands in your Discord server (/odds, /props, /moves, /record, /lines), under your own Discord app: Within the key&#39;s API limits</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Public API calls: 10 a minute, 500 a day</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>API keys per account: 1</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Widgets for your own site (best price, line move, record)</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The full public record and the weekly digest, losers included</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Every alert we sent, with each bet graded against the close: Bets shown once their games start</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Your own public bettor record at /r/your-name, with CSV, JSON and a share card</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The bettor leaderboard: published records ranked by CLV against Pinnacle&#39;s close, ranked only at 50 graded</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Calculators, MY BETS, MY SLIPS, imports, EXPORT and PRINT</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Saved views, favorites, My state, odds format, after-fee prices</li>
+    </ul>
+    <a class="cta" href="/app">START FREE</a>
+  </div>
+  <div class="card pro" id="planPro">
+    <div class="pname">PRO</div>
+    <div class="price">$79<span>/ month</span></div>
+    <div class="intro">$49 a month for the first 100 members</div>
+    <ul>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Odds screen: every venue we read, side by side</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Pinnacle no-vig fair price, EV and line history</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Line history: every market&#39;s prices at each venue, Pinnacle included, with a chart and a CSV or JSON download: 30 days</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Exchange Shopper ranked list, with what the order book fills at your stake</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Best Plays, ranked by their own record: Every play</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Arbs and middles with legs, prices and stakes</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Pick&#39;em and props boards, priced against the sharp number</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Esports match boards and our ratings (tagged model, not an edge)</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Sharp Tail (research): big accounts&#39; entries with the trader and price: Real time</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Live alerts in the app, and phone push: Same text for every member</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>The Line Reaper feed in your Discord server (weekly digest, record changes, biggest moves): One channel per key; the same posts for everyone</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Line Reaper slash commands in your Discord server (/odds, /props, /moves, /record, /lines), under your own Discord app: Within the key&#39;s API limits</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Public API calls: 60 a minute, 5,000 a day</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>API keys per account: Up to 5</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Widgets for your own site (best price, line move, record)</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>The full public record and the weekly digest, losers included</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every alert we sent, with each bet graded against the close: Live</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Your own public bettor record at /r/your-name, with CSV, JSON and a share card</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>The bettor leaderboard: published records ranked by CLV against Pinnacle&#39;s close, ranked only at 50 graded</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Calculators, MY BETS, MY SLIPS, imports, EXPORT and PRINT</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Saved views, favorites, My state, odds format, after-fee prices</li>
+    </ul>
+    <a class="cta" href="/app">OPEN THE APP: PRO IS FREE NOW</a>
+    <p class="cta-note">Early access: every Pro feature is on for everyone until the paywall goes on.</p>
+  </div>
+</div>
+
+<h2 id="record">What the record backs today</h2>
+<div class="rec" id="rec"><p>What RESULTS marks proven today:</p><ul><li>Main lines vs the sharp fair at BetRivers: 396 graded, CLV +2.8% against the close, profit not shown yet (it has not cleared chance); not open to Texas residents</li></ul><p class="note">Nothing is proven yet at a venue a Texas resident can use.</p><p class="note" style="margin:6px 0 0">Read live from the close scoreboard, the same test as the sales page. <a href="/app?start=results">See every record in the app</a>, <a href="/alerts">every alert we sent, graded</a>, and <a href="/r#board">bettors ranked by CLV against Pinnacle's close</a>.</p></div>
+
+<h2 id="compare">Compare the plans</h2>
+<div class="scroll"><table class="cmp"><thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead><tbody><tr class="grp"><td colspan="3">Odds</td></tr><tr><td>Odds screen: every venue we read, side by side<span class="where">ODDS SCREEN</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Pinnacle no-vig fair price, EV and line history<span class="where">ODDS SCREEN, SHOPPER</span></td><td>How many prices sit above the fair</td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Line history: every market&#39;s prices at each venue, Pinnacle included, with a chart and a CSV or JSON download<span class="where">/lines, /api/v1/lines</span></td><td>The last 3 days</td><td>30 days</td></tr><tr><td>Exchange Shopper ranked list, with what the order book fills at your stake<span class="where">SHOPPER</span></td><td>Prices only</td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Best Plays, ranked by their own record<span class="where">BEST PLAYS</span></td><td>Top 3</td><td>Every play</td></tr><tr><td>Arbs and middles with legs, prices and stakes<span class="where">ARBS</span></td><td>Count and profit %</td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr class="grp"><td colspan="3">Models</td></tr><tr><td>Pick&#39;em and props boards, priced against the sharp number<span class="where">PROPS</span></td><td>The board; picks on lines above the fair hidden</td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Esports match boards and our ratings (tagged model, not an edge)<span class="where">MATCHUPS</span></td><td>Match boards</td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr class="grp"><td colspan="3">Research</td></tr><tr><td>Sharp Tail (research): big accounts&#39; entries with the trader and price<span class="where">SHARP TAIL</span></td><td>30 minute delay</td><td>Real time</td></tr><tr class="grp"><td colspan="3">Alerts</td></tr><tr><td>Live alerts in the app, and phone push<span class="where">CUSTOMIZE &gt; Push alerts</span></td><td><span class="no"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7" stroke="#475569" stroke-width="1.6"/></svg><span class="sr">Not included</span></span></td><td>Same text for every member</td></tr><tr><td>The Line Reaper feed in your Discord server (weekly digest, record changes, biggest moves)<span class="where">/developers#feed</span></td><td><span class="no"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7" stroke="#475569" stroke-width="1.6"/></svg><span class="sr">Not included</span></span></td><td>One channel per key; the same posts for everyone</td></tr><tr><td>Line Reaper slash commands in your Discord server (/odds, /props, /moves, /record, /lines), under your own Discord app<span class="where">/developers#bot</span></td><td>Within the key&#39;s API limits</td><td>Within the key&#39;s API limits</td></tr><tr class="grp"><td colspan="3">API</td></tr><tr><td>Public API calls<span class="where">/developers</span></td><td>10 a minute, 500 a day</td><td>60 a minute, 5,000 a day</td></tr><tr><td>Fair prices and EV in the API<span class="where">/api/v1/best-prices</span></td><td colspan="2">Held back from the API for everyone once the paywall is on</td></tr><tr><td>API keys per account<span class="where">/developers</span></td><td>1</td><td>Up to 5</td></tr><tr><td>Widgets for your own site (best price, line move, record)<span class="where">/developers</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr class="grp"><td colspan="3">Record</td></tr><tr><td>The full public record and the weekly digest, losers included<span class="where">RESULTS</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Every alert we sent, with each bet graded against the close<span class="where">/alerts, RESULTS &gt; ALERT HISTORY</span></td><td>Bets shown once their games start</td><td>Live</td></tr><tr><td>Your own public bettor record at /r/your-name, with CSV, JSON and a share card<span class="where">MY SLIPS &gt; PUBLISH RECORD</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>The bettor leaderboard: published records ranked by CLV against Pinnacle&#39;s close, ranked only at 50 graded<span class="where">/r</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Calculators, MY BETS, MY SLIPS, imports, EXPORT and PRINT<span class="where">TOOLS, MY BETS, MY SLIPS</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr><tr><td>Saved views, favorites, My state, odds format, after-fee prices<span class="where">CUSTOMIZE, SHOPPER</span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td><td><span class="yes"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg><span class="sr">Included</span></span></td></tr></tbody></table></div>
+
+<h2 id="rules">What a plan never changes</h2>
+<ul class="rules"><li>Paying buys the tool, not an edge. A price above the fair is a price, not a proven edge, and every row carries its label.</li><li>Only what RESULTS marks proven is called proven: 50 graded at one venue read straight from that venue, CLV t of 2 against Pinnacle&#39;s no-vig close, kinds never pooled.</li><li>Every member gets the same alerts, the same text and the same units. Nothing is sized, picked or set up per person.</li><li>Line Reaper never places a bet and never holds your money. You bet at the venue yourself.</li></ul>
+
+<h2 id="billing">Billing</h2>
+<ul class="rules">
+<li>Billed monthly through Stripe. Cancel any time in BILLING in the app; you keep Pro until the end of the period you paid for.</li>
+<li>A full refund within 72 hours of your first payment: see the <a href="/refunds">refund policy</a>.</li>
+<li>Some data sources are not shown to paying members until their owners give written permission; the app says which where it applies. See <a href="/data-sources">data sources</a>.</li>
+</ul>
+</main>
+<footer><div class="in"><nav><a href="/">Home</a><a href="/app">App</a><a href="/learn">Learn</a><a href="/developers">API</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refunds">Refunds</a><a href="/disclaimer">Disclaimer</a><a href="/responsible-gambling">Responsible gambling</a></nav>Line Reaper is an information service, not a sportsbook. It does not take or place bets. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></footer>
+</body>
+</html>

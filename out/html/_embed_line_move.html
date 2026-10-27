@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="60">
+<title>Line move | Line Reaper</title>
+<style>
+:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
+* { box-sizing:border-box; }
+html, body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+.w { border:1px solid var(--border); border-radius:8px; background:var(--card); padding:10px 12px; min-width:0; overflow:hidden; }
+.hd { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:0 0 6px; }
+.hd b { font:700 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--green2); }
+.hd i { font:500 10px var(--mono); font-style:normal; color:var(--muted); white-space:nowrap; }
+.row { border-top:1px solid var(--border); padding:7px 0; min-width:0; }
+.row:first-of-type { border-top:0; }
+.ev { font-weight:600; overflow-wrap:anywhere; }
+.sub { color:var(--text2); font-size:12px; overflow-wrap:anywhere; }
+.nums { display:flex; flex-wrap:wrap; gap:4px 12px; font:500 12px var(--mono); font-variant-numeric:tabular-nums; margin-top:3px; }
+.nums span { white-space:nowrap; }
+.nums em { font-style:normal; color:var(--muted); font-size:10px; letter-spacing:.06em; margin-right:3px; }
+.tag { display:inline-block; font:700 9px var(--mono); letter-spacing:.08em; padding:1px 5px; border-radius:3px; border:1px solid var(--border); color:var(--text2); vertical-align:1px; }
+.tag.pv { color:var(--green2); border-color:rgba(52,211,153,.5); }
+.tag.ld { color:var(--amber); border-color:rgba(245,158,11,.45); }
+.pos { color:var(--green2); }
+.note { color:var(--muted); font-size:11px; margin:6px 0 0; overflow-wrap:anywhere; }
+.ft { display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); margin-top:8px; padding-top:6px; }
+.ft a { font:700 10px var(--mono); letter-spacing:.12em; color:var(--green2); text-decoration:none; white-space:nowrap; }
+.ft span { font-size:10px; color:var(--muted); overflow-wrap:anywhere; }
+.empty { color:var(--text2); padding:8px 0; }
+svg { display:block; width:100%; height:auto; }
+.legend { display:flex; flex-wrap:wrap; gap:4px 10px; font:500 10px var(--mono); color:var(--text2); margin-top:4px; }
+.legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:4px; vertical-align:2px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px 12px; margin-top:4px; }
+.grid div { min-width:0; }
+.grid em { display:block; font:600 9px var(--mono); font-style:normal; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+.grid b { font:600 15px var(--mono); font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div class="w"><div class="hd"><b>Line move</b><i>read 09:47 UTC</i></div>
+<div class="ev">Arthur Fils @ Giovanni Mpetshi Perricard</div>
+<div class="sub">Tennis · Moneyline · Giovanni Mpetshi Perricard · starts 10/27 15:00 UTC</div>
+<svg viewBox="0 0 420 210" role="img" aria-label="Implied win chance at each venue over time">
+<line x1="40" x2="412" y1="188.0" y2="188.0" stroke="#1e2738"/><text x="36" y="191.0" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">16.8%</text><line x1="40" x2="412" y1="98.0" y2="98.0" stroke="#1e2738"/><text x="36" y="101.0" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">22.4%</text><line x1="40" x2="412" y1="8.0" y2="8.0" stroke="#1e2738"/><text x="36" y="11.0" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">27.9%</text>
+<text x="40.0" y="204" fill="#64748b" font-size="10" text-anchor="start" font-family="monospace">16:19</text><text x="226.0" y="204" fill="#64748b" font-size="10" text-anchor="middle" font-family="monospace">01:03</text><text x="412.0" y="204" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">09:47</text>
+<path d="M40.0,167.2H42.1V167.2H43.6V148.3H45.7V148.3H47.2V148.3H49.3V130.9H54.9V120.7H60.0V125.9H70.7V125.9H75.2V125.9H81.5V125.9H86.5V130.3H97.4V130.3H102.5V124.4H104.2V124.4H105.7V124.4H108.2V116.1H113.9V113.4H124.8V113.4H129.9V108.7H134.8V106.6H139.1V106.6H140.7V106.6H146.6V102.8H156.3V96.2H167.8V91.8H178.7V91.8H188.4V90.3H192.2V90.3H202.9V90.3H213.5V90.3H224.2V90.3H235.2V90.3H245.9V90.3H256.6V90.3H267.5V90.3H278.2V90.3H289.2V90.3H299.8V90.3H310.8V90.3H321.5V90.3H328.4V84.7H339.2V84.7H350.0V84.7H361.2V84.7H371.9V84.7H381.6V63.4H392.5V63.4H400.2V63.4H412.0V63.4H412.0" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>
+<path d="M40.0,131.0H42.1V131.0H43.6V112.5H45.7V112.5H47.2V112.5H49.3V95.2H54.9V85.0H60.0V90.1H70.7V90.1H75.2V90.1H81.5V90.1H86.5V94.3H97.4V94.3H102.5V88.4H104.2V88.4H105.7V88.4H108.2V80.6H113.9V77.8H124.8V77.8H129.9V73.3H134.8V71.4H139.1V71.4H140.7V71.4H146.6V67.6H156.3V60.8H167.8V56.8H178.7V56.8H188.4V55.8H192.2V55.8H202.9V55.8H213.5V55.8H224.2V55.8H235.2V55.8H245.9V55.8H256.6V55.8H267.5V55.8H278.2V55.8H289.2V55.8H299.8V55.8H310.8V55.8H321.5V55.8H328.4V49.6H339.2V49.6H350.0V49.6H361.2V49.6H371.9V49.6H381.6V28.8H392.5V28.8H400.2V28.8H412.0V28.8H412.0" fill="none" stroke="#94a3b8" stroke-width="2"/><path d="M40.0,152.9H42.1V135.6H43.6V135.6H45.7V119.1H47.2V101.7H49.3V101.7H54.9V101.7H60.0V101.7H70.7V101.7H75.2V85.0H81.5V101.7H86.5V101.7H97.4V101.7H102.5V101.7H104.2V68.6H105.7V85.0H108.2V85.0H113.9V85.0H124.8V85.0H129.9V68.6H134.8V68.6H139.1V85.0H140.7V68.6H146.6V68.6H156.3V68.6H167.8V68.6H178.7V68.6H188.4V68.6H192.2V51.7H202.9V51.7H213.5V51.7H224.2V51.7H235.2V51.7H245.9V51.7H256.6V51.7H267.5V51.7H278.2V51.7H289.2V51.7H299.8V51.7H310.8V51.7H321.5V51.7H328.4V51.7H339.2V51.7H350.0V51.7H361.2V51.7H371.9V51.7H381.6V51.7H392.5V51.7H400.2V34.5H412.0V34.5H412.0" fill="none" stroke="#a78bfa" stroke-width="2"/>
+</svg><div class="legend"><span><i style="background:#94a3b8"></i>Pinnacle +275</span><span><i style="background:#a78bfa"></i>Polymarket US +280</span><span><i style="background:#e2e8f0"></i>FAIR 24.5%</span></div><p class="note">Each venue's implied chance for this side as read, a step at each change; dashed is Pinnacle's no-vig fair. A move is information, not a proven edge.</p><div class="ft"><span>History is kept until 6 hours after the start.</span><a href="https://line-reaper-backend-production.up.railway.app/app?start=odds" target="_blank" rel="noopener">LINE REAPER ↗</a></div></div>
+<script>(function(){var id="";function send(){try{parent.postMessage({lrEmbed:id,height:Math.ceil(document.documentElement.getBoundingClientRect().height)},'*')}catch(e){}}if(id){send();window.addEventListener('load',send);window.addEventListener('resize',send)}})();</script>
+</body>
+</html>

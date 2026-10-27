@@ -1,0 +1,1903 @@
+{
+ "/": {
+  "status": 200,
+  "type": "application/json; charset=utf-8",
+  "loc": null,
+  "size": 97,
+  "ms": 47
+ },
+ "/app": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 1119445,
+  "ms": 339,
+  "polymarket": [],
+  "claims": [
+   "se, losers included. THE LIVE RECORD READ FROM THE APP Games graded against the close ... Beat the close, every kind pooled ... Kinds of play proven so far ... A play is proven only once its own",
+   "sbook, and nothing here is betting advice. Betting involves risk, and past results do not guarantee future returns. 21+ where legal. Disclaimer · Refunds · Responsible gambling . Gambling p",
+   "the venues legal in your state (CUSTOMIZE My state). A positive EV here is a price, not a proven edge: see Results for what the record backs. Betting from My state: only the venues legal",
+   "ng soonest Best EV Most venues Lowest hold LOADING Lining up every venue... MODEL, NOT AN EDGE Our own NFL number on every contract Kalshi lists, next to Kalshi's cost (fee in) and Pin",
+   "shown for reference and never flagged. Nothing here places an order. INFORMATION, NOT AN EDGE The markets that moved most today, at each venue, and every other venue's answer: moved t",
+   "ld number is not a bet on its own: the \"app stale\" and \"lead-lag\" leads both graded as no edge against the close, and Results shows what the record backs. Nothing here places an order.",
+   "s Pinnacle's no-vig (Matchbook blended in beside it). Ranked rows are leads unless marked PROVEN; check the price in the app before you bet. FILTERS VENUES Connect your free Odds API key",
+   "EARCH ALL NBA MLB NFL NHL MMA Sportsbook All books Sort games by Starting soonest Biggest edge Biggest price gap Most books MY BOOKS NO DATA Load lines first from the Lines tab Best Av",
+   "by what the RESULTS tab says is working. Play types the record marks avoid are left off. Proven types and arbs come first, then promising , then ones too early to judge, biggest edge fi",
+   "BOOK LINES SPORTSBOOK PROPS ARBS MIDDLES Sportsbook All books Sort by Best ranked Biggest edge Starting soonest Sportsbook Betting from My state: only the venues legal where you bet\">",
+   "we showed, the size behind it, the close, the CLV and the result) and check it yourself. Proven needs 50 graded games of one kind at one venue we read ourselves and a CLV t of 2 or more",
+   "ou show it. Same plays for everyone; every play is logged and graded, and none of this is proven yet. GAS LOCKS RESEARCH, NOT A BET Kalshi's daily state gas markets settle on the AAA ave",
+   "t favourite at its first price and grades it, to test whether the pattern holds. It isn't proven under the 50-graded rule, so no units or profit are shown and nothing here is a bet to pl",
+   "ace. Not risk-free: a refinery outage can push a state's price past the line overnight, and one loss at 97¢",
+   "exchanges (Kalshi · Polymarket · Novig · ProphetX · BetOpenly) for two-sided prices that guarantee profit. Enter a total stake on any hit and it splits it for equal profit either way. TX M",
+   "ines tab for a passive scan of standard books MY BETS Every bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on th",
+   "ng problem? Call 1-800-GAMBLER. MATCHES PLAYER PROPS MATCHUPS MAP UNDERS Research, not an edge. Map 1, Map 2 and Maps 1-2 kill Unders on PrizePicks, Underdog and Sleeper where Pinnacle",
+   "whether you're actually sharp. If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bets (bets logged from Sharp Tail f",
+   "inancial or betting advice. Alerts are the same for every subscriber. Past results do not guarantee future results. 21+ only. Gambling problem? Call or text 1-800-GAMBLER. Customize your la",
+   "OPEN Plans and pricing What Free and Pro get, and the price. Paying buys the tool, not an edge OPEN Phone app Install Line Reaper on your home screen and get a push whenever the tracke"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "FanDuel",
+   "BetRivers",
+   "DraftKings",
+   "Kalshi",
+   "Polymarket US",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle",
+   "Novig",
+   "ProphetX"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 19704
+ },
+ "/pricing": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 29089,
+  "ms": 66,
+  "polymarket": [],
+  "claims": [
+   "anked by their own record: Top 3 Arbs and middles with legs, prices and stakes: Count and profit % Pick em and props boards, priced against the sharp number: The board; picks on lines ab",
+   "ove the fair hidden Esports match boards and our ratings (tagged model, not an edge): Match boards Sharp Tail (research): big accounts entries with the trader and price: 30",
+   "riced against the sharp number Esports match boards and our ratings (tagged model, not an edge) Sharp Tail (research): big accounts entries with the trader and price: Real time Live al",
+   "on for everyone until the paywall goes on. What the record backs today What RESULTS marks proven today: Main lines vs the sharp fair at BetRivers: 396 graded, CLV +2.8% against the close",
+   ", profit not shown yet (it has not cleared chance); not open to Texas residents Nothing is proven",
+   "BEST PLAYS Top 3 Every play Arbs and middles with legs, prices and stakes ARBS Count and profit % Included Models Pick em and props boards, priced against the sharp number PROPS The boa",
+   "above the fair hidden Included Esports match boards and our ratings (tagged model, not an edge) MATCHUPS Match boards Included Research Sharp Tail (research): big accounts entries with",
+   "STOMIZE, SHOPPER Included Included What a plan never changes Paying buys the tool, not an edge. A price above the fair is a price, not a proven edge, and every row carries its label. O",
+   "nly what RESULTS marks proven is called proven: 50 graded at one venue read straight from that venue, CLV t of 2 against Pinnacle s no-v"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Pinnacle"
+  ],
+  "v1Listed": [
+   "/api/v1/lines"
+  ],
+  "bad": [],
+  "textLen": 7523
+ },
+ "/learn": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 24843,
+  "ms": 58,
+  "polymarket": [],
+  "claims": [
+   ". Beating the close over many bets is the most reliable sign that a way of betting has an edge. Hold and arbitrage Hold is the margin left at the best price on every side. When the bes",
+   ". If the result lands between them, both bets win. Kelly staking Kelly sizes a bet by its edge: the bigger the edge and the shorter the odds, the more of the bankroll it is worth. Most",
+   "the app makes is logged before the game and graded after it. A kind of bet is only called proven when the record clears a fixed test. Glossary Every label and badge in the app, in one or",
+   "ice someone will sell a contract for right now. Cost is the ask with the taker fee added. Beat the close BEAT CLOSE · BEAT IT · LEGS BEAT CLOSE The share of bets whose price was better than the",
+   ". Beating the close over many bets is the most reliable sign that a way of betting has an edge. Closing line value (CLV) → COPY (c) A book s price read second-hand through Action Netwo",
+   "anges every fair and EV on the page, usually by a fraction of a point. No-vig fair odds → Edge EDGE IF FILLED · MIN EDGE PTS · PINNACLE − COST · MODEL − COST The gap, in points of chan",
+   "ce, between the fair (or our model) and what the bet costs you. A positive edge is a price the math likes, not a result. EV EV AT YOURS · MIN EV · MIN EV % · EV TOP Expe",
+   "with its margin taken out (Matchbook blended in when it prices the same line). Every EV, edge and CLV on the site is measured against it. No-vig fair odds → Fills SIZE · AT THE PRICE",
+   "tract price in cents, with the fee added when the screen says fee in. INFORMATION, NOT AN EDGE Facts about the market, such as how far a line moved. Useful context; on its own it has g",
+   "raded as no edge. LEAD LEADS A price the math likes that the record has not backed: under 50 graded, or gr",
+   "alone is not a bet: the payouts can even it out, and the softest number has graded as no edge. LINE MOVES MOVES · MOVE · CHART Each venue s price for a side over time, saved every few",
+   "ills at, walking down the order book, and drops prices that cannot take it. MODEL, NOT AN EDGE Our own model s number shown next to the market s. In its held-out test the market s pric",
+   "tat for a player. A line far from it is the model disagreeing with the market, not a bet. PROVEN (label) The label the record marks proven only after 50 graded bets of one kind at one ve",
+   "lds, with alerts off. Nothing on it is a recommendation until RESULTS says otherwise. ROI Profit divided by the money staked. It needs hundreds of bets to settle, which is why CLV is jud",
+   "Still at old number Venues that have not followed a move yet. That alone has graded as no edge against the close. t-stat CLV T How many standard errors the average CLV sits above zero.",
+   "d the CFTC exchanges (Kalshi, Polymarket US, Gemini). No sportsbook is legal there. Units Profit counted in stakes of one unit each, so records with different bet sizes compare. Verdict",
+   "record: a lead while it builds, failed when it lost to the close, and what the rule calls proven once it passes the test. W-L W-L-P · RECORD Wins, losses and pushes of graded bets. A win"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 1,
+  "amSamples": [],
+  "venues": [
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 11741
+ },
+ "/status": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 35108,
+  "ms": 96,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "FanDuel",
+   "BetRivers",
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3296
+ },
+ "/developers": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 86323,
+  "ms": 58,
+  "polymarket": [],
+  "claims": [
+   "er person: every caller gets the same data. Every row carries the label the app gives it. PROVEN appears only where RESULTS proves it (50 graded at one venue, CLV t of 2 against Pinnacle",
+   "with the second-best price, what an exchange book fills, and the label the app gives it (PROVEN or LEAD). Parameter What it does league one league key, e.g. nfl, nba, nhl, ncaaf market",
+   "rFrom : Pinnacle s no-vig price (power method); EV is after each venue s fee , labels : { proven : PROVEN: the venue s main lines are proven on RESULTS , lead : LEAD: research, not a pro",
+   "ven edge }, locked : false, count : 2, rows : [ { id : pin-1639313817|ml|away , market : pin-16393",
+   "alse, freshness : live , confidence : 1, label : lead , labelText : LEAD: research, not a proven edge. A price above the fair has not beaten the close at this venue yet. }, { id : pin-16",
+   "e, freshness : live , confidence : 0.86, label : lead , labelText : LEAD: research, not a proven edge. A price above the fair has not beaten the close at this venue yet. } ] } TRY IT WIT",
+   "ince we first saw the market, and whether every other venue followed. Information, not an edge. Parameter What it does window open (since first seen), 3h or 1h type price or line leagu",
+   "atus : moved , american : null, point : null } ] } ], note : A move is information, not a proven edge. Venues still at the old number have graded as no edge against the close. } TRY IT W",
+   "(RESULTS) GET /api/v1/record Every kind and venue on the close scoreboard with its label: proven only on the strict rule, everything else says why not. Parameter What it does days only f",
+   "le s no-vig close , kinds : [ ev , props-ev ], shortfallSd : 1.5, text : A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "erall : { graded : 6561, beatPct : 68.24, clv : 1.59, clvT : 18.73, label : pooled, never proven }, proven : 1, rows : [ { kind : ev , kindLabel : Main lines vs the sharp fair , book : d",
+   ", clv2min : 1.64, clv2minN : 777, wins : 60, losses : 50, units : -1.53, expUnits : 0.83, profitShown : false, texas : false, label : copied book , why : Read through Action Network s copy, n",
+   "ever at the book itself, so it cannot be proven. }, { kind : ev , kindLabel : Main lines vs the sharp fair , book : bet365 , bookName : b",
+   "97, clv2min : 2.69, clv2minN : 584, wins : 52, losses : 43, units : 3.67, expUnits : 0.3, profitShown : false, texas : false, label : copied book , why : Read through Action Network s copy, n",
+   "ever at the book itself, so it cannot be proven. } ], labels : [ { tool : Exchange Shopper: best prices above fair , where : ODDS SCREEN",
+   "lose yet. }, { tool : NBA, CFB and CBB props models , where : PROPS , tag : model, not an edge , why : Our own projections. None has cleared our bar against the apps lines in held-out",
+   "e the start; under that a row is building with no rank. The label is the record s own; no profit or units. Parameter What it does league one league code, e.g. NBA, NFL, CFB, LOL window 7",
+   "is the record s own, from its page: all leagues and all time, never from the slice shown. Proven needs 50 graded, a CLV t of 2 or more and results not running well under what the close e",
+   "xpected. No profit, units or stakes here: a record shows units on its own page, and calls them a profit only",
+   "on a proven kind. , note : No published record has a pick logged before its start and graded against",
+   "e week (the date of its Monday): what graded, the move toward the 50 bar, and what became proven or started losing to the close. Live example: GET /api/v1/digest/2026-10-26 , read 09:55",
+   "le s no-vig close , kinds : [ ev , props-ev ], shortfallSd : 1.5, text : A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "ick em kinds only sharp-price legs. }, summary : { graded : 1024, kinds : 53, quiet : 15, proven : [ { kind : ev , kindLabel : Main lines vs the sharp fair , book : betrivers , bookName",
+   ": BetRivers , graded : 396, clv : 2.84, texas : false, profitShown : false, units : null } ], newlyProven : [], noLongerProven : [], newlyFailed : [ Main li",
+   "{ graded : 689, clv : 1.69 }, all : { graded : 6561, clv : 1.59 }, label : pooled, never proven } }, rows : [ { kind : ev , kindLabel : Main lines vs the sharp fair , book : polymarketu",
+   "week : { graded : 13, clv : -3.02, beatPct : 23.08, wins : 2, losses : 2, units : -0.95, profitShown : false }, bar : { target : 50, before : 10, after : 23, left : 27, tBefore : 0.74, tAfte",
+   "ed : 23, clv : -1.16, clvT : -0.95, beatPct : 47.83, wins : 4, losses : 3, units : -0.95, profitShown : false, label : losing to the close , why : null }, labelBefore : building , change : ne",
+   "se, week : { graded : 6, clv : 2.45, beatPct : 66.67, wins : 3, losses : 0, units : 2.34, profitShown : false }, bar : { target : 50, before : 45, after : 51, left : 0, tBefore : 2.39, tAfter",
+   "ded : 51, clv : 2.85, clvT : 2.57, beatPct : 74.51, wins : 31, losses : 20, units : 3.58, profitShown : false, label : too early , why : The CLV t is under 2. }, labelBefore : too early , cha",
+   "lose yet. }, { tool : NBA, CFB and CBB props models , where : PROPS , tag : model, not an edge , why : Our own projections. None has cleared our bar against the apps lines in held-out",
+   "rd: the weekly record digest (Mondays 13:00 UTC), record changes on RESULTS (a kind newly proven, no longer proven, losing to the close, or reaching 50 graded; checked hourly), and today",
+   "sts. Nothing is sized, picked or set up per person, and nothing places a bet. A post says proven only of what RESULTS marks proven, and shows a profit only where RESULTS does. One webhoo",
+   "command is one API call on this key's plan, so the key's limits apply. A record is called proven only where RESULTS proves it, with a profit only where RESULTS shows one. Application ID",
+   "Line Reaper line move style= width:100%;height:360px;border:0 loading= lazy /iframe COPY Proven record card What RESULTS proves, nothing more: graded count, CLV against the close, recor",
+   "d, and profit only where it clears chance. With the script (sizes itself) script src= https://line-reap"
+  ],
+  "americanTokens": 6,
+  "decimalTokens": 3,
+  "amSamples": [
+   "ices : { pinnacle : -488, polymarketus : -524 } }, { t : 2026-10-",
+   "ices : { pinnacle : -488, polymarketus : -489 } } ] } ] } TRY IT ",
+   ", prices : { draftkings : -114, bet365 : -115 } }, { t : 2026-10-",
+   ", prices : { draftkings : -114, bet365 : -115 } } ] }, { id : pin"
+  ],
+  "venues": [
+   "FanDuel",
+   "BetRivers",
+   "DraftKings",
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Sleeper",
+   "Pinnacle",
+   "bet365"
+  ],
+  "v1Listed": [
+   "/api/v1/search",
+   "/api/v1/lines",
+   "/api/v1/leaderboard",
+   "/api/v1/alerts"
+  ],
+  "bad": [
+   "yline , marketName : Moneyline , line : null, player : null, selection : Brooklyn Ne",
+   "window : open , type : price , league : null, kind : null, linesAt : 2026-10-27T09:5",
+   " Pinnacle , status : moved , american : null, point : null } ] }, { id : pin-1639157",
+   " Pinnacle , status : moved , american : null, point : null } ] } ], note : A move is",
+   " t : 2026-10-26T16:19:59.449Z , point : null, fair : 0.1813, prices : { pinnacle : 3"
+  ],
+  "textLen": 34675
+ },
+ "/leagues": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 15274,
+  "ms": 355,
+  "polymarket": [],
+  "claims": [
+   "esports CS2 esports Valorant esports Dota 2 esports What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league Not a Texas",
+   "venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else on this page and in the app Tool",
+   "aten the close yet. Pick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. Line Reaper Leagues NFL NBA",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2564
+ },
+ "/lines": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 40330,
+  "ms": 586,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 16038
+ },
+ "/nfl": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16097,
+  "ms": 96,
+  "polymarket": [],
+  "claims": [
+   "hours. The page fills in when the books post lines. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 111 of its",
+   "graded flags in the public file were NFL games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "change flags have not beaten the close yet. NFL model ODDS SCREEN NFL MODEL model, not an edge Kalshi s price an hour before kickoff beat it in the held-out test. Pick em leg flags (Pr",
+   "izePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NBA NBA NHL NH",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2917
+ },
+ "/nba": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 17607,
+  "ms": 110,
+  "polymarket": [],
+  "claims": [
+   ". Best prices above fair → Every venue side by side → Pick em lines → Props model (not an edge) → Betting from Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware",
+   "ange flags have not beaten the close on our record. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 267 of its",
+   "graded flags in the public file were NBA games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "ge flags have not beaten the close yet. NBA, CFB and CBB props models PROPS model, not an edge Our own projections. None has cleared our bar against the apps lines in held-out tests. I",
+   "f the close so far. Pick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NHL NH",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 0,
+  "amSamples": [
+   "s · Moneyline · in 13h 45m Polymarket US +491 +471 17.5% +3.4% bo"
+  ],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3629
+ },
+ "/nhl": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 18064,
+  "ms": 149,
+  "polymarket": [],
+  "claims": [
+   "ange flags have not beaten the close on our record. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 230 of its",
+   "graded flags in the public file were NHL games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "ng places an order. Pick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 6,
+  "decimalTokens": 0,
+  "amSamples": [
+   " Blackhawks · Spread · in 14h 12m Kalshi -430 -439 81.5% +0.4% fi",
+   " Hurricanes · Spread · in 14h 12m Kalshi -458 -463 82.3% +0.2% fi",
+   "den Knights · Spread · in 16h 12m Kalshi -661 -667 87.0% +0.1% fi"
+  ],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3718
+ },
+ "/cfb": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 17885,
+  "ms": 112,
+  "polymarket": [],
+  "claims": [
+   ". Best prices above fair → Every venue side by side → Pick em lines → Props model (not an edge) → Betting from Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware",
+   "ange flags have not beaten the close on our record. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 678 of its",
+   "graded flags in the public file were college football games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "ge flags have not beaten the close yet. NBA, CFB and CBB props models PROPS model, not an edge Our own projections. None has cleared our bar against the apps lines in held-out tests. P",
+   "ick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 4,
+  "decimalTokens": 0,
+  "amSamples": [
+   "ssouri State · Spread · in 14h 5m Kalshi -126 -127 56.0% +0.4% fi",
+   "ate · Moneyline · 10-29 00:00 UTC Kalshi -148 -149 59.8% +0.1% no"
+  ],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3692
+ },
+ "/cbb": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16222,
+  "ms": 90,
+  "polymarket": [],
+  "claims": [
+   "4 UTC (just now). Best prices above fair → Every venue side by side → Props model (not an edge) → Betting from Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware",
+   "hours. The page fills in when the books post lines. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were college basketball games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "ge flags have not beaten the close yet. NBA, CFB and CBB props models PROPS model, not an edge Our own projections. None has cleared our bar against the apps lines in held-out tests. P",
+   "ick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2981
+ },
+ "/mlb": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16356,
+  "ms": 99,
+  "polymarket": [],
+  "claims": [
+   "usual state: the exchanges track Pinnacle closely. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 8 of its gr",
+   "aded flags in the public file were MLB games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "aten the close yet. Pick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3024
+ },
+ "/soccer": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 17460,
+  "ms": 129,
+  "polymarket": [],
+  "claims": [
+   "t can use. Board read 09:54 UTC (just now). Best prices above fair → Soccer model (not an edge) → Pick em lines → Betting from Alabama Alaska Arizona Arkansas California Colorado Conne",
+   "ange flags have not beaten the close on our record. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were soccer matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   ". Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer ESPORTS MATCHUPS model, not an edge The exchanges own prices beat our ratings in walk-forward tests. Pick em leg flags (Prize",
+   "Picks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 0,
+  "amSamples": [
+   "nto FC · Spread · 10-28 23:30 UTC Kalshi -290 -293 74.5% +0.2% fi"
+  ],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3522
+ },
+ "/tennis": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 18711,
+  "ms": 93,
+  "polymarket": [],
+  "claims": [
+   "ange flags have not beaten the close on our record. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were tennis matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "aten the close yet. Pick em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 10,
+  "decimalTokens": 0,
+  "amSamples": [
+   "try · Moneyline · in 5 min Polymarket US -1427 -1812 94.8% +1.4% b",
+   "ger · Moneyline · in 5 min Polymarket US -1427 -1526 93.8% +0.4% b",
+   "nes · Moneyline · in 4h 5m Polymarket US -1683 -1801 94.7% +0.4% b",
+   "le · Moneyline · in 5h 35m Polymarket US -788 -815 89.1% +0.4% bo"
+  ],
+  "venues": [
+   "BetRivers",
+   "Polymarket US",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3899
+ },
+ "/esports/lol": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 18495,
+  "ms": 65,
+  "polymarket": [],
+  "claims": [
+   "where there is one. Board read 09:54 UTC (1 min ago). Match board → Matchup model (not an edge) → Pick em lines → Betting from Alabama Alaska Arizona Arkansas California Colorado Conne",
+   "ports matches have none, and then nothing is judged. Our matchup model is a model, not an edge: the exchanges' prices beat it in walk-forward tests. What the record says A kind is mark",
+   "ed proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were League of Legends matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "y Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer ESPORTS MATCHUPS model, not an edge The exchanges own prices beat our ratings in walk-forward tests. Pick em leg flags (Prize",
+   "Picks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 4113
+ },
+ "/esports/cs2": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 24801,
+  "ms": 62,
+  "polymarket": [],
+  "claims": [
+   "where there is one. Board read 09:54 UTC (1 min ago). Match board → Matchup model (not an edge) → Pick em lines → Betting from Alabama Alaska Arizona Arkansas California Colorado Conne",
+   "ports matches have none, and then nothing is judged. Our matchup model is a model, not an edge: the exchanges' prices beat it in walk-forward tests. What the record says A kind is mark",
+   "ed proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were CS2 matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "y Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer ESPORTS MATCHUPS model, not an edge The exchanges own prices beat our ratings in walk-forward tests. Pick em leg flags (Prize",
+   "Picks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 7382
+ },
+ "/esports/valorant": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 19139,
+  "ms": 67,
+  "polymarket": [],
+  "claims": [
+   "where there is one. Board read 09:54 UTC (1 min ago). Match board → Matchup model (not an edge) → Pick em lines → Betting from Alabama Alaska Arizona Arkansas California Colorado Conne",
+   "ports matches have none, and then nothing is judged. Our matchup model is a model, not an edge: the exchanges' prices beat it in walk-forward tests. What the record says A kind is mark",
+   "ed proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were Valorant matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "y Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer ESPORTS MATCHUPS model, not an edge The exchanges own prices beat our ratings in walk-forward tests. Pick em leg flags (Prize",
+   "Picks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 4485
+ },
+ "/esports/dota2": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 19682,
+  "ms": 74,
+  "polymarket": [],
+  "claims": [
+   "ports matches have none, and then nothing is judged. Our matchup model is a model, not an edge: the exchanges' prices beat it in walk-forward tests. What the record says A kind is mark",
+   "ed proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were Dota 2 matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "y Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer ESPORTS MATCHUPS model, not an edge The exchanges own prices beat our ratings in walk-forward tests. Pick em leg flags (Prize",
+   "Picks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 4655
+ },
+ "/learn/no-vig-fair-odds": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8915,
+  "ms": 66,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 9,
+  "decimalTokens": 0,
+  "amSamples": [
+   "fferently. Here is Pinnacle-style −150 / +130 (the two sides add ",
+   "avourite Fair Underdog Fair Power 58.40% -140 41.60% +140 Multipl",
+   "icative 57.98% -138 42.02% +138 Additive 58.26% -14",
+   "0 41.74% +140 Shin 58.26% -140 41.74% +140 Multiplicative scal"
+  ],
+  "venues": [
+   "Underdog",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2394
+ },
+ "/learn/expected-value": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8064,
+  "ms": 42,
+  "polymarket": [],
+  "claims": [
+   "ce (Pinnacle no-vig) 50.0% Price you can get +110 (2.10) Chance that price implies 47.62% Edge in points 2.38 pts EV +5.00% EV on $100 $5.00 Quarter Kelly stake 1.14% of bankroll What",
+   "f bet actually wins over time is what the record answers, and the app marks a kind of bet proven only after the test on the record page . Exchange prices on the odds screen already inclu"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 2,
+  "amSamples": [
+   "1. A side that is fair at 50% and priced +110 (decimal 2.10) has ",
+   "Pinnacle no-vig) 50.0% Price you can get +110 (2.10) Chance that "
+  ],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1609
+ },
+ "/learn/closing-line-value": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8126,
+  "ms": 65,
+  "polymarket": [],
+  "claims": [
+   ". Beating the close over many bets is the most reliable sign that a way of betting has an edge. Why the close By the start of a game the market has taken in every bet and every piece o"
+  ],
+  "americanTokens": 3,
+  "decimalTokens": 0,
+  "amSamples": [
+   "shows it in tens. Worked example You bet +100 (decimal 2.00). At ",
+   "e close (no-vig) 51.12% Fair close price -105 Your price +100 CLV"
+  ],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1745
+ },
+ "/learn/hold-and-arbitrage": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8188,
+  "ms": 60,
+  "polymarket": [],
+  "claims": [
+   "ke side A (+105) $49.63 Stake side B (+102) $50.37 Returned whichever wins $101.74 Locked profit +1.74% What goes wrong Prices move. Place the leg most likely to move or be limited first"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 0,
+  "amSamples": [
+   "hold” lists them. An arb Worked example: +105 at one venue, +102 "
+  ],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1712
+ },
+ "/learn/middles": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 7624,
+  "ms": 46,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1319
+ },
+ "/learn/kelly-criterion": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 7554,
+  "ms": 58,
+  "polymarket": [],
+  "claims": [
+   "aking | Line Reaper LINE REAPER OPEN THE APP Learn Kelly staking Kelly sizes a bet by its edge: the bigger the edge and the shorter the odds, the more of the bankroll it is worth. Most",
+   "ly assumes the fair chance is exactly right. It never is, and full Kelly on an overstated edge loses money fast, so a quarter is the common choice. A negative EV gets a stake of zero."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1274
+ },
+ "/learn/exchange-fees": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8118,
+  "ms": 50,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 4,
+  "amSamples": [],
+  "venues": [
+   "Kalshi",
+   "Polymarket US",
+   "Gemini"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1730
+ },
+ "/learn/pickem-math": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 10284,
+  "ms": 75,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 25,
+  "decimalTokens": 0,
+  "amSamples": [
+   "As odds PrizePicks Power 2 2/2: 3x 57.7% -137 PrizePicks Power 3 ",
+   "3/3: 6x 55.0% -122 PrizePicks Power 4 ",
+   "4/4: 10x 56.2% -128 PrizePicks Power 5 ",
+   "5/5: 20x 54.9% -122 PrizePicks Power 6 "
+  ],
+  "venues": [
+   "PrizePicks",
+   "Underdog",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2780
+ },
+ "/learn/how-the-record-works": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 9963,
+  "ms": 57,
+  "polymarket": [],
+  "claims": [
+   "the app makes is logged before the game and graded after it. A kind of bet is only called proven when the record clears a fixed test. Grading Every flag is saved with its price and time",
+   "cle’s no-vig closing price (CLV) and, once the game is over, the result (win, loss, push, profit at the price). Exchange flags are also re-read two minutes later, so a price that had gon",
+   "rice you could have got. Losers stay in. Nothing is removed after the fact. The test for “proven” At least 50 graded bets of one kind, at one venue read straight from that venue (a copie",
+   "he math likes that the record has not yet backed. The app labels every ranked row LEAD or PROVEN, and the Results tab shows the count for each kind as it builds. Today What the record pr",
+   "ick’em apps and CFTC exchanges (Kalshi, Polymarket US, Gemini) are. What it does not mean Proven means a kind of bet has beaten the close over the sample so far. It does not promise futu",
+   "re results, and a proven kind can stop working as venues adjust. Bet only what you can afford to lose. Open Result"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Kalshi",
+   "Polymarket US",
+   "Gemini",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2113
+ },
+ "/terms": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 19877,
+  "ms": 65,
+  "polymarket": [],
+  "claims": [
+   "terms Who can use Line Reaper What Line Reaper is, and what it is not Betting risk and no guarantees Your account Subscriptions, billing and automatic renewal How you may use the Service Our",
+   "lar person place any particular bet or trade. See the Disclaimer . 4. Betting risk and no guarantees Betting and trading on event outcomes is risky, and you can lose all of the money you sta",
+   "ENT THE LAW ALLOWS: WE ARE NOT LIABLE FOR ANY BETTING, TRADING OR INVESTMENT LOSSES, LOST PROFITS OR WINNINGS, LOST DATA, OR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 12930
+ },
+ "/privacy": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 12329,
+  "ms": 60,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 6117
+ },
+ "/refunds": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 7803,
+  "ms": 55,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2453
+ },
+ "/disclaimer": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 9489,
+  "ms": 43,
+  "polymarket": [],
+  "claims": [
+   "r reject bets, and fees and slippage apply. Your results will differ. Past results do not guarantee future results. Edges shrink, markets change, and models are wrong. Models, EV and arbitr",
+   "voided, re-priced or settled differently by each platform, which can turn a sure-looking profit into a loss. Check every price and every market's rules yourself before acting. Data accu",
+   ". They can be delayed, incomplete or wrong, and feeds can stop without warning. We do not guarantee the accuracy, completeness or timeliness of any data. Traders and wallets Sharp Tail anal"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3926
+ },
+ "/responsible-gambling": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8711,
+  "ms": 97,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2890
+ },
+ "/data-sources": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 6716,
+  "ms": 66,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1465
+ },
+ "/digest": {
+  "status": 302,
+  "type": "text/plain; charset=utf-8",
+  "loc": "/digest/2026-10-19",
+  "size": 40,
+  "ms": 68
+ },
+ "/results": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 3991,
+  "ms": 65,
+  "polymarket": [],
+  "claims": [
+   "Line Reaper: the public record | Line Reaper LINE REAPER Line Reaper: the public record Proven on the strict rule: BetRivers Main lines vs the sharp fair (396 graded, CLV +2.8% vs the",
+   "close, profit not shown). 67 other kinds are not proven. OPEN IN LINE REAPER SAVE IMAGE Read 2026-10-27 09:55 UTC. The card is drawn from the liv"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 490
+ },
+ "/r/nobody-here-xyz": {
+  "status": 404,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 339,
+  "ms": 46,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 81
+ },
+ "/r/ab": {
+  "status": 404,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 339,
+  "ms": 49,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 81
+ },
+ "/share/record": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 3996,
+  "ms": 47,
+  "polymarket": [],
+  "claims": [
+   "Line Reaper: the public record | Line Reaper LINE REAPER Line Reaper: the public record Proven on the strict rule: BetRivers Main lines vs the sharp fair (396 graded, CLV +2.8% vs the",
+   "close, profit not shown). 67 other kinds are not proven. OPEN IN LINE REAPER SAVE IMAGE Read 2026-10-27 09:55 UTC. The card is drawn from the liv"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 490
+ },
+ "/share/price": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 3798,
+  "ms": 208,
+  "polymarket": [],
+  "claims": [
+   "ts @ Boston Celtics. Pinnacle s fair +471, EV +3.42% after the fee. LEAD: research, not a proven edge. OPEN IN LINE REAPER SAVE IMAGE Read 2026-10-27 09:54 UTC. The card is drawn from th"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 0,
+  "amSamples": [
+   " Brooklyn Nets +491 at Polymarket US | ",
+   "Line Reaper LINE REAPER Brooklyn Nets +491 at Polymarket US Br"
+  ],
+  "venues": [
+   "Polymarket US",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 461
+ },
+ "/share/move": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 3121,
+  "ms": 52,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 299
+ },
+ "/share/league?league=nfl": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 3430,
+  "ms": 87,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 403
+ },
+ "/share/digest": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 3976,
+  "ms": 47,
+  "polymarket": [],
+  "claims": [
+   "week of Oct 19 to 25 Week of Oct 19 to 25: 6,237 games graded across 55 kinds and venues. Proven: Main lines vs the sharp fair · BetRivers (373 graded, CLV +2.8%). OPEN THE WEEK SAVE IMA"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 494
+ },
+ "/card/record.png": {
+  "status": 200,
+  "type": "image/png",
+  "loc": null,
+  "size": 69160,
+  "ms": 67
+ },
+ "/card/price.png": {
+  "status": 200,
+  "type": "image/png",
+  "loc": null,
+  "size": 68916,
+  "ms": 133
+ },
+ "/card/move.png": {
+  "status": 200,
+  "type": "image/png",
+  "loc": null,
+  "size": 34241,
+  "ms": 93
+ },
+ "/card/league.png?league=nfl": {
+  "status": 200,
+  "type": "image/png",
+  "loc": null,
+  "size": 43876,
+  "ms": 91
+ },
+ "/card/digest.png": {
+  "status": 200,
+  "type": "image/png",
+  "loc": null,
+  "size": 63090,
+  "ms": 122
+ },
+ "/embed/best-price": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 4435,
+  "ms": 49,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 3,
+  "decimalTokens": 0,
+  "amSamples": [
+   "oneyline · 10/27 23:40 UTC Polymarket US +491 FAIR +471 EV +3.4% ",
+   "SIZE size not read NEXT Gemini +490 EV is after the ven"
+  ],
+  "venues": [
+   "Polymarket US",
+   "Gemini",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 468
+ },
+ "/embed/line-move": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 7059,
+  "ms": 76,
+  "polymarket": [],
+  "claims": [
+   "ad, a step at each change; dashed is Pinnacle's no-vig fair. A move is information, not a proven edge. History is kept until 6 hours after the start. LINE REAPER ↗"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 0,
+  "amSamples": [
+   "% 22.4% 27.9% 16:19 01:03 09:47 Pinnacle +275 Polymarket US +280 "
+  ],
+  "venues": [
+   "Polymarket US",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 455
+ },
+ "/embed/record": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 4483,
+  "ms": 44,
+  "polymarket": [],
+  "claims": [
+   "rd | Line Reaper Line Reaper record read 09:55 UTC BetRivers Main lines vs the sharp fair PROVEN NOT IN TEXAS Graded 396 CLV vs close +2.8% Beat close 81% Won-lost 633-589 Profit — Profi",
+   "t not shown: results have not cleared chance yet. Proven here means it beats Pinnacle's closing price, not that it has made money. 67 other kinds",
+   "on the record are not proven (4 building, 3 losing to the close). The rule: 50 graded at one venue we read ourselves a"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 572
+ },
+ "/embed.js": {
+  "status": 200,
+  "type": "application/javascript; charset=utf-8",
+  "loc": null,
+  "size": 1800,
+  "ms": 46
+ },
+ "/nfl?state=TX": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16097,
+  "ms": 42,
+  "polymarket": [],
+  "claims": [
+   "hours. The page fills in when the books post lines. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 111 of its",
+   "graded flags in the public file were NFL games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "change flags have not beaten the close yet. NFL model ODDS SCREEN NFL MODEL model, not an edge Kalshi s price an hour before kickoff beat it in the held-out test. Pick em leg flags (Pr",
+   "izePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NBA NBA NHL NH",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2917
+ },
+ "/nfl?state=CA": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16276,
+  "ms": 68,
+  "polymarket": [],
+  "claims": [
+   "hours. The page fills in when the books post lines. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "price legs. The record is kept per kind and venue, not per league. Kind Graded California Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 111 of its",
+   "graded flags in the public file were NFL games Not a California venue Profit not shown yet Nothing is proven yet at a venue a California resident can use. Everything",
+   "change flags have not beaten the close yet. NFL model ODDS SCREEN NFL MODEL model, not an edge Kalshi s price an hour before kickoff beat it in the held-out test. Pick em leg flags (Pr",
+   "izePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NBA NBA NHL NH",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2943
+ },
+ "/nfl?state=ZZ": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16097,
+  "ms": 40,
+  "polymarket": [],
+  "claims": [
+   "hours. The page fills in when the books post lines. What the record says A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 111 of its",
+   "graded flags in the public file were NFL games Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "change flags have not beaten the close yet. NFL model ODDS SCREEN NFL MODEL model, not an edge Kalshi s price an hour before kickoff beat it in the held-out test. Pick em leg flags (Pr",
+   "izePicks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NBA NBA NHL NH",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2917
+ },
+ "/esports/lol?state=TX": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 18495,
+  "ms": 43,
+  "polymarket": [],
+  "claims": [
+   "where there is one. Board read 09:54 UTC (1 min ago). Match board → Matchup model (not an edge) → Pick em lines → Betting from Alabama Alaska Arizona Arkansas California Colorado Conne",
+   "ports matches have none, and then nothing is judged. Our matchup model is a model, not an edge: the exchanges' prices beat it in walk-forward tests. What the record says A kind is mark",
+   "ed proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pi",
+   "harp-price legs. The record is kept per kind and venue, not per league. Kind Graded Texas Profit BetRivers main lines vs the sharp fair proven 396 graded across every league; 0 of its gr",
+   "aded flags in the public file were League of Legends matches Not a Texas venue Profit not shown yet Nothing is proven yet at a venue a Texas resident can use. Everything else",
+   "y Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer ESPORTS MATCHUPS model, not an edge The exchanges own prices beat our ratings in walk-forward tests. Pick em leg flags (Prize",
+   "Picks, Underdog, Sleeper, DK Pick6) PROPS not proven Flagged legs have broken about even against Pinnacle s close. More leagues NFL NFL NBA NB",
+   "at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "PrizePicks",
+   "Underdog",
+   "Sleeper",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 4113
+ },
+ "/api/v1/states": {
+  "status": 401,
+  "type": "application/json; charset=utf-8",
+  "loc": null,
+  "size": 107,
+  "ms": 44
+ },
+ "/sales": {
+  "status": 404,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 144,
+  "ms": 40,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 25
+ },
+ "/alerts": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 24562,
+  "ms": 90,
+  "polymarket": [],
+  "claims": [
+   "S PINNACLE'S OWN CLOSE — 0 with Pinnacle's close kept By label Alerts Bets Graded CLV W-L PROVEN 1 1 0 — beat — — — RESEARCH 2 2 0 — beat — — — NO GRADE 19 0 0 — beat — — — Each bet an a",
+   "the tracker that records it, with the same code and label as RESULTS, which marks a kind proven only at a venue where it clears the rule. CLV is the close against the price the alert sh",
+   "owed. Units are 1u at that price, a profit only where RESULTS shows one. * marks units that are not a profit claim. Alerts, newest f",
+   "irst Alerts 2026-10-27 09:35 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Morgan MAPS 1-2 Kills (was +5",
+   ".1%) Edge gone: Quid MAPS 1-2 Kills (was +5.1%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "Pinnacle s close. Alerts 2026-10-27 09:34 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2",
+   "Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 09:10 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) New edge +5.1%: Morgan UNDER 5.5 MAPS",
+   "1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5",
+   "ord grades legs). Alerts 2026-10-27 09:01 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Morgan MAPS 1-2 Kills (was +5",
+   ".1%) Edge gone: Quid MAPS 1-2 Kills (was +5.1%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Line ↓ 7.5 → 7: Josedeodo MAPS 1-2 Kills · market",
+   "moving our way, edge shrinking · now -18.5% · SIDE FLIPPED Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A pick em board move: a pick em leg has no pri",
+   "en Pinnacle — — — Alerts 2026-10-27 08:43 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Morgan MAPS 1-2 Kills (was +5",
+   ".1%) Edge gone: Quid MAPS 1-2 Kills (was +5.1%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "Pinnacle s close. Alerts 2026-10-27 08:40 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2",
+   "Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 08:13 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Quid MAPS 1-2 Kills (was +5.1",
+   "%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A pick em board move: a pick em leg has no pri",
+   "record grades legs). Alerts 2026-10-27 08:10 UTC · reached 0 phones, 0 webhooks NO GRADE Edge gone: knight MAPS 1-2 Kills (was +6.4%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 08:10 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 10 → 10.5: knight MAPS 1-2 Kills",
+   "· market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2",
+   "Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "phones, 0 webhooks NO GRADE Line ↓ 9.5 → 9: Yeon MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.0% Line ↓ 11 → 10.5: Caliste MAPS 1-2 Kills · market moving our way, e",
+   "dge shrinking · now +5.4% Line ↓ 6.5 → 5.5: Doran MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.7% Edge gone: Doran MAPS 1-2 Kills (was +6.3%) Line ↓ 6 → 5.5: Morgan",
+   "MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.5% Edge gone: Morgan MAPS 1-2 Kills (was +8.1%) Line ↓ 9 → 8.5: JiaQi MAPS 1-2 Kills · market mov",
+   "ing our way, edge shrinking · now +3.5% Edge gone: JiaQi MAPS 1-2 Kills (was +6.9%) Line ↓ 9.5 → 9: Gumayusi MAPS 1-2 Kills · market m",
+   "oving our way, edge shrinking · now +3.4% Edge gone: Gumayusi MAPS 1-2 Kills (was +6.3%) …and 4 more A pick em board move: a pick em leg",
+   "phones, 0 webhooks NO GRADE Line ↓ 9.5 → 9: Yeon MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.0% Line ↓ 6 → 5.5: Morgan MAPS 1-2 Kills · market moving our way, edge",
+   "shrinking · now +4.5% Edge gone: Morgan MAPS 1-2 Kills (was +8.1%) Line ↓ 9 → 8.5: JiaQi MAPS 1-2 Kills · market mov",
+   "ing our way, edge shrinking · now +3.5% Edge gone: JiaQi MAPS 1-2 Kills (was +6.9%) Line ↓ 9.5 → 9: Gumayusi MAPS 1-2 Kills · market m",
+   "oving our way, edge shrinking · now +3.4% Edge gone: Gumayusi MAPS 1-2 Kills (was +6.3%) Line ↓ 6.5 → 6: Duduhh MAPS 1-2 Kills · market",
+   "moving our way, edge shrinking · now +3.1% Edge gone: Duduhh MAPS 1-2 Kills (was +6.9%) Line ↓ 5.5 → 5: Inspired MAPS 1-2 Kills · market",
+   "moving our way, edge shrinking · now -12.1% · SIDE FLIPPED …and 1 more A pick em board move: a pick em leg has",
+   "8 open Pinnacle — — — Alerts 2026-10-27 07:44 UTC · reached 0 phones, 0 webhooks NO GRADE Edge gone: Peyz MAPS 1-2 Kills (was +6.0%, pulled from the board) Edge gone: Zeus MAPS 1-2 Kil",
+   "Pinnacle s close. Alerts 2026-10-27 07:32 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Quid MAPS 1-2 Kills (was +5.1",
+   "%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: knight MAPS 1-2 Kills (was +6.4%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "ord grades legs). Alerts 2026-10-27 07:30 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 10 → 10.5: knight MAPS 1-2 Kills",
+   "· market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2",
+   "Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 07:05 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Quid MAPS 1-2 Kills (was +5.1",
+   "%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: knight MAPS 1-2 Kills (was +6.4%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "ord grades legs). Alerts 2026-10-27 07:00 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 10 → 10.5: knight MAPS 1-2 Kills",
+   "· market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2",
+   "Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "PROPS record grades legs). EV alerts 2026-10-27 06:59 UTC · reached 0 phones, 0 webhooks PROVEN +3.2% Golden State Valkyries @ Atlanta Dream spreads Atlanta Dream -2.5 @ betrivers -121",
+   "n CLV Result Atlanta Dream -2.5 · BetRivers WNBA · Golden State Valkyries @ Atlanta Dream PROVEN -121 1.826 open Pinnacle — — — DOWNLOAD JSON SEE THE FULL RECORD → Line Reaper Pricing Ho"
+  ],
+  "americanTokens": 4,
+  "decimalTokens": 3,
+  "amSamples": [
+   "t DENDELE CS · Kalshi CS2 · CS2 RESEARCH +114 2.139 open Pinnacle",
+   "Life Esports · Kalshi LOL · LoL RESEARCH -239 1.418 open Pinnacle",
+   "m spreads Atlanta Dream -2.5 @ betrivers -121 (fair -130) Bet Pri",
+   "n State Valkyries @ Atlanta Dream PROVEN -121 1.826 open Pinnacle"
+  ],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 11923
+ },
+ "/alerts?odds=decimal": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 24562,
+  "ms": 43,
+  "polymarket": [],
+  "claims": [
+   "S PINNACLE'S OWN CLOSE — 0 with Pinnacle's close kept By label Alerts Bets Graded CLV W-L PROVEN 1 1 0 — beat — — — RESEARCH 2 2 0 — beat — — — NO GRADE 19 0 0 — beat — — — Each bet an a",
+   "the tracker that records it, with the same code and label as RESULTS, which marks a kind proven only at a venue where it clears the rule. CLV is the close against the price the alert sh",
+   "owed. Units are 1u at that price, a profit only where RESULTS shows one. * marks units that are not a profit claim. Alerts, newest f",
+   "irst Alerts 2026-10-27 09:35 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Morgan MAPS 1-2 Kills (was +5",
+   ".1%) Edge gone: Quid MAPS 1-2 Kills (was +5.1%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "Pinnacle s close. Alerts 2026-10-27 09:34 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2",
+   "Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 09:10 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) New edge +5.1%: Morgan UNDER 5.5 MAPS",
+   "1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5",
+   "ord grades legs). Alerts 2026-10-27 09:01 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Morgan MAPS 1-2 Kills (was +5",
+   ".1%) Edge gone: Quid MAPS 1-2 Kills (was +5.1%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Line ↓ 7.5 → 7: Josedeodo MAPS 1-2 Kills · market",
+   "moving our way, edge shrinking · now -18.5% · SIDE FLIPPED Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A pick em board move: a pick em leg has no pri",
+   "en Pinnacle — — — Alerts 2026-10-27 08:43 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Morgan MAPS 1-2 Kills (was +5",
+   ".1%) Edge gone: Quid MAPS 1-2 Kills (was +5.1%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "Pinnacle s close. Alerts 2026-10-27 08:40 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2",
+   "Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 08:13 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Quid MAPS 1-2 Kills (was +5.1",
+   "%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A pick em board move: a pick em leg has no pri",
+   "record grades legs). Alerts 2026-10-27 08:10 UTC · reached 0 phones, 0 webhooks NO GRADE Edge gone: knight MAPS 1-2 Kills (was +6.4%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 08:10 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 10 → 10.5: knight MAPS 1-2 Kills",
+   "· market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED New edge +5.1%: Morgan UNDER 5.5 MAPS 1-2 Kills (LoL, PP) New edge +5.1%: Quid UNDER 8.5 MAPS 1-2",
+   "Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "phones, 0 webhooks NO GRADE Line ↓ 9.5 → 9: Yeon MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.0% Line ↓ 11 → 10.5: Caliste MAPS 1-2 Kills · market moving our way, e",
+   "dge shrinking · now +5.4% Line ↓ 6.5 → 5.5: Doran MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.7% Edge gone: Doran MAPS 1-2 Kills (was +6.3%) Line ↓ 6 → 5.5: Morgan",
+   "MAPS 1-2 Kills · market moving our way, edge shrinking · now +4.5% Edge gone: Morgan MAPS 1-2 Kills (was +8.1%) Line ↓ 9 → 8.5: JiaQi MAPS 1-2 Kills · market mov",
+   "ing our way, edge shrinking · now +3.5% Edge gone: JiaQi MAPS 1-2 Kills (was +6.9%) Line ↓ 9.5 → 9: Gumayusi MAPS 1-2 Kills · market m",
+   "oving our way, edge shrinking · now +3.4% Edge gone: Gumayusi MAPS 1-2 Kills (was +6.3%) …and 4 more A pick em board move: a pick em leg",
+   "phones, 0 webhooks NO GRADE Line ↓ 9.5 → 9: Yeon MAPS 1-2 Kills · market moving our way, edge shrinking · now +6.0% Line ↓ 6 → 5.5: Morgan MAPS 1-2 Kills · market moving our way, edge",
+   "shrinking · now +4.5% Edge gone: Morgan MAPS 1-2 Kills (was +8.1%) Line ↓ 9 → 8.5: JiaQi MAPS 1-2 Kills · market mov",
+   "ing our way, edge shrinking · now +3.5% Edge gone: JiaQi MAPS 1-2 Kills (was +6.9%) Line ↓ 9.5 → 9: Gumayusi MAPS 1-2 Kills · market m",
+   "oving our way, edge shrinking · now +3.4% Edge gone: Gumayusi MAPS 1-2 Kills (was +6.3%) Line ↓ 6.5 → 6: Duduhh MAPS 1-2 Kills · market",
+   "moving our way, edge shrinking · now +3.1% Edge gone: Duduhh MAPS 1-2 Kills (was +6.9%) Line ↓ 5.5 → 5: Inspired MAPS 1-2 Kills · market",
+   "moving our way, edge shrinking · now -12.1% · SIDE FLIPPED …and 1 more A pick em board move: a pick em leg has",
+   "8 open Pinnacle — — — Alerts 2026-10-27 07:44 UTC · reached 0 phones, 0 webhooks NO GRADE Edge gone: Peyz MAPS 1-2 Kills (was +6.0%, pulled from the board) Edge gone: Zeus MAPS 1-2 Kil",
+   "Pinnacle s close. Alerts 2026-10-27 07:32 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Quid MAPS 1-2 Kills (was +5.1",
+   "%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: knight MAPS 1-2 Kills (was +6.4%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "ord grades legs). Alerts 2026-10-27 07:30 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 10 → 10.5: knight MAPS 1-2 Kills",
+   "· market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2",
+   "Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "ord grades legs). Alerts 2026-10-27 07:05 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +5.1%: Dhokla UNDER 4.5 MAPS 1-2 Kills (LoL, PP) Edge gone: Quid MAPS 1-2 Kills (was +5.1",
+   "%) Edge gone: CoreJJ MAPS 1-2 Kills (was +5.0%) Edge gone: knight MAPS 1-2 Kills (was +6.4%) Edge gone: Josedeodo MAPS 1-2 Kills (was +7.6%) A",
+   "ord grades legs). Alerts 2026-10-27 07:00 UTC · reached 0 phones, 0 webhooks NO GRADE New edge +7.6%: Josedeodo UNDER 7.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 7 → 7.5: Josedeodo MAPS 1-2 Ki",
+   "lls · market moving our way, edge shrinking · now +7.6% · SIDE FLIPPED New edge +6.4%: knight UNDER 10.5 MAPS 1-2 Kills (LoL, UD) Line ↑ 10 → 10.5: knight MAPS 1-2 Kills",
+   "· market moving our way, edge shrinking · now +6.4% · SIDE FLIPPED New edge +5.1%: Quid UNDER 8.5 MAPS 1-2 Kills (LoL, PP) New edge +5.0%: CoreJJ UNDER 1.5 MAPS 1-2",
+   "Kills (LoL, PP) Edge gone: Dhokla MAPS 1-2 Kills (was +5.1%) A pick em board move: a pick em leg has no price",
+   "PROPS record grades legs). EV alerts 2026-10-27 06:59 UTC · reached 0 phones, 0 webhooks PROVEN +3.2% Golden State Valkyries @ Atlanta Dream spreads Atlanta Dream -2.5 @ betrivers -121",
+   "n CLV Result Atlanta Dream -2.5 · BetRivers WNBA · Golden State Valkyries @ Atlanta Dream PROVEN -121 1.826 open Pinnacle — — — DOWNLOAD JSON SEE THE FULL RECORD → Line Reaper Pricing Ho"
+  ],
+  "americanTokens": 4,
+  "decimalTokens": 3,
+  "amSamples": [
+   "t DENDELE CS · Kalshi CS2 · CS2 RESEARCH +114 2.139 open Pinnacle",
+   "Life Esports · Kalshi LOL · LoL RESEARCH -239 1.418 open Pinnacle",
+   "m spreads Atlanta Dream -2.5 @ betrivers -121 (fair -130) Bet Pri",
+   "n State Valkyries @ Atlanta Dream PROVEN -121 1.826 open Pinnacle"
+  ],
+  "venues": [
+   "BetRivers",
+   "Kalshi",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 11923
+ },
+ "/alerts?kind=ev&days=7": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 9484,
+  "ms": 99,
+  "polymarket": [],
+  "claims": [
+   "S PINNACLE'S OWN CLOSE — 0 with Pinnacle's close kept By label Alerts Bets Graded CLV W-L PROVEN 1 1 0 — beat — — — Each bet an alert named is graded by the tracker that records it, with",
+   "the same code and label as RESULTS, which marks a kind proven only at a venue where it clears the rule. CLV is the close against the price the alert sh",
+   "owed. Units are 1u at that price, a profit only where RESULTS shows one. * marks units that are not a profit claim. Alerts, newest f",
+   "irst EV alerts 2026-10-27 06:59 UTC · reached 0 phones, 0 webhooks PROVEN +3.2% Golden State Valkyries @ Atlanta Dream spreads Atlanta Dream -2.5 @ betrivers -121",
+   "n CLV Result Atlanta Dream -2.5 · BetRivers WNBA · Golden State Valkyries @ Atlanta Dream PROVEN -121 1.826 open Pinnacle — — — DOWNLOAD JSON SEE THE FULL RECORD → Line Reaper Pricing Ho"
+  ],
+  "americanTokens": 2,
+  "decimalTokens": 1,
+  "amSamples": [
+   "m spreads Atlanta Dream -2.5 @ betrivers -121 (fair -130) Bet Pri",
+   "n State Valkyries @ Atlanta Dream PROVEN -121 1.826 open Pinnacle"
+  ],
+  "venues": [
+   "BetRivers",
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 1533
+ },
+ "/lines?odds=decimal": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 42047,
+  "ms": 95,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 16038
+ },
+ "/lines?state=CA": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 41643,
+  "ms": 82,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 16038
+ },
+ "/lines?venues=all": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 40330,
+  "ms": 100,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 16038
+ },
+ "/lines?kind=prop": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 40353,
+  "ms": 65,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 16038
+ },
+ "/lines?q=lakers": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 40545,
+  "ms": 107,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 16521
+ },
+ "/lines/game/nope-xyz": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8565,
+  "ms": 71,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 592
+ },
+ "/lines/prop?key=nope": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 8565,
+  "ms": 42,
+  "polymarket": [],
+  "claims": [
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 592
+ },
+ "/r": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 15368,
+  "ms": 79,
+  "polymarket": [],
+  "claims": [
+   "wn link. Line Reaper does not check who is behind a handle. Records 0 with a pick on time Proven 0 on the strict rule Leaderboard: CLV against Pinnacle's close Ranked by the low end of t",
+   "is the record s own, from its page: all leagues and all time, never from the slice shown. Proven needs 50 graded, a CLV t of 2 or more and results not running well under what the close e",
+   "xpected. No profit, units or stakes here: a record shows units on its own page, and calls them a profit only",
+   "on a proven kind. JSON · SHARE CARD Every listed record No records yet Nobody has a pick logged befor",
+   "or's app or venue with the most picks graded against Pinnacle's close. A record is marked proven at an app or venue only with 50 picks logged before their start and graded against Pinnac",
+   "UTC. The same page for everyone: no follow, copy or alert buttons, no stake sizes and no profit figures. Open a record for its units, which show only on a proven kind. Line Reaper Our o"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3447
+ },
+ "/r?state=CA": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 15377,
+  "ms": 82,
+  "polymarket": [],
+  "claims": [
+   "wn link. Line Reaper does not check who is behind a handle. Records 0 with a pick on time Proven 0 on the strict rule Leaderboard: CLV against Pinnacle's close Ranked by the low end of t",
+   "is the record s own, from its page: all leagues and all time, never from the slice shown. Proven needs 50 graded, a CLV t of 2 or more and results not running well under what the close e",
+   "xpected. No profit, units or stakes here: a record shows units on its own page, and calls them a profit only",
+   "on a proven kind. JSON · SHARE CARD Every listed record No records yet Nobody has a pick logged befor",
+   "or's app or venue with the most picks graded against Pinnacle's close. A record is marked proven at an app or venue only with 50 picks logged before their start and graded against Pinnac",
+   "UTC. The same page for everyone: no follow, copy or alert buttons, no stake sizes and no profit figures. Open a record for its units, which show only on a proven kind. Line Reaper Our o"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3447
+ },
+ "/r?window=7d&league=NBA": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 15489,
+  "ms": 42,
+  "polymarket": [],
+  "claims": [
+   "wn link. Line Reaper does not check who is behind a handle. Records 0 with a pick on time Proven 0 on the strict rule Leaderboard: CLV against Pinnacle's close Ranked by the low end of t",
+   "is the record s own, from its page: all leagues and all time, never from the slice shown. Proven needs 50 graded, a CLV t of 2 or more and results not running well under what the close e",
+   "xpected. No profit, units or stakes here: a record shows units on its own page, and calls them a profit only",
+   "on a proven kind. JSON · SHARE CARD Every listed record No records yet Nobody has a pick logged befor",
+   "or's app or venue with the most picks graded against Pinnacle's close. A record is marked proven at an app or venue only with 50 picks logged before their start and graded against Pinnac",
+   "UTC. The same page for everyone: no follow, copy or alert buttons, no stake sizes and no profit figures. Open a record for its units, which show only on a proven kind. Line Reaper Our o"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3481
+ },
+ "/r?venues=mine": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 15389,
+  "ms": 45,
+  "polymarket": [],
+  "claims": [
+   "wn link. Line Reaper does not check who is behind a handle. Records 0 with a pick on time Proven 0 on the strict rule Leaderboard: CLV against Pinnacle's close Ranked by the low end of t",
+   "is the record s own, from its page: all leagues and all time, never from the slice shown. Proven needs 50 graded, a CLV t of 2 or more and results not running well under what the close e",
+   "xpected. No profit, units or stakes here: a record shows units on its own page, and calls them a profit only",
+   "on a proven kind. JSON · SHARE CARD Every listed record No records yet Nobody has a pick logged befor",
+   "or's app or venue with the most picks graded against Pinnacle's close. A record is marked proven at an app or venue only with 50 picks logged before their start and graded against Pinnac",
+   "UTC. The same page for everyone: no follow, copy or alert buttons, no stake sizes and no profit figures. Open a record for its units, which show only on a proven kind. Line Reaper Our o"
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "Pinnacle"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 3447
+ },
+ "/card/alerts.png": {
+  "status": 200,
+  "type": "image/png",
+  "loc": null,
+  "size": 49491,
+  "ms": 204
+ },
+ "/discord/interactions": {
+  "status": 404,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 159,
+  "ms": 75,
+  "polymarket": [],
+  "claims": [],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 40
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_att%7Ckylermurray%7C30.5": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16549,
+  "ms": 182,
+  "polymarket": [],
+  "claims": [
+   "026-10-27 09:35 — 2026-10-27 09:04 — 2026-10-27 08:33 — A line move is information, not a proven edge. Venues still at an old number have graded as no edge against the close on our recor",
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "DraftKings",
+   "Pinnacle",
+   "bet365"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2005
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_att%7Ckylermurray%7C30.5&odds=decimal": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16613,
+  "ms": 85,
+  "polymarket": [],
+  "claims": [
+   "026-10-27 09:35 — 2026-10-27 09:04 — 2026-10-27 08:33 — A line move is information, not a proven edge. Venues still at an old number have graded as no edge against the close on our recor",
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "DraftKings",
+   "Pinnacle",
+   "bet365"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2005
+ },
+ "/lines/prop?key=pin-1638576334%7Cprop%7Cpass_att%7Ckylermurray%7C30.5&state=CA": {
+  "status": 200,
+  "type": "text/html; charset=utf-8",
+  "loc": null,
+  "size": 16597,
+  "ms": 64,
+  "polymarket": [],
+  "claims": [
+   "026-10-27 09:35 — 2026-10-27 09:04 — 2026-10-27 08:33 — A line move is information, not a proven edge. Venues still at an old number have graded as no edge against the close on our recor",
+   "These are the prices each feed showed when we read it; a line move is information, not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER."
+  ],
+  "americanTokens": 0,
+  "decimalTokens": 0,
+  "amSamples": [],
+  "venues": [
+   "DraftKings",
+   "Pinnacle",
+   "bet365"
+  ],
+  "v1Listed": [],
+  "bad": [],
+  "textLen": 2005
+ }
+}
