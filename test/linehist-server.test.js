@@ -56,6 +56,15 @@ test('/lines lists it and /lines/game/{id} charts it', async () => {
   assert.match(h, /Saved since/);
   assert.match(h, /Kalshi <em>TX: yes<\/em>/);
   assert.doesNotMatch(h, />(undefined|NaN|null)</);
+  // by default only markets a venue open in Texas priced: the spread was read at Pinnacle alone
+  assert.doesNotMatch(ih, /Test Away @ Test Home · Spread/);
+  assert.match(ih, /1 market priced only elsewhere is left out/);
+  assert.match(ih, /href="\/lines\?q=test&amp;venues=all">Show every venue/);
+  const all = await (await fetch(`${base}/lines?q=test&venues=all`)).text();
+  assert.match(all, /Test Away @ Test Home · Spread/);
+  assert.match(all, /Showing markets at every venue we read, TX or not/);
+  assert.match(all, /name="venues" value="all"/, 'the search form keeps the toggle');
+  assert.match(all, /lr_lines_venues/, 'the toggle is saved in this browser');
   const none = await fetch(`${base}/lines/game/nope`);
   assert.equal(none.status, 404, "an id with no saved prices is a 404");
   assert.match(await none.text(), /No saved prices for this market/);

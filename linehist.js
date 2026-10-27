@@ -218,11 +218,11 @@ function createArchive({ keepDays = KEEP_DAYS, maxPts = { game: 60, prop: 30 }, 
   function index() {
     const rows = new Map();
     for (const e of entries.values()) {
-      if (e.kind === 'prop') { rows.set(e.id, { kind: 'prop', key: e.key, event: e.prop.event, league: e.prop.league, start: e.start, player: e.prop.player, stat: e.prop.stat, line: e.prop.line, firstAt: e.firstAt, lastAt: e.lastAt, reads: e.reads, archived: true }); continue; }
+      if (e.kind === 'prop') { rows.set(e.id, { kind: 'prop', key: e.key, event: e.prop.event, league: e.prop.league, start: e.start, player: e.prop.player, stat: e.prop.stat, line: e.prop.line, firstAt: e.firstAt, lastAt: e.lastAt, reads: e.reads, venues: [...(e.v || [])], archived: true }); continue; }
       const k = `game:${e.game.game}|${e.game.market}`;
       const r = rows.get(k);
-      if (r) { r.reads += e.reads; if (e.firstAt < r.firstAt) r.firstAt = e.firstAt; if (e.lastAt > r.lastAt) r.lastAt = e.lastAt; continue; }
-      rows.set(k, { kind: 'game', key: String(e.game.game), market: e.game.market, event: e.game.event, league: e.game.league, leagueLabel: e.game.leagueLabel, start: e.start, firstAt: e.firstAt, lastAt: e.lastAt, reads: e.reads, archived: true });
+      if (r) { r.reads += e.reads; if (e.firstAt < r.firstAt) r.firstAt = e.firstAt; if (e.lastAt > r.lastAt) r.lastAt = e.lastAt; for (const v of e.v || []) if (!r.venues.includes(v)) r.venues.push(v); continue; }
+      rows.set(k, { kind: 'game', key: String(e.game.game), market: e.game.market, event: e.game.event, league: e.game.league, leagueLabel: e.game.leagueLabel, start: e.start, firstAt: e.firstAt, lastAt: e.lastAt, reads: e.reads, venues: [...(e.v || [])], archived: true });
     }
     return [...rows.values()];
   }
@@ -393,7 +393,12 @@ function keepQs(o = {}) {
   const q = p.toString();
   return q ? `?${q}` : '';
 }
-const viewQs = (st, fmt, all) => ({ state: st && st !== 'TX' ? st : null, odds: fmt !== 'american' ? fmt : null, venues: all ? 'all' : null });
+// venues: true → every venue ('all'); 'state' → only the state's, said out loud so the saved choice is cleared
+const viewQs = (st, fmt, all) => ({ state: st && st !== 'TX' ? st : null, odds: fmt !== 'american' ? fmt : null, venues: all === true ? 'all' : all === 'state' ? 'state' : null });
+// "Show every venue" is kept in this browser like My state and the odds
+// format: a page opened with ?venues=all or ?venues=state saves the choice,
+// a page opened with neither reopens with the saved one
+const venuesPrefScript = () => `<script>(function(){try{var u=new URL(location.href),p=u.searchParams.get('venues');if(p==='all'||p==='state'){localStorage.setItem('lr_lines_venues',p);return}if(localStorage.getItem('lr_lines_venues')==='all'){u.searchParams.set('venues','all');location.replace(u.toString())}}catch(e){}})();</script>`;
 // the app keeps My state and the odds format in this browser; a page opened
 // without them in the link picks them up from there once
 const prefsScript = () => `<script>(function(){try{var u=new URL(location.href);if(u.searchParams.has('state')||u.searchParams.has('odds')||sessionStorage.getItem('lr_lines_prefs'))return;sessionStorage.setItem('lr_lines_prefs','1');var s=localStorage.getItem('lr_state'),f=localStorage.getItem('lr_odds_fmt'),c=false;if(s&&/^[A-Z]{2}$/.test(s)&&s!=='TX'){u.searchParams.set('state',s);c=true}if(f&&/^[a-z]+$/.test(f)&&f!=='american'){u.searchParams.set('odds',f);c=true}if(c)location.replace(u.toString())}catch(e){}})();</script>`;
@@ -403,6 +408,12 @@ function pickerForm(action, hidden, { st, fmt, states }) {
   return `<form class="st-pick" method="get" action="${esc(action)}">${hid}<label for="stp">Betting from</label><select id="stp" name="state">${states.map(([c, n]) => `<option value="${esc(c)}"${c === st ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><label for="sto">Odds</label><select id="sto" name="odds">${oddsFmt.OPTIONS.map(([v, n]) => `<option value="${esc(v)}"${v === fmt ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><button type="submit">SHOW</button><span>Venues a resident can use, from our venue table. Pinnacle and Matchbook are the sharp references, not US venues. Exchange prices are the all-in cost with the taker fee in.</span></form>`;
 }
 
+// a market a resident of `st` could bet: at least one venue it was read at is
+// open there on our venue table (Pinnacle and the other references don't count;
+// Kalshi only when the viewer may see Kalshi's prices)
+function usableIn(row, st, { kalshi = true } = {}) {
+  return (row.venues || []).some(v => !REFS.has(v) && (kalshi || v !== 'kalshi') && venues.statusOf(st, v) === 'yes');
+}
 // what one venue is to the viewer's state
 function venueRole(v, st) {
   if (REFS.has(v)) return { show: true, tag: 'reference' };
@@ -466,7 +477,7 @@ ${foot()}
   const legend = `<div class="legend">${lines.map(l => `<span><i style="background:${l.color}"></i>${esc(l.name)}${l.key !== 'fair' ? ` <em>${esc(roles[l.key].tag)}</em>` : ''}</span>`).join('')}</div>`;
   const hiddenV = vin.filter(v => !shown.includes(v));
   const vToggle = hiddenV.length || allVenues
-    ? `<p class="note">${allVenues ? `Showing every venue, ${esc(st)} or not. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, false) }))}">Only ${esc(st)} venues</a>.` : `Not shown, not open to a ${esc(st)} resident on our venue table: ${hiddenV.map(v => esc(nameOf(v))).join(', ')}. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, true) }))}">Show every venue</a>.`}</p>` : '';
+    ? `<p class="note">${allVenues ? `Showing every venue, ${esc(st)} or not. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, 'state') }))}">Only ${esc(st)} venues</a>.` : `Not shown, not open to a ${esc(st)} resident on our venue table: ${hiddenV.map(v => esc(nameOf(v))).join(', ')}. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, true) }))}">Show every venue</a>.`}</p>` : '';
   // every venue that priced it is hidden for this state and there is no fair to draw: say so, no empty chart or table of dashes
   const nothingShown = !allVenues && !lines.length && hiddenV.length > 0;
   const showAllHref = base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, true) });
@@ -505,21 +516,35 @@ ${table}`}
 ${foot()}
 <script>(function(){var draw=${chartSvg.toString()};var d=${JSON.stringify(chartData).replace(/</g, '\\u003c')};var el=document.getElementById('lhChart');if(!el)return;function go(){var w=Math.max(280,Math.round(el.clientWidth-20));el.innerHTML=draw(d,w)}go();var t;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(go,150)})})();</script>
 ${prefsScript()}
+${venuesPrefScript()}
 </body>
 </html>`;
 }
 
-// rows: index rows (live and archived, one per market), newest start first
-// q: { q, league, kind }, leagues: [[key, label, n]]
-function indexPage({ rows = [], total = 0, leagues = [], q = {}, since = null, keepDays = KEEP_DAYS, now = Date.now(), next = null, status = null } = {}, { st = 'TX', fmt = 'american', states = [], origin = '' } = {}) {
-  const keep = viewQs(st, fmt, false);
+// rows: index rows (live and archived, one per market) in filterIndex's 'soon'
+// order: not started yet soonest first, then started, most recent first
+// q: { q, league, kind }, leagues: [[key, label, n]]; hidden: rows left out
+// because no venue open in the viewer's state priced them (allVenues off)
+function indexPage({ rows = [], total = 0, hidden = 0, leagues = [], q = {}, since = null, keepDays = KEEP_DAYS, now = Date.now(), next = null, status = null } = {}, { st = 'TX', fmt = 'american', allVenues = false, states = [], origin = '' } = {}) {
+  const keep = viewQs(st, fmt, allVenues ? true : null);
+  const listQs = all => keepQs({ q: q.q, league: q.league, kind: q.kind, ...viewQs(st, fmt, all) });
+  const showAll = `<a href="/lines${esc(listQs(true))}">Show every venue</a>`;
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const venueNote = allVenues
+    ? `Showing markets at every venue we read, ${esc(st)} or not. <a href="/lines${esc(listQs('state'))}">Only ${esc(st)} venues</a>.`
+    : `Showing markets priced by at least one venue a ${esc(st)} resident can use, on our venue table${hidden ? `; ${plural(hidden, 'market', 'markets')} priced only elsewhere ${hidden === 1 ? 'is' : 'are'} left out` : ''}. ${showAll}.`;
   const href = r => r.kind === 'game' ? `/lines/game/${encodeURIComponent(r.key)}${keepQs({ market: r.market, ...keep })}` : `/lines/prop${keepQs({ key: r.key, ...keep })}`;
   const item = r => {
     const s = ms(r.start);
     const what = r.kind === 'game' ? `${r.event || r.key} · ${MARKET_LABEL[r.market] || r.market}` : `${r.player || ''} ${statLabel(r.stat)} ${r.line ?? ''} · ${r.event || ''}`.replace(/\s+/g, ' ');
     return `<li><a href="${esc(href(r))}"><b>${esc(what)}</b><span class="sub">${esc(String(r.leagueLabel || r.league || '').toUpperCase())}${r.start ? ` · ${s != null && s < now ? 'started' : 'starts'} ${esc(whenUtc(r.start))}` : ''} · ${r.reads} read${r.reads === 1 ? '' : 's'} since ${esc(dateUtc(r.firstAt))}${r.archived ? ' · closed' : ' · on the board'}</span></a></li>`;
   };
-  const form = `<form class="st-pick" method="get" action="/lines"><label for="lq">Find</label><input id="lq" name="q" value="${esc(q.q || '')}" placeholder="team or player" maxlength="60"><label for="ll">League</label><select id="ll" name="league"><option value="">All</option>${leagues.map(([k, l, n]) => `<option value="${esc(k)}"${k === q.league ? ' selected' : ''}>${esc(l)} (${n})</option>`).join('')}</select><label for="lk">Kind</label><select id="lk" name="kind"><option value="">Both</option><option value="game"${q.kind === 'game' ? ' selected' : ''}>Game lines</option><option value="prop"${q.kind === 'prop' ? ' selected' : ''}>Props</option></select><label for="stp">Betting from</label><select id="stp" name="state">${states.map(([c, n]) => `<option value="${esc(c)}"${c === st ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><label for="sto">Odds</label><select id="sto" name="odds">${oddsFmt.OPTIONS.map(([v, n]) => `<option value="${esc(v)}"${v === fmt ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><button type="submit">SHOW</button></form>`;
+  const form = `<form class="st-pick" method="get" action="/lines"><label for="lq">Find</label><input id="lq" name="q" value="${esc(q.q || '')}" placeholder="team or player" maxlength="60"><label for="ll">League</label><select id="ll" name="league"><option value="">All</option>${leagues.map(([k, l, n]) => `<option value="${esc(k)}"${k === q.league ? ' selected' : ''}>${esc(l)} (${n})</option>`).join('')}</select><label for="lk">Kind</label><select id="lk" name="kind"><option value="">Both</option><option value="game"${q.kind === 'game' ? ' selected' : ''}>Game lines</option><option value="prop"${q.kind === 'prop' ? ' selected' : ''}>Props</option></select><label for="stp">Betting from</label><select id="stp" name="state">${states.map(([c, n]) => `<option value="${esc(c)}"${c === st ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select><label for="sto">Odds</label><select id="sto" name="odds">${oddsFmt.OPTIONS.map(([v, n]) => `<option value="${esc(v)}"${v === fmt ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>${allVenues ? '<input type="hidden" name="venues" value="all">' : ''}<button type="submit">SHOW</button></form>`;
+  const upRows = rows.filter(r => { const t = ms(r.start); return t != null && t >= now; }), pastRows = rows.filter(r => !upRows.includes(r));
+  const list = (label, rs) => (rs.length ? `<p class="kicker">${label}</p><ul class="mk">${rs.map(item).join('')}</ul>` : '');
+  const emptyTxt = !allVenues && hidden && !total
+    ? `No saved market ${q.q || q.league || q.kind ? 'matching that search ' : ''}was priced by a venue a ${esc(st)} resident can use on our venue table: ${plural(hidden, 'market was', 'markets were')} priced only elsewhere. ${showAll}.`
+    : `No saved market matches${q.q || q.league || q.kind ? ' that search' : ' yet'}.`;
   const sinceTxt = since ? `We started keeping ${keepDays} days on ${dateUtc(since)}, so the oldest market here is from then${(now - ms(since)) / DAY < keepDays ? `: ${(n => `${n} day${n === 1 ? '' : 's'}`)(Math.max(0, Math.floor((now - ms(since)) / DAY)))} so far` : ''}.` : 'Nothing is saved yet.';
   const dropTxt = status && (status.dropped.removedForRoom || status.dropped.thinnedHarder) ? ` To stay small, ${status.dropped.thinnedHarder} older market${status.dropped.thinnedHarder === 1 ? ' was' : 's were'} thinned harder and ${status.dropped.removedForRoom} removed early.` : '';
   return `${head({ title: 'Line history: every market\'s prices for 30 days | Line Reaper', description: `Every game line and player prop we read, Pinnacle included, with each venue's price over time, kept ${keepDays} days after the start. Chart, table and CSV download.`, canonical: origin ? `${origin}/lines` : null })}
@@ -531,28 +556,44 @@ ${top()}
 <p class="lead">Each game line and player prop we read, at every venue we read it, Pinnacle included: a chart, every read in a table, and a CSV or JSON download. Only prices we actually read; nothing filled in.</p>
 <p class="note">${esc(sinceTxt)} A market is saved from when it first shows up and kept ${keepDays} days after its start.${esc(dropTxt)}</p>
 ${form}
-${rows.length ? `<ul class="mk">${rows.map(item).join('')}</ul>` : `<div class="empty">No saved market matches${q.q || q.league || q.kind ? ' that search' : ' yet'}.</div>`}
+<p class="note" id="lhVenues">${venueNote}</p>
+${rows.length ? `${list('Not started yet, soonest first', upRows)}${list('Started, most recent first', pastRows)}` : `<div class="empty">${emptyTxt}</div>`}
 <p class="note">${total} market${total === 1 ? '' : 's'} match${total === 1 ? 'es' : ''}${total > rows.length ? `; showing ${rows.length}` : ''}.</p>
-${next ? `<p><a class="go" href="/lines${esc(keepQs({ q: q.q, league: q.league, kind: q.kind, ...keep, before: next }))}">OLDER MARKETS →</a></p>` : ''}
+${next != null ? `<p><a class="go" href="/lines${esc(keepQs({ q: q.q, league: q.league, kind: q.kind, ...keep, from: next }))}">MORE MARKETS →</a></p>` : ''}
 <div class="links"><a class="go" href="/developers#lines">LINE HISTORY IN THE API →</a><a class="go" href="/app?start=odds">ODDS SCREEN →</a></div>
 </main>
 ${foot()}
 ${prefsScript()}
+${venuesPrefScript()}
 </body>
 </html>`;
 }
 
-// index rows → filtered, newest start first, paged by start (`before`)
-function filterIndex(rows, { q = '', league = '', kind = '', before = null, limit = 100 } = {}) {
+// index rows → filtered and paged. order 'newest' (the API): newest start
+// first, paged by start (`before`). order 'soon' (the /lines page): games not
+// started yet, soonest first, then started ones, most recent first; paged by
+// position (`from`). usable: a row test (the viewer's state); `hidden` counts
+// the rows it left out.
+function filterIndex(rows, { q = '', league = '', kind = '', before = null, from = 0, limit = 100, order = 'newest', usable = null, now = Date.now() } = {}) {
   const words = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
   let out = rows.filter(r => (!kind || r.kind === kind) && (!league || String(r.league || '').toLowerCase() === league)
     && words.every(w => `${r.event || ''} ${r.player || ''} ${r.stat || ''} ${r.league || ''}`.toLowerCase().includes(w)));
+  let hidden = 0;
+  if (usable) { const n = out.length; out = out.filter(usable); hidden = n - out.length; }
+  if (order === 'soon') {
+    const t = r => ms(r.start);
+    const up = r => t(r) != null && t(r) >= now;
+    out.sort((a, b) => (up(b) - up(a)) || (up(a) ? t(a) - t(b) : (t(b) ?? -Infinity) - (t(a) ?? -Infinity)) || String(a.key).localeCompare(String(b.key)));
+    const total = out.length, at = Math.max(0, from | 0);
+    const page = out.slice(at, at + limit);
+    return { rows: page, total, hidden, from: at, next: at + limit < total ? at + limit : null, upcoming: out.filter(up).length };
+  }
   out.sort((a, b) => (ms(b.start) ?? 0) - (ms(a.start) ?? 0) || String(a.key).localeCompare(String(b.key)));
   const total = out.length;
   if (before) out = out.filter(r => (r.start || '') < before);
   const page = out.slice(0, limit);
-  return { rows: page, total, next: out.length > limit ? page[page.length - 1].start : null };
+  return { rows: page, total, hidden, next: out.length > limit ? page[page.length - 1].start : null };
 }
 
 module.exports = { statLabel, KEEP_DAYS, LIVE_KEEP_HOURS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
-  CSV_COLUMNS, toCsv, toJson, chartSvg, marketPage, indexPage, filterIndex, venueRole, nameOf };
+  CSV_COLUMNS, toCsv, toJson, chartSvg, marketPage, indexPage, filterIndex, venueRole, usableIn, nameOf, venuesPrefScript };

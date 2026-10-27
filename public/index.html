@@ -2184,12 +2184,12 @@ body::before { display:none !important; }
   </div>
 
   <div id="esMatchesPane">
-    <div class="esm-intro">Every esports match on Kalshi and Polymarket, side by side. <b>Fair</b> is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A <span class="esm-good">green</span> price is cheaper than fair from the other sources.</div>
+    <div class="esm-intro">Every esports match on Kalshi and Polymarket, side by side. <b>Fair</b> is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A <span class="esm-good">green</span> price is cheaper than fair from the other sources: a gap, not an edge. Nothing in esports is proven on our record.</div>
     <div class="esm-bar" id="esmGames"></div>
     <div class="esm-bar" id="esmToggles"></div>
     <div id="esmSummary" class="esm-summary"></div>
     <div id="esmContent"><div class="empty-wrap"><div class="empty-big" style="font-size:18px">Loading matches…</div></div></div>
-    <div class="esm-foot">Prices refresh every 2 minutes. Edges only count before the start, on a quote with a real bid behind it, and against other sources that agree with each other. The ratings model is built from free match results and is shown for reference only. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>
+    <div class="esm-foot">Prices refresh every 2 minutes. A gap only shows before the start, on a quote with a real bid behind it, and against other sources that agree with each other. A gap vs the sharp line is not an edge: nothing in esports has 50 graded bets beating the close, so nothing here is proven. The ratings model is built from free match results and is shown for reference only. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>
   </div>
 
   <div id="esPropsPane" style="display:none">
@@ -8108,7 +8108,7 @@ function esmMatchCard(m) {
   return `<div class="esm-card ${m.edges.length ? 'edge' : ''} ${m.live ? 'live' : ''}" data-sid="es:${escEs(m.id)}">
     <div class="esm-top"><span class="esm-game">${escEs(m.label)}</span>${m.live ? '<span class="esm-live">LIVE</span>' : ''}<span>${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-rows">${rows}</div>${meter}
-    <div class="esm-sub">${esmH2hLine(m)}${move}${sharps}${vol ? `<span>$${Math.round(vol).toLocaleString()} traded</span>` : ''}${m.locked ? '<span><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> Edge on this match: Pro</span>' : ''}<button class="esm-more" onclick="toggleEsmOpen('${escEs(m.id)}')">${open ? 'Hide markets' : `All ${m.markets.length} market${m.markets.length > 1 ? 's' : ''}`}</button></div>
+    <div class="esm-sub">${esmH2hLine(m)}${move}${sharps}${vol ? `<span>$${Math.round(vol).toLocaleString()} traded</span>` : ''}${m.locked ? '<span><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> Gap on this match: Pro</span>' : ''}<button class="esm-more" onclick="toggleEsmOpen('${escEs(m.id)}')">${open ? 'Hide markets' : `All ${m.markets.length} market${m.markets.length > 1 ? 's' : ''}`}</button></div>
     ${detail}
   </div>`;
 }
@@ -8118,7 +8118,7 @@ function esmEdgeCard(m, e) {
   return `<div class="esm-card edge"><div class="esm-top"><span class="esm-game">${escEs(m.label)}</span><span>${escEs(m.teams.join(' vs '))}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-tkt"><div><div class="what">${escEs(esmMarketText(mk || { kind: e.kind }, e.outcome))}</div>
       <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${afActive() ? afP(e.cost) + '<small>after fee</small>' : esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
-    <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>EV VS FAIR</small>${e.venue === 'kalshi' ? vLink('kalshi', { url: link }, `Open ${esmVenue(e.venue)}`, 'esm-btn') : ''}</div></div></div>`;
+    <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>GAP VS FAIR</small>${e.venue === 'kalshi' ? vLink('kalshi', { url: link }, `Open ${esmVenue(e.venue)}`, 'esm-btn') : ''}</div></div></div>`;
 }
 function renderEsMatches() {
   const d = esmState.data;
@@ -8131,7 +8131,7 @@ function renderEsMatches() {
   if (esmState.game !== 'ALL' && !byGame[esmState.game]) esmState.game = 'ALL';
   gEl.innerHTML = [`<button class="sport-chip ${esmState.game === 'ALL' ? 'active' : ''}" onclick="setEsmGame('ALL')">All ${all.length}</button>`,
     ...games.map(k => `<button class="sport-chip ${esmState.game === k ? 'active' : ''}" onclick="setEsmGame('${k}')">${escEs(d.games[k])} ${byGame[k]}</button>`)].join('');
-  tEl.innerHTML = `<button class="sport-chip ${esmState.edgesOnly ? 'active' : ''}" onclick="toggleEsm('edgesOnly')">Edges only</button>
+  tEl.innerHTML = `<button class="sport-chip ${esmState.edgesOnly ? 'active' : ''}" onclick="toggleEsm('edgesOnly')">Gaps only</button>
     <button class="sport-chip ${esmState.hideLive ? 'active' : ''}" onclick="toggleEsm('hideLive')">Hide live</button>
     <button class="sport-chip" onclick="loadEsMatches()" style="margin-left:auto">Refresh</button>`;
   let list = all.filter(m => (esmState.game === 'ALL' || m.game === esmState.game) && (!esmState.hideLive || !m.live));
@@ -8139,10 +8139,10 @@ function renderEsMatches() {
   if (esmState.edgesOnly) list = list.filter(m => m.edges.length || m.locked);
   const c = d.counts || {};
   sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Matches</span></div><div class="pb-stat"><b>${c.both ?? 0}</b><span>On both exchanges</span></div>
-    <div class="pb-stat ${edges.length ? 'good' : ''}"><b>${edges.length}</b><span>Edge${edges.length === 1 ? '' : 's'} now</span></div><div class="pb-stat"><b>${esmAgo(d.updated)}</b><span>Updated</span></div></div>${esmState.refreshErr ? `<div class="esm-note" style="color:#fbbf24">Could not refresh: these prices are from ${esmAgo(d.updated)} and may have moved. ${escEs(esmState.refreshErr)}</div>` : ''}${d.region === 'us' ? '<div class="esm-note">US mode: Kalshi edges only, Polymarket shown as a reference.</div>' : ''}`;
+    <div class="pb-stat ${edges.length ? 'good' : ''}"><b>${edges.length}</b><span>Gap${edges.length === 1 ? '' : 's'} vs fair</span></div><div class="pb-stat"><b>${esmAgo(d.updated)}</b><span>Updated</span></div></div>${esmState.refreshErr ? `<div class="esm-note" style="color:#fbbf24">Could not refresh: these prices are from ${esmAgo(d.updated)} and may have moved. ${escEs(esmState.refreshErr)}</div>` : ''}${d.region === 'us' ? '<div class="esm-note">US mode: Kalshi gaps only, Polymarket shown as a reference.</div>' : ''}`;
   if (!all.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No matches yet</div><div class="empty-sub">The board fills a minute or two after a restart.</div></div>`; return; }
   let html = '';
-  if (edges.length) html += `<div class="esm-h good">Best prices right now</div>` + edges.slice(0, 8).map(({ m, e }) => esmEdgeCard(m, e)).join('');
+  if (edges.length) html += `<div class="esm-h good">Biggest gaps vs fair, not an edge</div>` + edges.slice(0, 8).map(({ m, e }) => esmEdgeCard(m, e)).join('');
   // upcoming by day first, matches in play last
   let day = null;
   for (const m of [...list.filter(x => !x.live), ...list.filter(x => x.live)]) {

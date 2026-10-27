@@ -9,7 +9,7 @@
 // open a label's glossary definition, and search everything from any screen.
 // The crawl clicks everything; these check results.
 'use strict';
-/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState, oddsFmtSet, gsRender, osUi, renderOdds, pbState, lrState -- the app's own functions, called in page.evaluate */
+/* global esmState, renderEsMatches, pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState, oddsFmtSet, gsRender, osUi, renderOdds, pbState, lrState -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -73,7 +73,6 @@ async function openCold(opts, link, check) {
       shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
       chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
       osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
-      // eslint-disable-next-line no-undef
       pb: { ...pbState, data: null, record: null, shopRecord: null, card: null, nbm: null, cbm: null, cfm: null }, es: { ...esmState, data: null, open: null }, emu: { game: emuState.game, league: emuState.league },
       pbInputs: ['pbSearch', 'pbSort', 'pbShow', 'pbMarket'].map(id => document.getElementById(id)?.value),
       socShown: document.getElementById('socPane')?.style.display === '',
@@ -1461,6 +1460,37 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     await page.evaluate(() => window.scrollTo(0, 0));
   },
 
+  async 'ESPORTS matches call a price gap a gap, never an edge'(page, w, opts) {
+    // nothing in esports is proven on our record, so a price under fair is a
+    // gap vs the sharp line. TEST DATA when the board has no gap right now: the
+    // first match gets one labelled made-up gap so the gap header, card and
+    // chip render on real markup; the view is then drawn again from the feed.
+    await openTab(page, 'esports', w, opts);
+    await page.evaluate(() => window.setEsMode('matches'));
+    await page.waitForFunction(() => esmState.data, null, { timeout: 15000 }).catch(() => {});
+    await settle(page, w, opts, 300);
+    const got = await page.evaluate(() => {
+      const d = esmState.data, m = d?.matches?.find(x => x.markets?.length);
+      const made = !!(m && !d.matches.some(x => x.edges?.length));
+      if (made) {
+        const mk = m.markets[0], oc = mk.outcomes[0];
+        m.edges = [{ market: mk.key, kind: mk.kind, outcome: oc.name, venue: 'kalshi', cost: 0.4, fair: 0.45, ev: 0.125 }];
+      }
+      esmState.edgesOnly = true; renderEsMatches();
+      const pane = document.getElementById('esMatchesPane');
+      const t = pane ? pane.innerText : '';
+      if (made) m.edges = [];
+      esmState.edgesOnly = false; renderEsMatches();
+      return { t, made, rendered: !!m };
+    });
+    expect(got.t.length > 0, 'the ESPORTS matches view drew nothing');
+    expect(/Gaps only/i.test(got.t), `the filter chip must read "Gaps only": ${got.t.slice(0, 300)}`);
+    expect(/not an edge/i.test(got.t) && /nothing in esports (is|has)/i.test(got.t), 'the matches view must say a gap is not an edge and nothing in esports is proven');
+    const bad = got.t.replace(/\b(is )?not an edge\b/gi, '').match(/\bEdges? (only|now|on this match|count)\b|\bBest prices right now\b|\bEV VS FAIR\b|\bKalshi edges\b|\b(an|the|biggest) edge\b/i);
+    expect(!bad, `the matches view still says "${bad && bad[0]}"`);
+    if (got.rendered) expect(/GAP VS FAIR/i.test(got.t) && /Biggest gaps vs fair, not an edge/i.test(got.t) && /Gaps? vs fair/i.test(got.t), 'a gap card must read GAP VS FAIR under a "not an edge" header');
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');
@@ -1670,6 +1700,19 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
       expect(await fits(), 'the line history list scrolls sideways at this size');
       const body = await page.evaluate(() => document.body.innerText);
       expect(!/guaranteed|risk[- ]free/i.test(body) && !/\bundefined\b|\bNaN\b|\[object Object\]/.test(body), 'the list shows a claim or broken text');
+      expect(/Showing markets priced by at least one venue a TX resident can use/.test(await text(page, '#lhVenues')), 'the list must say it shows Texas venues by default');
+      // the order: not started yet soonest first, then started, most recent first
+      const starts = await page.evaluate(() => [...document.querySelectorAll('ul.mk .sub')].map(e => e.textContent.match(/\b(starts|started) /)?.[1] || ''));
+      expect(starts.indexOf('starts') === -1 || starts.lastIndexOf('starts') < (starts.indexOf('started') === -1 ? Infinity : starts.indexOf('started')), `a started market is listed above one still to start: ${starts.join(',')}`);
+      // "Show every venue" is kept in this browser, then cleared by "Only TX venues"
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('#lhVenues a', { hasText: 'Show every venue' }).click()]);
+      expect(/venues=all/.test(page.url()) && /every venue we read/.test(await text(page, '#lhVenues')), `Show every venue did not turn on: ${page.url()}`);
+      await page.goto(`${opts.base}/lines`, { waitUntil: 'load' });
+      await page.waitForURL(/venues=all/, { timeout: 4000 }).catch(() => {});
+      expect(/venues=all/.test(page.url()), 'Show every venue was not kept in this browser');
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.locator('#lhVenues a', { hasText: 'Only TX venues' }).click()]);
+      await page.goto(`${opts.base}/lines`, { waitUntil: 'load' });
+      expect(!/venues=all/.test(page.url()) && /a TX resident can use/.test(await text(page, '#lhVenues')), 'Only TX venues was not kept');
       const links = page.locator('ul.mk a');
       if (!fresh && !(await links.count())) { expect(/No saved market/.test(body), 'an empty list must say so'); return; }
       expect(await links.count() > 0, 'the line history list is empty although the server holds the recording\'s histories');
