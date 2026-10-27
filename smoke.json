@@ -1,0 +1,17 @@
+{
+ "ok": false,
+ "at": "2026-10-27T19:58:07.172Z",
+ "base": "https://line-reaper-backend-production.up.railway.app",
+ "want": "3.221.1",
+ "version": null,
+ "run": "40573778107",
+ "nonce": "mvr3xtan-6gd9i6",
+ "failures": [
+  {
+   "what": "smoke-crash",
+   "summary": "the site never reached v3.221.1 (last seen v3.220.0)"
+  }
+ ],
+ "warnings": 0,
+ "ms": 1519252
+}
