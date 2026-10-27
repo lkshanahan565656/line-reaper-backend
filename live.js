@@ -10,7 +10,7 @@ const j = async u => { try { const r = await fetch(u); return r.ok ? await r.jso
   fs.writeFileSync('out/versions.txt', log.join('\n'));
   fs.writeFileSync('out/mlb.json', JSON.stringify(await j(U + '/api/props/mlb')));
   fs.writeFileSync('out/record.json', JSON.stringify(await j(U + '/api/props/record')));
-  const picks = []; for (const k of ['mlb-pin','p6-mlb-pin','ud-mlb-pin','sl-mlb-pin','mlb-even','p6-mlb-even','ud-mlb-even','sl-mlb-even']) { const r = await j(`${U}/api/props/record/picks?status=open&kind=${k}&limit=1000`); picks.push(...(r.picks || [])); const g = await j(`${U}/api/props/record/picks?status=graded&kind=${k}&limit=1000`); picks.push(...(g.picks || [])); }
+  const picks = []; for (const k of ['mlb-pin','p6-mlb-pin','ud-mlb-pin','sl-mlb-pin','mlb-even','p6-mlb-even','ud-mlb-even','sl-mlb-even']) { const r = await j(`${U}/api/props/record/picks?status=open&kind=${k}&limit=1000`); picks.push(...(r.picks || [])); for (const st of ['graded', 'locked']) { const g = await j(`${U}/api/props/record/picks?status=${st}&kind=${k}&limit=1000`); picks.push(...(g.picks || [])); } }
   fs.writeFileSync('out/mlb-picks.json', JSON.stringify(picks));
   fs.writeFileSync('out/status.json', JSON.stringify(await j(U + '/api/status')));
 })();
