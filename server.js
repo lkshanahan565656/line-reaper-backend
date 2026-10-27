@@ -5204,7 +5204,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.218.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.218.2', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7695,7 +7695,8 @@ function sendLinePage(req, res, d, days) {
   try {
     const v = lineView(req);
     const html = lineHist.marketPage({ ...d, market: lineMarketOf(req.query), side: String(req.query.side || ''), pro: hasPro(req), keepDays: lineHist.KEEP_DAYS, windowDays: days }, v);
-    res.set('Cache-Control', 'private, max-age=60').type('html').send(html);
+    // an id or key with no saved prices is a 404 (the page says so in words)
+    res.status(d.series.some(x => x.pts.length) ? 200 : 404).set('Cache-Control', 'private, max-age=60').type('html').send(html);
   } catch (e) { console.warn('Line history page:', e.message); res.status(500).type('text/plain').send('This chart could not be built just now. Try again in a minute.'); }
 }
 app.get('/lines/game/:id', (req, res) => {
@@ -9391,7 +9392,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.218.1',
+  version: '3.218.2',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
