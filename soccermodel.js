@@ -44,7 +44,7 @@ const LEAGUES = {
   CHN: { name: 'Chinese Super League', country: 'CHN', tier: 1 }, FIN: { name: 'Veikkausliiga', country: 'FIN', tier: 1 }, ROU: { name: 'Liga I', country: 'ROU', tier: 1 },
 };
 
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 const num = v => { if (v == null || v === '') return null; const x = Number(v); return Number.isFinite(x) ? x : null; };
 
 // ── names ──

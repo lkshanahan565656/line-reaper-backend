@@ -23,7 +23,7 @@ const venues = require('./venues');
 
 const CLAIM_KINDS = new Set(['ev', 'props-ev']);
 const PICKEM = new Set(['prizepicks', 'underdog', 'sleeper', 'pick6', 'betr', 'chalkboard', 'parlayplay', 'dabble']);
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
+const { r2OrNull: r2 } = require('./mathutil');
 
 // The tools the app shows that are not a proven edge, and the tag each wears
 // in the app. They never become a claim from this list: a tool earns a line in

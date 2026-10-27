@@ -40,8 +40,7 @@ const NAMES = { pinnacle: 'Pinnacle', kalshi: 'Kalshi', polymarketus: 'Polymarke
 const APP_HOME = { prizepicks: 'https://app.prizepicks.com/', underdog: 'https://underdogfantasy.com/pick-em/higher-lower', sleeper: 'https://sleeper.com/picks', pick6: 'https://pick6.draftkings.com/' };
 const DEFAULTS = { minCents: 1, minLine: 0.5, followFrac: 0.5, followMin: 0.01, startGraceMs: 5 * 60e3, horizonMs: 36 * 3600e3, maxRows: 300 };
 
-const r1 = x => Math.round(x * 10) / 10;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r1, r4 } = require('./mathutil');
 const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const nameOf = v => NAMES[v] || venues.NAMES?.[v] || v;
 const impOf = a => { const d = americanToDecimal(a); return d > 1 ? 1 / d : null; };

@@ -62,9 +62,8 @@ const DEFAULTS = {
   minP: 0.05, maxP: 0.95,
 };
 const GAMES = new Set(['CS2', 'VAL']);
-const r2 = x => Math.round(x * 100) / 100;
+const { r2, r4 } = require('./mathutil');
 const comb = (n, k) => { let c = 1; for (let i = 0; i < k; i++) c = c * (n - i) / (i + 1); return c; };
-const r4 = x => Math.round(x * 1e4) / 1e4;
 const gameOf = sport => { const s = String(sport || '').toUpperCase(); return s.includes('VAL') ? 'VAL' : s.includes('CS') || s.includes('COUNTER') ? 'CS2' : null; };
 
 // ── one map's rounds ──

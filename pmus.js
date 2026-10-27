@@ -38,7 +38,7 @@ const FEE_RATE = require('./fees').SCHEDULES.polymarketus.taker.rate;   // 0.069
 const TIMEOUT = 4000;
 const EPS = 1e-9;
 
-const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { numNoBool: num } = require('./mathutil');
 const round = (x, n) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10 ** n) / 10 ** n);
 const norm = s => String(s || '').trim().toLowerCase();
 const amount = v => num(v && typeof v === 'object' ? v.value : v);   // { value, currency } or a bare number

@@ -46,8 +46,7 @@ const BACKFIT = {
   },
 };
 
-const r1 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
+const { r1OrNull: r1, r2OrNull: r2 } = require('./mathutil');
 const mean = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
 // the game's day on the US clock, as the apps list it
 const usDay = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? new Date(x - 6 * 3600e3).toISOString().slice(0, 10) : ''; };

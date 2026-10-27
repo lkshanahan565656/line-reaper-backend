@@ -38,8 +38,7 @@ const LEAGUE_LABEL = {
   uel: 'Europa League', tennis: 'Tennis', ufc: 'UFC', khl: 'KHL', ahl: 'AHL', shl: 'SHL', kbo: 'KBO', npb: 'NPB',
 };
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { num, r4OrNull: r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const probAmerican = p => (p > 0 && p < 1 ? decimalToAmerican(1 / p) : null);
 

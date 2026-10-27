@@ -59,12 +59,9 @@ const APPS = new Set(['prizepicks', 'underdog', 'sleeper']);
 const BOOKS = new Set(['fanduel', 'betrivers']);
 const EXCHANGES = new Set(['kalshi', 'polymarketus']);
 
-const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
+const { numNoBool: num, r4OrNull: r4, r2OrNull: r2, toProb } = require('./mathutil');
 const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const iso = t => (t == null ? null : new Date(t).toISOString());
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 const toDecimal = a => (a > 0 ? 1 + a / 100 : 1 + 100 / -a);
 // a chance as American odds (0.556 → −125)
 const american = p => (!(p > 0 && p < 1) ? null : p >= 0.5 ? -Math.round((100 * p) / (1 - p)) : Math.round((100 * (1 - p)) / p));

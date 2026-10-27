@@ -35,7 +35,7 @@ const KINDS = new Set([...Object.values(GAP_KIND), ...Object.values(EVEN_KIND)])
 const EVEN = new Set(Object.values(EVEN_KIND));
 const appOfKind = k => Object.keys(GAP_KIND).find(a => GAP_KIND[a] === k || EVEN_KIND[a] === k) || null;
 const EPS = 1e-9;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 
 // ── results: the MLB Stats API box score ──
 // /api/v1/game/{gamePk}/boxscore → Map(canonName → { name, team, bat, pit })
