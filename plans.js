@@ -123,7 +123,7 @@ function plansBody({ paywall, billingConfigured, price, viewerPlan = null, signe
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = x => (x == null || !Number.isFinite(x) ? 'n/a' : `${x > 0 ? '+' : ''}${(Math.round(x * 10) / 10).toFixed(1)}%`);
 const TICK = c => `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="${c}" stroke-width="1.6" fill="none"/></svg>`;
-const DASH = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7" stroke="#475569" stroke-width="1.6"/></svg>';
+const DASH = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6h7" stroke="#7b8a9f" stroke-width="1.6"/></svg>';
 
 // The plan cards' bullet lists, for the sales page too. plan: 'free' | 'pro'.
 function planListHtml(plan) {

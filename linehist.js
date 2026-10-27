@@ -327,8 +327,8 @@ function chartSvg(d, W) {
   const X = t => L + (t - t0) / (t1 - t0) * (W - L - R), Y = p => T + (1 - (p - y0) / (y1 - y0)) * (H - T - B);
   const lab = t => new Date(t).toISOString().slice(5, 16).replace('T', ' ');
   let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${d.title}" style="display:block;max-width:100%;height:auto">`;
-  for (let i = 0; i < 4; i++) { const p = y0 + (y1 - y0) * i / 3; s += `<line x1="${L}" x2="${W - R}" y1="${Y(p).toFixed(1)}" y2="${Y(p).toFixed(1)}" stroke="#1e2738" stroke-width="1"/><text x="${L - 6}" y="${(Y(p) + 3).toFixed(1)}" fill="#64748b" font-size="10" text-anchor="end">${(p * 100).toFixed(0)}%</text>`; }
-  [t0, (t0 + t1) / 2, t1].forEach((t, i) => { s += `<text x="${X(t).toFixed(1)}" y="${H - 8}" fill="#64748b" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}">${lab(t)}</text>`; });
+  for (let i = 0; i < 4; i++) { const p = y0 + (y1 - y0) * i / 3; s += `<line x1="${L}" x2="${W - R}" y1="${Y(p).toFixed(1)}" y2="${Y(p).toFixed(1)}" stroke="#1e2738" stroke-width="1"/><text x="${L - 6}" y="${(Y(p) + 3).toFixed(1)}" fill="#8391a7" font-size="10" text-anchor="end">${(p * 100).toFixed(0)}%</text>`; }
+  [t0, (t0 + t1) / 2, t1].forEach((t, i) => { s += `<text x="${X(t).toFixed(1)}" y="${H - 8}" fill="#8391a7" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}">${lab(t)}</text>`; });
   if (d.start != null && d.start > t0 && d.start < t1) s += `<line x1="${X(d.start).toFixed(1)}" x2="${X(d.start).toFixed(1)}" y1="${T}" y2="${H - B}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 3"/><text x="${(X(d.start) + 3).toFixed(1)}" y="${T + 9}" fill="#94a3b8" font-size="10">start</text>`;
   for (const l of d.lines) {
     if (!l.pts.length) continue;
