@@ -69,3 +69,19 @@ test('storeStats names the files that write most', async () => {
   assert.ok(row && row.writes >= 1 && row.rows === 50, JSON.stringify(st.files));
   assert.ok(typeof st.delayMs === 'number');
 });
+
+test('stores people write to keep a short write delay; bulk stores take the default', () => {
+  const { createStoreFromEnv } = require('../evtrack');
+  const { DEFAULT_DELAY_MS, USER_DELAY_MS } = require('../jsonstore');
+  const f = tmpFile();
+  const user = createStoreFromEnv({ X_FILE: f }, { fileVar: 'X_FILE', user: true });
+  const bulk = createStoreFromEnv({ X_FILE: f }, { fileVar: 'X_FILE' });
+  assert.equal(user.delayMs, USER_DELAY_MS);
+  assert.equal(bulk.delayMs, DEFAULT_DELAY_MS);
+  assert.ok(USER_DELAY_MS <= 5000);
+  // the records people publish and the bets they log are user stores
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  for (const file of ['pub-records.json', 'line-bets.json', 'es-bets.json', 'slip-late.json', 'api-keys.json', 'push-subs.json', 'alert-log.json']) {
+    assert.match(src, new RegExp(`file: '${file.replace('.', '\\.')}', user: true`), file);
+  }
+});
