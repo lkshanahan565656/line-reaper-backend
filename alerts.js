@@ -93,7 +93,8 @@ function diffBoards(prev, next, { minEv, moveMinEv, gapMinEv, cooldownMs, now = 
 function describe(e) {
   const pct = v => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
   const who = `${e.player} ${e.side || ''} ${e.line} ${e.market} (${e.sport}${e.book ? ', ' + e.book : ''})`;
-  if (e.kind === 'edge') return `New edge ${pct(e.ev)}: ${who}`;
+  // a pick'em board's price gap is not an edge: pick'em legs have graded no edge on our record
+  if (e.kind === 'edge') return `New gap ${pct(e.ev)} vs the sharp line: ${who}`;
   if (e.kind === 'gap' && e.gap) {
     const g = e.gap, side = g.side === 'OVER' ? 'Over' : 'Under';
     const others = g.vs.map(v => `${BOOK_NAMES[v.book] || v.book} ${v.line}`).join(', ');
@@ -101,10 +102,10 @@ function describe(e) {
   }
   if (e.kind === 'move') {
     const arrow = e.to > e.from ? '↑' : '↓';
-    const note = e.direction === 'with' ? 'market moving our way, edge shrinking' : 'market moving away, edge growing';
+    const note = e.direction === 'with' ? 'moving toward the sharp line, gap shrinking' : 'moving away from it, gap growing';
     return `Line ${arrow} ${e.from} → ${e.to}: ${e.player} ${e.market} · ${note} · now ${pct(e.ev)}${e.sideFlipped ? ' · SIDE FLIPPED' : ''}`;
   }
-  return `Edge gone: ${e.player} ${e.market} (was ${pct(e.previousEv)}${e.removed ? ', pulled from the board' : ''})`;
+  return `Gap closed: ${e.player} ${e.market} (was ${pct(e.previousEv)}${e.removed ? ', pulled from the board' : ''})`;
 }
 
 // Discord-compatible webhook body. One message per refresh, up to 10 lines,
