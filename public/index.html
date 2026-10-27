@@ -10834,8 +10834,8 @@ function alertText(e) {
     const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' })[b] || b;
     return `Line gap: ${e.player} ${e.gap.side === 'OVER' ? 'Over' : 'Under'} ${e.gap.line} · ${e.market} on ${bn(e.gap.book)} · ${e.gap.vs.map(v => `${bn(v.book)} ${v.line}`).join(', ')} · ${pct(e.ev)}`;
   }
-  if (e.kind === 'move') return `${e.player} ${e.market} · line ${e.from} → ${e.to} · ${e.direction === 'with' ? 'moving our way, play now' : 'moving away'} · ${pct(e.ev)}${e.sideFlipped ? ' · side flipped' : ''}`;
-  return `${e.player} ${e.market} · edge gone (was ${pct(e.previousEv)})`;
+  if (e.kind === 'move') return `${e.player} ${e.market} · line ${e.from} → ${e.to} · ${e.direction === 'with' ? 'moving toward the sharp line' : 'moving away from it'} · ${pct(e.ev)}${e.sideFlipped ? ' · side flipped' : ''}`;
+  return `${e.player} ${e.market} · gap closed (was ${pct(e.previousEv)})`;
 }
 
 function esAlertNotify(e) {
@@ -10863,7 +10863,7 @@ function esRenderAlerts() {
   const color = k => k === 'edge' || k === 'gap' ? '#10b981' : k === 'move' ? '#fbbf24' : '#64748b';
   if (alertState.locked) {
     el.innerHTML = `<div style="background:var(--card);border:1px solid #f59e0b55;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Live alerts are a Pro feature.</b> New edges and line moves, pushed the moment the board refreshes.</span>
+      <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Live alerts are a Pro feature.</b> New price gaps and line moves, pushed the moment the board refreshes.</span>
       <button class="acct-btn pro" onclick="acctNeedPro('Live alerts')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
     return;
   }
@@ -10877,7 +10877,7 @@ function esRenderAlerts() {
       <div style="padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;display:flex;gap:10px;align-items:baseline">
         <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#475569;white-space:nowrap">${new Date(e.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         <span style="color:${color(e.kind)}">${escEs(alertText(e))}</span>
-      </div>`).join('') : `<div style="padding:14px;font-size:12px;color:#64748b">No alerts yet. New edges and line moves show up here as soon as the board refreshes.</div>`}
+      </div>`).join('') : `<div style="padding:14px;font-size:12px;color:#64748b">No alerts yet. New price gaps and line moves show up here as soon as the board refreshes.</div>`}
   </div>`;
 }
 

@@ -64,7 +64,8 @@ test('cooldown suppresses repeats of the same alert', () => {
 
 test('messages read cleanly and the webhook body is capped', () => {
   const [e] = diffBoards([], [pick()], opts());
-  assert.match(describe(e), /New edge \+6\.2%: ZywOo OVER 38\.5/);
+  assert.match(describe(e), /New gap \+6\.2% vs the sharp line: ZywOo OVER 38\.5/);
+  assert.doesNotMatch(describe(e), /edge/i, 'a pick\'em gap is never called an edge');
   const many = Array.from({ length: 14 }, (_, i) => ({ ...e, player: `P${i}` }));
   const body = webhookBody(many);
   assert.equal(body.content.split('\n').length, 11);
