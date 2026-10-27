@@ -794,7 +794,13 @@ const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
 const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' });
 const push = require('./push').createPush({ store: process.env.DATABASE_URL ? pushStore : resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
-const webhook = require('./push').withPush(webhookOnly, push);
+// Every alert as it went out (alertlog.js): /alerts and RESULTS > ALERT HISTORY
+// grade the bets each one named. Append-only on the results backup, so a deploy keeps it.
+const alertLogLib = require('./alertlog');
+const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLog', require('./evtrack').createStoreFromEnv(process.env, { table: 'alert_log', fileVar: 'ALERT_LOG_FILE', file: 'alert-log.json' })) });
+const webhook = require('./push').withPush(webhookOnly, push, {
+  onSent: ({ text, what, kind, meta, webhooks, phones }) => alertLog.record({ text, title: what, kind, reached: { webhooks, phones }, items: meta?.items || [] }),
+});
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
 const legal = require('./legal');
@@ -3603,7 +3609,8 @@ function* evScreenSteps() {
       if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
-        webhook.send(lines.join('\n'), 'EV alerts');
+        // the bets the alert shows ride along, for the alert history's grade
+        webhook.send(lines.join('\n'), 'EV alerts', { items: posted.slice(0, 10).map(alertLogLib.evItem) });
       }
     }
   } else {
@@ -3825,11 +3832,13 @@ function broadcast(type, data) {
   for (const fn of liveListeners) { try { fn(type, data); } catch { /* keep going */ } }
 }
 // One post of up to 10 lines. TAIL_WEBHOOK=off stops these.
-function postAlert(lines, what) {
+// items (optional): the bets the lines name, one per line from `first` on,
+// kept with the alert for its grade (alertlog.js); only the lines sent count
+function postAlert(lines, what, { items = null, first = 0 } = {}) {
   if (!lines.length || !webhook.enabled || process.env.TAIL_WEBHOOK === 'off') return null;
   const out = lines.slice(0, 10);
   if (lines.length > 10) out.push(`…and ${lines.length - 10} more`);
-  return webhook.send(out.join('\n'), what);
+  return webhook.send(out.join('\n'), what, items ? { items: items.slice(0, Math.max(0, 10 - first)) } : null);
 }
 const cents = p => (p == null ? '—' : `${Math.round(p * 1000) / 10}¢`);
 const dollars = x => `$${Math.round(x || 0).toLocaleString('en-US')}`;
@@ -4381,11 +4390,13 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
     const steamy = fresh.filter(e => e.steam), moved = fresh.filter(e => e.mover), plain = fresh.filter(e => !e.steam && !e.mover);
     // each alert leads with its signal's record, graded where a subscriber gets filled
     const withRec = (list, sig) => [execcheck.recordLine(sig, execOf(list[0]).rec), ...list.map(xvalue.describe)].filter(Boolean);
-    if (steamy.length) postAlert(withRec(steamy, 'steam'), 'Steam');
-    if (moved.length) postAlert(withRec(moved, 'line mover'), 'Line mover');
+    // each bet goes to the alert history with its tracker row's id (after the record line, if any)
+    const send = (list, sig, what) => { const lines = withRec(list, sig); postAlert(lines, what, { items: list.map(alertLogLib.xvalueItem), first: lines.length - list.length }); };
+    if (steamy.length) send(steamy, 'steam', 'Steam');
+    if (moved.length) send(moved, 'line mover', 'Line mover');
     for (const sig of ['price gap', 'Kalshi price']) {
       const list = plain.filter(e => bp.valueSignal(e) === sig);
-      if (list.length) postAlert(withRec(list, sig), 'Exchange value');
+      if (list.length) send(list, sig, 'Exchange value');
     }
   }
   xvalueState.primed = true;
@@ -4728,7 +4739,7 @@ async function scanEsportsBoard() {
   // the first scan after a restart only primes (every edge would look new)
   if (fresh.length && esportsBoard.primed) {
     broadcast('esports-edge', fresh.map(({ m, e }) => ({ match: m.id, ...e })));
-    postAlert(fresh.map(({ m, e }) => describeEsportsEdge(m, e)), 'Esports edges');
+    postAlert(fresh.map(({ m, e }) => describeEsportsEdge(m, e)), 'Esports edges', { items: fresh.map(({ m, e }) => alertLogLib.esportsItem(m, e)) });
   }
   esportsBoard.primed = true;
   return st;
@@ -5188,7 +5199,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.212.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.213.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5545,6 +5556,40 @@ app.get('/digest/:week', async (req, res) => {
     if (!out) return res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Line Reaper</title><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">That week has no digest. <a style="color:#34d399" href="/digest">See the latest week</a>.</body>`);
     res.set('Cache-Control', 'public, max-age=300').type('html').send(digest.renderPage(out.digest, { origin: siteOrigin(req), frozen: out.frozen, sentAt: out.sentAt }));
   } catch (e) { res.status(500).type('text/plain').send(e.message); }
+});
+// ── ALERT HISTORY (alertlog.js) ──
+// Every alert sent since the log began, each bet it named graded by its own
+// tracker with RESULTS' code and label. The same for everyone; with the
+// paywall on, a free viewer sees an alert's bets once their games start.
+const alertViewMemo = require('./ops').createMemo({ ttlMs: 60e3, max: 40 });
+async function alertHistory({ days = 0, kind = null, limit = 100, before = null, full = true } = {}) {
+  const docs = await alertLog.all();
+  const want = { ev: new Set(), xvalue: new Set(), esports: new Set() };
+  for (const d of docs) for (const it of d.items || []) if (want[it.tracker]) want[it.tracker].add(it.ref);
+  const pick = (list, ids) => new Map(list.filter(b => ids.has(b.id)).map(b => [b.id, b]));
+  const read = (t, k) => (want[k].size ? t.list({ limit: 1e9 }) : []);
+  const [evRows, xvRows, esRows, board] = await Promise.all([read(evTracker, 'ev'), read(xvalueTracker, 'xvalue'), read(esportsEdgeTracker, 'esports'), closeBoardFor(webhookLicence(), 0, null)]);
+  const rec = new Map(claims.publicRecord({ board }).rows.map(r => [`${r.kind}|${r.book}`, r]));
+  const labelOf = (k, book) => { const r = rec.get(`${k}|${book}`); return r ? { label: r.label, why: r.why, profitShown: !!r.profitShown } : null; };
+  const hidden = hiddenWallets();
+  return alertLogLib.view(docs, { rows: { ev: pick(evRows, want.ev), xvalue: pick(xvRows, want.xvalue), esports: pick(esRows, want.esports) }, labelOf, startedAt: alertLog.startedAt(),
+    full, days, kind, limit, before, hide: d => hidden.length > 0 && mentions(d.lines, hidden) });
+}
+const alertQueryOf = (q = {}) => ({
+  days: Math.max(0, parseFloat(q.days) || 0),
+  kind: typeof q.kind === 'string' && require('./push').KIND_KEYS.includes(q.kind) ? q.kind : null,
+  limit: Math.min(500, Math.max(1, parseInt(q.limit, 10) || 100)),
+  before: typeof q.before === 'string' && Number.isFinite(Date.parse(q.before)) ? new Date(Date.parse(q.before)).toISOString() : null,
+});
+const alertQuery = req => ({ ...alertQueryOf(req.query), full: hasPro(req) });
+const alertHistoryFor = q => alertViewMemo(JSON.stringify(q), () => alertHistory(q));
+app.get('/api/alerts/history', async (req, res) => {
+  try { res.set('Cache-Control', `${PAYWALL ? 'private' : 'public'}, max-age=60`).json(await alertHistoryFor(alertQuery(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/alerts', async (req, res) => {
+  try { res.set('Cache-Control', `${PAYWALL ? 'private' : 'public'}, max-age=60`).type('html').send(alertLogLib.renderPage(await alertHistoryFor(alertQuery(req)), { origin: siteOrigin(req) })); }
+  catch (e) { res.status(500).type('text/plain').send('The alert history could not be read just now. Try again in a minute.'); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
@@ -9176,7 +9221,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.212.0',
+  version: '3.213.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9256,6 +9301,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   dataLicences: (!PAYWALL || isAdmin(req)) ? licences.state() : licences.publicState(),
   upstream: upstream.stats(),
   digest: typeof digestState !== 'undefined' ? digestState : null,
+  // the alert history (alertlog.js): when storing began, how many kept, the last
+  alertLog: alertLog.stats(),
   outFeed: typeof outFeedStatus === 'function' ? outFeedStatus() : null,
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET,
@@ -9498,6 +9545,8 @@ const v1 = {
     return info;
   },
   digests: () => digestIndex(),
+  // the alert history: with the paywall on, the API is the free view (bets shown once their games start)
+  alerts: q => alertHistoryFor({ ...alertQueryOf(q), full: !PAYWALL }),
   async digest(week) {
     const w = String(week || '');
     if (!digest.validWeek(w)) throw new V1Error(400, 'bad_parameter', 'A week is the date of its Monday, like 2026-10-19.');
@@ -9593,6 +9642,7 @@ app.get('/api/v1/states', v1Auth, v1Route(() => v1.states()));
 app.get('/api/v1/states/:state', v1Auth, v1Route(req => v1.states(req.params.state)));
 app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
 app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
+app.get('/api/v1/alerts', v1Auth, v1Route(req => v1.alerts(req.query)));
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
 
 // ── widgets: no key, a per-address limit, the same bodies as the API ──
@@ -9642,7 +9692,7 @@ app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=360
 // /card/<kind>.png (or .svg) is the image; /share/<kind> is the page a pasted
 // link opens, with Open Graph and Twitter tags pointing at the image. Same
 // card for everyone: nothing from an account, no stake, no slips.
-const SHARE_KINDS = new Set(['price', 'move', 'league', 'record', 'digest']);
+const SHARE_KINDS = new Set(['price', 'move', 'league', 'record', 'digest', 'alerts']);
 const cardStr = (v, re, max = 120) => { const s = String(v ?? '').slice(0, max); return re.test(s) ? s : null; };
 // the card's data and its words, from the query; never from numbers the browser sends
 async function shareCardFor(kind, q, origin) {
@@ -9728,6 +9778,14 @@ async function shareCardFor(kind, q, origin) {
         : `Nothing is proven yet on the strict rule. ${card.notProven} kinds on the record are building or losing to the close.`,
       open: '?start=results' };
   }
+  if (kind === 'alerts') {
+    // the free view: an alert's bets count once their games start
+    const v = await alertHistoryFor({ ...alertQueryOf({}), limit: 1, full: !PAYWALL });
+    const s = v.summary;
+    return { svg: shareCards.alertsCard(v, { origin }), at: v.at, title: 'Line Reaper: every alert we sent, graded',
+      description: s.alerts ? `${s.alerts} alerts since ${String(v.startedAt).slice(0, 10)}, ${s.graded} bets graded against the close. Proven only where RESULTS proves it.` : 'Every alert is kept from the day storing began, graded against the close.',
+      open: '/alerts', page: '/alerts' };
+  }
   // digest
   const week = cardStr(q.week, /^\d{4}-\d{2}-\d{2}$/) || digest.dueWeek(Date.now());
   const out = digest.validWeek(week) ? await digestFor(week) : null;
@@ -9737,7 +9795,7 @@ async function shareCardFor(kind, q, origin) {
 }
 // the card's own query string: only the keys its kind reads, in a fixed order
 // odds: the sharer's odds format (oddsfmt.js); state: the sharer's My state, for a league's venues
-const SHARE_KEYS = { price: ['id', 'odds'], move: ['game', 'market', 'side', 'i', 'odds'], league: ['league', 'state', 'odds'], record: [], digest: ['week'] };
+const SHARE_KEYS = { price: ['id', 'odds'], move: ['game', 'market', 'side', 'i', 'odds'], league: ['league', 'state', 'odds'], record: [], digest: ['week'], alerts: [] };
 function shareQuery(kind, q) {
   const p = new URLSearchParams();
   for (const k of SHARE_KEYS[kind] || []) if (q[k] != null && q[k] !== '') p.set(k, String(q[k]).slice(0, 300));
@@ -9763,7 +9821,7 @@ async function shareImage(kind, q, origin, ext) {
 }
 app.get('/card/:kind.:ext', widgetGate, async (req, res) => {
   const { kind, ext } = req.params;
-  if (!(SHARE_KINDS.has(kind) || /^record-[a-z0-9_]{3,20}$/.test(kind)) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, record-<handle>, digest (.png or .svg).');
+  if (!(SHARE_KINDS.has(kind) || /^record-[a-z0-9_]{3,20}$/.test(kind)) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, record-<handle>, digest, alerts (.png or .svg).');
   try {
     const img = await shareImage(kind, req.query, siteOrigin(req), ext);
     shareStats.served++;
@@ -10335,7 +10393,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
+  alertLog, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
   app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,

@@ -334,4 +334,4 @@ function alertBooks(board, { minExecClv = 1 } = {}) {
   return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
 }
 
-module.exports = { scoreboard, alertBooks, flags, flagsCsv, FLAG_COLUMNS, playsOf, propsVenue, legCluster, STALE_PROPS, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };
+module.exports = { scoreboard, alertBooks, flags, flagsCsv, FLAG_COLUMNS, closeOn, playsOf, propsVenue, legCluster, STALE_PROPS, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };

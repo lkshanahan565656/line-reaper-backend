@@ -331,6 +331,62 @@ const FLOWS = {
     }
   },
 
+  async 'read the alert history from RESULTS'(page, w, opts) {
+    // TEST DATA, not a recording: alertlog.js run on labelled made-up alerts
+    // (an EV alert graded at its own price, an arb with no grade), so the view
+    // is checked against known numbers. The live check reads the real API.
+    const AL = require('../alertlog');
+    const start = '2026-10-26T23:00:00Z';
+    const row = { group: 'e2e|g1|h2h', side: 'E2E Home', book: 'betrivers', decimal: 2.1, price: 110, ev: 6, sport: 'nba', event: 'E2E Away @ E2E Home', market: 'h2h', start };
+    const it = AL.evItem(row);
+    const docs = [
+      { id: 'e2e-a2', type: 'alert', sentAt: '2026-10-26T20:00:00Z', title: 'Exchange arbs', kind: 'exchange', lines: ['E2E arb 2.1% across two venues'], reached: { webhooks: 0, phones: 2 }, items: [] },
+      { id: 'e2e-a1', type: 'alert', sentAt: '2026-10-26T19:00:00Z', title: 'EV alerts', kind: 'ev', lines: ['E2E New edge +6.0%: E2E Home +110 at BetRivers'], reached: { webhooks: 1, phones: 2 }, items: [it] },
+    ];
+    const tracked = { id: it.ref, status: 'closed', book: 'betrivers', start, closeFair: 50, closeOk: true, pinClose: 49, pinCloseOk: true, outcome: 'win' };
+    const TEST = AL.view(docs, { rows: { ev: new Map([[it.ref, tracked]]) }, labelOf: () => ({ label: 'building', why: '12 of 50 graded.', profitShown: false }),
+      now: Date.parse('2026-10-27T09:00:00Z'), startedAt: '2026-10-26T18:00:00Z' });
+    if (!opts.live) await page.route('**/api/alerts/history*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST) }));
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    try {
+      await openTab(page, 'results', w, opts);
+      await page.locator('#page-results [data-recview="alerts"]').click();
+      await page.locator('#alertHistContent .rec-tiles').waitFor({ timeout: 6000 });
+      await settle(page, w, opts, 150);
+      const body = await text(page, '#alertHistContent');
+      expect(/ALERTS SENT/.test(body) && /BY LABEL/.test(body) && /ALERTS, NEWEST FIRST/.test(body), `the alert history did not render: "${body.slice(0, 200)}"`);
+      expect(/Alerts are kept from /.test(body), 'the view must say when storing began');
+      expect(await page.locator('#recView').isHidden(), 'the record table still shows under the alert history');
+      expect(await fits(), 'the alert history scrolls sideways at this size');
+      if (!opts.live) {
+        expect(/E2E Home \+110/.test(body), 'the EV alert text is missing');
+        expect(/\+5\.0%/.test(body), 'the bet is not graded at the alert\'s price (50% close at 2.10 = +5.0%)');
+        expect(/Pinnacle \+2\.9%/.test(body), "Pinnacle's own close at the alert's price is missing");
+        expect(/\+1\.1u\*/.test(body), 'units on a kind RESULTS does not show a profit for carry the *');
+        expect(/no close to beat/.test(body), 'the arb must say why it has no grade');
+        expect(/BUILDING/.test(body) && !/PROVEN/.test(body), 'the label must be the RESULTS label, and nothing here is proven');
+      }
+      await page.locator('#page-results [data-recview="record"]').click();
+      await settle(page, w, opts, 150);
+      expect(await page.locator('#recView').isVisible(), 'RECORD did not come back');
+    } finally {
+      if (!opts.live) await page.unroute('**/api/alerts/history*').catch(() => {});
+    }
+    // the public page, from the server (the offline server's own log in tests)
+    try {
+      const res = await page.goto(`${opts.base}/alerts`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/alerts answered ${res && res.status()}`);
+      expect(/Every alert we sent, graded/.test(await text(page, 'h1')), 'the alert history page heading is missing');
+      expect(await fits(), 'the alert history page scrolls sideways at this size');
+      const all = await page.evaluate(() => document.body.innerText);
+      expect(/Alerts are kept from /.test(all), 'the page must say when storing began');
+      expect(!/guaranteed|risk[- ]free|undefined|NaN/i.test(all), 'the page shows a claim or broken text');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
   async 'export the bets CSV and import it back'(page, w, opts) {
     await openTab(page, 'betlog', w, opts);
     const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.getByRole('button', { name: 'EXPORT CSV' }).click()]);

@@ -236,6 +236,8 @@ const ENDPOINTS = [
   { path: '/api/v1/states/{state}', title: "One state's venues", params: [], about: 'The venues legal there, the ones no source vouches for (check with the venue) and the ones not legal there, each with its source and date.' },
   { path: '/api/v1/digest', title: 'Weekly digest: the weeks', params: [], about: 'The weeks the digest covers, which are frozen (sent Monday 13:00 UTC) and which are still being built.' },
   { path: '/api/v1/digest/{week}', title: 'Weekly digest: one week', params: [], about: "One week (the date of its Monday): what graded, the move toward the 50 bar, and what became proven or started losing to the close." },
+  { path: '/api/v1/alerts', title: 'Alert history', params: [['days', 'last N days'], ['kind', 'one push kind: ev, sharp, exchange, tail, esports, gas or other'], ['limit', '1 to 500, default 100'], ['before', 'an ISO time: older alerts (paging)']],
+    about: "Every alert the site sent since it began storing them, with the time, the text, how many phones and webhooks it reached, and each bet it named graded like RESULTS: CLV at the alert's price, Pinnacle's own close where kept, the result and the RESULTS label. With the paywall on, an alert's bets show once their games start." },
   { path: '/api/v1/status', title: 'Feed status', params: [], about: "Every venue's last good read, staleness and uptime, the same as /status." },
   { path: '/api/v1/key', title: 'This key', params: [], about: "Your key's name, when it was made and what it has used this minute and today." },
 ];
