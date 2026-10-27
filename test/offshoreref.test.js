@@ -128,6 +128,30 @@ test('createOffshoreRef: reads all three venues, flags with depth, marks and set
   assert.ok(Array.isArray(gaps));
 });
 
+test('createOffshoreRef: a tick still running is skipped, and a slow tick stops reading Polymarket US books at the budget', async () => {
+  let t = T0, release;
+  const gate = new Promise(res => { release = res; });
+  const pairs = Array.from({ length: 12 }, (_, i) => ({ ...PAIR, id: `fed|x|${i}`, u: { slug: `slug-${i}`, fee: 0.0695 } }));
+  let books = 0;
+  const http = { get: async url => {
+    if (url.endsWith('/markets')) { await gate; return { data: { markets: [] } }; }
+    books++; t += 10e3;   // each book read costs 10 s of clock
+    return { data: { marketData: { bids: [{ px: { value: '0.49' }, qty: '1' }], offers: [{ px: { value: '0.50' }, qty: '1' }], state: 'MARKET_STATE_OPEN' } } };
+  } };
+  const post = async () => ({ data: [] });
+  const r = ref.createOffshoreRef({ http, post, pairs, store: createMemoryStore(), now: () => t, log: { warn() {} }, opts: { pmusConcurrency: 1, tickBudgetMs: 45e3 } });
+  await r.ready;
+  const first = r.tick();
+  await new Promise(res => setImmediate(res));
+  assert.deepEqual(await r.tick(), [], 'the second minute does not stack on the first');
+  assert.equal(r.state().skipped, 1);
+  release();
+  await first;
+  assert.ok(books < 12 && books >= 5, `stopped at the budget, read ${books}`);
+  assert.equal(r.state().cut, 1);
+  assert.equal(r.state().ticks, 1);
+});
+
 test('seeds: every pair has an offshore token and at least one US contract, ids unique', () => {
   const { pairs } = require('../seeds/offshore-pairs.json');
   assert.ok(pairs.length >= 50);
