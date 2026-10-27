@@ -635,7 +635,9 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .ln-row.used { opacity: .42; }
 .ln-row.go { background: linear-gradient(90deg, rgba(16,185,129,.08), transparent 45%); }
 .ln-who { min-width: 0; }
-.ln-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ln-name { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+/* a leg every sharp book lists has a long tag: it wraps inside the card on a phone */
+.ln-name .pb-anc { white-space: normal; max-width: 100%; margin-left: 0; }
 .ln-name b { font-size: 14px; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ln-apps { display: inline-flex; gap: 3px; flex: 0 0 auto; }
 .ln-app { font-size: 8.5px; font-weight: 800; letter-spacing: .04em; padding: 1px 4px; border-radius: 4px; color: #0b1220; background: var(--bk); }
