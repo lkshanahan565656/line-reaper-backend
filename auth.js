@@ -49,12 +49,14 @@ function verifyToken(token, secret, now = Date.now()) {
   } catch { return null; }
 }
 
-// ── stores: all() / get(id) / byEmail(e) / byCustomer(c) / put(user) ──
+// ── stores: get(id) / byEmail(e) / byCustomer(c) / count(fn) / put(user) ──
 function indexed(rows) {
   return {
     get: id => rows.get(id) || null,
     byEmail: e => [...rows.values()].find(u => u.email === e) || null,
     byCustomer: c => [...rows.values()].find(u => u.stripeCustomerId === c) || null,
+    // how many accounts match (founding seats taken, for the pricing page)
+    count: fn => { let n = 0; for (const u of rows.values()) if (fn(u)) n++; return n; },
   };
 }
 
@@ -127,7 +129,7 @@ function createPgUserStore(connectionString) {
 }
 
 function wrap(idx) {
-  return { async get(id) { return idx.get(id); }, async byEmail(e) { return idx.byEmail(e); }, async byCustomer(c) { return idx.byCustomer(c); } };
+  return { async get(id) { return idx.get(id); }, async byEmail(e) { return idx.byEmail(e); }, async byCustomer(c) { return idx.byCustomer(c); }, async count(fn) { return idx.count(fn); } };
 }
 
 function createUserStoreFromEnv(env = process.env) {

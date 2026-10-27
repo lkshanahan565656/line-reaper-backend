@@ -234,7 +234,7 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
     }
   }
   async function send(p) {
-    const dests = [...owner, ...subscribers()];
+    const dests = [...owner, ...(await subscribers())];
     if (!p || !dests.length) return { sent: 0, failed: 0, to: 0 };
     stats.posts++;
     let sent = 0, failed = 0;
