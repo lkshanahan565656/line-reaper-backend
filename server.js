@@ -5204,7 +5204,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.216.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.217.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -9391,7 +9391,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.216.0',
+  version: '3.217.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9905,7 +9905,7 @@ app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=360
 // /card/<kind>.png (or .svg) is the image; /share/<kind> is the page a pasted
 // link opens, with Open Graph and Twitter tags pointing at the image. Same
 // card for everyone: nothing from an account, no stake, no slips.
-const SHARE_KINDS = new Set(['price', 'move', 'league', 'record', 'digest', 'alerts']);
+const SHARE_KINDS = new Set(['price', 'move', 'league', 'record', 'digest', 'alerts', 'leaderboard']);
 const cardStr = (v, re, max = 120) => { const s = String(v ?? '').slice(0, max); return re.test(s) ? s : null; };
 // the card's data and its words, from the query; never from numbers the browser sends
 async function shareCardFor(kind, q, origin) {
@@ -9917,6 +9917,10 @@ async function shareCardFor(kind, q, origin) {
     const v = await pubView(bettor[1], 1);
     if (!v) throw new V1Error(404, 'not_found', 'No bettor record with that handle.');
     return { svg: shareCards.bettorCard(v, { origin }), at: v.at, title: `@${v.handle}: verified pick'em record`, description: 'Slips logged before the start, graded against Pinnacle\'s close.', open: `/r/${v.handle}`, page: `/r/${v.handle}` };
+  }
+  if (kind === 'leaderboard') {
+    const v = await pubBoard({ league: q.league, window: q.window });
+    return { svg: shareCards.boardCard(v, { origin }), at: v.at, title: 'Bettor leaderboard: CLV against Pinnacle\'s close', description: `Published records ranked only at ${v.bar} picks logged before the start. ${v.ranked.length} ranked.`, open: '/r#board', page: '/r#board' };
   }
   if (kind === 'price') {
     const id = cardStr(q.id, /^[^\u0000-\u001f<>]{1,300}$/, 300);
@@ -10008,7 +10012,7 @@ async function shareCardFor(kind, q, origin) {
 }
 // the card's own query string: only the keys its kind reads, in a fixed order
 // odds: the sharer's odds format (oddsfmt.js); state: the sharer's My state, for a league's venues
-const SHARE_KEYS = { price: ['id', 'odds'], move: ['game', 'market', 'side', 'i', 'odds'], league: ['league', 'state', 'odds'], record: [], digest: ['week'], alerts: [] };
+const SHARE_KEYS = { price: ['id', 'odds'], move: ['game', 'market', 'side', 'i', 'odds'], league: ['league', 'state', 'odds'], record: [], digest: ['week'], alerts: [], leaderboard: ['league', 'window'] };
 function shareQuery(kind, q) {
   const p = new URLSearchParams();
   for (const k of SHARE_KEYS[kind] || []) if (q[k] != null && q[k] !== '') p.set(k, String(q[k]).slice(0, 300));
@@ -10034,7 +10038,7 @@ async function shareImage(kind, q, origin, ext) {
 }
 app.get('/card/:kind.:ext', widgetGate, async (req, res) => {
   const { kind, ext } = req.params;
-  if (!(SHARE_KINDS.has(kind) || /^record-[a-z0-9_]{3,20}$/.test(kind)) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, record-<handle>, digest, alerts (.png or .svg).');
+  if (!(SHARE_KINDS.has(kind) || /^record-[a-z0-9_]{3,20}$/.test(kind)) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, record-<handle>, leaderboard, digest, alerts (.png or .svg).');
   try {
     const img = await shareImage(kind, req.query, siteOrigin(req), ext);
     shareStats.served++;
@@ -10075,6 +10079,7 @@ app.get('/results', widgetGate, (req, res) => sendSharePage(req, res, 'record', 
 // labelled on the RESULTS rule. The key that manages a record is shown once;
 // only its SHA-256 is kept. Kept across deploys by the results backup.
 const pubRecord = require('./pubrecord');
+const leaderboard = require('./leaderboard');
 const pubRecords = pubRecord.createRecordStore({ store: resultsBackup.wrap('pubRecords', createEvStoreFromEnv(process.env, { table: 'pub_records', fileVar: 'PUB_RECORDS_FILE', file: 'pub-records.json' })),
   perHour: parseInt(process.env.PUB_RECORDS_PER_HOUR, 10) || undefined });
 pubRecords.init().catch(e => console.warn('Public records: store failed to initialise:', e.message));
@@ -10129,7 +10134,7 @@ async function pubView(handle, page = 1) {
   pubViewMemo.set(key, { at: Date.now(), v });
   return v;
 }
-const pubForget = h => { for (const k of [...pubViewMemo.keys()]) if (k.startsWith(`${h}|`)) pubViewMemo.delete(k); shareImgMemo.clear(); pubIndexMemo = null; };
+const pubForget = h => { for (const k of [...pubViewMemo.keys()]) if (k.startsWith(`${h}|`)) pubViewMemo.delete(k); shareImgMemo.clear(); pubIndexMemo = null; pubBoardMemo = null; };
 app.post('/api/records', async (req, res) => {
   try {
     const out = await pubRecords.publish({ handle: req.body?.handle, token: recordKey(req) || null, who: publicApi.callerOf(req) });
@@ -10180,11 +10185,35 @@ async function pubIndex() {
   pubIndexMemo = { at: Date.now(), v };
   return v;
 }
+// ── the leaderboard (leaderboard.js): listed records ranked by CLV against
+// Pinnacle's close, ranked only at 50 graded. Each record's counted picks are
+// read once every two minutes; a filter (league, window, state) is cheap on top.
+let pubBoardMemo = null;
+async function pubBoardRecords() {
+  await pubRecords.init();
+  if (pubBoardMemo && Date.now() - pubBoardMemo.at < 120e3) return pubBoardMemo.v;
+  const v = pubRecords.listedHandles().map(h => pubRecord.boardEntries(pubRecords.get(h), pubRecords.slipsOf(h), pubRecords.betsOf(h), { tables: pubTables() }));
+  pubBoardMemo = { at: Date.now(), v };
+  return v;
+}
+const boardOpts = q => ({ league: q.league, window: q.window, state: q.state || 'TX', mine: q.venues === 'mine', bar: pubRecord.BAR, clvT: pubRecord.CLV_T });
+async function pubBoard(q = {}) { return leaderboard.build(await pubBoardRecords(), boardOpts(q)); }
+// a record's own place on the default board (listed records only)
+async function pubPlace(handle) {
+  const meta = pubRecords.get(handle);
+  if (!meta || meta.status !== 'live') return null;
+  if (meta.unlisted) return { handle, ranked: 0, rows: [], listed: false };
+  return { ...leaderboard.placeOf(await pubBoard({}), handle), listed: true };
+}
+app.get('/api/leaderboard', widgetGate, async (req, res) => {
+  try { res.set('Cache-Control', 'public, max-age=60').json(leaderboard.publicBody(await pubBoard(req.query))); } catch (e) { sendErr(res, e); }
+});
+app.get('/api/v1/leaderboard', v1Auth, v1Route(async req => leaderboard.publicBody(await pubBoard(req.query))));
 app.get('/api/records', widgetGate, async (req, res) => {
   try { res.set('Cache-Control', 'public, max-age=60').json(await pubIndex()); } catch (e) { sendErr(res, e); }
 });
 app.get('/r', widgetGate, async (req, res) => {
-  try { res.set('Cache-Control', 'public, max-age=60').type('html').send(pubRecord.indexHtml(await pubIndex(), { origin: siteOrigin(req) })); }
+  try { res.set('Cache-Control', 'public, max-age=60').type('html').send(pubRecord.indexHtml(await pubIndex(), { origin: siteOrigin(req), board: await pubBoard(req.query), states: leagueStates() })); }
   catch (e) { res.status(500).set('Cache-Control', 'no-store').type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">The list of records could not be read just now. Try again in a minute.</body>'); console.warn('Records index:', e.message); }
 });
 app.delete('/api/records/:handle', async (req, res) => {
@@ -10221,7 +10250,8 @@ app.get('/r/:handle', widgetGate, async (req, res) => {
     const v = await pubView(req.params.handle, parseInt(req.query.page, 10) || 1);
     const o = siteOrigin(req);
     if (!v) return res.status(404).set('Cache-Control', 'no-store').type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Line Reaper</title><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">No bettor record with that handle. <a style="color:#34d399" href="/app?start=myslips">Publish your own from MY SLIPS</a>.</body>`);
-    res.set('Cache-Control', 'public, max-age=60').type('html').send(pubRecord.pageHtml(v, { origin: o, url: `${o}/r/${v.handle}`, image: shareImageUrl(o, `record-${v.handle}`, '') }));
+    const place = v.status === 'live' ? await pubPlace(v.handle).catch(() => null) : null;
+    res.set('Cache-Control', 'public, max-age=60').type('html').send(pubRecord.pageHtml(v, { origin: o, url: `${o}/r/${v.handle}`, image: shareImageUrl(o, `record-${v.handle}`, ''), place }));
   } catch (e) { res.status(500).set('Cache-Control', 'no-store').type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">This record could not be read just now. Try again in a minute.</body>'); console.warn('Public record page:', e.message); }
 });
 
@@ -10256,6 +10286,7 @@ async function developerExamples() {
   let weeks = null;
   await add('/api/v1/digest', '/api/v1/digest', async () => (weeks = await v1.digests()));
   if (weeks?.current) await add('/api/v1/digest/{week}', `/api/v1/digest/${weeks.current}`, () => v1.digest(weeks.current));
+  await add('/api/v1/leaderboard', '/api/v1/leaderboard', async () => leaderboard.publicBody(await pubBoard({})), 3);
   await add('/api/v1/states', '/api/v1/states', () => v1.states(), 3);
   await add('/api/v1/states/{state}', '/api/v1/states/TX', () => v1.states('TX'), 2);
   await add('/api/v1/status', '/api/v1/status', () => v1.status());

@@ -649,6 +649,17 @@ const FLOWS = {
       expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(body), 'the list of records shows broken text or a claim');
       const over = await p3.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(over <= 0, `the list of records is ${over} px too wide`);
+      // the leaderboard: its filter is a real form; SHOW reloads with the pick kept
+      expect(/Leaderboard: CLV against Pinnacle's close/.test(body) && /Ranked only with 50 picks/.test(body), 'the leaderboard lacks its rule');
+      await p3.selectOption('#lbw', '7d');
+      await Promise.all([p3.waitForURL(/window=7d/, { timeout: 8000 }), p3.locator('section#board button', { hasText: 'SHOW' }).click()]);
+      expect(await p3.locator('#lbw').inputValue() === '7d', 'the window filter did not stick');
+      const b2 = await p3.locator('body').innerText();
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(b2), 'the leaderboard shows broken text or a claim');
+      const over2 = await p3.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over2 <= 0, `the leaderboard is ${over2} px too wide`);
+      const api = await p3.request.get(`${opts.base}/api/leaderboard?window=7d`);
+      expect(api.ok() && Array.isArray((await api.json()).ranked), '/api/leaderboard did not answer');
     } finally { await p3.close(); }
     // unpublish: the first tap asks, the second removes the page
     await page.locator('#msPub button', { hasText: 'UNPUBLISH' }).click();

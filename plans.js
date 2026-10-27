@@ -45,6 +45,7 @@ const FEATURES = [
   { id: 'record', group: 'Record', label: 'The full public record and the weekly digest, losers included', where: 'RESULTS', free: true, pro: true, gate: 'none' },
   { id: 'alertHistory', group: 'Record', label: 'Every alert we sent, with each bet graded against the close', where: '/alerts, RESULTS > ALERT HISTORY', free: 'Bets shown once their games start', pro: 'Live', gate: 'alertlog.view full' },
   { id: 'bettor', group: 'Record', label: 'Your own public bettor record at /r/your-name, with CSV, JSON and a share card', where: 'MY SLIPS > PUBLISH RECORD', free: true, pro: true, gate: 'none' },
+  { id: 'leaderboard', group: 'Record', label: 'The bettor leaderboard: published records ranked by CLV against Pinnacle\'s close, ranked only at 50 graded', where: '/r', free: true, pro: true, gate: 'none' },
   { id: 'tools', group: 'Record', label: 'Calculators, MY BETS, MY SLIPS, imports, EXPORT and PRINT', where: 'TOOLS, MY BETS, MY SLIPS', free: true, pro: true, gate: 'none' },
   { id: 'views', group: 'Record', label: 'Saved views, favorites, My state, odds format, after-fee prices', where: 'CUSTOMIZE, SHOPPER', free: true, pro: true, gate: 'none' },
 ];
@@ -240,7 +241,7 @@ ${paywall ? '' : '<div class="early" id="early"><b>Early access:</b> every Pro f
 </div>
 
 <h2 id="record">What the record backs today</h2>
-<div class="rec" id="rec">${rec}<p class="note" style="margin:6px 0 0">Read live from the close scoreboard, the same test as the sales page. <a href="/app?start=results">See every record in the app</a>, and <a href="/alerts">every alert we sent, graded</a>.</p></div>
+<div class="rec" id="rec">${rec}<p class="note" style="margin:6px 0 0">Read live from the close scoreboard, the same test as the sales page. <a href="/app?start=results">See every record in the app</a>, <a href="/alerts">every alert we sent, graded</a>, and <a href="/r#board">bettors ranked by CLV against Pinnacle's close</a>.</p></div>
 
 <h2 id="compare">Compare the plans</h2>
 <div class="scroll"><table class="cmp"><thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead><tbody>${rows}</tbody></table></div>

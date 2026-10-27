@@ -41,6 +41,10 @@
       "why": "new in v3.208.0 (MY SLIPS > PUBLISH RECORD, pubrecord.js): a bettor's own record lives on the server it was published to, so the offline server answers it; pubrecord tests check the rule and the PUBLISH RECORD flow checks the page"
     },
     {
+      "key": "^/api/leaderboard(\\?|$)",
+      "why": "new in v3.217.0 (the bettor leaderboard on /r, leaderboard.js): built from the records published to this server, so the offline server answers it; leaderboard tests check the ranking and the PUBLISH RECORD flow checks the page and its filter"
+    },
+    {
       "key": "^/api/v1(/|\\?|$)",
       "why": "new in v3.197.0 (the public API): the recording predates it, so the offline server answers from its own empty state; publicapi tests check the shapes, and the developers flow makes a key and calls it"
     },

@@ -10,7 +10,7 @@ const path = require('path');
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-pubrec-'));
 for (const k of ['DATABASE_URL', 'ODDS_API_KEY', 'OWLS_API_KEY', 'ALERT_WEBHOOK_URL', 'PAYWALL']) delete process.env[k];
 Object.assign(process.env, { PUBLIC_URL: 'https://linereaper.example', LR_DATA_DIR: DIR, TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
-  PUB_RECORDS_FILE: path.join(DIR, 'pub.json'), ESPORTS_CALIBRATION: 'off' });
+  PUB_RECORDS_FILE: path.join(DIR, 'pub.json'), ESPORTS_CALIBRATION: 'off', PUB_RECORDS_PER_HOUR: '1000' });
 const axios = require('axios');
 axios.get = async () => { throw Object.assign(new Error('offline'), { response: { status: 503 } }); };
 axios.post = axios.get;
@@ -120,4 +120,27 @@ test('the list of records at /r: only on-time picks list a record; the owner can
   const h = await page.text();
   assert.match(h, /Bettor records/); assert.match(h, /No records yet/);
   assert.ok(!/undefined|NaN|guaranteed/i.test(h));
+});
+
+test('the leaderboard at /r, /api/leaderboard, /api/v1/leaderboard and its card: nobody graded offline, and it says so', async () => {
+  const body = await (await fetch(`${base}/api/leaderboard?window=7d&league=nba&state=TX`)).json();
+  assert.deepEqual([body.ranked.length, body.building.length, body.filter.window, body.filter.league], [0, 0, '7d', 'NBA']);
+  assert.match(body.note, /No published record/);
+  assert.match(body.rule, /Ranked only with 50 picks/);
+  const v1 = await fetch(`${base}/api/v1/leaderboard`);
+  assert.ok([200, 401].includes(v1.status));
+  const h = await (await fetch(`${base}/r?window=30d`)).text();
+  assert.match(h, /Leaderboard: CLV against Pinnacle's close/);
+  assert.match(h, /Nothing graded in this slice/);
+  assert.match(h, /<option value="30d" selected>/);
+  assert.ok(!/undefined|NaN|guaranteed/i.test(h));
+  const card = await fetch(`${base}/card/leaderboard.svg`);
+  assert.equal(card.status, 200);
+  assert.match(await card.text(), /NOBODY RANKED YET/);
+  assert.equal((await fetch(`${base}/share/leaderboard?window=7d`)).status, 200);
+  // a record's own page names its place, or that it is off the list
+  const pub = await (await post('/api/records', { handle: 'place_one' })).json();
+  assert.match(await (await fetch(`${base}/r/place_one`)).text(), /Leaderboard, all leagues and all time: not on it yet/);
+  await post('/api/records/place_one/listing', { listed: false }, pub.token);
+  assert.match(await (await fetch(`${base}/r/place_one`)).text(), /Taken off the public list/);
 });

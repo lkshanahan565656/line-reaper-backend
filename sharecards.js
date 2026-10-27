@@ -305,6 +305,27 @@ ${wrap('Rule: 50 legs at one app against Pinnacle\'s close at their own line, CL
   return frame({ kind, label, readAt: v.at, origin, body, foot: 'Imported by the bettor, not placed through Line Reaper. Information, not betting advice. 21+.' });
 }
 
+// ── the bettor leaderboard (leaderboard.build): ranked only at the bar ──
+function boardCard(v, { origin = '' } = {}) {
+  const f = v.filter;
+  const kind = `Bettor leaderboard · ${f.windowName}${f.league ? ` · ${f.league}` : ''}`;
+  if (!v.ranked.length) {
+    const top = v.building[0];
+    return emptyCard({ kind, label: { text: 'NOBODY RANKED YET', tone: 'plain' }, title: `Nobody at ${v.bar} graded yet`,
+      why: top ? `Most graded: @${top.handle} at ${top.name}, ${top.n} of ${v.bar} picks graded against Pinnacle's close. Ranked only at ${v.bar}.`
+        : `No published record has a pick logged before its start and graded against Pinnacle's close in this slice yet.`, readAt: v.at, origin });
+  }
+  const rows = v.ranked.slice(0, 5).map((x, i) => {
+    const y = 200 + i * 62;
+    return `${txt(48, y, `${x.tied ? '=' : ''}${x.rank}`, { size: 30, weight: 700, fill: C.green2, max: 70 })}${txt(130, y, `@${x.handle}`, { size: 28, weight: 700, max: 360 })}${txt(500, y, `${x.name} · ${x.n} graded`, { size: 20, fill: C.text2, max: 300 })}${txt(W - 48, y, `${pct(x.clv, 2)}  [${pct(x.ciLo, 2)}, ${pct(x.ciHi, 2)}]`, { size: 22, fill: x.clv > 0 ? C.green2 : C.red, anchor: 'end', max: 330 })}`;
+  }).join('\n');
+  const label = { text: `${v.ranked.length} RANKED`, tone: 'plain' };
+  const body = `${txt(48, 146, 'CLV against Pinnacle\'s close · ranked by the low end of the 95% interval', { size: 20, fill: C.text2, max: W - 96 })}
+${rows}
+${wrap(`Ranked only at ${v.bar} picks logged before the start. Labels are each record's own. No profit shown.`, 18, W - 96, 2).map((l, i) => txt(48, 520 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'Records are logged by the bettors, not placed through Line Reaper. Information, not betting advice. 21+.' });
+}
+
 // ── digest: one week (digest.build()) ──
 function digestCard(d, { origin = '', frozen = false } = {}) {
   const s = d.summary;
@@ -475,5 +496,5 @@ function safeOpen(to) {
   return '/app';
 }
 
-module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
+module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, boardCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
   renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };
