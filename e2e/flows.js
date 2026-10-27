@@ -6,7 +6,9 @@
 // alerts without a real push service, use the TOOLS calculator, and move and
 // hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
 // view by link and open it cold on a fresh device, export and print a screen,
-// open a label's glossary definition, and search everything from any screen.
+// open a label's glossary definition, search everything from any screen, and
+// sign in on two browsers so bets sync between them and a differing layout
+// waits for USE ACCOUNT.
 // The crawl clicks everything; these check results.
 'use strict';
 /* global esmState, renderEsMatches, pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState, oddsFmtSet, gsRender, osUi, renderOdds, pbState, lrState -- the app's own functions, called in page.evaluate */
@@ -1489,6 +1491,101 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     const bad = got.t.replace(/\b(is )?not an edge\b/gi, '').match(/\bEdges? (only|now|on this match|count)\b|\bBest prices right now\b|\bEV VS FAIR\b|\bKalshi edges\b|\b(an|the|biggest) edge\b/i);
     expect(!bad, `the matches view still says "${bad && bad[0]}"`);
     if (got.rendered) expect(/GAP VS FAIR/i.test(got.t) && /Biggest gaps vs fair, not an edge/i.test(got.t) && /Gaps? vs fair/i.test(got.t), 'a gap card must read GAP VS FAIR under a "not an edge" header');
+  },
+
+  // runs after the flows above, so this browser already has bets, slips and a saved layout
+  async 'sign in, sync bets to a second device, settle a conflict'(page, w, opts) {
+    if (opts.live) return;
+    const st = await (await fetch(`${opts.base}/api/sync/status`)).json();
+    if (!st.enabled) {
+      // sync off (no AUTH_SECRET, or Railway without Postgres): local only, as before, and it says so
+      await openTab(page, 'betlog', w, opts);
+      expect(/Saved in this browser only/.test(await text(page, '#mybSync')), `MY BETS status with sync off: "${await text(page, '#mybSync')}"`);
+      expect(!(await page.locator('#mybSync button').count()), 'MY BETS offers SIGN IN while sync is off');
+      await page.locator('.tab-row .tab-end').click();
+      await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+      expect(/not switched on/.test(await text(page, '#syncNote')) && !(await page.locator('#syncRows button').count()), 'CUSTOMIZE should say sync is off, with no buttons');
+      await page.keyboard.press('Escape');
+      return;
+    }
+    const email = `e2e-${opts.viewportName}-${process.pid}@example.com`, pass = 'e2e-password-1';
+    const layoutA = JSON.stringify({ order: [], more: {}, hidden: {}, help: true, folds: {}, e2e: 'device A' });
+    await page.evaluate(v => localStorage.setItem('lr_layout', v), layoutA);
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect(/Sign in to keep your bets/.test(await text(page, '#syncNote')), `CUSTOMIZE should offer sign-in: "${await text(page, '#syncNote')}"`);
+    await page.locator('#syncRows button', { hasText: 'CREATE ACCOUNT' }).click();
+    await page.locator('#acctModal.open').waitFor({ timeout: 4000 });
+    await page.fill('#acctEmail', email);
+    await page.fill('#acctPass', pass);
+    await page.check('#acctAge');
+    await page.check('#acctTerms');
+    await page.locator('#acctGo').click();
+    for (let i = 0; i < 40 && !/Signed in as/.test(await text(page, '#syncRows')); i++) await settle(page, w, opts, 100);
+    expect(/Signed in as/.test(await text(page, '#syncRows')), `after sign-up CUSTOMIZE reads "${await text(page, '#syncRows')}"`);
+    for (let i = 0; i < 40 && /Syncing|Not synced yet/.test(await text(page, '#syncRows')); i++) await settle(page, w, opts, 100);
+    expect(/Last synced/.test(await text(page, '#syncRows')), `the first sync did not finish: "${await text(page, '#syncRows')}"`);
+    // the account now holds this browser's bets
+    const token = await page.evaluate(() => localStorage.getItem('lr_token'));
+    const doc = await (await fetch(`${opts.base}/api/sync`, { headers: { authorization: `Bearer ${token}` } })).json();
+    expect(/E2E Chiefs -3/.test(doc.keys?.lr_bets?.v || ''), 'the account did not get the bets');
+    expect(doc.keys?.lr_layout?.v === layoutA, 'the account did not get the layout');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 80);
+    await openTab(page, 'betlog', w, opts);
+    expect(new RegExp(`Synced to ${email.replace(/[.@]/g, '\\$&')}`).test(await text(page, '#mybSync')), `MY BETS status reads "${await text(page, '#mybSync')}"`);
+
+    // device B: a fresh browser with its own bet and its own layout
+    const ctx = await page.context().browser().newContext({ viewport: page.viewportSize(), serviceWorkers: 'block', timezoneId: 'America/Chicago', locale: 'en-US' });
+    await ctx.route('**/*', route => (route.request().url().startsWith(opts.base) ? route.continue() : route.abort('blockedbyclient')));
+    try {
+      const b = await newAppPage(ctx, opts);
+      const repB = { requests: 0, issues: [] };
+      const wb = watch(b, repB, opts);
+      await enterApp(b, wb, opts, repB);
+      const layoutB = JSON.stringify({ order: [], more: {}, hidden: {}, help: true, folds: {}, e2e: 'device B' });
+      const own = { id: 'e2e-device-b', placedAt: new Date(opts.now).toISOString(), event: 'Jets @ Bills', pick: 'E2E Device B Bills ML', odds: 1.5, stake: 10, result: 'open', book: 'Kalshi', sport: 'NFL', tool: 'manual' };
+      await b.evaluate(([l, bet]) => { localStorage.setItem('lr_layout', l); localStorage.setItem('lr_bets', JSON.stringify([bet])); }, [layoutB, own]);
+      await openTab(b, 'betlog', wb, opts);
+      expect(/Saved in this browser only/.test(await text(b, '#mybSync')), `device B MY BETS status reads "${await text(b, '#mybSync')}"`);
+      await b.locator('#mybSync button', { hasText: 'SIGN IN' }).click();
+      await b.locator('#acctModal.open').waitFor({ timeout: 4000 });
+      await b.fill('#acctEmail', email);
+      await b.fill('#acctPass', pass);
+      await b.locator('#acctGo').click();
+      for (let i = 0; i < 50 && !/Synced to/.test(await text(b, '#mybSync')); i++) await settle(b, wb, opts, 100);
+      expect(/Synced to/.test(await text(b, '#mybSync')), `device B after sign-in: "${await text(b, '#mybSync')}"`);
+      // both devices' bets, on device B's screen and in its storage
+      const bets = await ls(b, 'lr_bets');
+      expect(bets.some(x => x.pick === 'E2E Chiefs -3') && bets.some(x => x.id === 'e2e-device-b'), `device B holds ${bets.map(x => x.pick).join(', ')}`);
+      expect(/E2E Chiefs -3/.test(await text(b, '#mybList')), 'device B does not list the bet from device A');
+      // the layouts differ: device B keeps its own until it picks
+      expect(/differ/.test(await text(b, '#mybSync')), `device B should say a setting differs: "${await text(b, '#mybSync')}"`);
+      await b.locator('.tab-row .tab-end').click();
+      await b.locator('#layModal.open').waitFor({ timeout: 4000 });
+      expect(/Tab layout: this device and your account differ/.test(await text(b, '#syncRows')), `no conflict row: "${await text(b, '#syncRows')}"`);
+      expect((await b.evaluate(() => localStorage.getItem('lr_layout'))) === layoutB, 'device B lost its own layout before choosing');
+      await b.locator('#syncRows .sync-conflict button', { hasText: 'USE ACCOUNT' }).click();
+      for (let i = 0; i < 40 && /differ/.test(await text(b, '#syncRows')); i++) await settle(b, wb, opts, 100);
+      expect(!/differ/.test(await text(b, '#syncRows')), 'the conflict row stayed after USE ACCOUNT');
+      expect((await b.evaluate(() => localStorage.getItem('lr_layout'))) === layoutA, 'USE ACCOUNT did not bring the account layout');
+      const bad = repB.issues.filter(i => /page-error|console|http-5xx|request-failed/.test(i.kind));
+      expect(!bad.length, `device B: ${bad.map(i => `${i.kind} ${i.message || i.url || i.text || ''}`).join('; ').slice(0, 300)}`);
+      await b.close();
+    } finally { await ctx.close(); }
+
+    // device A picks up device B's bet on its next sync
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#syncRows button', { hasText: 'SYNC NOW' }).click();
+    for (let i = 0; i < 40 && !(await ls(page, 'lr_bets')).some(x => x.id === 'e2e-device-b'); i++) await settle(page, w, opts, 100);
+    expect((await ls(page, 'lr_bets')).some(x => x.id === 'e2e-device-b'), 'device A did not get device B\'s bet');
+    // sign out: this browser keeps its copy
+    await page.locator('#syncRows button', { hasText: 'SIGN OUT' }).click();
+    await settle(page, w, opts, 120);
+    expect(/Not signed in/.test(await text(page, '#syncRows')), 'SIGN OUT did not sign out');
+    expect((await ls(page, 'lr_bets')).some(x => x.pick === 'E2E Chiefs -3'), 'signing out removed the local bets');
+    await page.keyboard.press('Escape');
   },
 
   async 'TOOLS calculator works out a price'(page, w, opts) {
