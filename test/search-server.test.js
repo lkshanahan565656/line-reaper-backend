@@ -65,3 +65,20 @@ test('/api/v1/search needs a key, wants two letters, and returns the same hits',
   const idx = (await get('/api/v1')).body;
   assert.ok(idx.endpoints.some(e => e.path === '/api/v1/search'));
 });
+
+test('/api/v1 search, leaderboard and alerts: a misspelt filter is a 400 that says so, not everything', async () => {
+  const k = await fetch(`${base}/api/v1/keys`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.9.0.2' }, body: JSON.stringify({ name: 'params' }) }).then(r => r.json());
+  const h = { 'X-API-Key': k.key };
+  for (const [u, re] of [['/api/v1/search?q=owls&kind=games', /kind is one or more of game/], ['/api/v1/search?q=owls&state=ZZ', /state is a two-letter/],
+    ['/api/v1/leaderboard?window=week', /window is one of 7d, 30d, all/], ['/api/v1/leaderboard?state=ZZ', /state is a two-letter/], ['/api/v1/leaderboard?venues=all', /venues is mine/],
+    ['/api/v1/alerts?kind=evs', /kind is one of ev/], ['/api/v1/alerts?days=x', /days must be a number/], ['/api/v1/alerts?before=yesterday', /before is an ISO time/], ['/api/v1/alerts?limit=0', /limit must be/]]) {
+    const r = await get(u, h);
+    assert.equal(r.status, 400, `${u} answered ${r.status}`);
+    assert.equal(r.body.error.code, 'bad_parameter', u);
+    assert.match(r.body.error.message, re, u);
+  }
+  for (const u of ['/api/v1/search?q=owls&kind=game,player&state=tx', '/api/v1/leaderboard?window=7d&state=CA&venues=mine&league=nba', '/api/v1/alerts?kind=ev&days=7&limit=5']) {
+    assert.equal((await get(u, h)).status, 200, u);
+  }
+  assert.equal((await get('/api/v1/search?q=o', h)).body.error.code, 'bad_parameter');
+});
