@@ -19,17 +19,18 @@
 // Open Graph tags point link previews at it.
 
 const path = require('path');
+const oddsFmt = require('./oddsfmt');
 
 const W = 1200, H = 630;
 const FONT = 'JetBrains Mono';
 // JetBrains Mono is monospaced: every glyph is 600/1000 of the font size wide,
 // so text is cut to fit exactly, with no measuring
 const CHAR = 0.6;
-const C = { bg: '#080b10', card: '#0d121b', border: '#1e2738', text: '#e2e8f0', text2: '#94a3b8', muted: '#64748b', green: '#10b981', green2: '#34d399', amber: '#f59e0b', red: '#f87171', blue: '#60a5fa', violet: '#a78bfa' };
+const C = { bg: '#080b10', card: '#0d121b', border: '#1e2738', text: '#e2e8f0', text2: '#94a3b8', muted: '#8391a7', green: '#10b981', green2: '#34d399', amber: '#f59e0b', red: '#f87171', blue: '#60a5fa', violet: '#a78bfa' };
 const TONE = { proven: C.green2, lead: C.amber, info: C.blue, research: C.violet, losing: C.red, plain: C.text2 };
 const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e0b', kalshi: '#10b981', polymarketus: '#a78bfa', gemini: '#22d3ee', matchbook: '#f472b6',
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
-const colorOf = v => VENUE_COLOR[v] || '#64748b';
+const colorOf = v => VENUE_COLOR[v] || '#8391a7';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // strip control characters (resvg draws nothing for them; a feed name could carry one)
@@ -41,7 +42,8 @@ function fit(s, size, maxPx) {
   return t.length <= n ? t : `${t.slice(0, Math.max(0, n - 1)).trimEnd()}…`;
 }
 const textW = (s, size) => clean(s).length * size * CHAR;
-const am = a => (a == null || !Number.isFinite(Number(a)) ? '—' : `${a > 0 ? '+' : ''}${Math.round(a)}`);
+// American odds in the sharer's format (?odds=, CUSTOMIZE > Odds format; American when none)
+const am = (a, fmt = 'american') => (a == null || !Number.isFinite(Number(a)) ? '—' : oddsFmt.fromAm(Number(a), fmt));
 const pct = (x, d = 1) => (x == null || !Number.isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
 const pctPlain = (p, d = 1) => (p == null || !Number.isFinite(p) ? '—' : `${(p * 100).toFixed(d)}%`);
 const usd = n => `$${Math.round(n).toLocaleString('en-US')}`;
@@ -134,7 +136,7 @@ function fillText(f) {
 
 // ── price: one row of publicapi.bestPrices() ──
 // row: the row, or null when it is gone; ctx: { at, locked, stale, origin }
-function priceCard(row, { at = null, locked = false, stale = false, origin = '', gone = false } = {}) {
+function priceCard(row, { at = null, locked = false, stale = false, origin = '', gone = false, fmt = 'american' } = {}) {
   const kind = !row || row.evPct > 0 ? 'Best price above the fair' : 'Best price';
   if (locked) return emptyCard({ kind, label: PRICE_LABEL.lead, title: 'Fair prices are for subscribers right now', why: 'While the paywall is on, the fair and the EV are not shown in public, so this card has no price to show.', readAt: at, origin });
   if (stale) return emptyCard({ kind, label: PRICE_LABEL.lead, title: 'The price feeds are behind', why: 'The feeds have not read in the last few minutes, so nothing is shown rather than an old price.', readAt: at, origin });
@@ -148,14 +150,14 @@ function priceCard(row, { at = null, locked = false, stale = false, origin = '',
   const body = `${txt(48, 168, row.selection, { size: 46, weight: 700, max: W - 96 })}
 ${txt(48, 210, sub, { size: 22, fill: C.text2, max: W - 96 })}
 ${tileRow(244, [
-    { name: `Price · ${row.venueName}`, value: am(shownAm), color: C.green2, size: 44, note: afterAm != null && shownAm !== afterAm ? `${am(afterAm)} after the fee` : 'after the fee' },
+    { name: `Price · ${row.venueName}`, value: am(shownAm, fmt), color: C.green2, size: 44, note: afterAm != null && shownAm !== afterAm ? `${am(afterAm, fmt)} after the fee` : 'after the fee' },
     { name: 'Break-even after fee', value: pctPlain(be), size: 40, note: 'the win chance it needs' },
-    { name: "Pinnacle's fair", value: row.fair?.american != null ? am(row.fair.american) : '—', size: 40, note: row.fair?.prob != null ? `no-vig ${pctPlain(row.fair.prob)}` : 'no fair' },
+    { name: "Pinnacle's fair", value: row.fair?.american != null ? am(row.fair.american, fmt) : '—', size: 40, note: row.fair?.prob != null ? `no-vig ${pctPlain(row.fair.prob)}` : 'no fair' },
   ])}
 ${tileRow(372, [
     { name: 'EV after fee', value: pct(row.evPct), color: row.evPct > 0 ? C.green2 : C.text, size: 32 },
     { name: 'Fill size', value: fillText(row.fill), size: 26 },
-    { name: 'Next best', value: row.secondBest ? `${am(row.secondBest.american)} ${row.secondBest.venueName}` : '—', size: 26 },
+    { name: 'Next best', value: row.secondBest ? `${am(row.secondBest.american, fmt)} ${row.secondBest.venueName}` : '—', size: 26 },
   ])}
 ${txt(48, 520, row.label === 'proven'
     ? `PROVEN VENUE: ${row.venueName} main lines beat Pinnacle's close on RESULTS. This row is one price, not a result.`
@@ -194,7 +196,7 @@ function pickSeries(series, { market = null, side = null, sideIndex = 0 } = {}) 
   const bySide = side ? sides.find(s => clean(s.side).toLowerCase() === clean(side).toLowerCase()) : null;
   return { market: mk, s: bySide || sides[Math.min(Math.max(0, sideIndex | 0), Math.max(0, sides.length - 1))] || null };
 }
-function moveCard({ game = null, series = [], market = null, side = null, sideIndex = 0, withFair = true, origin = '', venueName = v => v } = {}) {
+function moveCard({ game = null, series = [], market = null, side = null, sideIndex = 0, withFair = true, origin = '', venueName = v => v, fmt = 'american' } = {}) {
   const kind = 'Line move';
   const { market: mk, s } = pickSeries(series, { market, side, sideIndex });
   if (!game || !s) return emptyCard({ kind, label: MOVE_LABEL, title: game ? 'No saved prices for this game yet' : 'No game to chart', why: game ? 'Points are saved every few minutes from when a game first shows up on the board.' : 'The game started more than 6 hours ago, or it is not on the board.', origin });
@@ -205,7 +207,7 @@ function moveCard({ game = null, series = [], market = null, side = null, sideIn
   // the legend: each venue's last price, then the fair, on one line (cut to fit)
   let lx = 48;
   const legend = [];
-  const items = [...venues.map(v => ({ col: colorOf(v), t: `${venueName(v)} ${am(last?.prices?.[v])}`, dash: false })), ...(withFair && last?.fair != null ? [{ col: C.text, t: `FAIR ${pctPlain(last.fair)}`, dash: true }] : [])];
+  const items = [...venues.map(v => ({ col: colorOf(v), t: `${venueName(v)} ${am(last?.prices?.[v], fmt)}`, dash: false })), ...(withFair && last?.fair != null ? [{ col: C.text, t: `FAIR ${pctPlain(last.fair)}`, dash: true }] : [])];
   for (const it of items) {
     const w = 30 + textW(it.t, 18) + 26;
     if (lx + w > W - 48) break;
@@ -222,7 +224,7 @@ ${txt(48, 540, `Implied win chance at each venue${withFair ? "; dashed: Pinnacle
 
 // ── league: a league's board right now ──
 // d: { name, games, markets, withFair, venues, aboveFair, rows (publicapi.bestPrices), at, stale, locked, esports }
-function leagueCard(d, { origin = '' } = {}) {
+function leagueCard(d, { origin = '', fmt = 'american' } = {}) {
   const kind = `${d.name} · next 48 hours`;
   if (d.stale) return emptyCard({ kind, label: LEAGUE_LABEL, title: `${d.name}: the price feeds are behind`, why: 'The feeds have not read in the last few minutes, so nothing is shown rather than an old price.', readAt: d.at, origin });
   if (!d.games) return emptyCard({ kind, label: LEAGUE_LABEL, title: `No ${d.name} games on the board right now`, why: d.esports ? 'Esports prices and matchups are on the ESPORTS tab in the app; this card counts game lines on the odds screen.' : 'Nothing starts in the next 48 hours with a price we read. The board fills in as venues post lines.', readAt: d.at, origin });
@@ -230,7 +232,7 @@ function leagueCard(d, { origin = '' } = {}) {
   const rows = top.length ? top.map((r, i) => {
     const y = 316 + i * 62;
     const lab = chip(W - 48, y - 30, r.label === 'proven' ? 'PROVEN VENUE' : 'LEAD', r.label === 'proven' ? 'proven' : 'lead', { size: 14, right: true });
-    const right = `${am(r.price?.american ?? americanOfDec(r.price?.decimalAfterFees))} ${r.venueName} · fair ${am(r.fair?.american)} · EV ${pct(r.evPct)}`;
+    const right = `${am(r.price?.american ?? americanOfDec(r.price?.decimalAfterFees), fmt)} ${r.venueName} · fair ${am(r.fair?.american, fmt)} · EV ${pct(r.evPct)}`;
     const rw = textW(right, 20);
     return `<rect x="48" y="${y - 42}" width="${W - 96}" height="54" rx="8" fill="${C.card}" stroke="${C.border}" stroke-width="2"/>
 ${txt(64, y - 8, `${r.selection} · ${r.event}`, { size: 20, weight: 700, max: W - 96 - 32 - rw - lab.w - 40 })}
@@ -239,10 +241,10 @@ ${txt(W - 48 - lab.w - 20, y - 8, right, { size: 20, fill: C.green2, anchor: 'en
   const body = `${tileRow(124, [
     { name: 'Games', value: String(d.games) },
     { name: 'Markets with a fair', value: d.locked ? '—' : `${d.withFair}/${d.markets}` },
-    { name: 'Venues', value: String(d.venues) },
+    { name: d.stateName ? `${d.stateName} venues` : 'Venues', value: String(d.venues) },
     { name: 'Prices above fair', value: d.locked ? '—' : String(d.aboveFair), color: d.aboveFair ? C.green2 : C.text },
   ], { size: 36 })}
-${top.length ? txt(48, 256, 'BEST PRICES ABOVE THE FAIR, AFTER FEES', { size: 15, fill: C.muted, weight: 700, spacing: 1.5 }) : ''}
+${top.length ? txt(48, 256, d.stateName ? `BEST ${String(d.stateName).toUpperCase()} PRICES ABOVE THE FAIR, AFTER FEES` : 'BEST PRICES ABOVE THE FAIR, AFTER FEES', { size: 15, fill: C.muted, weight: 700, spacing: 1.5 }) : ''}
 ${rows}
 ${txt(48, 530, "Fair: Pinnacle's no-vig price. Above the fair is research (LEAD) until RESULTS proves the venue.", { size: 16, fill: C.violet, max: W - 96 })}`;
   return frame({ kind, label: LEAGUE_LABEL, readAt: d.at, origin, body });
@@ -280,6 +282,50 @@ ${txt(48, y + (proven.length === 1 ? 26 : 0), `${card.notProven} other kind${car
   return frame({ kind, label, readAt: card.at, origin, body, foot: 'Every graded flag is downloadable on RESULTS. Information, not betting advice. 21+.' });
 }
 
+// ── a bettor's own record (pubrecord.recordView): proven only where its app is ──
+function bettorCard(v, { origin = '' } = {}) {
+  const kind = `@${v.handle} · bettor record`;
+  if (!v || v.status !== 'live') return emptyCard({ kind, label: { text: 'UNPUBLISHED', tone: 'plain' }, title: 'This record was unpublished', why: 'Its slips were removed by the bettor.', readAt: v?.at, origin });
+  const p = v.pooled;
+  const top = (v.apps || []).find(a => a.label === 'proven') || (v.apps || [])[0] || null;
+  const label = v.proven.length ? { text: `PROVEN · ${v.proven[0]}`, tone: 'proven' } : { text: 'NOT PROVEN YET', tone: 'plain' };
+  const units = (u, shown) => (u == null ? '—' : `${u > 0 ? '+' : ''}${u.toFixed(1)}u${shown ? '' : '*'}`);
+  const body = `${txt(48, 168, `@${v.handle}`, { size: 44, weight: 700, max: W - 96 })}
+${txt(48, 206, "Pick'em slips logged before the start, graded against Pinnacle's close", { size: 20, fill: C.text2, max: W - 96 })}
+${tileRow(232, [
+    { name: 'Legs vs Pinnacle', value: `${p.pinN}/${v.rule?.graded || 50}` },
+    { name: 'CLV vs close', value: pct(p.clv), color: p.clv > 0 ? C.green2 : p.clv < 0 ? C.red : C.text },
+    { name: 'Legs hit', value: p.hitRate == null ? '—' : `${Math.round(p.hitRate * 100)}%`, note: p.be != null ? `needs ${(p.be * 100).toFixed(1)}%` : '' },
+    { name: 'Slips W-L', value: p.record },
+    { name: top && top.profitShown ? 'Profit' : 'Units', value: top && top.profitShown ? units(top.units, true) : units(p.units, false), color: C.text2, size: 30 },
+  ])}
+${txt(48, 390, top ? `${top.appName}: ${top.label}${top.why ? `. ${top.why}` : ''}` : 'No slips logged yet.', { size: 20, fill: top?.label === 'proven' ? C.green2 : C.text2, max: W - 96 })}
+${wrap(`${v.counts.onTime} slips on time, ${v.counts.late} late (logged after the start, not counted). * Units are 1u a slip at the app's table, not called a profit unless proven.`, 18, W - 96, 2).map((l, i) => txt(48, 432 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}
+${wrap('Rule: 50 legs at one app against Pinnacle\'s close at their own line, CLV t of 2 or more, never pooled.', 18, W - 96, 2).map((l, i) => txt(48, 500 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'Imported by the bettor, not placed through Line Reaper. Information, not betting advice. 21+.' });
+}
+
+// ── the bettor leaderboard (leaderboard.build): ranked only at the bar ──
+function boardCard(v, { origin = '' } = {}) {
+  const f = v.filter;
+  const kind = `Bettor leaderboard · ${f.windowName}${f.league ? ` · ${f.league}` : ''}`;
+  if (!v.ranked.length) {
+    const top = v.building[0];
+    return emptyCard({ kind, label: { text: 'NOBODY RANKED YET', tone: 'plain' }, title: `Nobody at ${v.bar} graded yet`,
+      why: top ? `Most graded: @${top.handle} at ${top.name}, ${top.n} of ${v.bar} picks graded against Pinnacle's close. Ranked only at ${v.bar}.`
+        : `No published record has a pick logged before its start and graded against Pinnacle's close in this slice yet.`, readAt: v.at, origin });
+  }
+  const rows = v.ranked.slice(0, 5).map((x, i) => {
+    const y = 200 + i * 62;
+    return `${txt(48, y, `${x.tied ? '=' : ''}${x.rank}`, { size: 30, weight: 700, fill: C.green2, max: 70 })}${txt(130, y, `@${x.handle}`, { size: 28, weight: 700, max: 360 })}${txt(500, y, `${x.name} · ${x.n} graded`, { size: 20, fill: C.text2, max: 300 })}${txt(W - 48, y, `${pct(x.clv, 2)}  [${pct(x.ciLo, 2)}, ${pct(x.ciHi, 2)}]`, { size: 22, fill: x.clv > 0 ? C.green2 : C.red, anchor: 'end', max: 330 })}`;
+  }).join('\n');
+  const label = { text: `${v.ranked.length} RANKED`, tone: 'plain' };
+  const body = `${txt(48, 146, 'CLV against Pinnacle\'s close · ranked by the low end of the 95% interval', { size: 20, fill: C.text2, max: W - 96 })}
+${rows}
+${wrap(`Ranked only at ${v.bar} picks logged before the start. Labels are each record's own. No profit shown.`, 18, W - 96, 2).map((l, i) => txt(48, 520 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'Records are logged by the bettors, not placed through Line Reaper. Information, not betting advice. 21+.' });
+}
+
 // ── digest: one week (digest.build()) ──
 function digestCard(d, { origin = '', frozen = false } = {}) {
   const s = d.summary;
@@ -300,6 +346,32 @@ function digestCard(d, { origin = '', frozen = false } = {}) {
 ${lines.map(([k, v, col], i) => `${txt(48, 296 + i * 58, k.toUpperCase(), { size: 15, fill: C.muted, weight: 700, spacing: 1.5 })}${txt(48, 322 + i * 58, v, { size: 22, fill: col, max: W - 96 })}`).join('\n')}`;
   const state = d.partial ? 'The week so far' : frozen ? 'Published and frozen' : 'Rebuilt from the record';
   return frame({ kind, label: { text: state, tone: 'plain' }, readAt: d.builtAt, origin, body, foot: 'Proven only where RESULTS proves it; units are a profit only where RESULTS shows one. 21+.' });
+}
+
+// ── the alert history (alertlog.view): what was sent, and how its bets graded ──
+// PROVEN only where a label row is proven on RESULTS; the pooled CLV is never a claim
+const ALERT_TONE = { proven: 'proven', building: 'lead', research: 'research', 'losing to the close': 'losing' };
+function alertsCard(v, { origin = '' } = {}) {
+  const s = v.summary;
+  const kind = 'Alert history';
+  const since = v.startedAt ? String(v.startedAt).slice(0, 10) : 'storing began';
+  if (!s.alerts) return emptyCard({ kind, label: { text: 'NOTHING SENT YET', tone: 'plain' }, title: 'No alert sent since storing began',
+    why: `Every alert is kept from ${since}. The first one sent will show here, graded against the close.`, readAt: v.at, origin });
+  const proven = s.byLabel.find(r => r.label === 'proven');
+  const label = proven ? { text: 'INCLUDES A PROVEN KIND', tone: 'proven' } : { text: 'NOTHING PROVEN', tone: 'plain' };
+  const rows = s.byLabel.slice(0, 4).map((r, i) => {
+    const y = 300 + i * 52;
+    const u = r.units == null ? '' : r.profitShown ? ` · ${r.units > 0 ? '+' : ''}${r.units.toFixed(1)}u` : '';
+    return `${txt(48, y, String(r.label).toUpperCase(), { size: 18, weight: 700, fill: TONE[ALERT_TONE[r.label]] || C.text2, max: 300 })}${txt(360, y, `${r.alerts} alert${r.alerts === 1 ? '' : 's'} · ${r.graded} graded · CLV ${pct(r.avgClvPct)}${r.wins + r.losses ? ` · ${r.wins}-${r.losses}` : ''}${u}`, { size: 20, fill: C.text, max: W - 408 })}`;
+  }).join('\n');
+  const body = `${tileRow(124, [
+    { name: 'Alerts sent', value: s.alerts.toLocaleString('en-US'), note: `since ${since}` },
+    { name: 'Bets graded', value: String(s.graded), note: `${s.open} still open` },
+    { name: 'CLV at alert price', value: pct(s.avgClvPct), note: 'pooled: never a claim' },
+    { name: 'Vs Pinnacle close', value: pct(s.avgPinClvPct), note: `${s.pinGraded} with it kept` },
+  ], { size: 32 })}
+${rows}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'The same alert went to everyone. Proven only where RESULTS proves it; a profit only where RESULTS shows one. 21+.' });
 }
 
 // ── PNG: resvg with the bundled fonts, loaded once; null when it is not there ──
@@ -398,7 +470,7 @@ p { color:#94a3b8; margin:0 0 10px; overflow-wrap:anywhere; }
 .btns { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
 a.btn { font:700 12px 'JetBrains Mono', ui-monospace, Menlo, monospace; letter-spacing:.08em; color:#06110d; background:#34d399; border-radius:6px; padding:10px 14px; text-decoration:none; }
 a.btn.ghost { color:#34d399; background:transparent; border:1px solid rgba(52,211,153,.45); }
-.note { font-size:12px; color:#64748b; }
+.note { font-size:12px; color:#8391a7; }
 </style>
 </head>
 <body>
@@ -424,5 +496,5 @@ function safeOpen(to) {
   return '/app';
 }
 
-module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, digestCard, emptyCard, pickSeries, chartSvg,
+module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, boardCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
   renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };

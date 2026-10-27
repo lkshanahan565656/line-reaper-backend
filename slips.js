@@ -189,8 +189,10 @@
     // player line market side
     new RegExp(`^(.+?)\\s+${NUM}\\s+(.+?)\\s+${SIDE_W}$`, 'i'),
   ];
+  // "More than 27.5", "Higher than 27.5": the apps' longer wording
+  const THAN = /\b(over|under|more|less|higher|lower)\s+than\b/gi;
   function parseLeg(line) {
-    let s = String(line || '').replace(/^[\s\-*•·\d.)]*(?=[A-Za-z])/, '').replace(/[✓✗✔✘❌✅]/g, '').trim();
+    let s = String(line || '').replace(/^[\s\-*•·\d.)]*(?=[A-Za-z])/, '').replace(/[✓✗✔✘❌✅]/g, '').replace(THAN, '$1').trim();
     if (!s) return null;
     // an esports leg may name its opponent last: "(vs G2)", "vs. G2", "@ G2"
     let opp = null;
@@ -253,6 +255,8 @@
     const mult = /\b(\d+(?:\.\d+)?)\s?x\b/i.exec(s);
     if (mult) h.mult = num(mult[1]);
     if (/\bflex\b/i.test(s)) h.flex = true;
+    // "3-Pick Power Play", "Power Play 2-Pick": the play type alone is a header too
+    else if (/\bpower\s*play\b/i.test(s)) h.flex = false;
     const when = parseWhen(s, now);
     if (when != null) h.placedAt = when;
     if (/\b(won|win|hit|cashed)\b/i.test(s) && !payWord) h.result = 'win';
@@ -275,7 +279,7 @@
     new RegExp(`^${NUM}\\s+(.+?)\\s+${SIDE_W}$`, 'i'),
   ];
   function parseLegNoPlayer(line) {
-    let s = String(line || '').replace(/^[\s\-*•·]+/, '').replace(/[✓✗✔✘❌✅↑↓▲▼⬆⬇]/g, '').trim();
+    let s = String(line || '').replace(/^[\s\-*•·]+/, '').replace(/[✓✗✔✘❌✅↑↓▲▼⬆⬇]/g, '').replace(THAN, '$1').trim();
     let sport = null;
     const sm = sportRe.exec(s);
     if (sm) { sport = SPORT_FIX[sm[1].toUpperCase()] || sm[1].toUpperCase(); s = (s.slice(0, sm.index) + ' ' + s.slice(sm.index + sm[0].length)).replace(/\s+/g, ' ').replace(/^[\s:,-]+|[\s:,-]+$/g, '').trim(); }
@@ -296,10 +300,33 @@
   // the team and position ("BUF - QB", "QB · BUF"), the game ("vs MIA Sun
   // 12:00pm", "BUF @ MIA"), the final stat ("Final: 263", "Actual 263"),
   // tags ("Goblin", "Demon", "Rival", "Taco") and the app's own labels
-  const CONTEXT_RE = [/^[A-Z]{2,4}\s*[-·•|]\s*[A-Z0-9]{1,4}$/, /^(vs\.?|@|at)\s+\S+/i, /^[A-Z]{2,4}\s+(vs\.?|@|at)\s+[A-Z]{2,4}\b/,
+  const CONTEXT_RE = [/^[A-Z][A-Z0-9]{1,4}\s*[-·•|]\s*[A-Z0-9]{1,4}$/, /^(vs\.?|@|at)\s+\S+/i, /^[A-Z]{2,4}\s+(vs\.?|@|at)\s+[A-Z]{2,4}\b/,
     /^(final|actual|result|score|current|stat)\s*:?\s*\d+(\.\d+)?$/i, /^\d+(\.\d+)?\s*(final)?$/i, /^(goblin|demon|rival|taco|boost(ed)?|discount(ed)?|promo|free pick|insured|swap(ped)?|in progress|live|pending|final|scheduled|upcoming|settled|open|closed|my lineups|my entries|completed|active|entries|history)$/i,
-    /^(power play|flex play|standard|insurance|champions)$/i];
+    /^(power play|flex play|standard|insurance|champions|player pick|team pick|player picks|team picks)$/i];
   const contextLine = l => CONTEXT_RE.some(re => re.test(l));
+  // A pick copied off an app's lineup screen often comes one piece a line
+  // under the player's name, in the app's own order: "More" / "27.5" /
+  // "Points" (PrizePicks), "Points" / "27.5" / "Higher" (Underdog), "27.5" /
+  // "points" / "over" (Sleeper), or "27.5 Points" then "More". The pieces are
+  // gathered until the side, the line and the stat are all there.
+  const STAT_WORD = /\b(points?|pts|rebounds?|rebs?|reb|assists?|asts?|ast|pra|kills?|headshots?|deaths|assists|yards?|yds|receptions?|recs?|touchdowns?|tds?|completions?|attempts?|carries|rush|pass|receiving|shots?|saves?|goals?|strikeouts?|ks|hits|runs|rbis?|bases|outs|walks|blocks?|blks?|steals?|stls?|turnovers?|threes|3-?pt|3-?pointers?|fantasy|score|aces|games|sets|maps?|rounds?|birdies|fpts)\b/i;
+  const SIDE_ONLY = /^(over|under|more|less|higher|lower)$/i;
+  const NUM_ONLY = /^(\d+(?:\.\d+)?)$/;
+  const NUM_STAT = new RegExp(`^${NUM}\\s+(.+)$`);
+  // a one-word name (an esports handle: "Faker", "s1mple"), read only where it
+  // can't be one of the pieces of a pick or an app's label
+  const soloName = l => /^[A-Za-zÀ-ÿ0-9][\wÀ-ÿ'.-]{1,19}$/.test(l) && /[A-Za-zÀ-ÿ]/.test(l) && !NUM_ONLY.test(l) && !STAT_WORD.test(l) && !SIDE_ONLY.test(l) && !appOf(l)
+    && !/^(power|flex|play|entry|picks?|won|lost|paid|refund|void|final|live|pending|cashed|results?|lineup|standard|insured|boost|promo|total|payout|stake|vs|at)$/i.test(l);
+  // one line as a piece of a pick → { side?, line?, market? } | null
+  function pickPiece(l, frag) {
+    if (SIDE_ONLY.test(l)) return frag.side ? null : { side: SIDE[l.toLowerCase()] };
+    const n = NUM_ONLY.exec(l);
+    if (n) return frag.line != null ? null : { line: parseFloat(n[1]) };
+    const ns = NUM_STAT.exec(l);
+    if (ns && frag.line == null && !frag.market && !/\$/.test(l) && STAT_WORD.test(ns[2])) return { line: parseFloat(ns[1]), market: ns[2].trim() };
+    if (!frag.market && /[A-Za-z]/.test(l) && !/\$/.test(l) && l.length <= 40 && (STAT_WORD.test(l) || frag.side || frag.line != null) && !contextLine(l) && !appOf(l)) return { market: l };
+    return null;
+  }
   // A history screen starts a new entry on a header that names the app or the
   // play type, even with no blank line before it
   const STARTER = /\b(power play|flex play|\d+[- ]?picks?\b|\d+[- ]?pick (entry|power|flex)|entry fee|\$\s?\d[\d,.]*\s*entry|insured|standard entry|champions)|^(prize\s*picks|underdog|sleeper|pick\s*6|dk pick\s*6|betr|chalkboard)\b/i;
@@ -308,9 +335,36 @@
   // header nor one of the apps' own labels around a leg (listed so nothing is
   // dropped without a word). An app history pasted as copied text (no blank
   // lines between entries, the player's name a line above the pick) reads too.
+  // Why a line was not read, in plain words, for the paste box and the
+  // Imports card. name: the player the line sits under, frag: the pieces of
+  // that player's pick read so far.
+  const URL_RE = /\bhttps?:\/\/\S+|\b(?:prizepicks|underdogfantasy|underdogsports|sleeper)\.(?:com|app|link|onelink\.me)\/\S*/i;
+  function whyNamed(name, frag) {
+    const got = [frag.side, frag.line, frag.market].filter(x => x != null && x !== '').join(' ');
+    const miss = [!frag.side && 'More or Less (Higher or Lower)', frag.line == null && 'line', !frag.market && 'stat'].filter(Boolean);
+    return got ? `${name}: read "${got}" but no ${miss.join(' or ')}, so this pick was left out`
+      : `${name}: a player's name with no pick under it (needs More or Less, a line and a stat)`;
+  }
+  function whyLine(l) {
+    if (URL_RE.test(l)) return "a share link: the picks aren't in a link's text. Open the lineup in the app and copy its picks, or type them like Josh Allen More 245.5 Pass Yards";
+    if (SIDE_ONLY.test(l)) return `"${l}" with no player above it`;
+    if (NUM_ONLY.test(l)) return 'a number on its own, with no player above it';
+    if (NUM_STAT.test(l) && STAT_WORD.test(l)) return 'a line and a stat with no player above it and no More or Less';
+    if (STAT_WORD.test(l) && l.length <= 40 && !/\d/.test(l)) return 'a stat with no player above it';
+    if (/\b(over|under|more|less|higher|lower)\b/i.test(l) && !/\d/.test(l)) return 'a pick with no line (the number)';
+    if (/\d/.test(l) && /\b(over|under|more|less|higher|lower)\b/i.test(l)) return "a pick whose player or stat couldn't be told apart; write it like Josh Allen More 245.5 Pass Yards";
+    return "not a pick (a player, More or Less, a line and a stat) or a slip's header (the app, entry, payout or date)";
+  }
+
+  // text → { slips, skipped, unread }: skipped are lines read as neither a
+  // leg nor a header nor one of the apps' own labels around a leg (listed so
+  // nothing is dropped without a word); unread is the same with the reason
+  // [{ text, why }]. An app history pasted as copied text (no blank lines
+  // between entries, the player's name a line above the pick) reads too.
   function parseSlips(text, { now = Date.now(), app = null, source = 'paste' } = {}) {
     const blocks = String(text || '').replace(/\r/g, '').split(/\n\s*\n/);
-    const slips = [], skipped = [];
+    const slips = [], skipped = [], unread = [];
+    const skip = (t, why) => { skipped.push(t); unread.push({ text: t, why }); };
     let context = 0;
     const blank = () => ({ id: newId(now), app: app || null, stake: null, payout: null, mult: null, flex: false, placedAt: null, legs: [], source, sides: '' });
     const close = slip => {
@@ -327,14 +381,28 @@
     for (const block of blocks) {
       const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
       if (!lines.length) continue;
-      let slip = blank(), name = null;
+      let slip = blank(), name = null, frag = {};
+      // the leg just finished from pieces whose last piece was its side: a
+      // second side right after it means the pick was copied off the board
+      // with both More and Less on it, and which one was picked is unknown
+      let sideLast = null;
+      const dropName = () => { if (name) skip(name, whyNamed(name, frag)); name = null; frag = {}; };
       for (const l of lines) {
+        if (sideLast && SIDE_ONLY.test(l)) {
+          const i = slip.legs.indexOf(sideLast);
+          if (i >= 0) slip.legs.splice(i, 1);
+          skip(`${sideLast.player} ${sideLast.line} ${sideLast.market}`, `${sideLast.player}: both More and Less are on this pick (copied from the board, not your lineup?), so it was left out. Keep only the side you picked`);
+          sideLast = null;
+          continue;
+        }
+        sideLast = null;
         // a new entry's header after this one's legs
-        if (slip.legs.length && STARTER.test(l) && !parseLeg(l)) { close(slip); slip = blank(); name = null; }
+        if (slip.legs.length && STARTER.test(l) && !parseLeg(l)) { dropName(); close(slip); slip = blank(); }
+        if (URL_RE.test(l)) { skip(l, whyLine(l)); continue; }
         const leg = parseLeg(l);
         if (leg && !(appOf(l) && /\$/.test(l)) && !(name && SIDE_RE.test(l))) {
           slip.legs.push(leg); slip.sides += /\b(higher|lower)\b/i.test(l) ? 'H' : /\b(more|less)\b/i.test(l) ? 'M' : '';
-          if (name) { skipped.push(name); name = null; }
+          dropName();
           continue;
         }
         // "More 245.5 Pass Yards" under the player's name
@@ -342,18 +410,33 @@
         if (np) {
           slip.legs.push({ player: name, side: np.side, line: np.line, market: np.market, sport: np.sport });
           slip.sides += /^(higher|lower)/i.test(l) ? 'H' : /^(more|less)/i.test(l) || /(more|less)$/i.test(l) ? 'M' : '';
-          name = null; continue;
+          name = null; frag = {}; continue;
+        }
+        // one piece of the pick a line ("More" / "27.5" / "Points")
+        const piece = name ? pickPiece(l, frag) : null;
+        if (piece) {
+          Object.assign(frag, piece);
+          if (piece.side) slip.sides += /^(higher|lower)$/i.test(l) ? 'H' : /^(more|less)$/i.test(l) ? 'M' : '';
+          if (frag.side && frag.line != null && frag.market) {
+            const sm = sportRe.exec(frag.market);
+            const sport = sm ? SPORT_FIX[sm[1].toUpperCase()] || sm[1].toUpperCase() : null;
+            const leg = { player: name, side: frag.side, line: frag.line, market: sm ? frag.market.replace(sm[0], ' ').replace(/\s+/g, ' ').trim() : frag.market, sport };
+            slip.legs.push(leg);
+            if (piece.side) sideLast = leg;
+            name = null; frag = {};
+          }
+          continue;
         }
         const h = parseHeader(l, now);
         if (h) { for (const [k, v] of Object.entries(h)) if (slip[k] == null || slip[k] === false) slip[k] = v; continue; }
         if (contextLine(l)) { context++; continue; }
-        if (nameLine(l)) { if (name) skipped.push(name); name = l; continue; }
-        skipped.push(l);
+        if (nameLine(l) || soloName(l)) { dropName(); name = l; frag = {}; continue; }
+        skip(l, whyLine(l));
       }
-      if (name) skipped.push(name);
+      dropName();
       close(slip);
     }
-    return { slips, skipped, context };
+    return { slips, skipped, unread, context };
   }
 
   // ── Pikkit's CSV export ──
@@ -385,7 +468,7 @@
   // the order matters: a header takes the first name it fits
   const COLS = {
     id: /^(bet[ _]?id|id|ticket( id)?|transaction( id)?|(entry|lineup|slip|parlay|wager)[ _]?id)$/i,
-    placed: /(time[ _]?placed|placed[ _]?(at|on|date|time)?|date[ _]?placed|^date$|^time$|created|bet date|entry date|^submitted)/i,
+    placed: /(time[ _]?placed|timeplaced|placed[ _]?(at|on|date|time)?|date[ _]?placed|^date$|^time$|created|bet date|entry date|^submitted)/i,
     settled: /(settled|graded|closed)[ _]?(at|on|date|time)?$/i,
     book: /^(sportsbook|book|site|app|provider|operator|bookmaker|platform)$/i,
     type: /^(bet[ _]?type|type|wager type|(game|play|entry|lineup|slip)[ _]?type)$/i,
@@ -395,15 +478,21 @@
     player: /^(player|player[ _]?name|athlete|participant)$/i,
     side: /^(side|over\/under|o\/u|direction|more\/less|higher\/lower|pick[ _]?(type|side|direction)|selection[ _]?type)$/i,
     line: /^(line|projection|stat[ _]?line|target|line[ _]?value|pick[ _]?line|prop[ _]?line)$/i,
-    stat: /^(stat|stat[ _]?type|statistic|prop|stat[ _]?category)$/i,
+    stat: /^(stat|stat[ _]?type|statistic|prop|stat[ _]?category|metric|metric[ _]?special|metricspecial)$/i,
     market: /^(market|markets|bet market|prop type|category)$/i,
-    desc: /^(description|bet([ _]info|[ _]description|[ _]name)?|selection|selections|pick|picks|name|legs?|details|wager)$/i,
+    desc: /^(description|book[ _]?description|bet([ _]info|[ _]description|[ _]name)?|selection|selections|pick|picks|name|legs?|details|wager)$/i,
     close: /^(closing[ _]?(line|odds|price)|close[ _]?(odds|line)?|clv[ _]?odds)$/i,
-    odds: /^(odds|american[ _]odds|price|multiplier|payout multiplier)$/i,
+    odds: /^(odds|american[ _]odds|odds[ _]?american|price|multiplier|payout multiplier)$/i,
     stake: /^(amount|stake|risk|wager amount|bet amount|risked|wagered|entry[ _]?(fee|amount)?|fee)$/i,
     payout: /^(payout|to win|potential payout|return|returns|winnings|amount won|paid|payout amount|won)$/i,
     profit: /^(profit|net|net profit|profit\/loss|p\/l|pnl)$/i,
     status: /^(status|result|outcome|(bet|entry|lineup|slip)[ _]?status)$/i,
+    // SharpSports' bet sync (docs.sharpsports.io/reference/bet): the side is
+    // "position" (Over/Under there; a roster position elsewhere, so it is read
+    // as the side only when some row holds Over or Under), the result "outcome" next to a
+    // "status" of completed/pending
+    position: /^position$/i,
+    outcome: /^outcome$/i,
     clv: /clv/i,
     ev: /^ev$/i,
     legs: /^(legs|leg count|# legs|num legs|picks count|# picks|number of picks)$/i,
@@ -417,7 +506,7 @@
     return at;
   }
   /** @type {Array<[RegExp, string]>} */
-  const STATUS = [[/^(won|win|w|hit|cashed|settled[ _]win)$/i, 'win'], [/^(lost|loss|l|miss|settled[ _]loss)$/i, 'loss'],
+  const STATUS = [[/^(won|win|w|hit|cashed|settled[ _]win|half[ _-]?win)$/i, 'win'], [/^(lost|loss|l|miss|settled[ _]loss|half[ _-]?loss)$/i, 'loss'],
     [/^(push|pushed|p|tie|refund(ed)?|settled[ _]push)$/i, 'push'], [/^(void|voided|cancel(l)?ed|canceled|settled[ _]void)$/i, 'void'], [/^(open|pending|active|ungraded|live)$/i, 'open'], [/cash(ed)?[ _]?out/i, 'cashout']];
   const statusOf = s => { const t = String(s || '').trim(); for (const [re, v] of STATUS) if (re.test(t)) return v; return t ? t.toLowerCase() : 'open'; };
   const amOdds = s => { const n = num(String(s || '').replace(/^\+/, '')); if (n == null) return null; return Math.abs(n) >= 100 ? (n > 0 ? 1 + n / 100 : 1 + 100 / -n) : n > 1 ? n : null; };
@@ -443,6 +532,14 @@
       if (vals.length && vals.every(v => SIDE[v.toLowerCase()])) { at.side = at.desc; delete at.desc; }
     }
     if (at.placed == null && at.stake == null && at.desc == null && at.player == null) return { bets: [], unread: [], columns: at, header, rows: body.length, error: `Couldn't find the date, stake or bet columns in: ${header.join(', ')}` };
+    // an "outcome" next to a "status" of completed/pending is the result
+    if (at.outcome == null) { const oi = header.findIndex(h => /^outcome$/i.test(h)); if (oi >= 0 && oi !== at.status) at.outcome = oi; }
+    if (at.outcome != null) at.status = at.outcome;
+    // a "position" column holding only Over/Under is the side
+    if (at.position != null && at.side == null) {
+      const vals = body.map(r => raw(r, 'position')).filter(Boolean);
+      if (vals.some(v => SIDE[v.toLowerCase()])) at.side = at.position;
+    }
     const get = raw;
     const pre = { pikkit: 'pk', juicereel: 'jr', bettoriq: 'iq', prizepicks: 'pp', underdog: 'ud', sleeper: 'sl' }[format] || 'cv';
     const source = format === 'pikkit' ? 'pikkit' : 'import';
@@ -460,7 +557,8 @@
         const lg = (get(r, 'league') || get(r, 'sport')).toUpperCase();
         const leg = SIDE[sideW] && ok(ln) && mk ? { player: get(r, 'player'), side: SIDE[sideW], line: ln, market: mk, sport: SPORTS.includes(lg) ? (SPORT_FIX[lg] || lg) : null } : null;
         legs = leg ? [leg] : [];
-        if (!leg) unread.push({ row: i + 2, text: r.filter(x => String(x).trim()).join(' · ').slice(0, 160), why: !SIDE[sideW] ? 'no More/Less (Over/Under) side on this row' : !ok(ln) ? 'no line on this row' : 'no stat on this row' });
+        if (!leg) unread.push({ row: i + 2, text: r.filter(x => String(x).trim()).join(' · ').slice(0, 160), why: !SIDE[sideW] ? (get(r, 'side') ? `the side reads "${get(r, 'side').slice(0, 40)}", not More/Less (Over/Under): a team or game pick, not a player pick` : 'no More/Less (Over/Under) side on this row')
+            : !ok(ln) ? (get(r, 'line') ? `the line reads "${get(r, 'line').slice(0, 20)}", not a number` : 'no line on this row') : 'no stat on this row' });
       } else {
         legs = desc.split(/\s*(?:\||;|\n| \/ |,\s(?=[A-Z][a-z]+\s[A-Z]))\s*/).map(parseLeg).filter(Boolean);
         if (!legs.length) unread.push({ row: i + 2, text: (desc || r.filter(x => String(x).trim()).join(' · ')).slice(0, 160),
@@ -569,7 +667,7 @@
     const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).length;
     const lineNo = new Map();
     String(text || '').split(/\r?\n/).forEach((l, i) => { const t = l.trim(); if (t && !lineNo.has(t)) lineNo.set(t, i + 1); });
-    const unread = r.skipped.map(t => ({ row: lineNo.get(t) || null, text: t.slice(0, 160), why: nameLine(t) ? 'a name with no pick under it (More/Less, a line and a stat)' : "couldn't read this line as a leg or a slip's header" }));
+    const unread = r.unread.map(u => ({ row: lineNo.get(u.text) || null, text: u.text.slice(0, 160), why: u.why }));
     return { ...d, id: importId, rows: lines, bets: [], slips: r.slips, unread, context: r.context };
   }
 

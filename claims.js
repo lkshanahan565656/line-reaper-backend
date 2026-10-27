@@ -35,7 +35,7 @@ const LABELS = [
   { tool: 'Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer', where: 'ESPORTS > MATCHUPS', tag: 'model, not an edge', why: 'The exchanges\' own prices beat our ratings in walk-forward tests.' },
   { tool: 'Esports map kill Unders', where: 'ESPORTS > MAP UNDERS', tag: 'research', why: 'Unders where Pinnacle\'s map number sits under the apps\' lines summed, priced on our kill model. Under 50 graded; nothing alerts.' },
   { tool: 'Kalshi maker bids', where: 'ODDS SCREEN > MAKER', tag: 'research', why: 'A resting bid under the fair. Nothing places an order.' },
-  { tool: 'F1 and golf outrights', where: 'ODDS SCREEN > OUTRIGHTS', tag: 'research', why: 'Pinnacle takes small limits there, so its fair is weaker.' },
+  { tool: 'F1, golf and season futures outrights', where: 'ODDS SCREEN > OUTRIGHTS', tag: 'research', why: 'Pinnacle takes small limits there, so its fair is weaker.' },
   { tool: 'Injury news', where: 'PROPS > INJURY NEWS', tag: 'research', why: 'Legs left up after news. Not ahead of the close so far.' },
   { tool: 'Sharp Tail and big money', where: 'SHARP TAIL, BIG MONEY', tag: 'research', why: 'Following big accounts has not beaten the close in our tests.' },
   { tool: 'Pick\'em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6)', where: 'PROPS', tag: 'not proven', why: 'Flagged legs have broken about even against Pinnacle\'s close.', pickem: true },

@@ -8,9 +8,9 @@ const os = require('os');
 const path = require('path');
 
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-v1-'));
-for (const k of ['DATABASE_URL', 'ODDS_API_KEY', 'OWLS_API_KEY', 'ALERT_WEBHOOK_URL', 'PUBLIC_URL', 'PAYWALL']) delete process.env[k];
+for (const k of ['DATABASE_URL', 'ODDS_API_KEY', 'OWLS_API_KEY', 'ALERT_WEBHOOK_URL', 'PUBLIC_URL', 'PAYWALL', 'DISCORD_WEBHOOK_URLS', 'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_IDS']) delete process.env[k];
 Object.assign(process.env, { LR_DATA_DIR: DIR, TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
-  SPORT_PROPS_FILE: path.join(DIR, 'sport-props.json'), DIGEST_FILE: path.join(DIR, 'digest.json'), API_KEYS_FILE: path.join(DIR, 'api-keys.json'), ESPORTS_CALIBRATION: 'off' });
+  SPORT_PROPS_FILE: path.join(DIR, 'sport-props.json'), DIGEST_FILE: path.join(DIR, 'digest.json'), API_KEYS_FILE: path.join(DIR, 'api-keys.json'), OUT_FEED_FILE: path.join(DIR, 'out-feed.json'), ESPORTS_CALIBRATION: 'off' });
 const axios = require('axios');
 axios.get = async () => { throw Object.assign(new Error('offline'), { response: { status: 503 } }); };
 axios.post = axios.get;
@@ -131,4 +131,73 @@ test('widgets, embed.js and /developers answer without a feed and without a key'
   assert.match(html, /Public API and widgets/);
   assert.match(html, /GET \/api\/v1\/best-prices/);
   assert.match(html, /Live example/);
+});
+
+test('Discord feed: a key connects its own webhook, gets the welcome post, checks and disconnects it', async () => {
+  const HOOK = `https://discord.com/api/webhooks/223456789012345678/${'z'.repeat(68)}`;
+  const { body: k } = await mkKey('feed', '10.0.9.1');
+  const H = { 'X-API-Key': k.key, 'Content-Type': 'application/json' };
+  // no key: refused; nothing connected yet
+  assert.equal((await fetch(`${base}/api/v1/feed`)).status, 401);
+  let r = await fetch(`${base}/api/v1/feed`, { headers: H });
+  let j = await r.json();
+  assert.equal(j.discord.connected, false);
+  assert.match(j.same, /same posts/);
+  // not a Discord webhook: refused before anything is fetched
+  r = await fetch(`${base}/api/v1/feed/discord`, { method: 'PUT', headers: H, body: JSON.stringify({ url: 'https://example.com/hook' }) });
+  assert.equal(r.status, 400);
+  assert.equal((await r.json()).error.code, 'bad_parameter');
+  // Discord offline: says so
+  r = await fetch(`${base}/api/v1/feed/discord`, { method: 'PUT', headers: H, body: JSON.stringify({ url: HOOK }) });
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error.message, /Could not reach Discord/);
+  // Discord answers: connected, one welcome post with the record card
+  const get0 = axios.get, post0 = axios.post;
+  const posts = [];
+  axios.get = async url => (url === HOOK ? { data: { name: 'line feed', channel_id: '1' } } : get0(url));
+  axios.post = async (url, data) => { posts.push({ url, data }); return { data: {} }; };
+  try {
+    r = await fetch(`${base}/api/v1/feed/discord`, { method: 'PUT', headers: H, body: JSON.stringify({ url: HOOK }) });
+    j = await r.json();
+    assert.equal(r.status, 200, JSON.stringify(j));
+    assert.equal(j.discord.connected, true);
+    assert.equal(j.discord.webhook, '…5678');
+    assert.ok(!JSON.stringify(j).includes('zzzz'), 'the webhook token is never echoed');
+    assert.equal(posts.length, 1);
+    assert.equal(posts[0].url, `${HOOK}?wait=true`);
+    assert.match(posts[0].data.embeds[0].title, /feed connected/);
+    assert.match(posts[0].data.embeds[0].image.url, /\/card\/record\.png$/);
+    // a second key cannot connect the same webhook (the channel would get every post twice)
+    const { body: k2 } = await mkKey('feed2', '10.0.9.2');
+    r = await fetch(`${base}/api/v1/feed/discord`, { method: 'PUT', headers: { ...H, 'X-API-Key': k2.key }, body: JSON.stringify({ url: HOOK }) });
+    assert.equal(r.status, 409);
+    // the server's status counts it, without the URL
+    const st = await (await fetch(`${base}/api/status`)).json();
+    assert.equal(st.outFeed.customers, 1);
+    assert.equal(st.outFeed.on, true);
+    assert.ok(!JSON.stringify(st.outFeed).includes('zzzz'));
+  } finally { axios.get = get0; axios.post = post0; }
+  r = await fetch(`${base}/api/v1/feed/discord`, { method: 'DELETE', headers: H });
+  j = await r.json();
+  assert.equal(j.discord.connected, false);
+  assert.equal((await (await fetch(`${base}/api/status`)).json()).outFeed.customers, 0);
+  // the docs page explains it
+  const html = await (await fetch(`${base}/developers`)).text();
+  assert.match(html, /id="feed"/);
+  assert.match(html, /Copy Webhook URL/);
+  assert.match((await (await fetch(`${base}/api/v1`)).json()).feed.connect, /PUT \/api\/v1\/feed\/discord/);
+});
+
+test('the feed jobs run with nobody connected: the record check keeps a baseline, moves and owner check send nothing', async () => {
+  const posts = [];
+  const post0 = axios.post;
+  axios.post = async (url, data) => { posts.push(url); return { data } };
+  try {
+    const r = await srv.feedRecordCheck();
+    assert.deepEqual(r, { changes: 0, sent: 0 });
+    assert.ok(srv.outFeedStatus().record.checkedAt);
+    assert.equal(await srv.feedMoves(), null);
+    assert.equal(await srv.feedOwnerCheck(), null);
+    assert.equal(posts.length, 0);
+  } finally { axios.post = post0; }
 });

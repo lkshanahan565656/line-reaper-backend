@@ -12,7 +12,8 @@
 // number shows it with "line differs" and no EV, because a price at another
 // number isn't the same bet.
 //
-// With a state picked (?state=TX) only venues legal there are shown and can be
+// With a state picked (?state=TX) venues not legal there are dropped, ones no
+// source vouches for are greyed (legal: 'unknown'), and only legal ones can be
 // "best". Pinnacle's fair stays as the reference column: nobody bets it there.
 //
 // History: each side's fair and venue prices every few minutes while the game
@@ -153,13 +154,17 @@ function sideLabel(key, side, point, home) {
   return `${side} ${p > 0 ? '+' : ''}${p}`;
 }
 
-// Mark each side's best bettable price (and drop venues a state can't use).
+// Mark each side's best bettable price. With a state: a venue legal there is
+// marked legal 'yes'; one no source vouches for stays, greyed, as 'unknown'
+// and can't be best; one not legal there is dropped (venues.js).
 function finish(markets, { state = null } = {}) {
-  const legal = venues.legalIn(state);
-  const show = v => v.ref || !state || legal(v.venue);
+  const st = venues.stateOf(state);
   for (const m of markets) for (const s of m.sides) {
-    s.venues = s.venues.filter(show);
-    const bettable = s.venues.filter(v => !v.ref && !v.lineDiffers && v.decimal > 1);
+    if (st) {
+      for (const v of s.venues) if (!v.ref) v.legal = venues.statusOf(st, v.venue);
+      s.venues = s.venues.filter(v => v.ref || v.legal !== 'no');
+    }
+    const bettable = s.venues.filter(v => !v.ref && !v.lineDiffers && v.decimal > 1 && (!st || v.legal === 'yes'));
     const top = bettable.sort((a, b) => b.decimal - a.decimal)[0] || null;
     for (const v of s.venues) v.best = !!top && v === top;
     s.best = top ? { venue: top.venue, name: top.name, american: top.american, ev: top.ev } : null;
@@ -170,7 +175,7 @@ function finish(markets, { state = null } = {}) {
     const best = m.sides.map(s => s.venues.find(v => v.best));
     m.bestHold = best.every(Boolean) ? r4(best.reduce((a, v) => a + 1 / v.decimal, 0) - 1) : null;
   }
-  return markets.filter(m => m.sides.some(s => s.venues.some(v => !v.ref)));
+  return markets.filter(m => m.sides.some(s => s.venues.some(v => !v.ref && (!st || v.legal === 'yes'))));
 }
 
 // The whole screen. gamesByLeague: freeBooksState.games; kalshi: Map of bets
@@ -196,7 +201,7 @@ function build(gamesByLeague = {}, { kalshi = null, now = Date.now(), horizonMs 
   }
   games.sort((a, b) => ms(a.start) - ms(b.start) || a.home.localeCompare(b.home));
   const seen = new Set(games.flatMap(g => g.markets.flatMap(m => m.sides.flatMap(s => s.venues.map(v => v.venue)))));
-  const cols = ORDER.filter(k => seen.has(k)).map(k => ({ key: k, name: NAME(k), ref: REFS.has(k), secondHand: SECOND_HAND.has(k), tx: venues.legalIn('TX')(k) }));
+  const cols = ORDER.filter(k => seen.has(k)).map(k => ({ key: k, name: NAME(k), ref: REFS.has(k), secondHand: SECOND_HAND.has(k), tx: venues.legalIn('TX')(k), ...(venues.stateOf(state) && !REFS.has(k) ? { legal: venues.statusOf(state, k) } : {}) }));
   const sides = games.flatMap(g => g.markets.flatMap(m => m.sides));
   return { games, venues: cols, leagues: Object.entries(leagues).map(([k, n]) => ({ key: k, label: LEAGUE_LABEL[k] || k.toUpperCase(), games: n })).sort((a, b) => b.games - a.games),
     counts: { games: games.length, sides: sides.length, priced: sides.filter(s => s.fair != null).length, plusEv: sides.filter(s => s.best?.ev > 0).length, lowHold: games.flatMap(g => g.markets).filter(m => m.bestHold != null && m.bestHold < 0.01).length } };
@@ -211,8 +216,12 @@ function stripPro(screen) {
 // ── line history ──
 // key `${gameId}|${market}|${side}` → { id, game, start, label, pts: [[t, point, fair, { venue: american }]] }
 // A point is added when anything moved and minGapMs has passed, or every
-// heartbeatMs regardless; a game is dropped keepMs after its start.
-function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 400 } = {}) {
+// heartbeatMs regardless; a game is dropped keepMs after its start, handed to
+// onDrop first (linehist.js keeps it 30 days). Past maxPts the older reads
+// are thinned to the biggest moves (linehist.thin), never cut from the front,
+// so the opening price stays.
+function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 400, onDrop = null } = {}) {
+  const { thin, gameDiff } = require('./linehist');
   const series = new Map();
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   function observe(screen, now = Date.now()) {
@@ -225,18 +234,32 @@ function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 
       let x = series.get(id);
       if (!x) { x = { id, game: g.id, start: g.start, label: s.label, market: m.key, pts: [] }; series.set(id, x); }
       x.start = g.start; x.label = s.label;
+      if (g.league) x.league = g.league;
+      if (g.leagueLabel) x.leagueLabel = g.leagueLabel;
+      if (g.home && g.away) x.event = `${g.away} @ ${g.home}`;
       const last = x.pts[x.pts.length - 1];
       const moved = !last || last[1] !== pt[1] || last[2] !== pt[2] || !same(last[3], pt[3]);
       if (!last || (moved && now - last[0] >= minGapMs) || now - last[0] >= heartbeatMs) {
         x.pts.push(pt); added++;
-        if (x.pts.length > maxPts) x.pts.splice(0, x.pts.length - maxPts);
+        x.reads = (x.reads || x.pts.length - 1) + 1;
+        if (x.pts.length > maxPts) shrink(x);
       }
     }
     prune(now);
     return added;
   }
+  // the newest quarter stays whole; the rest is thinned to make room
+  function shrink(x) {
+    const recent = Math.floor(maxPts / 4);
+    x.pts = thin(x.pts, Math.floor(maxPts * 0.8), { diff: gameDiff, start: x.start, protectFrom: x.pts.length - recent });
+    x.thinned = true;
+  }
   function prune(now = Date.now()) {
-    for (const [k, x] of series) if (ms(x.start) != null && ms(x.start) < now - keepMs) series.delete(k);
+    for (const [k, x] of series) {
+      if (ms(x.start) == null || ms(x.start) >= now - keepMs) continue;
+      series.delete(k);
+      if (onDrop) { try { onDrop(x); } catch { /* the archive's problem, not the live board's */ } }
+    }
   }
   const forGame = id => [...series.values()].filter(x => x.game === String(id));
   const dump = () => [...series.values()];
@@ -244,10 +267,11 @@ function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 
     for (const d of docs || []) {
       if (!d || !d.id || !Array.isArray(d.pts)) continue;
       const had = series.get(d.id);
-      if (!had) { series.set(d.id, { ...d, pts: d.pts.slice(-maxPts) }); continue; }
+      if (!had) { const x = { ...d, pts: d.pts.slice() }; if (x.pts.length > maxPts) shrink(x); series.set(d.id, x); continue; }
       // a restore after the live series started: older points go in front
       const first = had.pts[0]?.[0] ?? Infinity;
-      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts].slice(-maxPts);
+      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts];
+      if (had.pts.length > maxPts) shrink(had);
     }
   }
   return { observe, prune, forGame, dump, load, size: () => series.size, points: () => [...series.values()].reduce((a, x) => a + x.pts.length, 0) };

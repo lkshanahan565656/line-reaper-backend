@@ -1,0 +1,43 @@
+# The 20-minute results backup, kept by one long run instead of GitHub's
+# schedule. GitHub drops most scheduled runs on this repo: results-backup.yml
+# asks for one every 20 minutes but ran about every 3 to 5 hours on 10-22 to
+# 10-26, so overnight (no merges) the kept snapshot could be hours old when
+# Railway restarted. This run takes a snapshot every 20 minutes for about
+# 5.5 hours, then starts the next run itself (workflow_dispatch with the
+# built-in token). The schedule below only restarts the loop if it stopped.
+# Same fetch and guard as results-backup.yml (.github/backup-once.sh); that
+# workflow still snapshots on every push to main.
+name: results-backup-loop
+on:
+  schedule:
+    - cron: '37 */2 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: results-backup-loop
+  cancel-in-progress: false
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    env:
+      APP_URL: ${{ vars.APP_URL || 'https://line-reaper-backend-production.up.railway.app' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: .github }
+      - name: A snapshot every 20 minutes
+        run: |
+          for i in $(seq 1 16); do
+            echo "::group::snapshot $i at $(date -u +%FT%TZ)"
+            bash .github/backup-once.sh || echo "::warning::snapshot $i failed; trying again in 20 minutes"
+            echo "::endgroup::"
+            # an if, not `[ ] && sleep`: on the 16th pass that test is false and,
+            # as the last command, it marked every run failed
+            if [ "$i" -lt 16 ]; then sleep 1200; fi
+          done
+      - name: Start the next run
+        if: always()
+        run: gh workflow run results-backup-loop.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" || echo "::warning::could not start the next run; the schedule restarts it"

@@ -69,3 +69,16 @@ test('no element id carries a backslash or a quote', () => {
   assert.deepStrictEqual(bad, []);
   assert.ok(html.includes('<div class="lay-modal" id="layModal" '), 'the CUSTOMIZE panel has its id');
 });
+
+// GAS LOCKS isn't proven under the 50-graded rule: labelled research, no units,
+// no profit, no buy wording, no alerts by default
+test('GAS LOCKS reads as research: no units, no profit, no alerts unless switched on', () => {
+  const page = html.slice(html.indexOf('<div class="page" id="page-gas">'), html.indexOf('<div class="page" id="page-arb">'));
+  assert.match(page, /RESEARCH, NOT A BET/);
+  assert.doesNotMatch(page, /Buy the side|size each one/i);
+  const fn = html.slice(html.indexOf('function renderGas()'), html.indexOf('// ─── RESULTS'));
+  assert.ok(fn.length > 500);
+  assert.doesNotMatch(fn, /r\.units|x\.profit|if it wins|buy \$\{/);
+  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(server, /GAS_LOCK_ALERTS === 'on'\) postAlert/);
+});

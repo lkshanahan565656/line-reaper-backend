@@ -48,3 +48,24 @@ test('an imported leg is graded from the box scores, says its source, and is kep
   assert.equal(rec.late.graded, 1);
   assert.ok(rec.closeBook && typeof rec.closeBook.live === 'number');
 });
+
+test('POST /api/slips/stamp: server time, a started leg refused in words, an unlisted leg logged with a note', async () => {
+  const post = async body => { const r = await fetch(`${base}/api/slips/stamp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return { status: r.status, body: await r.json() }; };
+  const t0 = Date.now();
+  const past = new Date(t0 - 3600e3).toISOString();
+  const { status, body } = await post({ app: 'prizepicks', legs: [
+    { player: 'Nobody Atall', market: 'Points', side: 'More', line: 22.5, sport: 'NBA' },
+    { player: 'Someone Else', market: 'Points', side: 'Less', line: 10.5, sport: 'NBA', start: past },
+  ] });
+  assert.equal(status, 200);
+  assert.ok(Date.parse(body.at) >= t0 - 1000 && Date.parse(body.at) <= Date.now() + 1000, 'stamped with the server clock');
+  assert.equal(body.ok, false);
+  assert.equal(body.started, 1);
+  assert.deepEqual(body.legs.map(l => l.status), ['unmatched', 'started']);
+  assert.match(body.why, /Someone Else Under 10\.5 Points: its game started at/);
+  const ok = await post({ app: 'prizepicks', legs: [{ player: 'Nobody Atall', market: 'Points', side: 'Over', line: 22.5, sport: 'NBA' }] });
+  assert.equal(ok.body.ok, true);
+  assert.equal((await post({ legs: [] })).status, 400);
+  const unread = await post({ app: 'underdog', legs: [{ player: 'X', market: 'Points', side: 'sideways', line: 3 }] });
+  assert.equal(unread.body.ok, false); assert.equal(unread.body.legs[0].status, 'unread');
+});

@@ -67,21 +67,97 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await init();
     const d = check(key);
     if (!d) return null;
-    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked' };
+    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked', feed: null, bot: null, tgBot: null };
     byHash.set(d.hash, out);
     await store.put(out);
     return publicKey(out);
   }
   const listFor = userId => (userId ? [...byHash.values()].filter(d => d.userId === userId).map(publicKey) : []);
-  const stats = () => ({ keys: [...byHash.values()].filter(d => !d.revokedAt).length, revoked: [...byHash.values()].filter(d => d.revokedAt).length });
-  return { init, create, check, revoke, listFor, stats };
+  const stats = () => ({ keys: [...byHash.values()].filter(d => !d.revokedAt).length, revoked: [...byHash.values()].filter(d => d.revokedAt).length,
+    feeds: [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).length,
+    bots: [...byHash.values()].filter(d => !d.revokedAt && d.bot).length,
+    telegramBots: [...byHash.values()].filter(d => !d.revokedAt && d.tgBot).length });
+  // ── the Discord feed a key's owner connected (outfeed.js): one webhook per
+  // key, kept sealed (the caller seals it), dropped with the key on revoke ──
+  async function setFeed(key, feed) {
+    await init();
+    const d = check(key);
+    if (!d) return null;
+    const out = { ...d, feed: feed || null };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  // every live key's feed: [{ keyId, feed }]
+  const feeds = () => [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).map(d => ({ keyId: d.id, feed: d.feed, userId: d.userId || null }));
+  // after a send: ok resets the failure count; dead (or 5 fails in a row) retires the feed
+  async function markFeed(keyId, r) {
+    const d = [...byHash.values()].find(x => x.id === keyId);
+    if (!d || !d.feed) return null;
+    const t = new Date(now()).toISOString();
+    const fails = r.ok ? 0 : (d.feed.fails || 0) + 1;
+    const feed = { ...d.feed, fails, lastOkAt: r.ok ? t : d.feed.lastOkAt || null, lastFailAt: r.ok ? d.feed.lastFailAt || null : t,
+      lastError: r.ok ? null : String(r.why || '').slice(0, 160), deadAt: !r.ok && (r.dead || fails >= 5) ? t : null };
+    const out = { ...d, feed };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return feed;
+  }
+  // ── the Discord app a key's owner connected for slash commands
+  // (discordbot.js): { appId, publicKey, addedAt }; the public key is public,
+  // the bot token is never kept. One app per key, dropped on revoke ──
+  async function setBot(key, bot) {
+    await init();
+    const d = check(key);
+    if (!d) return null;
+    const out = { ...d, bot: bot || null };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  // the live key that connected this app id, or null
+  const botFor = appId => [...byHash.values()].find(d => !d.revokedAt && d.bot && d.bot.appId === String(appId)) || null;
+  const bots = () => [...byHash.values()].filter(d => !d.revokedAt && d.bot).map(d => ({ keyId: d.id, bot: d.bot }));
+  async function markBot(keyId, patch) {
+    const d = [...byHash.values()].find(x => x.id === keyId);
+    if (!d || !d.bot) return null;
+    const out = { ...d, bot: { ...d.bot, ...patch } };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out.bot;
+  }
+  // ── the Telegram bot a key's owner connected for commands (telegrambot.js):
+  // { botId, username, sealed, addedAt }; the token is kept sealed (the caller
+  // seals it) because each answer is sent with it. One bot per key, dropped on revoke ──
+  async function setTgBot(key, bot) {
+    await init();
+    const d = check(key);
+    if (!d) return null;
+    const out = { ...d, tgBot: bot || null };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  const tgBotFor = botId => [...byHash.values()].find(d => !d.revokedAt && d.tgBot && d.tgBot.botId === String(botId)) || null;
+  const tgBots = () => [...byHash.values()].filter(d => !d.revokedAt && d.tgBot).map(d => ({ keyId: d.id, tgBot: d.tgBot }));
+  async function markTgBot(keyId, patch) {
+    const d = [...byHash.values()].find(x => x.id === keyId);
+    if (!d || !d.tgBot) return null;
+    const out = { ...d, tgBot: { ...d.tgBot, ...patch } };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out.tgBot;
+  }
+  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed, setBot, botFor, bots, markBot, setTgBot, tgBotFor, tgBots, markTgBot };
 }
 const publicKey = d => ({ id: d.id, name: d.name, createdAt: d.createdAt, revokedAt: d.revokedAt || null, signedIn: !!d.userId });
 
 // ── rate limits: fixed windows, a minute and a UTC day, per key (or per address for widgets) ──
-function createLimiter({ perMinute = LIMITS.perMinute, perDay = LIMITS.perDay, now = () => Date.now() } = {}) {
+function createLimiter({ perMinute: perMinuteDefault = LIMITS.perMinute, perDay: perDayDefault = LIMITS.perDay, now = () => Date.now() } = {}) {
   const used = new Map();   // id → { m, mn, d, dn }
-  function take(id) {
+  // lim: this caller's plan limits ({ perMinute, perDay }), else the limiter's own
+  function take(id, lim = null) {
+    const perMinute = lim?.perMinute ?? perMinuteDefault, perDay = lim?.perDay ?? perDayDefault;
     const t = now();
     const m = Math.floor(t / 60e3), d = Math.floor(t / 86400e3);
     let u = used.get(id);
@@ -193,18 +269,31 @@ function recordCard(rec) {
 
 // ── the endpoint list (the /developers page and GET /api/v1 read it) ──
 const ENDPOINTS = [
-  { path: '/api/v1/best-prices', title: 'Best prices above the fair', params: [['league', 'one league key, e.g. nfl, nba, nhl, ncaaf'], ['market', 'moneyline, spread, total or player_prop (comma list)'], ['venue', 'only this venue (e.g. kalshi, betrivers)'], ['minEv', 'minimum EV in percent after fees, default 0'], ['minSize', 'dollars every exchange price must fill, fee in'], ['hours', 'games starting within this many hours (default 48)'], ['limit', '1 to 200, default 50']],
+  { path: '/api/v1/best-prices', title: 'Best prices above the fair', params: [['league', 'one league key, e.g. nfl, nba, nhl, ncaaf'], ['market', 'moneyline, spread, total or player_prop (comma list)'], ['venue', 'only this venue (e.g. kalshi, betrivers)'], ['minEv', 'minimum EV in percent after fees, default 0'], ['minSize', 'dollars every exchange price must fill, fee in'], ['hours', 'games starting within this many hours (default 48)'], ['state', 'two-letter US state code, e.g. TX: only venues a source says a resident can use'], ['limit', '1 to 200, default 50']],
     about: "Each side's best bettable price that sits above Pinnacle's no-vig fair, after the venue's fee, with the second-best price, what an exchange book fills, and the label the app gives it (PROVEN or LEAD)." },
   { path: '/api/v1/moves', title: 'Biggest line moves', params: [['window', 'open (since first seen), 3h or 1h'], ['type', 'price or line'], ['league', 'one league key'], ['kind', 'game or prop'], ['limit', '1 to 200, default 50']],
     about: "Today's largest moves at each venue since we first saw the market, and whether every other venue followed. Information, not an edge." },
   { path: '/api/v1/moves/{gameId}', title: "One game's line history", params: [['market', 'ml, spread or total (all when left out)']],
-    about: "Every side's fair and each venue's price over time, a point when anything moved (at most every 4 minutes) or every 30 minutes. Kept until 6 hours after the start." },
+    about: "Every side's fair and each venue's price over time, a point when anything moved (at most every 4 minutes) or every 30 minutes. Kept 30 days after the start (thinned to the biggest moves once a game is 6 hours past its start)." },
+  { path: '/api/v1/lines', title: 'Line history: every market kept', params: [['q', 'team or player search'], ['league', 'one league key'], ['kind', 'game or prop'], ['before', 'an ISO start time: older markets (paging)'], ['limit', '1 to 500, default 100']],
+    about: "Every game line and player prop we keep, on the board now or closed in the last 30 days (Free keys: the last 3 days once the paywall is on), with when we first and last read it and links to its history." },
+  { path: '/api/v1/lines/game/{gameId}', title: "One game's line history (CSV or JSON)", params: [['market', 'ml, spread or total (all when left out)'], ['format', 'json (default) or csv']],
+    about: "Each side's price at every venue we read, Pinnacle included, over time, with the fair where shown. CSV has one row per read and venue: time_utc, event, league, market, side, line, venue, american, decimal, implied_prob, fair_prob. Only reads we made; a market older than 6 hours past its start is thinned to its biggest moves." },
+  { path: '/api/v1/lines/prop', title: "One prop's line history (CSV or JSON)", params: [['key', 'the market key from /api/v1/lines?kind=prop'], ['format', 'json (default) or csv']],
+    about: 'Over and Under at every venue that priced the prop (books, exchanges and pick\'em apps), over time, in the same columns as a game.' },
   { path: '/api/v1/leagues', title: 'Leagues on the board', params: [], about: 'Every league with games in the next 48 hours, and how many.' },
-  { path: '/api/v1/leagues/{league}', title: "A league's board", params: [['q', 'team name search']], about: "Every game in the league in the next 48 hours: moneyline, spread and total, each venue's price, the fair and the best price." },
-  { path: '/api/v1/record', title: 'The public record (RESULTS)', params: [['days', 'only flags from the last N days']], about: 'Every kind and venue on the close scoreboard with its label: proven only on the strict rule, everything else says why not.' },
+  { path: '/api/v1/leagues/{league}', title: "A league's board", params: [['q', 'team name search'], ['state', 'two-letter US state code, e.g. TX: only venues a source says a resident can use']], about: "Every game in the league in the next 48 hours: moneyline, spread and total, each venue's price, the fair and the best price." },
+  { path: '/api/v1/record', title: 'The public record (RESULTS)', params: [['days', 'only flags from the last N days'], ['state', 'two-letter US state code, e.g. TX: only venues a source says a resident can use']], about: 'Every kind and venue on the close scoreboard with its label: proven only on the strict rule, everything else says why not.' },
   { path: '/api/v1/record/flags', title: 'Every closed flag behind the record', params: [['days', 'last N days'], ['kind', 'one kind, e.g. ev'], ['book', 'one venue'], ['limit', '1 to 1000, default 200'], ['offset', 'rows to skip']], about: 'One row per closed flag: when, the price, what it filled, the close, CLV and the result.' },
+  { path: '/api/v1/leaderboard', title: 'Bettor leaderboard (CLV vs Pinnacle)', params: [['league', 'one league code, e.g. NBA, NFL, CFB, LOL'], ['window', '7d, 30d or all (default)'], ['state', 'two-letter US state code (default TX): each row says whether that app or venue is confirmed there'], ['venues', 'mine: only apps and venues confirmed in that state']], about: "Published bettor records ranked by the low end of the 95% interval of their average CLV against Pinnacle's no-vig close, one app or venue at a time. Ranked only at 50 graded picks logged before the start; under that a row is building with no rank. The label is the record's own; no profit or units." },
+  { path: '/api/v1/states', title: 'States and their venues', params: [], about: 'Every US state and DC with how many venues a resident can use there, and the date the table was read.' },
+  { path: '/api/v1/states/{state}', title: "One state's venues", params: [], about: 'The venues legal there, the ones no source vouches for (check with the venue) and the ones not legal there, each with its source and date.' },
   { path: '/api/v1/digest', title: 'Weekly digest: the weeks', params: [], about: 'The weeks the digest covers, which are frozen (sent Monday 13:00 UTC) and which are still being built.' },
   { path: '/api/v1/digest/{week}', title: 'Weekly digest: one week', params: [], about: "One week (the date of its Monday): what graded, the move toward the 50 bar, and what became proven or started losing to the close." },
+  { path: '/api/v1/alerts', title: 'Alert history', params: [['days', 'last N days'], ['kind', 'one push kind: ev, sharp, exchange, tail, esports, gas or other'], ['limit', '1 to 500, default 100'], ['before', 'an ISO time: older alerts (paging)']],
+    about: "Every alert the site sent since it began storing them, with the time, the text, how many phones and webhooks it reached, and each bet it named graded like RESULTS: CLV at the alert's price, Pinnacle's own close where kept, the result and the RESULTS label. With the paywall on, an alert's bets show once their games start." },
+  { path: '/api/v1/search', title: 'Search', params: [['q', 'a team, player, league, market or esports series (2+ letters)'], ['kind', 'game, series, player, market or league (comma list)'], ['state', 'two-letter US state code, e.g. TX: best prices only at venues a source says a resident can use'], ['limit', '1 to 60, default 30']],
+    about: "What the app's SEARCH box finds, from what the site holds now: games with each side's best bettable price, esports series with the cost to buy each side, players and their props, markets and leagues. No fair or EV." },
   { path: '/api/v1/status', title: 'Feed status', params: [], about: "Every venue's last good read, staleness and uptime, the same as /status." },
   { path: '/api/v1/key', title: 'This key', params: [], about: "Your key's name, when it was made and what it has used this minute and today." },
 ];
