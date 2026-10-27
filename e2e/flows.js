@@ -8,7 +8,7 @@
 // view by link and open it cold on a fresh device, export and print a screen,
 // and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
-/* global pk, renderPkTray, pkClear, mybFormClose -- the app's own functions, called in page.evaluate */
+/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -380,9 +380,12 @@ const FLOWS = {
     // the ranked list keeps each market folded: open the first one
     // a slow runner may still be drawing the list: wait for it, then open rows until a LOG shows
     await page.locator('#shpContent button.os-log, #shpContent tr.shp-row').first().waitFor({ timeout: 8000 });
-    const rows = page.locator('#shpContent tr.shp-row');
-    for (let i = 0; i < Math.min(6, await rows.count()) && !(await page.locator('#shpContent button.os-log').count()); i++) {
-      await rows.nth(i).click();
+    // the ranked list can lead with player props (no LOG): open the first game line in it
+    if (!(await page.locator('#shpContent button.os-log').count())) {
+      const at = await page.evaluate(() => { const d = shpUi.data; return d?.opportunities ? shpSorted(d.opportunities).findIndex(x => shpLoggable(x.view || d.markets.find(m => m.key === x.market))) : -1; });
+      expect(at >= 0, 'the ranked list has no game line to log');
+      if (at < 0) return;
+      await page.locator('#shpContent tr.shp-row').nth(at).click();
       await settle(page, w, opts, 200);
     }
     const log = page.locator('#shpContent button.os-log').first();
