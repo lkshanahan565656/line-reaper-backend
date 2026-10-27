@@ -8,7 +8,7 @@
 // view by link and open it cold on a fresh device, export and print a screen,
 // and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
-/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable -- the app's own functions, called in page.evaluate */
+/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -377,19 +377,21 @@ const FLOWS = {
     await openTab(page, 'odds', w, opts);
     await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
     await settle(page, w, opts, 250);
-    // the ranked list keeps each market folded: open the first one
-    // a slow runner may still be drawing the list: wait for it, then open rows until a LOG shows
+    // a slow runner may still be drawing the list: wait for it
     await page.locator('#shpContent button.os-log, #shpContent tr.shp-row').first().waitFor({ timeout: 8000 });
-    // the ranked list can lead with player props (no LOG): open the first game line in it
-    if (!(await page.locator('#shpContent button.os-log').count())) {
-      const at = await page.evaluate(() => { const d = shpUi.data; return d?.opportunities ? shpSorted(d.opportunities).findIndex(x => shpLoggable(x.view || d.markets.find(m => m.key === x.market))) : -1; });
-      expect(at >= 0, 'the ranked list has no game line to log');
-      if (at < 0) return;
-      await page.locator('#shpContent tr.shp-row').nth(at).click();
+    const log = page.locator('#shpContent button.os-log:visible').first();
+    // the ranked list keeps each market folded and can lead with player props (no LOG): open its first game line
+    if (!(await log.count())) {
+      const key = await page.evaluate(() => { const d = shpUi.data; const x = (d?.opportunities ? shpSorted(d.opportunities) : []).find(o => shpLoggable(o.view || d.markets.find(m => m.key === o.market))); if (x) shpOpen(x.key); return x?.key || null; });
+      expect(key, 'the ranked list has no game line to log');
+      if (!key) return;
       await settle(page, w, opts, 200);
     }
-    const log = page.locator('#shpContent button.os-log').first();
-    await log.waitFor({ timeout: 6000 });
+    try { await log.waitFor({ timeout: 6000 }); } catch {
+      const why = await page.evaluate(() => ({ mode: shpUi.opts.mode, open: [...shpUi.open].length, logs: document.querySelectorAll('#shpContent button.os-log').length, rows: document.querySelectorAll('#shpContent tr.shp-row').length, details: document.querySelectorAll('#shpContent tr.shp-detail').length }));
+      expect(false, `no visible LOG in the Exchange Shopper (${JSON.stringify(why)})`);
+      return;
+    }
     const before = (await ls(page, 'lr_bets'))?.length || 0;
     await log.click();
     await page.locator('#mybModal.open').waitFor({ timeout: 4000 });
