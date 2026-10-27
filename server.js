@@ -5155,7 +5155,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.211.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.212.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -9117,7 +9117,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.211.0',
+  version: '3.212.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9482,7 +9482,7 @@ const v1Route = fn => async (req, res) => {
 };
 app.get('/api/v1', (req, res) => publicApi.sendCached(req, res, { version: publicApi.VERSION, docs: '/developers', auth: 'X-API-Key header (or ?key=)', limits: publicApi.LIMITS,
   endpoints: publicApi.ENDPOINTS.map(e => ({ path: e.path, title: e.title, params: Object.fromEntries(e.params) })), widgets: ['/embed/best-price', '/embed/line-move', '/embed/record', '/embed.js'],
-  feed: { status: 'GET /api/v1/feed', connect: 'PUT /api/v1/feed/discord with {"url": "<Discord webhook URL>"}', disconnect: 'DELETE /api/v1/feed/discord', docs: '/developers#feed' } }, { scope: 'public', maxAge: 300 }));
+  feed: { status: 'GET /api/v1/feed', connect: 'PUT /api/v1/feed/discord with {"url": "<Discord webhook URL>"}', records: 'PUT /api/v1/feed/records with {"handles": ["<handle>"], "results": true}', disconnect: 'DELETE /api/v1/feed/discord', docs: '/developers#feed' } }, { scope: 'public', maxAge: 300 }));
 app.post('/api/v1/keys', async (req, res) => {
   try {
     const out = await apiKeys.create({ name: req.body?.name, userId: req.user?.id || null, who: publicApi.callerOf(req) });
@@ -9514,6 +9514,12 @@ app.get('/api/v1/states/:state', v1Auth, v1Route(req => v1.states(req.params.sta
 app.get('/api/v1/digest', v1Auth, v1Route(() => v1.digests()));
 app.get('/api/v1/digest/:week', v1Auth, v1Route(req => v1.digest(req.params.week)));
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
+app.get('/api/v1/records/:handle', v1Auth, v1Route(async req => {
+  const c = pubRecord.cleanHandle(req.params.handle);
+  const v = c.handle ? await pubView(c.handle, 1) : null;
+  if (!v) throw new V1Error(404, 'not_found', 'No published bettor record with that handle.');
+  return pubRecord.bettorCard(v);
+}));
 
 // ── widgets: no key, a per-address limit, the same bodies as the API ──
 function widgetGate(req, res, next) {
@@ -9551,8 +9557,15 @@ app.get('/embed/line-move', widgetGate, (req, res) => {
   } catch (e) { widgetError(res, e); }
 });
 app.get('/embed/record', widgetGate, async (req, res) => {
-  try { sendWidget(req, res, embeds.recordWidget(publicApi.recordCard(await v1.record({})), { origin: siteOrigin(req), id: widgetId(req) })); }
-  catch (e) { widgetError(res, e); }
+  try {
+    // ?handle=: a bettor's own published record (pubrecord.js), the same card as /api/v1/records/<handle>
+    if (req.query.handle != null) {
+      const c = pubRecord.cleanHandle(req.query.handle);
+      const v = c.handle ? await pubView(c.handle, 1) : null;
+      return sendWidget(req, res, embeds.bettorWidget(pubRecord.bettorCard(v || { handle: c.handle || null, status: 'missing' }), { origin: siteOrigin(req), id: widgetId(req) }));
+    }
+    sendWidget(req, res, embeds.recordWidget(publicApi.recordCard(await v1.record({})), { origin: siteOrigin(req), id: widgetId(req) }));
+  } catch (e) { widgetError(res, e); }
 });
 app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/javascript').send(embeds.embedScript(siteOrigin(req))));
 
@@ -9732,8 +9745,10 @@ const pubRecordState = { lastRun: null, lastMs: null, legs: 0, changed: 0, error
 // each record gets up to 300 legs a pass (its newest first), records taken in
 // turn from pass to pass so one big imported history can't starve the rest
 let pubRecordTurn = 0;
+// a record that sends slips while a pass runs is graded (and its feed read) right after it
+const pubRecordAgain = new Set();
 async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
-  if (pubRecordState.running) return pubRecordState;
+  if (pubRecordState.running) { if (only) pubRecordAgain.add(only); return pubRecordState; }
   pubRecordState.running = true;
   const t0 = Date.now();
   let legsN = 0, changed = 0;
@@ -9757,6 +9772,10 @@ async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
     Object.assign(pubRecordState, { lastRun: new Date().toISOString(), lastMs: Date.now() - t0, legs: legsN, changed, error: null });
   } catch (e) { pubRecordState.error = e.message; console.warn('Public records: grading:', e.message); }
   finally { pubRecordState.running = false; }
+  // each record's own feed: new picks logged before the start, new results (outfeed.js)
+  await feedBettors({ only }).catch(e => { bettorFeedState.error = e.message; console.warn('Record feed:', e.message); });
+  const next = [...pubRecordAgain][0];
+  if (next) { pubRecordAgain.delete(next); setImmediate(() => gradePubRecords({ only: next, maxLegs: 600 }).then(() => pubForget(next)).catch(() => {})); }
   return pubRecordState;
 }
 schedule('7,17,27,37,47,57 * * * *', () => gradePubRecords().catch(() => {}));
@@ -9902,14 +9921,17 @@ async function developerExamples() {
   await add('/api/v1/states', '/api/v1/states', () => v1.states(), 3);
   await add('/api/v1/states/{state}', '/api/v1/states/TX', () => v1.states('TX'), 2);
   await add('/api/v1/status', '/api/v1/status', () => v1.status());
+  const top = (await pubIndex().catch(() => null))?.rows?.[0]?.handle;
+  if (top) await add('/api/v1/records/{handle}', `/api/v1/records/${top}`, async () => pubRecord.bettorCard(await pubView(top, 1)), 3);
   return ex;
 }
 const devMemo = require('./ops').createMemo({ ttlMs: 60e3 });
 app.get('/developers', async (req, res) => {
   try {
     const examples = await devMemo('examples', developerExamples);
+    const idx = await pubIndex().catch(() => null);
     res.set('Cache-Control', 'public, max-age=60').type('html').send(embeds.developersPage({ origin: siteOrigin(req), endpoints: publicApi.ENDPOINTS, examples,
-      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence() }));
+      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence(), bettor: idx?.rows?.[0]?.handle || null, feedHandles: publicApi.FEED_HANDLES }));
   } catch (e) { console.warn('Developers page:', e.message); res.status(500).type('text').send('The developers page could not be built. Try again in a minute.'); }
 });
 // ─── OUTBOUND FEED: DISCORD AND TELEGRAM (outfeed.js) ────────────────────────
@@ -9929,14 +9951,18 @@ const outFeedState = { record: { checkedAt: null, rows: 0, posted: null, error: 
 function feedSubscribers() {
   const out = [];
   for (const { keyId, feed } of apiKeys.feeds()) {
+    if (feed.results === false) continue;   // a channel that asked for bettor records only
     const url = outFeedSeal.open(feed.sealed);
     if (url) out.push({ kind: 'discord', id: `key-${keyId}`, keyId, url });
   }
   return out;
 }
 const outFeedSender = outFeed.createFeed({ owner: outFeedOwner.dests, subscribers: feedSubscribers,
-  onResult: (d, r) => { if (d.keyId) apiKeys.markFeed(d.keyId, r).catch(e => console.warn('Feed: status save failed:', e.message)); } });
-const feedOn = () => outFeedOwner.dests.length > 0 || apiKeys.feeds().length > 0;
+  onResult: (d, r) => {
+    if (d.keyId) apiKeys.markFeed(d.keyId, r).catch(e => console.warn('Feed: status save failed:', e.message));
+    else if (d.recordHandle) pubRecords.markFeed(d.recordHandle, d.kind, r).catch(e => console.warn('Record feed: status save failed:', e.message));
+  } });
+const feedOn = () => outFeedOwner.dests.length > 0 || feedSubscribers().length > 0;
 async function feedDoc(id) { await outFeedReady; return (await outFeedStore.all()).find(d => d.id === id) || null; }
 const feedBackupOk = () => { const bk = process.env.DATABASE_URL ? 'ready' : resultsBackup.status().state; return bk === 'ready' || bk === 'off'; };
 // the Monday digest, from publishDigest once the week is frozen
@@ -9993,20 +10019,138 @@ async function feedOwnerCheck() {
 function outFeedStatus() {
   const s = outFeedSender.stats();
   return { on: feedOn(), owner: { discord: outFeedOwner.dests.filter(d => d.kind === 'discord').length, telegram: outFeedOwner.dests.filter(d => d.kind === 'telegram').length, problems: outFeedOwner.problems },
-    customers: apiKeys.feeds().length, sealed: outFeedSeal.on, schedule: { digest: 'Monday 13:00 UTC', record: 'hourly at :30, a change posts once it holds two reads', moves: 'daily 21:00 UTC' },
+    customers: apiKeys.feeds().length, sealed: outFeedSeal.on,
+    records: { owners: pubRecords.liveHandles().filter(h => { const f = pubRecords.feedOf(h); return !!(f && ((f.discord && !f.discord.deadAt) || (f.telegram && !f.telegram.deadAt))); }).length,
+      subscribed: apiKeys.feeds().filter(x => (x.feed.handles || []).length).length, lastRun: bettorFeedState.lastRun, handles: bettorFeedState.handles, last: bettorFeedState.last, error: bettorFeedState.error }, schedule: { digest: 'Monday 13:00 UTC', record: 'hourly at :30, a change posts once it holds two reads', moves: 'daily 21:00 UTC' },
     ownerCheck: outFeedState.ownerCheck, record: outFeedState.record, moves: outFeedState.moves, digest: outFeedState.digest,
     sent: s.sent, failed: s.failed, posts: s.posts, lastAt: s.lastAt, lastError: s.lastError, recent: s.recent };
 }
+// ── a bettor's own record feed (pubrecord.js + outfeed.js) ──
+// Each published record's picks logged before their start post at log time
+// (once the graders match them to a game), with the server's stamp and the
+// price, and their graded results after. They go to the record owner's own
+// Discord or Telegram (connected with the record key from MY SLIPS) and to
+// every customer channel that added the handle on /developers. The same post
+// for every channel; no stake, units, profit or sizing; nothing placed. A pick
+// logged late never posts. TAKE OFF THE LIST only touches the /r index.
+const bettorFeedState = { lastRun: null, handles: 0, picks: 0, results: 0, sent: 0, failed: 0, error: null, running: false, last: null };
+function bettorDests(h) {
+  const out = [];
+  const f = pubRecords.feedOf(h) || {};
+  if (f.discord && !f.discord.deadAt) { const url = outFeedSeal.open(f.discord.sealed); if (url) out.push({ kind: 'discord', id: `rec-${h}-discord`, url, recordHandle: h }); }
+  if (f.telegram && !f.telegram.deadAt) { const token = outFeedSeal.open(f.telegram.sealed); if (token) out.push({ kind: 'telegram', id: `rec-${h}-telegram`, token, chat: f.telegram.chat, recordHandle: h }); }
+  for (const { keyId, feed } of apiKeys.feedsFor(h)) { const url = outFeedSeal.open(feed.sealed); if (url) out.push({ kind: 'discord', id: `key-${keyId}`, keyId, url }); }
+  return out;
+}
+async function feedBettors({ only = null, now = Date.now() } = {}) {
+  if (bettorFeedState.running || !feedBackupOk()) return bettorFeedState;
+  bettorFeedState.running = true;
+  let handles = 0, picks = 0, results = 0, sent = 0, failed = 0;
+  try {
+    await pubRecords.init();
+    for (const h of only ? [only] : pubRecords.liveHandles()) {
+      const dests = bettorDests(h);
+      const id = `rf|${h}`;
+      const prev = await feedDoc(id);
+      if (!dests.length) { if (prev?.active) await outFeedStore.put({ id, ...outFeed.idleBettorFeed(prev) }); continue; }
+      handles++;
+      const meta = pubRecords.get(h);
+      const v = pubRecord.recordView(meta, pubRecords.slipsOf(h), { tables: pubTables(), perPage: 1e6, bets: pubRecords.betsOf(h), now });
+      const plan = outFeed.planBettorFeed(prev, pubRecord.feedItems(v), { now });
+      // the marks are saved before anything is sent: a crash costs a post, never a double post
+      await outFeedStore.put({ id, ...plan.state });
+      const o = digestOrigin();
+      for (const p of [outFeed.bettorPickPost(h, plan.picks, { origin: o, now }), outFeed.bettorResultPost(h, plan.results, pubRecord.bettorCard(v), { origin: o, now })]) {
+        if (!p) continue;
+        const r = await outFeedSender.send(p, { to: dests });
+        sent += r.sent; failed += r.failed;
+      }
+      picks += plan.picks.length; results += plan.results.length;
+      if (plan.picks.length || plan.results.length) bettorFeedState.last = { at: new Date(now).toISOString(), handle: h, picks: plan.picks.length, results: plan.results.length, to: dests.length };
+    }
+    Object.assign(bettorFeedState, { lastRun: new Date(now).toISOString(), handles, picks, results, sent, failed, error: null });
+  } finally { bettorFeedState.running = false; }
+  return bettorFeedState;
+}
+// the owner's channels, as the app shows them (never a URL or a token)
+function recordFeedView(f) {
+  const one = (x, kind) => (!x ? { connected: false } : { connected: !x.deadAt, kind, where: kind === 'discord' ? `webhook …${String(x.hookId).slice(-4)}${x.name ? ` ("${x.name}")` : ''}` : `chat ${x.chat}`,
+    addedAt: x.addedAt, lastOkAt: x.lastOkAt || null, lastError: x.lastError || null, stoppedAt: x.deadAt || null,
+    stoppedWhy: x.deadAt ? `${kind === 'discord' ? 'Discord' : 'Telegram'} said the channel is gone, or 5 posts in a row failed. Connect it again to restart.` : null });
+  return { discord: one(f?.discord, 'discord'), telegram: one(f?.telegram, 'telegram') };
+}
+const recordFeedConnects = new Map();
+function recordOwner(req) {
+  const h = pubRecord.cleanHandle(req.params.handle).handle;
+  const r = h && pubRecords.get(h);
+  if (!r || r.status !== 'live') throw Object.assign(new Error('No published record with that handle.'), { status: 404 });
+  if (!pubRecords.owns(h, recordKey(req))) throw Object.assign(new Error('That key does not manage this record.'), { status: 403 });
+  return h;
+}
+const RECORD_FEED_ABOUT = 'Each pick logged before its start posts the moment the server matches it to its game, with the server\'s time stamp and the price; its graded result posts after the game. The same words every channel gets: no stake, units, profit or sizing, and nothing is placed. A pick logged late never posts.';
+app.get('/api/records/:handle/feed', async (req, res) => {
+  try { await pubRecords.init(); const h = recordOwner(req); res.set('Cache-Control', 'no-store').json({ handle: h, ...recordFeedView(pubRecords.feedOf(h)), subscribers: apiKeys.feedsFor(h).length, about: RECORD_FEED_ABOUT }); }
+  catch (e) { sendErr(res, e); }
+});
+// body: { discord: "<webhook URL>" } or { telegram: { token, chat } }
+app.put('/api/records/:handle/feed', async (req, res) => {
+  try {
+    await pubRecords.init();
+    const h = recordOwner(req);
+    const t = Date.now(), seen = (recordFeedConnects.get(h) || []).filter(x => t - x < 3600e3);
+    if (seen.length >= 5) throw Object.assign(new Error('At most 5 connects an hour for one record. Try again later.'), { status: 429 });
+    recordFeedConnects.set(h, [...seen, t]);
+    if (recordFeedConnects.size > 5000) recordFeedConnects.clear();
+    const welcome = outFeed.bettorWelcomePost(h, { origin: digestOrigin() });
+    let kind, feed;
+    if (req.body?.telegram) {
+      const d = outFeed.parseTelegram(req.body.telegram.token, req.body.telegram.chat);
+      if (d.error) throw Object.assign(new Error(d.error), { status: 400 });
+      const sent = await outFeedSender.sendTo({ ...d, id: 'connect' }, welcome);
+      if (!sent.ok) throw Object.assign(new Error(`Telegram turned the first post away: ${sent.why}. Add the bot to the chat (as an admin in a channel) and try again.`), { status: 400 });
+      kind = 'telegram';
+      feed = { botId: d.botId, chat: d.chat, sealed: outFeedSeal.seal(d.token), addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null };
+    } else {
+      const hook = outFeed.parseDiscord(req.body?.discord);
+      if (!hook) throw Object.assign(new Error('That is not a Discord webhook URL. It starts https://discord.com/api/webhooks/ (Server Settings > Integrations > Webhooks > Copy Webhook URL).'), { status: 400 });
+      let info;
+      try { info = (await require('axios').get(hook.url, { timeout: 8000 })).data || {}; } catch (e) {
+        const st = e?.response?.status;
+        throw Object.assign(new Error(st === 401 || st === 404 ? 'Discord says that webhook does not exist (deleted, or the URL is cut short). Copy it again.' : 'Could not reach Discord to check the webhook. Try again in a minute.'), { status: 400 });
+      }
+      const sent = await outFeedSender.sendTo({ kind: 'discord', id: 'connect', url: hook.url }, welcome);
+      if (!sent.ok) throw Object.assign(new Error(`Discord turned the first post away: ${sent.why}`), { status: 400 });
+      kind = 'discord';
+      feed = { hookId: hook.id, sealed: outFeedSeal.seal(hook.url), name: outFeed.clean(info.name || '').slice(0, 40) || null, addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null };
+    }
+    const f = await pubRecords.setFeed(h, recordKey(req), kind, feed);
+    res.set('Cache-Control', 'no-store').json({ handle: h, ...recordFeedView(f), note: `Connected. A welcome post is in the ${kind === 'discord' ? 'Discord channel' : 'Telegram chat'} now; picks post from the next one you log.`, about: RECORD_FEED_ABOUT });
+  } catch (e) { sendErr(res, e); }
+});
+// ?kind=discord|telegram
+app.delete('/api/records/:handle/feed', async (req, res) => {
+  try {
+    await pubRecords.init();
+    const h = recordOwner(req);
+    const kind = String(req.query.kind || req.body?.kind || '');
+    if (!pubRecord.FEED_KINDS.includes(kind)) throw Object.assign(new Error('kind is discord or telegram'), { status: 400 });
+    const f = await pubRecords.setFeed(h, recordKey(req), kind, null);
+    res.set('Cache-Control', 'no-store').json({ handle: h, ...recordFeedView(f), note: `Disconnected: no more posts go to that ${kind === 'discord' ? 'webhook' : 'chat'}.` });
+  } catch (e) { sendErr(res, e); }
+});
+
 // ── self-serve: a customer connects their own Discord webhook with their API key ──
 const FEED_MAX = 5000;
 function feedView(doc) {
   const f = doc?.feed;
   if (!f) return { connected: false };
   return { connected: !f.deadAt, webhook: `…${String(f.hookId).slice(-4)}`, name: f.name || null, addedAt: f.addedAt, lastOkAt: f.lastOkAt || null,
+    records: { handles: f.handles || [], results: f.results !== false },
     lastFailAt: f.lastFailAt || null, lastError: f.lastError || null, stoppedAt: f.deadAt || null,
     stoppedWhy: f.deadAt ? 'Discord said the webhook is gone, or 5 posts in a row failed. Connect it again to restart.' : null };
 }
-const FEED_ABOUT = { posts: ['weekly record digest, Mondays 13:00 UTC', 'record changes on RESULTS, checked hourly', "today's biggest line moves, daily 21:00 UTC"], same: 'Every channel gets the same posts. Nothing is sized or picked per person.' };
+const FEED_ABOUT = { posts: ['weekly record digest, Mondays 13:00 UTC', 'record changes on RESULTS, checked hourly', "today's biggest line moves, daily 21:00 UTC",
+  `each pick logged before its start and its graded result, for up to ${publicApi.FEED_HANDLES} bettor records you add (PUT /api/v1/feed/records)`], same: 'Every channel gets the same posts. Nothing is sized or picked per person.' };
 app.get('/api/v1/feed', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ discord: feedView(req.apiKey), ...FEED_ABOUT }));
 app.put('/api/v1/feed/discord', v1Auth, async (req, res) => {
   try {
@@ -10027,9 +10171,33 @@ app.put('/api/v1/feed/discord', v1Auth, async (req, res) => {
     }
     const sent = await outFeedSender.sendTo({ kind: 'discord', id: 'connect', url: hook.url }, outFeed.welcomePost({ origin: digestOrigin() }));
     if (!sent.ok) throw new V1Error(400, 'bad_webhook', `Discord turned the first post away: ${sent.why}`);
-    const feed = { hookId: hook.id, sealed: outFeedSeal.seal(hook.url), name: outFeed.clean(info.name || '').slice(0, 40) || null, addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null };
+    const was = req.apiKey.feed;
+    const feed = { hookId: hook.id, sealed: outFeedSeal.seal(hook.url), name: outFeed.clean(info.name || '').slice(0, 40) || null, addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null,
+      ...(was?.handles ? { handles: was.handles, results: was.results !== false } : {}) };
     const doc = await apiKeys.setFeed(v1KeyOf(req), feed);
     res.set('Cache-Control', 'no-store').json({ discord: feedView(doc), note: 'Connected. A welcome post with the record card is in the channel now.', ...FEED_ABOUT });
+  } catch (e) { v1Fail(res, e); }
+});
+// the bettor records this key's Discord feed also gets. body: { handles: [..] | "a, b", results: true|false }
+app.put('/api/v1/feed/records', v1Auth, async (req, res) => {
+  try {
+    const f = req.apiKey.feed;
+    if (!f || f.deadAt) throw new V1Error(409, 'no_feed', 'Connect a Discord webhook first (PUT /api/v1/feed/discord): bettor records ride on it.');
+    const raw = Array.isArray(req.body?.handles) ? req.body.handles : String(req.body?.handles ?? '').split(/[\s,]+/);
+    const list = [...new Set(raw.map(x => String(x ?? '').trim()).filter(Boolean))];
+    if (list.length > publicApi.FEED_HANDLES) throw new V1Error(400, 'bad_parameter', `At most ${publicApi.FEED_HANDLES} bettor records on one feed.`);
+    await pubRecords.init();
+    const handles = [];
+    for (const x of list) {
+      const c = pubRecord.cleanHandle(x);
+      if (!c.handle) throw new V1Error(400, 'bad_parameter', `"${String(x).slice(0, 24)}": ${c.error}`);
+      if (pubRecords.get(c.handle)?.status !== 'live') throw new V1Error(404, 'not_found', `No published record @${c.handle}.`);
+      handles.push(c.handle);
+    }
+    const doc = await apiKeys.setFeedRecords(v1KeyOf(req), { handles, results: req.body?.results !== false });
+    // each new handle starts from where its record stands now (no flood of history)
+    for (const h of handles) feedBettors({ only: h }).catch(() => {});
+    res.set('Cache-Control', 'no-store').json({ discord: feedView(doc), note: handles.length ? `Saved. New picks from @${handles.join(', @')} post from now on.` : 'Saved: no bettor records on this feed.', ...FEED_ABOUT });
   } catch (e) { v1Fail(res, e); }
 });
 app.delete('/api/v1/feed/discord', v1Auth, async (req, res) => {
@@ -10251,7 +10419,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 
 module.exports = {
   runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
-  app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, feedBettors, pubRecords, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,

@@ -43,6 +43,7 @@ html, body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 I
 .tag { display:inline-block; font:700 9px var(--mono); letter-spacing:.08em; padding:1px 5px; border-radius:3px; border:1px solid var(--border); color:var(--text2); vertical-align:1px; }
 .tag.pv { color:var(--green2); border-color:rgba(52,211,153,.5); }
 .tag.ld { color:var(--amber); border-color:rgba(245,158,11,.45); }
+.tag.ng, .ng { color:#f87171; } .tag.ng { border-color:rgba(248,113,113,.5); }
 .pos { color:var(--green2); }
 .note { color:var(--muted); font-size:11px; margin:6px 0 0; overflow-wrap:anywhere; }
 .ft { display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); margin-top:8px; padding-top:6px; }
@@ -167,6 +168,28 @@ ${r.profitShown ? '' : '<div class="sub">Profit not shown: results have not clea
   return shell({ title: 'Record', id, body: `<div class="w">${head}${list}${rest}${footer(origin, '/app?start=results', 'FULL RECORD', 'Every flag is downloadable on RESULTS.')}</div>` });
 }
 
+// A bettor's own published record (/r/<handle>): card is pubrecord.bettorCard().
+// The strict label only where the record's page shows it, each app and venue
+// on its own, never pooled, late picks counted apart, no units and no profit.
+const LABEL_TAG = { proven: 'pv', building: 'ld', 'too early': '', 'losing to the close': 'ng', 'not graded yet': '' };
+function bettorWidget(card, { origin = '', id = '' } = {}) {
+  const h = card?.handle ? esc(card.handle) : '';
+  if (!card || card.status !== 'live') {
+    const msg = card?.status === 'unpublished' ? `@${h} unpublished this record.` : 'No published bettor record with that handle.';
+    return shell({ title: 'Bettor record', id, body: `<div class="w"><div class="hd"><b>Bettor record</b></div><div class="empty">${msg}</div>${footer(origin, '/r', 'ALL RECORDS')}</div>` });
+  }
+  const head = `<div class="hd"><b>@${h} · verified record</b><i>${card.at ? `read ${esc(hhmm(card.at))}` : ''}</i></div>`;
+  const status = card.proven.length ? `<div class="ev"><span class="tag pv">PROVEN</span> at ${esc(card.proven.join(', '))}</div>` : '<div class="sub">Nothing proven yet on the strict rule.</div>';
+  const rows = card.kinds.slice(0, 3).map(k => `<div class="row">
+<div class="ev">${esc(k.name)} <span class="tag ${LABEL_TAG[k.label] || ''}">${esc(String(k.label).toUpperCase())}</span></div>
+<div class="grid"><div><em>vs Pinnacle</em><b>${k.n} / ${k.target}</b></div><div><em>CLV vs close</em><b class="${k.clv > 0 ? 'pos' : k.clv < 0 ? 'ng' : ''}">${esc(pct(k.clv))}</b></div><div><em>Beat close</em><b>${k.beat == null ? '—' : `${Math.round(k.beat * 100)}%`}</b></div><div><em>${k.unit === 'legs' ? 'Legs hit' : 'Won-lost'}</em><b>${esc(k.record || '—')}</b></div></div>
+</div>`).join('');
+  const empty = card.kinds.length ? '' : '<div class="empty">No pick logged before its start has been graded yet.</div>';
+  const more = card.kinds.length > 3 ? ` ${card.kinds.length - 3} more app${card.kinds.length - 3 === 1 ? '' : 's'} or venue${card.kinds.length - 3 === 1 ? '' : 's'} on the record.` : '';
+  const note = `<p class="note">${card.onTime} pick${card.onTime === 1 ? '' : 's'} logged before the start${card.late ? `; ${card.late} logged late, shown on the record and never counted` : ''}.${more} Proven means 50 picks at one app or venue with a CLV t of 2 or more against Pinnacle's close, never pooled. No profit is shown here.</p>`;
+  return shell({ title: `@${card.handle} record`, id, body: `<div class="w">${head}${status}${rows}${empty}${note}${footer(origin, `/r/${encodeURIComponent(card.handle)}`, 'FULL RECORD', 'Stamped and graded by Line Reaper\'s server.')}</div>` });
+}
+
 // the loader: <script src="…/embed.js" async></script> then
 // <div data-line-reaper="best-price|line-move|record" data-league="nfl"></div>
 function embedScript(origin) {
@@ -174,8 +197,8 @@ function embedScript(origin) {
   return `/* Line Reaper widgets: ${o}/developers#widgets */
 (function () {
   var base = ${JSON.stringify(o)};
-  var KINDS = { 'best-price': 220, 'line-move': 330, 'record': 230 };
-  var ATTRS = ['league', 'market', 'venue', 'n', 'game', 'side', 'state', 'odds'];
+  var KINDS = { 'best-price': 220, 'line-move': 330, 'record': 260 };
+  var ATTRS = ['league', 'market', 'venue', 'n', 'game', 'side', 'state', 'odds', 'handle'];
   function mount(el) {
     if (el.getAttribute('data-lr-mounted')) return;
     var kind = el.getAttribute('data-line-reaper');
@@ -232,7 +255,7 @@ code { font:13px var(--mono); color:#cbd5e1; overflow-wrap:anywhere; }
 .h3s { font:600 11px var(--mono); letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin:10px 0 4px; overflow-wrap:anywhere; }
 .h3s code { text-transform:none; letter-spacing:0; font-size:11px; }
 `;
-function developersPage({ origin = '', endpoints = [], examples = {}, limits, widgetLimit, keyCreate, licences = null } = {}) {
+function developersPage({ origin = '', endpoints = [], examples = {}, limits, widgetLimit, keyCreate, licences = null, bettor = null, feedHandles = 10 } = {}) {
   const o = cleanOrigin(origin);
   const exampleOf = p => {
     const ex = examples[p];
@@ -253,6 +276,13 @@ ${examples[e.path] ? `<button class="btn" type="button" data-try="${esc(examples
 <iframe src="/embed/${kind}${q}${q ? '&' : '?'}_id=pv-${kind}" data-lr-id="pv-${kind}" title="${esc(title)} preview" style="height:${h}px" loading="lazy"></iframe>
 <div class="h3s">With the script (sizes itself)</div><pre>${esc(snippet(kind, attrs))}</pre><button class="btn" type="button" data-copy="${esc(snippet(kind, attrs))}">COPY</button>
 <div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>${esc(frame(kind, q, h))}</pre><button class="btn" type="button" data-copy="${esc(frame(kind, q, h))}">COPY</button></div>`;
+  // a bettor's record: the preview shows the record with the most picks graded on the public list, when there is one
+  const bh = bettor && /^[a-z0-9_]{3,20}$/.test(bettor) ? bettor : null;
+  const bSnip = snippet('record', ` data-handle="${bh || 'your_handle'}"`), bFrame = frame('record', `?handle=${bh || 'your_handle'}`, 300);
+  const bettorBlock = `<div class="wg" id="widget-bettor"><h3 style="margin:0 0 6px">A bettor's record</h3><p style="color:var(--text2);font-size:14px">Any published record at /r/&lt;handle&gt;: picks logged before their start, each app and venue against Pinnacle's close with its own label (proven only on the strict rule, never pooled), picks logged late counted apart, and no profit. Put the handle in data-handle. A bettor gets theirs from MY SLIPS &gt; RECORD &gt; WIDGET.</p>
+${bh ? `<iframe src="/embed/record?handle=${bh}&_id=pv-bettor" data-lr-id="pv-bettor" title="A bettor's record preview" style="height:300px" loading="lazy"></iframe><p class="note">Preview: @${esc(bh)}, the record with the most picks graded on the <a href="/r">public list</a>.</p>` : '<p class="note">No record on the <a href="/r">public list</a> has a pick logged before its start yet, so there is nothing to preview. The snippet works for any published handle.</p>'}
+<div class="h3s">With the script (sizes itself)</div><pre>${esc(bSnip)}</pre><button class="btn" type="button" data-copy="${esc(bSnip)}">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>${esc(bFrame)}</pre><button class="btn" type="button" data-copy="${esc(bFrame)}">COPY</button></div>`;
   const lic = licences && licences.kalshi === false ? '<li>Kalshi prices are left out of the API and widgets until Kalshi gives written permission to show its data to other people; Polymarket the same.</li>' : '';
   return `<!doctype html>
 <html lang="en">
@@ -322,13 +352,21 @@ ${eps}
 <div class="row2" style="margin-top:8px"><button class="btn" type="button" id="fdCheck">CHECK FEED</button><button class="btn warn" type="button" id="fdOff">DISCONNECT</button></div>
 <div id="fdOut" class="msg">Needs a key from this page, saved in this browser.</div>
 </div>
-<p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
+<h3 id="feed-records" style="margin:18px 0 6px">Bettor records on your feed</h3>
+<p>Add up to ${feedHandles} published bettor records by handle. Your channel then gets each of their picks logged before its start, the moment our server matches it to its game (with the server's time stamp and the price), and its graded result after the game, against Pinnacle's close. The same words every channel gets; no stake, no units, no profit, nothing sized and nothing placed. A pick logged after its start never posts. Bettors connect their own Discord or Telegram from MY SLIPS &gt; RECORD &gt; FEED.</p>
+<div class="keybox">
+<form id="fr" class="row2" autocomplete="off"><div style="flex:1 1 260px;min-width:0"><label for="frHandles">Handles, comma between (empty for none)</label><input id="frHandles" name="handles" maxlength="240" placeholder="sharp_logan, another_one"></div><button class="btn" type="submit">SAVE</button></form>
+<label style="display:flex;gap:8px;align-items:center;margin:10px 0 0;font:500 13px var(--mono);color:var(--text2);text-transform:none;letter-spacing:0"><input type="checkbox" id="frResults" checked style="width:auto"> Keep the RESULTS posts too (digest, record changes, biggest moves)</label>
+<div id="frOut" class="msg">Connect a Discord webhook above first: the records ride on it.</div>
+</div>
+<p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>PUT /api/v1/feed/records</code> with <code>{"handles":["…"],"results":true}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
 
 <h2 id="widgets">Widgets</h2>
-<p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-state</code> (a two-letter state: only venues a resident can use), <code>data-game</code>, <code>data-side</code> and <code>data-odds</code> (american, decimal, fractional or probability; American when none).</p>
+<p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-handle</code> (a bettor's record), <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-state</code> (a two-letter state: only venues a resident can use), <code>data-game</code>, <code>data-side</code> and <code>data-odds</code> (american, decimal, fractional or probability; American when none).</p>
 ${widget('best-price', 'Best price above the fair', 'The top price above Pinnacle\'s no-vig fair, after fees, with its EV and what the book fills. Pick a league with data-league.', ' data-league="nfl" data-n="3"', '?league=nfl&n=3', 330)}
 ${widget('line-move', 'Line move chart', 'One game\'s prices over time at each venue against the fair. Without data-game it charts today\'s biggest move.', '', '', 360)}
 ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: graded count, CLV against the close, record, and profit only where it clears chance.', '', '', 280)}
+${bettorBlock}
 </main>
 <footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/learn">Learn</a><a href="/status">Status</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
 <div>Line Reaper is an information service, not a sportsbook. It does not take bets. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
@@ -375,11 +413,17 @@ ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: gra
     }).catch(function () { info.textContent = 'Could not reach the server. Try again.'; });
   });
   // the Discord feed: connect, check, disconnect with the key saved here
-  var fdOut = document.getElementById('fdOut');
+  var fdOut = document.getElementById('fdOut'), frOut = document.getElementById('frOut');
   function fdShow(j) {
     var d = j && j.discord;
     if (!d) return;
-    if (d.connected) fdOut.textContent = 'Connected: webhook ' + d.webhook + (d.name ? ' ("' + d.name + '")' : '') + ', since ' + String(d.addedAt).slice(0, 10) + '. Last post ' + (d.lastOkAt ? String(d.lastOkAt).slice(0, 16).replace('T', ' ') + ' UTC' : 'not yet') + '.';
+    if (d.connected) {
+      fdOut.textContent = 'Connected: webhook ' + d.webhook + (d.name ? ' ("' + d.name + '")' : '') + ', since ' + String(d.addedAt).slice(0, 10) + '. Last post ' + (d.lastOkAt ? String(d.lastOkAt).slice(0, 16).replace('T', ' ') + ' UTC' : 'not yet') + '.';
+      var hs = (d.records && d.records.handles) || [];
+      document.getElementById('frHandles').value = hs.join(', ');
+      document.getElementById('frResults').checked = !d.records || d.records.results !== false;
+      frOut.className = 'msg'; frOut.textContent = hs.length ? 'Bettor records on this feed: @' + hs.join(', @') + '.' + (d.records.results === false ? ' RESULTS posts off.' : '') : 'No bettor records on this feed yet.';
+    }
     else if (d.stoppedAt) { fdOut.className = 'msg err'; fdOut.textContent = 'Stopped ' + String(d.stoppedAt).slice(0, 10) + ': ' + (d.stoppedWhy || '') + (d.lastError ? ' (' + d.lastError + ')' : ''); }
     else fdOut.textContent = 'No Discord feed on this key.';
   }
@@ -405,6 +449,21 @@ ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: gra
     fdCall('PUT', '/api/v1/feed/discord', { url: u });
   });
   document.getElementById('fdCheck').addEventListener('click', function () { fdCall('GET', '/api/v1/feed'); });
+  document.getElementById('fr').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var k = get();
+    if (!k) { frOut.className = 'msg err'; frOut.textContent = 'Make a key first (top of the page), then connect a Discord webhook: the records ride on it.'; document.getElementById('kname').focus(); return; }
+    var hs = document.getElementById('frHandles').value.split(/[\\s,]+/).map(function (x) { return x.replace(/^@/, '').trim().toLowerCase(); }).filter(Boolean);
+    frOut.className = 'msg'; frOut.textContent = 'Saving…';
+    fetch('/api/v1/feed/records', { method: 'PUT', headers: { 'X-API-Key': k, 'Content-Type': 'application/json' }, body: JSON.stringify({ handles: hs, results: document.getElementById('frResults').checked }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { frOut.className = 'msg err'; frOut.textContent = j.error.message; return; }
+        fdShow(j);
+        if (j.note) frOut.textContent = j.note + ' ' + frOut.textContent;
+      })
+      .catch(function () { frOut.className = 'msg err'; frOut.textContent = 'Could not reach the server. Try again.'; });
+  });
   document.getElementById('fdOff').addEventListener('click', function () { fdCall('DELETE', '/api/v1/feed/discord'); });
   document.getElementById('mineForget').addEventListener('click', function () { set(null); mine(); out.className = 'msg'; out.textContent = 'Forgotten in this browser. The key still works wherever you use it.'; });
   document.addEventListener('click', function (e) {
@@ -440,4 +499,4 @@ ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: gra
 </html>`;
 }
 
-module.exports = { bestPriceWidget, lineMoveWidget, recordWidget, chartSvg, embedScript, developersPage, fillText, impliedOf, WIDGET_CSS };
+module.exports = { bestPriceWidget, lineMoveWidget, recordWidget, bettorWidget, chartSvg, embedScript, developersPage, fillText, impliedOf, WIDGET_CSS };

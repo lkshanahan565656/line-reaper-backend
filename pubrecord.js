@@ -36,6 +36,7 @@ const S = require('./slips');
 
 const MAX_SLIPS = 5000, MAX_POST = 500, MAX_LEGS = 12, MAX_RECORDS = 20000;
 const CREATE_PER_HOUR = 3;
+const FEED_KINDS = ['discord', 'telegram'];
 const BAR = 50, CLV_T = 2, SHORT_SD = 1.5;
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 const RESERVED = new Set(['admin', 'api', 'app', 'card', 'cards', 'share', 'results', 'record', 'records', 'lr', 'linereaper', 'line_reaper', 'line_reaper_', 'official', 'support',
@@ -237,7 +238,7 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
       bets.get(h).set(d.bet.id, out);
       await store.put(out);
     }
-    const doc = { ...r, status: 'unpublished', unpublishedAt: at };
+    const doc = { ...r, status: 'unpublished', unpublishedAt: at, feed: null };
     records.set(h, doc);
     await store.put(doc);
     return { handle: h, unpublishedAt: at };
@@ -321,7 +322,39 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
     slips: [...slips.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0),
     bets: [...bets.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0) });
   const listedHandles = () => liveHandles().filter(h => !records.get(h).unlisted);
-  return { init, publish, addSlips, addBets, unpublish, setListed, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, listedHandles, stats, owns: (h, t) => owns(records.get(h), t) };
+
+  // ── the owner's own channels (outfeed.js): one Discord webhook and one
+  // Telegram chat at most, kept sealed by the caller. Every pick logged before
+  // its start posts there, then its graded result. Dropped on unpublish. ──
+  async function setFeed(handle, token, kind, feed) {
+    await init();
+    const h = cleanHandle(handle).handle;
+    const r = h && live(h);
+    if (!r) throw err(404, 'No published record with that handle.');
+    if (!owns(r, token)) throw err(403, 'That key does not manage this record.');
+    if (!FEED_KINDS.includes(kind)) throw err(400, 'discord or telegram');
+    const doc = { ...r, feed: { ...(r.feed || {}), [kind]: feed || null } };
+    records.set(h, doc);
+    await store.put(doc);
+    return doc.feed;
+  }
+  const feedOf = h => { const r = live(h); return r?.feed || null; };
+  // after a send: ok resets the failure count; dead (or 5 fails in a row) stops that channel
+  async function markFeed(h, kind, res) {
+    const r = live(h);
+    const f = r?.feed?.[kind];
+    if (!f) return null;
+    const t = new Date(now()).toISOString();
+    const fails = res.ok ? 0 : (f.fails || 0) + 1;
+    const next = { ...f, fails, lastOkAt: res.ok ? t : f.lastOkAt || null, lastFailAt: res.ok ? f.lastFailAt || null : t,
+      lastError: res.ok ? null : String(res.why || '').slice(0, 160), deadAt: !res.ok && (res.dead || fails >= 5) ? t : f.deadAt && !res.ok ? f.deadAt : null };
+    const doc = { ...r, feed: { ...r.feed, [kind]: next } };
+    records.set(h, doc);
+    await store.put(doc);
+    return next;
+  }
+  return { init, publish, addSlips, addBets, unpublish, setListed, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, listedHandles, stats,
+    setFeed, feedOf, markFeed, owns: (h, t) => owns(records.get(h), t) };
 }
 const publicMeta = r => ({ handle: r.handle, status: r.status, createdAt: r.createdAt, publishedAt: r.publishedAt, unpublishedAt: r.unpublishedAt || null, restarts: (r.restarts || []).length, listed: !r.unlisted });
 
@@ -608,6 +641,37 @@ ${v.rows.length ? `<div class="scroll"><table><thead><tr><th>Bettor</th><th>Labe
 </html>`;
 }
 
+// ── the record widget and the record feed (embeds.js, outfeed.js) ──
+// One record's card: each app and venue judged on its own, the strict label
+// only where the record's page shows it, nothing pooled, picks logged late
+// counted apart. No units and no profit, ever: the card links to the page.
+function bettorCard(v) {
+  if (!v || v.status !== 'live') return { handle: v?.handle || null, status: v?.status || 'missing', at: v?.at || null, url: v?.handle ? `/r/${v.handle}` : '/r' };
+  const kinds = [
+    ...(v.apps || []).map(a => ({ kind: 'app', name: a.appName, unit: 'legs', n: a.pinN, target: BAR, clv: a.clv, clvT: a.clvT, beat: a.beat, graded: a.graded,
+      record: a.graded ? `${a.hits}-${a.graded - a.hits}` : null, recordOf: 'legs hit-missed', label: a.label, why: a.why || null })),
+    ...(v.bets?.venues || []).map(x => ({ kind: 'venue', name: x.venueName, unit: 'bets', n: x.pinN, target: BAR, clv: x.clv, clvT: x.clvT, beat: x.beat, graded: x.graded,
+      record: x.graded ? x.record : null, recordOf: 'won-lost', label: x.label, why: x.why || null })),
+  ].sort((a, b) => (b.label === 'proven') - (a.label === 'proven') || b.n - a.n || b.graded - a.graded);
+  return {
+    handle: v.handle, status: 'live', at: v.at, publishedAt: v.publishedAt, url: `/r/${v.handle}`, card: `/card/record-${v.handle}.png`,
+    onTime: (v.counts?.onTime || 0) + (v.bets?.counts.onTime || 0), late: (v.counts?.late || 0) + (v.bets?.counts.late || 0),
+    checking: (v.counts?.checking || 0) + (v.bets?.counts.checking || 0),
+    proven: [...(v.proven || []), ...(v.bets?.proven || [])], kinds,
+    rule: `Proven only with ${BAR} picks at one app or venue logged before their start and graded against Pinnacle's own close, a CLV t of ${CLV_T} or more, and results not running ${SHORT_SD} sd under that close. Never pooled. Picks logged after the start are shown on the record and never counted. No profit is shown here.`,
+  };
+}
+// every pick on a full view (recordView with every slip on one page), in the
+// shape the record feed reads: when it reached us, whether it counts, whether
+// it is settled
+function feedItems(v) {
+  if (!v || v.status !== 'live') return [];
+  return [
+    ...(v.slips || []).map(s => ({ key: `s:${s.id}`, type: 'slip', timing: s.timing, receivedAt: s.receivedAt, start: s.firstStart, final: !!s.result && s.result !== 'open', group: s.appName, slip: s })),
+    ...(v.bets?.rows || []).map(b => ({ key: `b:${b.id}`, type: 'bet', timing: b.timing, receivedAt: b.receivedAt, start: b.start, final: !!b.outcome, group: b.kind === 'esports' ? `${b.venueName} esports` : b.venueName, bet: b })),
+  ];
+}
+
 // ── downloads ──
 const CSV_COLS = ['slip_id', 'received_at_utc', 'placed_at_given', 'app', 'legs', 'timing', 'counted', 'slip_result', 'slip_units', 'leg', 'sport', 'player', 'market', 'side', 'line', 'game', 'start_utc',
   'pinnacle_close_fair', 'clv_vs_pinnacle_pct', 'leg_result', 'stat', 'graded_by'];
@@ -752,4 +816,4 @@ ${s.legs.map(l => `<div class="leg"><div class="who"><b>${esc(l.player)}</b> ${e
   return head + body + foot;
 }
 
-module.exports = { createRecordStore, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
+module.exports = { createRecordStore, bettorCard, feedItems, FEED_KINDS, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
