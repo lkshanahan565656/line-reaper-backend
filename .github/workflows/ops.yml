@@ -1,0 +1,14 @@
+name: diag-cleanup-ops
+on:
+  push:
+    branches: [diag-cleanup-ops]
+  workflow_dispatch:
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          echo "health:"; curl -s -m 20 $U/api/health | head -c 600; echo
+          echo "ops liveCheck:"; curl -s -m 30 $U/api/ops | python3 -c "import json,sys;j=json.load(sys.stdin);print(json.dumps({'uptimeS':j.get('uptimeS'),'liveCheck':j.get('liveCheck')})[:800])"
