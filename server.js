@@ -5204,7 +5204,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.218.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.218.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -9391,7 +9391,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.218.0',
+  version: '3.218.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9719,7 +9719,15 @@ const v1 = {
   },
   digests: () => digestIndex(),
   // the alert history: with the paywall on, the API is the free view (bets shown once their games start)
-  alerts: q => alertHistoryFor({ ...alertQueryOf(q), full: !PAYWALL }),
+  alerts: q => {
+    // a misspelt filter is a 400 that says so, never every alert
+    const kind = v1Str(q.kind, /^[a-z]{1,20}$/, 'kind');
+    if (kind && !require('./push').KIND_KEYS.includes(kind)) throw new V1Error(400, 'bad_parameter', `kind is one of ${require('./push').KIND_KEYS.join(', ')}.`);
+    v1Num(q.days, 0, 3650, 'days');
+    v1Int(q.limit, 1, 500, 100, 'limit');
+    if (q.before != null && q.before !== '' && !Number.isFinite(Date.parse(q.before))) throw new V1Error(400, 'bad_parameter', 'before is an ISO time, e.g. 2026-10-27T00:00:00Z.');
+    return alertHistoryFor({ ...alertQueryOf(q), full: !PAYWALL });
+  },
   async digest(week) {
     const w = String(week || '');
     if (!digest.validWeek(w)) throw new V1Error(400, 'bad_parameter', 'A week is the date of its Monday, like 2026-10-19.');
@@ -9856,7 +9864,13 @@ app.get('/api/v1/lines/prop', v1Auth, (req, res) => {
 });
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
 // the app's SEARCH box: games, esports series, players, markets and leagues the site holds now
-app.get('/api/v1/search', v1Auth, v1Route(req => { if (searchLib.cleanQ(req.query.q).length < 2) throw new V1Error(400, 'bad_param', 'q: two or more letters, e.g. q=lakers'); return searchBody(req, { limit: v1Int(req.query.limit, 1, 60, 30, 'limit') }); }));
+app.get('/api/v1/search', v1Auth, v1Route(req => {
+  if (searchLib.cleanQ(req.query.q).length < 2) throw new V1Error(400, 'bad_parameter', 'q: two or more letters, e.g. q=lakers');
+  const kinds = req.query.kind ? String(req.query.kind).toLowerCase().split(',').map(k => k.trim()).filter(Boolean) : [];
+  if (kinds.some(k => !searchLib.KINDS.includes(k))) throw new V1Error(400, 'bad_parameter', `kind is one or more of ${searchLib.KINDS.join(', ')}.`);
+  v1State(req.query.state);
+  return searchBody(req, { limit: v1Int(req.query.limit, 1, 60, 30, 'limit') });
+}));
 
 // ── widgets: no key, a per-address limit, the same bodies as the API ──
 function widgetGate(req, res, next) {
@@ -10208,7 +10222,15 @@ async function pubPlace(handle) {
 app.get('/api/leaderboard', widgetGate, async (req, res) => {
   try { res.set('Cache-Control', 'public, max-age=60').json(leaderboard.publicBody(await pubBoard(req.query))); } catch (e) { sendErr(res, e); }
 });
-app.get('/api/v1/leaderboard', v1Auth, v1Route(async req => leaderboard.publicBody(await pubBoard(req.query))));
+function v1BoardQuery(q) {
+  const window = v1Str(q.window, /^[a-z0-9]{1,5}$/, 'window');
+  if (window && !leaderboard.WINDOWS[window]) throw new V1Error(400, 'bad_parameter', `window is one of ${Object.keys(leaderboard.WINDOWS).join(', ')}.`);
+  const venuesQ = v1Str(q.venues, /^[a-z]{1,8}$/, 'venues');
+  if (venuesQ && venuesQ !== 'mine') throw new V1Error(400, 'bad_parameter', 'venues is mine (only apps and venues confirmed in the state), or left out.');
+  v1Str(q.league, /^[a-z0-9_]{1,30}$/, 'league');
+  return { ...q, window: window || undefined, venues: venuesQ || undefined, state: v1State(q.state) || undefined };
+}
+app.get('/api/v1/leaderboard', v1Auth, v1Route(async req => leaderboard.publicBody(await pubBoard(v1BoardQuery(req.query)))));
 app.get('/api/records', widgetGate, async (req, res) => {
   try { res.set('Cache-Control', 'public, max-age=60').json(await pubIndex()); } catch (e) { sendErr(res, e); }
 });
