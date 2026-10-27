@@ -59,6 +59,9 @@ const DEFAULTS = {
   marksMin: [30, 60],
   target: 50,
   lot: 100,
+  pmusConcurrency: 6,
+  pmusEvery: 5,               // each Polymarket US book is read every 5th minute (a fifth of them a minute), through the shared polite queue
+  tickBudgetMs: 45e3,         // a tick stops starting Polymarket US reads after this, so one minute never runs into the next
 };
 const VENUE_NAME = { kalshi: 'Kalshi', pmus: 'Polymarket US' };
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
@@ -218,10 +221,12 @@ function parseOffshoreMids(payload) {
 
 function createOffshoreRef({ http, post = null, pairs = [], store, now = () => Date.now(), log = console, opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
+  // Polymarket US points come every pmusEvery minutes, so the 15-minute look-back may be that old
+  const oPmus = { ...o, maxQuoteAgeMs: Math.max(o.maxQuoteAgeMs, (Math.max(1, o.pmusEvery | 0) + 1) * 60e3) };
   const hist = new Map();      // `${pairId}|${venue}` → [{ t, m, ask, bid }]
   const lastFlag = new Map();
   const open = new Map();
-  const state = { on: true, pairs: pairs.length, ticks: 0, lastTick: null, lastMs: null, quotes: { offshore: 0, kalshi: 0, pmus: 0 }, flags: 0, errors: [] };
+  const state = { on: true, pairs: pairs.length, ticks: 0, skipped: 0, cut: 0, lastTick: null, lastMs: null, quotes: { offshore: 0, kalshi: 0, pmus: 0 }, flags: 0, errors: [] };
   const err = m => { state.errors.unshift(`${new Date(now()).toISOString()} ${m}`); state.errors.length = Math.min(state.errors.length, 8); };
   const ready = store.init().then(async () => {
     for (const r of await store.all()) {
@@ -250,15 +255,31 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
     }
     return out;
   }
-  async function readPmus() {
+  // a fifth of the Polymarket US books each minute (about 10), six at a time
+  async function readPmus(t0) {
     const out = new Map();
-    for (const slug of [...new Set(pairs.map(p => p.u?.slug).filter(Boolean))]) {
-      try {
-        const res = await http.get(`${GATEWAY}/v1/markets/${encodeURIComponent(slug)}/book`, { timeout: 8000 });
-        const b = pmus.parseBook(res?.data);
-        if (b) out.set(slug, b);
-      } catch (e) { if (out.size === 0 && e?.response?.status !== 404) throw e; }
-    }
+    const all = [...new Set(pairs.map(p => p.u?.slug).filter(Boolean))];
+    const every = Math.max(1, o.pmusEvery | 0);
+    const slugs = all.filter((_, k) => k % every === state.ticks % every);
+    let i = 0, fails = 0, lastErr = null;
+    await Promise.all(Array.from({ length: Math.min(o.pmusConcurrency, slugs.length) }, async () => {
+      while (i < slugs.length) {
+        if (now() - t0 > o.tickBudgetMs) return;
+        const slug = slugs[i++];
+        try {
+          // a backed-up queue cannot hold the tick past its budget
+          let timer;
+          const res = await Promise.race([
+            http.get(`${GATEWAY}/v1/markets/${encodeURIComponent(slug)}/book`, { timeout: 6000 }),
+            new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('tick budget')), Math.max(0, o.tickBudgetMs - (now() - t0))); }),
+          ]).finally(() => clearTimeout(timer));
+          const b = pmus.parseBook(res?.data);
+          if (b) out.set(slug, b);
+        } catch (e) { fails++; lastErr = e; }
+      }
+    }));
+    if (i < slugs.length) state.cut++;   // ticks that ran out of time before every book was read
+    if (!out.size && fails && lastErr) throw lastErr;
     return out;
   }
   // size at or under the flagged price on the venue's book
@@ -284,13 +305,20 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
     } catch { return null; }
   }
 
+  // one tick at a time: a run still going when the next minute fires is skipped, not stacked
+  let running = false;
   async function tick() {
+    if (running) { state.skipped++; return []; }
+    running = true;
+    try { return await tickOnce(); } finally { running = false; }
+  }
+  async function tickOnce() {
     await ready;
     const t0 = now();
     const [off, kq, ub] = await Promise.all([
       readOffshore().catch(e => { err(`offshore books: ${e.message}`); return new Map(); }),
       readKalshi().catch(e => { err(`Kalshi quotes: ${e.message}`); return new Map(); }),
-      readPmus().catch(e => { err(`Polymarket US books: ${e.message}`); return new Map(); }),
+      readPmus(t0).catch(e => { err(`Polymarket US books: ${e.message}`); return new Map(); }),
     ]);
     state.quotes = { offshore: off.size, kalshi: kq.size, pmus: ub.size };
     const t = now(), fresh = [], writes = [];
@@ -308,7 +336,7 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
         hist.set(key, h);
         if (q.status && !/^(active|open)$/i.test(q.status)) continue;
         if (q.open === false) continue;
-        for (const f of detect(h, pair, venue, lastFlag, o)) fresh.push([f, pair]);
+        for (const f of detect(h, pair, venue, lastFlag, venue === 'pmus' ? oPmus : o)) fresh.push([f, pair]);
       }
     }
     for (const [f, pair] of fresh) {
@@ -344,7 +372,7 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
     for (const pair of pairs) for (const venue of ['kalshi', 'pmus']) {
       const h = hist.get(`${pair.id}|${venue}`);
       const p = h?.[h.length - 1];
-      if (!p || p.m == null || now() - p.t > 5 * 60e3) continue;
+      if (!p || p.m == null || now() - p.t > (venue === 'pmus' ? Math.max(5, (o.pmusEvery | 0) + 1) : 5) * 60e3) continue;
       for (const side of ['yes', 'no']) {
         const c = sideCost(p, side, venue, pair, o);
         if (!c) continue;
