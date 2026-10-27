@@ -67,7 +67,7 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await init();
     const d = check(key);
     if (!d) return null;
-    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked', feed: null, bot: null };
+    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked', feed: null, bot: null, tgBot: null };
     byHash.set(d.hash, out);
     await store.put(out);
     return publicKey(out);
@@ -75,7 +75,8 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
   const listFor = userId => (userId ? [...byHash.values()].filter(d => d.userId === userId).map(publicKey) : []);
   const stats = () => ({ keys: [...byHash.values()].filter(d => !d.revokedAt).length, revoked: [...byHash.values()].filter(d => d.revokedAt).length,
     feeds: [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).length,
-    bots: [...byHash.values()].filter(d => !d.revokedAt && d.bot).length });
+    bots: [...byHash.values()].filter(d => !d.revokedAt && d.bot).length,
+    telegramBots: [...byHash.values()].filter(d => !d.revokedAt && d.tgBot).length });
   // ── the Discord feed a key's owner connected (outfeed.js): one webhook per
   // key, kept sealed (the caller seals it), dropped with the key on revoke ──
   async function setFeed(key, feed) {
@@ -125,7 +126,29 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await store.put(out);
     return out.bot;
   }
-  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed, setBot, botFor, bots, markBot };
+  // ── the Telegram bot a key's owner connected for commands (telegrambot.js):
+  // { botId, username, sealed, addedAt }; the token is kept sealed (the caller
+  // seals it) because each answer is sent with it. One bot per key, dropped on revoke ──
+  async function setTgBot(key, bot) {
+    await init();
+    const d = check(key);
+    if (!d) return null;
+    const out = { ...d, tgBot: bot || null };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  const tgBotFor = botId => [...byHash.values()].find(d => !d.revokedAt && d.tgBot && d.tgBot.botId === String(botId)) || null;
+  const tgBots = () => [...byHash.values()].filter(d => !d.revokedAt && d.tgBot).map(d => ({ keyId: d.id, tgBot: d.tgBot }));
+  async function markTgBot(keyId, patch) {
+    const d = [...byHash.values()].find(x => x.id === keyId);
+    if (!d || !d.tgBot) return null;
+    const out = { ...d, tgBot: { ...d.tgBot, ...patch } };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out.tgBot;
+  }
+  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed, setBot, botFor, bots, markBot, setTgBot, tgBotFor, tgBots, markTgBot };
 }
 const publicKey = d => ({ id: d.id, name: d.name, createdAt: d.createdAt, revokedAt: d.revokedAt || null, signedIn: !!d.userId });
 

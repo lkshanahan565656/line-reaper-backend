@@ -5204,7 +5204,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.219.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.220.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -9396,7 +9396,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.219.0',
+  version: '3.220.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9481,6 +9481,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   alertLog: alertLog.stats(),
   outFeed: typeof outFeedStatus === 'function' ? outFeedStatus() : null,
   discordBot: typeof botStatus === 'function' ? botStatus() : null,
+  telegramBot: typeof tgStatus === 'function' ? tgStatus() : null,
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET,
     // the switch to charging (plans.readiness): which settings are set, by name only
@@ -9791,7 +9792,8 @@ app.get('/api/v1', (req, res) => publicApi.sendCached(req, res, { version: publi
   plans: PAYWALL ? Object.fromEntries(plans.PLAN_IDS.map(id => [id, v1Limits(id)])) : null, pricing: '/pricing',
   endpoints: publicApi.ENDPOINTS.map(e => ({ path: e.path, title: e.title, params: Object.fromEntries(e.params) })), widgets: ['/embed/best-price', '/embed/line-move', '/embed/record', '/embed.js'],
   feed: { status: 'GET /api/v1/feed', connect: 'PUT /api/v1/feed/discord with {"url": "<Discord webhook URL>"}', disconnect: 'DELETE /api/v1/feed/discord', docs: '/developers#feed' },
-  bot: { status: 'GET /api/v1/bot', connect: 'PUT /api/v1/bot/discord with {"appId", "publicKey", "botToken"}', disconnect: 'DELETE /api/v1/bot/discord', commands: discordBot.COMMANDS.map(c => `/${c.name}`), docs: '/developers#bot' } }, { scope: 'public', maxAge: 300 }));
+  bot: { status: 'GET /api/v1/bot', connect: 'PUT /api/v1/bot/discord with {"appId", "publicKey", "botToken"}', disconnect: 'DELETE /api/v1/bot/discord', commands: discordBot.COMMANDS.map(c => `/${c.name}`), docs: '/developers#bot',
+    telegram: { connect: 'PUT /api/v1/bot/telegram with {"botToken": "<token from @BotFather>"}', disconnect: 'DELETE /api/v1/bot/telegram', commands: ['/odds', '/props', '/moves', '/record', '/lines', '/settings', '/help'] } } }, { scope: 'public', maxAge: 300 }));
 app.post('/api/v1/keys', async (req, res) => {
   try {
     // a signed-in account keeps at most its plan's number of live keys
@@ -10507,7 +10509,7 @@ const botHandlers = {
     const hits = searchLib.query(entries, opts.game, { kinds: ['game'], limit: 4, perKind: 4 });
     const games = hits.map(h => screen.games.find(g => `g:${g.id}` === h.id)).filter(Boolean);
     return discordBot.oddsMessage({ q: searchLib.cleanQ(opts.game), games, more: games.slice(1), stale: !!screen.stale && games.length > 0, linesAt: screen.updated, withFair: v1FullTier(),
-      state, stateName: state ? venues.stateInfo(state).name : null, origin: ctx.origin, fmt: botFmt(ctx), hasHistory: id => oddsHistory.forGame(id).length > 0 });
+      state, stateName: state ? venues.stateInfo(state).name : null, origin: ctx.origin, fmt: botFmt(ctx), hasHistory: id => oddsHistory.forGame(id).length > 0, ...(ctx.setter ? { setter: ctx.setter } : {}) });
   }),
   props: botTry((opts, ctx) => {
     const rows = propsBoardRows().rows || [];
@@ -10547,13 +10549,14 @@ async function botLimit(ctx) {
     ctx.plan = plan;
     const lim = apiLimiter.take(ctx.keyDoc.id, v1Limits(plan));
     if (!lim.ok) return botLimitMsg(lim.over === 'day' ? `This bot has used its ${lim.dayLimit} calls for today (UTC). It answers again tomorrow.` : `This bot is over ${lim.limit} calls this minute. Try again in ${lim.retryAfter} s.`);
-    const last = botState.used.get(ctx.keyDoc.id) || 0;
-    if (Date.now() - last > 600e3) { botState.used.set(ctx.keyDoc.id, Date.now()); apiKeys.markBot(ctx.keyDoc.id, { lastUseAt: new Date().toISOString() }).catch(() => {}); }
+    const tg = ctx.kind === 'telegram', usedKey = `${tg ? 'tg' : 'dc'}|${ctx.keyDoc.id}`;
+    const last = botState.used.get(usedKey) || 0;
+    if (Date.now() - last > 600e3) { botState.used.set(usedKey, Date.now()); (tg ? apiKeys.markTgBot : apiKeys.markBot)(ctx.keyDoc.id, { lastUseAt: new Date().toISOString() }).catch(() => {}); }
     return null;
   }
   ctx.plan = botOwnerPlan();
   const lim = botGuildLimiter.take(ctx.guild ? `${ctx.app}|${ctx.guild}` : `dm|${ctx.user}`);
-  if (!lim.ok) return botLimitMsg(lim.over === 'day' ? 'This server has asked a lot today. The bot answers again tomorrow (UTC).' : `Lots of commands this minute here. Try again in ${lim.retryAfter} s.`);
+  if (!lim.ok) return botLimitMsg(lim.over === 'day' ? `This ${ctx.kind === 'telegram' ? 'chat' : 'server'} has asked a lot today. The bot answers again tomorrow (UTC).` : `Lots of commands this minute here. Try again in ${lim.retryAfter} s.`);
   return null;
 }
 const botHandler = discordBot.createBot({ handlers: botHandlers, settings: botSettings, stateOf: s => venues.stateOf(s), stateName: s => venues.stateInfo(s)?.name || s });
@@ -10605,7 +10608,7 @@ function botView(doc, origin) {
 }
 const BOT_ABOUT = { commands: discordBot.COMMANDS.map(c => ({ name: `/${c.name}`, about: c.description })), same: 'Everyone who asks the same thing gets the same answer. Nothing is sized or picked per person, and nothing places a bet.',
   limits: "Each command is one API call on this key's plan." };
-app.get('/api/v1/bot', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ discord: botView(req.apiKey, siteOrigin(req)), plan: req.apiPlan, limits: v1Limits(req.apiPlan), ...BOT_ABOUT }));
+app.get('/api/v1/bot', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ discord: botView(req.apiKey, siteOrigin(req)), telegram: tgView(req.apiKey), plan: req.apiPlan, limits: v1Limits(req.apiPlan), ...BOT_ABOUT }));
 app.put('/api/v1/bot/discord', v1Auth, async (req, res) => {
   try {
     const appId = String(req.body?.appId || '').trim(), publicKey = String(req.body?.publicKey || '').trim().toLowerCase(), token = String(req.body?.botToken || '').trim();
@@ -10629,6 +10632,102 @@ app.put('/api/v1/bot/discord', v1Auth, async (req, res) => {
 app.delete('/api/v1/bot/discord', v1Auth, async (req, res) => {
   try { const doc = await apiKeys.setBot(v1KeyOf(req), null); res.set('Cache-Control', 'no-store').json({ discord: botView(doc, siteOrigin(req)), note: 'Disconnected: commands sent to that application now fail. Clear the Interactions Endpoint URL in Discord too.' }); }
   catch (e) { v1Fail(res, e); }
+});
+// ─── TELEGRAM BOT COMMANDS (telegrambot.js) ──────────────────────────────────
+// /odds /props /moves /record /lines /settings /help in a Telegram group or
+// private chat, answered by the Discord bot's handlers above (the same public
+// numbers, written out for Telegram). Telegram's webhook, no polling, no extra
+// process. The owner's bot is TELEGRAM_BOT_TOKEN (the feed's variable): on
+// boot its webhook is pointed at /telegram/webhook and its command menu set,
+// only when either changed; without the variable the endpoint answers 404. A
+// customer's own bot, connected on /developers#bot, answers at
+// /telegram/webhook/<bot id> and spends its key's API limits.
+const telegramBot = require('./telegrambot');
+const tgOwner = telegramBot.ownerConfig(process.env);
+for (const p of tgOwner.problems) console.warn(`Telegram bot: ${p}`);
+const tgState = { owner: null, username: null };
+const tgHandler = telegramBot.createTelegramBot({ handlers: botHandlers, settings: botSettings, stateOf: s => venues.stateOf(s), stateName: s => venues.stateInfo(s)?.name || s });
+const tgOwnerUrl = () => `${digestOrigin()}/telegram/webhook`;
+app.post(['/telegram/webhook', '/telegram/webhook/:botId'], async (req, res) => {
+  try {
+    let bot, keyDoc = null;
+    if (req.params.botId) {
+      await apiKeys.init().catch(() => {});
+      keyDoc = telegramBot.BOT_ID_RE.test(req.params.botId) ? apiKeys.tgBotFor(req.params.botId) : null;
+      const token = keyDoc ? outFeedSeal.open(keyDoc.tgBot.sealed) : null;
+      if (!token) return res.status(404).set('Cache-Control', 'no-store').json({ error: 'No Line Reaper bot is connected for that Telegram bot. Connect it at /developers#bot.' });
+      bot = { token, botId: keyDoc.tgBot.botId, secret: telegramBot.secretOf(token), username: keyDoc.tgBot.username || null };
+    } else {
+      if (!tgOwner.on) return res.status(404).set('Cache-Control', 'no-store').json({ error: 'The Telegram bot is off on this server.' });
+      bot = { token: tgOwner.token, botId: tgOwner.botId, secret: tgOwner.secret, username: tgState.username };
+    }
+    const out = tgHandler.handle({ bot, secretHeader: req.get('x-telegram-bot-api-secret-token'), update: req.body || {}, limit: botLimit,
+      ctx: { origin: siteOrigin(req), keyDoc, kind: 'telegram', setter: 'a group admin' } });
+    res.status(out.status).set('Cache-Control', 'no-store').json(out.body);
+    if (out.work) await out.work.catch(() => {});
+  } catch (e) {
+    console.warn('Telegram bot:', e.message);
+    if (!res.headersSent) res.status(500).set('Cache-Control', 'no-store').json({ error: 'server error' });
+  }
+});
+// the owner's webhook and menu: set once per URL and command list (and again
+// when Telegram reports a different webhook, e.g. after a manual change)
+async function tgConnectOwner() {
+  if (!tgOwner.on) return null;
+  await outFeedReady;
+  const url = tgOwnerUrl();
+  const hash = `${telegramBot.commandsHash()}|${url}|${tgOwner.botId}`;
+  const prev = await feedDoc('tg-webhook');
+  if (prev?.hash === hash && prev.ok) {
+    const info = await require('axios').post(`${telegramBot.API}/bot${tgOwner.token}/getWebhookInfo`, {}, { timeout: 10000 }).then(r => r?.data?.result).catch(() => null);
+    if (!info || info.url === url) { tgState.owner = prev; tgState.username = prev.username || null; return prev; }
+  }
+  const r = await tgHandler.connect(tgOwner.token, url);
+  tgState.owner = { hash, at: new Date().toISOString(), ok: r.ok, username: r.username || null, why: r.why || null };
+  if (r.username) tgState.username = r.username;
+  if (r.ok) await outFeedStore.put({ id: 'tg-webhook', ...tgState.owner });
+  return tgState.owner;
+}
+if (require.main === module) setTimeout(() => tgConnectOwner().catch(e => { tgState.owner = { ok: false, why: e.message }; }), 25e3).unref?.();
+function tgStatus() {
+  const s = tgHandler.stats();
+  return { on: tgOwner.on, owner: { botId: tgOwner.botId, username: tgState.username, endpoint: '/telegram/webhook', problems: tgOwner.problems,
+    webhook: tgState.owner ? { ok: tgState.owner.ok, at: tgState.owner.at || null, why: tgState.owner.why || null } : null },
+  customers: apiKeys.tgBots().length, commands: telegramBot.COMMANDS.map(c => `/${c.command}`), limits: { owner: '30 a minute, 3,000 a day per chat', customer: "the key's plan API limits" },
+  updates: s.updates, commandsAnswered: s.commands, byCommand: s.byCommand, ignored: s.ignored, duplicate: s.duplicate, limited: s.limited, badSecret: s.badSecret, errors: s.errors, sendErrors: s.sendErrors, lastAt: s.lastAt, lastError: s.lastError };
+}
+// ── self-serve: a customer connects their own Telegram bot with their API key ──
+function tgView(doc) {
+  const b = doc?.tgBot;
+  if (!b) return { connected: false };
+  return { connected: true, botId: b.botId, username: b.username || null, addedAt: b.addedAt, lastUseAt: b.lastUseAt || null, open: b.username ? `https://t.me/${b.username}` : null,
+    addToGroup: b.username ? `https://t.me/${b.username}?startgroup=start` : null };
+}
+app.put('/api/v1/bot/telegram', v1Auth, async (req, res) => {
+  try {
+    const token = String(req.body?.botToken || '').trim();
+    const botId = telegramBot.botIdOf(token);
+    if (!botId) throw new V1Error(400, 'bad_parameter', 'botToken is the token @BotFather sends after /newbot, like 123456789:AA… (in @BotFather: /mybots, your bot, API Token).');
+    const t = Date.now(), cKey = `tg|${req.apiKey.id}`, seen = (botState.connects.get(cKey) || []).filter(x => t - x < 3600e3);
+    if (seen.length >= 5) throw new V1Error(429, 'rate_limited', 'At most 5 connects an hour per key. Try again later.');
+    botState.connects.set(cKey, [...seen, t]);
+    if (tgOwner.botId && botId === tgOwner.botId) throw new V1Error(409, 'already_connected', 'That is this site\'s own Telegram bot.');
+    const other = apiKeys.tgBotFor(botId);
+    if (other && other.id !== req.apiKey.id) throw new V1Error(409, 'already_connected', 'That Telegram bot is already connected with another key.');
+    const r = await tgHandler.connect(token, `${siteOrigin(req)}/telegram/webhook/${botId}`);
+    if (!r.ok) throw new V1Error(400, 'bad_bot', r.why);
+    const doc = await apiKeys.setTgBot(v1KeyOf(req), { botId, username: r.username || null, sealed: outFeedSeal.seal(token), addedAt: new Date().toISOString(), lastUseAt: null });
+    const view = tgView(doc);
+    res.set('Cache-Control', 'no-store').json({ telegram: view, note: `Connected${view.username ? ` as @${view.username}` : ''}. Add the bot to a group (or open a chat with it) and send /odds Lakers. The token is kept sealed on the server, only to send the answers.`, ...BOT_ABOUT, commands: telegramBot.COMMANDS.map(c => ({ name: `/${c.command}`, about: c.description })) });
+  } catch (e) { v1Fail(res, e); }
+});
+app.delete('/api/v1/bot/telegram', v1Auth, async (req, res) => {
+  try {
+    const token = req.apiKey?.tgBot ? outFeedSeal.open(req.apiKey.tgBot.sealed) : null;
+    if (token) await tgHandler.disconnect(token);
+    const doc = await apiKeys.setTgBot(v1KeyOf(req), null);
+    res.set('Cache-Control', 'no-store').json({ telegram: tgView(doc), note: 'Disconnected: Telegram no longer sends that bot\'s messages here, and the token is gone from the server.' });
+  } catch (e) { v1Fail(res, e); }
 });
 // every other /api/v1 path (after the feed routes above)
 app.use('/api/v1', (req, res) => v1Fail(res, new V1Error(404, 'not_found', 'No such endpoint. /api/v1 lists them.')));
@@ -10844,7 +10943,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  alertLog, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
+  alertLog, tgConnectOwner, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
   app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,

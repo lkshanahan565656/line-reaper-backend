@@ -28,7 +28,7 @@ test('owner channels come from env and say what is wrong; nothing set means noth
   assert.equal(ok.dests[1].chat, '-1001234567890');
   assert.equal(ok.dests[2].chat, '@lineReaper');
   assert.equal(ok.problems.length, 2);
-  assert.match(feed.ownerDestinations({ TELEGRAM_BOT_TOKEN: TOKEN }).problems[0], /TELEGRAM_CHAT_IDS is empty/);
+  assert.deepEqual(feed.ownerDestinations({ TELEGRAM_BOT_TOKEN: TOKEN }), { dests: [], problems: [] }, 'a token alone is the command bot: no feed, no problem');
   assert.match(feed.ownerDestinations({ TELEGRAM_CHAT_IDS: '-100123' }).problems[0], /TOKEN is empty/);
   assert.match(feed.ownerDestinations({ TELEGRAM_BOT_TOKEN: 'x', TELEGRAM_CHAT_IDS: '-100123' }).problems[0], /not look like a bot token/);
 });

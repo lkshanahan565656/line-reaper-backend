@@ -326,7 +326,7 @@ ${eps}
 </div>
 <p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
 
-<h2 id="bot">Discord bot: slash commands</h2>
+<h2 id="bot">Discord and Telegram bots: commands in your chat</h2>
 <p>Run the Line Reaper slash commands on your own server, under your own Discord application. Members type a command and the bot answers in the channel with the same public numbers as this API.</p>
 <ul class="rules">
 <li><code>/odds game</code>: a game's best price at each venue (for the server's state), with Pinnacle's price and a line history link.</li>
@@ -356,6 +356,27 @@ ${eps}
 <div id="btOut" class="msg">Needs a key from this page, saved in this browser.</div>
 </div>
 <p class="note">With code: <code>PUT /api/v1/bot/discord</code> with <code>{"appId":"…","publicKey":"…","botToken":"…"}</code>, <code>GET /api/v1/bot</code> and <code>DELETE /api/v1/bot/discord</code>, each with your <code>X-API-Key</code>.</p>
+
+<h3 id="bot-telegram">Telegram bot: the same commands</h3>
+<p>The same commands in a Telegram group or a private chat, under your own Telegram bot: <code>/odds Lakers</code>, <code>/props Mahomes</code>, <code>/moves nba line 3h</code>, <code>/record</code> or <code>/record @handle</code>, <code>/lines Lakers</code>, <code>/settings TX decimal</code> (a group admin only) and <code>/help</code>.</p>
+<ol class="steps">
+<li>In Telegram, open a chat with <b>@BotFather</b> (the one with the blue tick) and tap <b>Start</b>.</li>
+<li>Send <code>/newbot</code>, then a display name (like Line Reaper Odds), then a username that ends in <b>bot</b>.</li>
+<li>BotFather answers with a token like <code>123456789:AA…</code>. Tap it to copy, paste it below and tap <b>CONNECT TELEGRAM BOT</b>. The server points the bot at your own webhook and adds the command menu.</li>
+<li>Open your bot from the answer and send <code>/odds Lakers</code>, or tap <b>ADD TO A GROUP</b> and pick the group. In the group an admin can set the state with <code>/settings TX</code>.</li>
+</ol>
+<ul class="rules">
+<li>The token is kept sealed on the server, only to send the answers; DISCONNECT removes it and stops the webhook.</li>
+<li>Each command is one API call on this key's plan, and the same answer goes to everyone who asks the same thing. Nothing places a bet.</li>
+</ul>
+<div class="keybox">
+<form id="tg" autocomplete="off">
+<div class="row2"><div style="flex:1 1 260px;min-width:0"><label for="tgTok">Telegram bot token</label><input id="tgTok" name="botToken" type="password" maxlength="100" placeholder="123456789:AA…"></div><button class="btn" type="submit">CONNECT TELEGRAM BOT</button></div>
+</form>
+<div class="row2" style="margin-top:8px"><button class="btn" type="button" id="tgCheck">CHECK TELEGRAM BOT</button><button class="btn warn" type="button" id="tgOff">DISCONNECT TELEGRAM BOT</button></div>
+<div id="tgOut" class="msg">Needs a key from this page, saved in this browser.</div>
+</div>
+<p class="note">With code: <code>PUT /api/v1/bot/telegram</code> with <code>{"botToken":"…"}</code>, <code>GET /api/v1/bot</code> and <code>DELETE /api/v1/bot/telegram</code>, each with your <code>X-API-Key</code>.</p>
 
 <h2 id="widgets">Widgets</h2>
 <p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-state</code> (a two-letter state: only venues a resident can use), <code>data-game</code>, <code>data-side</code> and <code>data-odds</code> (american, decimal, fractional or probability; American when none).</p>
@@ -473,6 +494,39 @@ ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: gra
   });
   document.getElementById('btCheck').addEventListener('click', function () { btCall('GET', '/api/v1/bot'); });
   document.getElementById('btOff').addEventListener('click', function () { btCall('DELETE', '/api/v1/bot/discord'); });
+  // the Telegram bot: connect (the token is sealed on the server), check, disconnect
+  var tgOut = document.getElementById('tgOut');
+  function tgShow(j) {
+    var d = j && j.telegram;
+    if (!d) return;
+    if (d.connected) tgOut.innerHTML = 'Connected: ' + (d.username ? '@' + esc(d.username) : 'bot ' + esc(d.botId)) + ', since ' + esc(String(d.addedAt).slice(0, 10)) + '. Last command ' + (d.lastUseAt ? esc(String(d.lastUseAt).slice(0, 16).replace('T', ' ')) + ' UTC' : 'not yet') + '.' +
+      (d.open ? '<br><a class="btn" href="' + esc(d.open) + '" target="_blank" rel="noopener">OPEN THE BOT</a> <a class="btn" href="' + esc(d.addToGroup) + '" target="_blank" rel="noopener">ADD TO A GROUP</a>' : '');
+    else tgOut.textContent = 'No Telegram bot on this key.';
+  }
+  function tgCall(method, path, body) {
+    var k = get();
+    if (!k) { tgOut.className = 'msg err'; tgOut.textContent = 'Make a key first (top of the page): the bot is tied to it.'; document.getElementById('kname').focus(); return; }
+    tgOut.className = 'msg'; tgOut.textContent = method === 'PUT' ? 'Connecting the bot with Telegram…' : 'Asking…';
+    var h = { 'X-API-Key': k };
+    if (body) h['Content-Type'] = 'application/json';
+    fetch(path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { tgOut.className = 'msg err'; tgOut.textContent = j.error.message; return; }
+        tgShow(j);
+        if (j.note) tgOut.insertAdjacentText('afterbegin', j.note + ' ');
+      })
+      .catch(function () { tgOut.className = 'msg err'; tgOut.textContent = 'Could not reach the server. Try again.'; });
+  }
+  document.getElementById('tg').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = document.getElementById('tgTok').value.trim();
+    if (!/^[0-9]{5,15}:[A-Za-z0-9_-]{30,60}$/.test(t)) { tgOut.className = 'msg err'; tgOut.textContent = 'The token is what @BotFather sent after /newbot: numbers, a colon, then letters (step 3).'; return; }
+    document.getElementById('tgTok').value = '';
+    tgCall('PUT', '/api/v1/bot/telegram', { botToken: t });
+  });
+  document.getElementById('tgCheck').addEventListener('click', function () { tgCall('GET', '/api/v1/bot'); });
+  document.getElementById('tgOff').addEventListener('click', function () { tgCall('DELETE', '/api/v1/bot/telegram'); });
   document.getElementById('mineForget').addEventListener('click', function () { set(null); mine(); out.className = 'msg'; out.textContent = 'Forgotten in this browser. The key still works wherever you use it.'; });
   document.addEventListener('click', function (e) {
     var c = e.target.closest && e.target.closest('[data-copy]');

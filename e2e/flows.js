@@ -1624,6 +1624,19 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
         expect(/Discord|Commands added|bot token|application id/.test(await text(page, '#btOut')), `CONNECT BOT said "${await text(page, '#btOut')}"`);
         expect(await page.locator('#btTok').inputValue() === '', 'the bot token stayed in the box');
         expect(await fits(), 'the developers page scrolls sideways after the bot steps');
+        // the Telegram bot with the key: checked, a malformed token refused on the
+        // page, a right-looking one sent to Telegram (offline or refused here, so it says so)
+        await page.locator('#tgCheck').click();
+        await page.waitForFunction(() => /No Telegram bot on this key/.test(document.getElementById('tgOut').textContent), null, { timeout: 6000 });
+        await page.locator('#tgTok').fill('nope');
+        await page.locator('#tg button[type=submit]').click();
+        expect(/BotFather/.test(await text(page, '#tgOut')), `CONNECT TELEGRAM BOT with a bad token said "${await text(page, '#tgOut')}"`);
+        await page.locator('#tgTok').fill(`123456789:${'x'.repeat(35)}`);
+        await page.locator('#tg button[type=submit]').click();
+        await page.waitForFunction(() => !/Connecting the bot/.test(document.getElementById('tgOut').textContent), null, { timeout: 15000 });
+        expect(/Telegram|Connected|token/.test(await text(page, '#tgOut')), `CONNECT TELEGRAM BOT said "${await text(page, '#tgOut')}"`);
+        expect(await page.locator('#tgTok').inputValue() === '', 'the Telegram token stayed in the box');
+        expect(await fits(), 'the developers page scrolls sideways after the Telegram steps');
         await page.locator('#mineUse').click();
         await page.waitForFunction(() => /Used \d+ of/.test(document.getElementById('mineInfo').textContent), null, { timeout: 6000 });
         await page.locator('#mineRevoke').click();
