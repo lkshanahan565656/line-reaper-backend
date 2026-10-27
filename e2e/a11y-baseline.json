@@ -1,0 +1,4 @@
+{
+ "note": "Serious or critical axe findings left on purpose. Each needs a reason. npm run a11y fails on anything not listed here, or on more nodes than maxNodes. Empty: nothing is left on purpose.",
+ "allow": []
+}

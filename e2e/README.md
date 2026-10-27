@@ -22,13 +22,14 @@ What it checks, and fails on:
   the screen (`overflowIssues` in `page-helpers.js`). Ellipsis text and wide
   tables inside a scroller that fits are fine.
 - **Wording**: "PROVEN" shows only while `/api/results` (results.js) marks a
-  play proven; "guaranteed" and "risk-free" claims are flagged.
+  play proven; "guaranteed" and "risk-free" claims are flagged; ESPORTS matches
+  call a price under fair a gap, never an edge (nothing in esports is proven).
 - **Data**: the main views (`allow.json`, `mustHaveData`) must not show their
   empty state, since the recording has rows for them; a request the recording
   has no answer for fails as a fixture miss.
 - **Form flows** (`flows.js`): log a bet by hand, edit and settle it, export and
   import the CSV, log a bet from the ODDS SCREEN, log a slip from PROPS, paste
-  slips, import a Pikkit CSV and an Underdog history file and pasted Sleeper text, publish MY SLIPS as a public record (/r/<handle>: the page, its CSV and card, unpublish), download the public record (CSV and JSON) from RESULTS, save and load a shopper view, star a venue and
+  slips, import a Pikkit CSV and an Underdog history file and pasted Sleeper text, publish MY SLIPS as a public record (/r/<handle>: the page, its CSV and card, unpublish), download the public record (CSV and JSON) from RESULTS, read the alert history on RESULTS and /alerts, save and load a shopper view, star a venue and
   keep it after a reload, turn push alerts on (no push service in tests), move
   and hide a tab in CUSTOMIZE, work out a price in TOOLS, export a screen
   (the CSV holds exactly the rows shown, filters applied) and open its print
@@ -62,3 +63,21 @@ branch. Its workflow waits for the site to show that version, runs
 (`POST /api/ops/smoke`; the server fetches the file from GitHub itself, so the
 caller cannot post a result). The command waits for the result, prints it, and
 exits 0 on a pass. The last result is in `/api/ops` under `liveCheck`.
+
+## Accessibility (`npm run a11y`)
+
+`a11y.js` boots the same offline server and runs axe-core (WCAG 2.1 A and AA
+rules) on every app tab, the welcome screen, the tour, CUSTOMIZE, SEARCH (empty
+and with results), the shortcut list, the bet form and the log-in box, and on
+every public page (sales page, /learn, /pricing, /developers, /leagues and two
+league pages, /r, /alerts, /lines and a game's history, /status, /digest,
+/terms), at phone and desktop size. It also opens each of them in a 640 px
+window, which is a 1280 px desktop at 200% zoom, and fails if the page scrolls
+sideways there.
+
+A serious or critical finding fails the run unless `a11y-baseline.json` lists
+it (page, rule, the most nodes allowed and a reason). The baseline is empty:
+nothing is left on purpose. `A11Y_UPDATE=1` writes the current findings into it
+(each new entry needs its reason filled in), `A11Y_PAGES=app:odds,page:/pricing`
+checks only those, and the full report is `e2e/out/a11y.json`. CI runs it right
+after `npm run e2e`.

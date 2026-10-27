@@ -34,7 +34,9 @@ jobs:
             echo "::group::snapshot $i at $(date -u +%FT%TZ)"
             bash .github/backup-once.sh || echo "::warning::snapshot $i failed; trying again in 20 minutes"
             echo "::endgroup::"
-            [ "$i" -lt 16 ] && sleep 1200
+            # an if, not `[ ] && sleep`: on the 16th pass that test is false and,
+            # as the last command, it marked every run failed
+            if [ "$i" -lt 16 ]; then sleep 1200; fi
           done
       - name: Start the next run
         if: always()

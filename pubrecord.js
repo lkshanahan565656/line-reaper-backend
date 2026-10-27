@@ -558,6 +558,42 @@ function slipOut(r) {
   };
 }
 
+// ── the leaderboard's picks (leaderboard.js) ──
+// Every pick of a record that counts toward CLV: logged before its start and
+// graded against Pinnacle's own close at its number, each leg once (as the
+// record page counts it), with its league and the time it reached us. The
+// labels are the record page's own, per app and venue.
+function boardEntries(meta, docs, betDocs = [], { tables = null } = {}) {
+  const v = recordView(meta, docs, { tables, perPage: 1, bets: betDocs });
+  const labels = {};
+  for (const a of v.apps) labels[`app:${a.app}`] = { label: a.label, why: a.why };
+  for (const x of v.bets.venues) labels[`venue:${x.venue}`] = { label: x.label, why: x.why };
+  const grades = Object.assign({}, ...docs.map(d => d.grades || {}));
+  const L = require('./leaderboard');
+  const entries = [], seen = new Set();
+  const sorted = [...docs].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || String(b.slip.id).localeCompare(String(a.slip.id)));
+  for (const d of sorted) {
+    if (timingOf(d, grades).timing !== 'on time') continue;
+    const sl = gradeSlip(d);
+    for (const l of sl.legs) {
+      const k = S.legKey(sl, l);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const g = grades[k];
+      if (!pinLeg(g)) continue;
+      entries.push({ kind: 'app', key: sl.app, name: S.appLabel(sl.app), unit: 'legs', league: L.leagueOf(g.matched?.sport || l.sport), at: d.receivedAt,
+        clv: g.raw.ev, fair: g.raw.fair, outcome: done(g) ? g.outcome : null });
+    }
+  }
+  for (const r of (betDocs || []).map(betRow)) {
+    if (r.timing !== 'on time' || !r.pin) continue;
+    entries.push({ kind: 'venue', key: r.es ? `${r.b.venue}|es` : r.b.venue, name: r.es ? `${r.b.venueName} esports` : r.b.venueName, unit: 'bets',
+      league: L.leagueOf(r.es ? r.b.track.game : r.b.track.league), at: r.d.receivedAt, clv: r.clv, fair: r.g.closeFair,
+      outcome: r.outcome === 'win' || r.outcome === 'loss' ? r.outcome : null });
+  }
+  return { handle: meta.handle, publishedAt: meta.publishedAt, labels, entries };
+}
+
 // ── the public list of records (/r) ──
 // One row a record from its own view (recordView): each app and each venue
 // judged on its own, the strict label only where that record's page shows it,
@@ -589,8 +625,9 @@ function indexView(rows, { now = Date.now() } = {}) {
     note: 'Records appear once they have one pick logged before its start. A bettor can take their record off this list from MY SLIPS; the record stays at its own link. Line Reaper does not check who is behind a handle.',
   };
 }
-function indexHtml(view, { origin = '' } = {}) {
+function indexHtml(view, { origin = '', board = null, states = [] } = {}) {
   const v = view;
+  const LB = require('./leaderboard');
   const title = 'Bettor records';
   const description = `${v.records} public bettor record${v.records === 1 ? '' : 's'}, every pick logged before its start and graded against Pinnacle's close. ${v.proven ? `${v.proven} proven on the strict rule.` : 'None proven yet on the strict rule.'}`;
   const { CSS, LOGO, FAVICON } = require('./learn');
@@ -617,7 +654,8 @@ function indexHtml(view, { origin = '' } = {}) {
 <meta property="og:type" content="website"><meta property="og:site_name" content="Line Reaper"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">
 ${origin ? `<meta property="og:url" content="${esc(origin)}/r"><meta property="og:image" content="${esc(origin)}/og.png">` : ''}
 <link rel="icon" href="${FAVICON}">
-<style>${CSS}${PAGE_CSS}</style>
+<style>${CSS}${PAGE_CSS}${board ? LB.SECTION_CSS : ''}</style>
+${board ? LB.prefsScript() : ''}
 </head>
 <body>
 <header class="top"><div class="top-in"><a class="brand" href="/">${LOGO}<span>LINE<b>REAPER</b></span></a><a class="back" href="/app?start=myslips">PUBLISH YOURS</a></div></header>
@@ -630,6 +668,7 @@ ${origin ? `<meta property="og:url" content="${esc(origin)}/r"><meta property="o
 <div class="stat"><span>Records</span><b>${v.records}</b><small>with a pick on time</small></div>
 <div class="stat"><span>Proven</span><b class="${v.proven ? 'pos' : ''}">${v.proven}</b><small>on the strict rule</small></div>
 </div>
+${board ? `${LB.sectionHtml(board, { states })}\n<h2>Every listed record</h2>` : ''}
 ${v.rows.length ? `<div class="scroll"><table><thead><tr><th>Bettor</th><th>Label</th><th>Best kind vs Pinnacle</th><th>CLV</th><th>Picks on time</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
     : '<div class="ex"><div class="ex-h">No records yet</div><p>Nobody has a pick logged before its start yet. Publish yours from MY SLIPS > PUBLISH RECORD, then log slips and bets before the games start.</p></div>'}
 <p class="note">Best kind is the bettor's app or venue with the most picks graded against Pinnacle's close. ${esc(v.rule)}</p>
@@ -720,7 +759,7 @@ nav.pg { display:flex; justify-content:space-between; gap:12px; margin:12px 0 0;
 @media (max-width:600px) { .stats { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 `;
 
-function pageHtml(view, { origin = '', image = null, url = null } = {}) {
+function pageHtml(view, { origin = '', image = null, url = null, place = null } = {}) {
   const v = view;
   const title = `@${v.handle}: verified pick'em record`;
   const p = v.pooled;
@@ -769,6 +808,7 @@ ${tags}
 <p class="lead">Pick'em slips this bettor logged on Line Reaper, each leg graded against Pinnacle's close at its own line and settled from the box scores. Published ${esc(utc(v.publishedAt))}.${restarted}</p>
 <div class="disc">${esc(v.disclosure)}</div>
 <p>${headline}</p>
+${place && place.listed === false ? '<p class="note">Taken off the public list by the bettor, so not on the leaderboard.</p>' : ''}${place && place.listed !== false ? `<p class="note">Leaderboard, all leagues and all time: ${place.rows.length ? place.rows.map(x => (x.rank != null ? `${esc(x.name)} ranked ${x.tied ? '=' : ''}${x.rank} of ${place.ranked} (CLV ${pc(x.clv, 2)}, 95% interval ${pc(x.ciLo, 2)} to ${pc(x.ciHi, 2)})` : `${esc(x.name)} building, ${x.n} of ${x.target} ${esc(x.unit)} graded, no rank yet`)).join('; ') : 'not on it yet, nothing graded against Pinnacle\'s close'}. <a href="/r#board">See the leaderboard</a>.</p>` : ''}
 <div class="stats">
 ${stat('Legs vs Pinnacle', `${p.pinN} / ${BAR}`, 'logged before the start')}
 ${stat('CLV vs Pinnacle', pc(p.clv), p.clvT != null ? `t ${p.clvT} · beat ${share(p.beat)}` : 'no closes yet', cls(p.clv))}
@@ -816,4 +856,4 @@ ${s.legs.map(l => `<div class="leg"><div class="who"><b>${esc(l.player)}</b> ${e
   return head + body + foot;
 }
 
-module.exports = { createRecordStore, bettorCard, feedItems, FEED_KINDS, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
+module.exports = { createRecordStore, bettorCard, feedItems, FEED_KINDS, boardEntries, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };

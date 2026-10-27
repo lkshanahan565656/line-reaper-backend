@@ -52,7 +52,7 @@ function ownerDestinations(env = process.env) {
   const token = String(env.TELEGRAM_BOT_TOKEN || '').trim();
   const chats = list(env.TELEGRAM_CHAT_IDS);
   if (token && !TG_TOKEN_RE.test(token)) problems.push('TELEGRAM_BOT_TOKEN does not look like a bot token');
-  else if (token && !chats.length) problems.push('TELEGRAM_BOT_TOKEN is set but TELEGRAM_CHAT_IDS is empty');
+  // a token with no chats is the command bot alone (telegrambot.js): no feed posts, not a problem
   else if (!token && chats.length) problems.push('TELEGRAM_CHAT_IDS is set but TELEGRAM_BOT_TOKEN is empty');
   else if (token) {
     for (const c of chats) {
@@ -343,7 +343,7 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
   }
   // to: these destinations only (a record's feed), instead of the owner's and every subscriber's
   async function send(p, { to = null } = {}) {
-    const dests = to || [...owner, ...subscribers()];
+    const dests = to || [...owner, ...(await subscribers())];
     if (!p || !dests.length) return { sent: 0, failed: 0, to: 0 };
     stats.posts++;
     let sent = 0, failed = 0;

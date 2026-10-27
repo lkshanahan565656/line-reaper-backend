@@ -26,11 +26,11 @@ const FONT = 'JetBrains Mono';
 // JetBrains Mono is monospaced: every glyph is 600/1000 of the font size wide,
 // so text is cut to fit exactly, with no measuring
 const CHAR = 0.6;
-const C = { bg: '#080b10', card: '#0d121b', border: '#1e2738', text: '#e2e8f0', text2: '#94a3b8', muted: '#64748b', green: '#10b981', green2: '#34d399', amber: '#f59e0b', red: '#f87171', blue: '#60a5fa', violet: '#a78bfa' };
+const C = { bg: '#080b10', card: '#0d121b', border: '#1e2738', text: '#e2e8f0', text2: '#94a3b8', muted: '#8391a7', green: '#10b981', green2: '#34d399', amber: '#f59e0b', red: '#f87171', blue: '#60a5fa', violet: '#a78bfa' };
 const TONE = { proven: C.green2, lead: C.amber, info: C.blue, research: C.violet, losing: C.red, plain: C.text2 };
 const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e0b', kalshi: '#10b981', polymarketus: '#a78bfa', gemini: '#22d3ee', matchbook: '#f472b6',
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
-const colorOf = v => VENUE_COLOR[v] || '#64748b';
+const colorOf = v => VENUE_COLOR[v] || '#8391a7';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // strip control characters (resvg draws nothing for them; a feed name could carry one)
@@ -305,6 +305,27 @@ ${wrap('Rule: 50 legs at one app against Pinnacle\'s close at their own line, CL
   return frame({ kind, label, readAt: v.at, origin, body, foot: 'Imported by the bettor, not placed through Line Reaper. Information, not betting advice. 21+.' });
 }
 
+// ── the bettor leaderboard (leaderboard.build): ranked only at the bar ──
+function boardCard(v, { origin = '' } = {}) {
+  const f = v.filter;
+  const kind = `Bettor leaderboard · ${f.windowName}${f.league ? ` · ${f.league}` : ''}`;
+  if (!v.ranked.length) {
+    const top = v.building[0];
+    return emptyCard({ kind, label: { text: 'NOBODY RANKED YET', tone: 'plain' }, title: `Nobody at ${v.bar} graded yet`,
+      why: top ? `Most graded: @${top.handle} at ${top.name}, ${top.n} of ${v.bar} picks graded against Pinnacle's close. Ranked only at ${v.bar}.`
+        : `No published record has a pick logged before its start and graded against Pinnacle's close in this slice yet.`, readAt: v.at, origin });
+  }
+  const rows = v.ranked.slice(0, 5).map((x, i) => {
+    const y = 200 + i * 62;
+    return `${txt(48, y, `${x.tied ? '=' : ''}${x.rank}`, { size: 30, weight: 700, fill: C.green2, max: 70 })}${txt(130, y, `@${x.handle}`, { size: 28, weight: 700, max: 360 })}${txt(500, y, `${x.name} · ${x.n} graded`, { size: 20, fill: C.text2, max: 300 })}${txt(W - 48, y, `${pct(x.clv, 2)}  [${pct(x.ciLo, 2)}, ${pct(x.ciHi, 2)}]`, { size: 22, fill: x.clv > 0 ? C.green2 : C.red, anchor: 'end', max: 330 })}`;
+  }).join('\n');
+  const label = { text: `${v.ranked.length} RANKED`, tone: 'plain' };
+  const body = `${txt(48, 146, 'CLV against Pinnacle\'s close · ranked by the low end of the 95% interval', { size: 20, fill: C.text2, max: W - 96 })}
+${rows}
+${wrap(`Ranked only at ${v.bar} picks logged before the start. Labels are each record's own. No profit shown.`, 18, W - 96, 2).map((l, i) => txt(48, 520 + i * 26, l, { size: 18, fill: C.muted })).join('\n')}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'Records are logged by the bettors, not placed through Line Reaper. Information, not betting advice. 21+.' });
+}
+
 // ── digest: one week (digest.build()) ──
 function digestCard(d, { origin = '', frozen = false } = {}) {
   const s = d.summary;
@@ -325,6 +346,32 @@ function digestCard(d, { origin = '', frozen = false } = {}) {
 ${lines.map(([k, v, col], i) => `${txt(48, 296 + i * 58, k.toUpperCase(), { size: 15, fill: C.muted, weight: 700, spacing: 1.5 })}${txt(48, 322 + i * 58, v, { size: 22, fill: col, max: W - 96 })}`).join('\n')}`;
   const state = d.partial ? 'The week so far' : frozen ? 'Published and frozen' : 'Rebuilt from the record';
   return frame({ kind, label: { text: state, tone: 'plain' }, readAt: d.builtAt, origin, body, foot: 'Proven only where RESULTS proves it; units are a profit only where RESULTS shows one. 21+.' });
+}
+
+// ── the alert history (alertlog.view): what was sent, and how its bets graded ──
+// PROVEN only where a label row is proven on RESULTS; the pooled CLV is never a claim
+const ALERT_TONE = { proven: 'proven', building: 'lead', research: 'research', 'losing to the close': 'losing' };
+function alertsCard(v, { origin = '' } = {}) {
+  const s = v.summary;
+  const kind = 'Alert history';
+  const since = v.startedAt ? String(v.startedAt).slice(0, 10) : 'storing began';
+  if (!s.alerts) return emptyCard({ kind, label: { text: 'NOTHING SENT YET', tone: 'plain' }, title: 'No alert sent since storing began',
+    why: `Every alert is kept from ${since}. The first one sent will show here, graded against the close.`, readAt: v.at, origin });
+  const proven = s.byLabel.find(r => r.label === 'proven');
+  const label = proven ? { text: 'INCLUDES A PROVEN KIND', tone: 'proven' } : { text: 'NOTHING PROVEN', tone: 'plain' };
+  const rows = s.byLabel.slice(0, 4).map((r, i) => {
+    const y = 300 + i * 52;
+    const u = r.units == null ? '' : r.profitShown ? ` · ${r.units > 0 ? '+' : ''}${r.units.toFixed(1)}u` : '';
+    return `${txt(48, y, String(r.label).toUpperCase(), { size: 18, weight: 700, fill: TONE[ALERT_TONE[r.label]] || C.text2, max: 300 })}${txt(360, y, `${r.alerts} alert${r.alerts === 1 ? '' : 's'} · ${r.graded} graded · CLV ${pct(r.avgClvPct)}${r.wins + r.losses ? ` · ${r.wins}-${r.losses}` : ''}${u}`, { size: 20, fill: C.text, max: W - 408 })}`;
+  }).join('\n');
+  const body = `${tileRow(124, [
+    { name: 'Alerts sent', value: s.alerts.toLocaleString('en-US'), note: `since ${since}` },
+    { name: 'Bets graded', value: String(s.graded), note: `${s.open} still open` },
+    { name: 'CLV at alert price', value: pct(s.avgClvPct), note: 'pooled: never a claim' },
+    { name: 'Vs Pinnacle close', value: pct(s.avgPinClvPct), note: `${s.pinGraded} with it kept` },
+  ], { size: 32 })}
+${rows}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'The same alert went to everyone. Proven only where RESULTS proves it; a profit only where RESULTS shows one. 21+.' });
 }
 
 // ── PNG: resvg with the bundled fonts, loaded once; null when it is not there ──
@@ -423,7 +470,7 @@ p { color:#94a3b8; margin:0 0 10px; overflow-wrap:anywhere; }
 .btns { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
 a.btn { font:700 12px 'JetBrains Mono', ui-monospace, Menlo, monospace; letter-spacing:.08em; color:#06110d; background:#34d399; border-radius:6px; padding:10px 14px; text-decoration:none; }
 a.btn.ghost { color:#34d399; background:transparent; border:1px solid rgba(52,211,153,.45); }
-.note { font-size:12px; color:#64748b; }
+.note { font-size:12px; color:#8391a7; }
 </style>
 </head>
 <body>
@@ -449,5 +496,5 @@ function safeOpen(to) {
   return '/app';
 }
 
-module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, digestCard, emptyCard, pickSeries, chartSvg,
+module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, boardCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
   renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };

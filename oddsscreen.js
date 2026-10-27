@@ -216,8 +216,12 @@ function stripPro(screen) {
 // ── line history ──
 // key `${gameId}|${market}|${side}` → { id, game, start, label, pts: [[t, point, fair, { venue: american }]] }
 // A point is added when anything moved and minGapMs has passed, or every
-// heartbeatMs regardless; a game is dropped keepMs after its start.
-function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 400 } = {}) {
+// heartbeatMs regardless; a game is dropped keepMs after its start, handed to
+// onDrop first (linehist.js keeps it 30 days). Past maxPts the older reads
+// are thinned to the biggest moves (linehist.thin), never cut from the front,
+// so the opening price stays.
+function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 400, onDrop = null } = {}) {
+  const { thin, gameDiff } = require('./linehist');
   const series = new Map();
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   function observe(screen, now = Date.now()) {
@@ -230,18 +234,32 @@ function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 
       let x = series.get(id);
       if (!x) { x = { id, game: g.id, start: g.start, label: s.label, market: m.key, pts: [] }; series.set(id, x); }
       x.start = g.start; x.label = s.label;
+      if (g.league) x.league = g.league;
+      if (g.leagueLabel) x.leagueLabel = g.leagueLabel;
+      if (g.home && g.away) x.event = `${g.away} @ ${g.home}`;
       const last = x.pts[x.pts.length - 1];
       const moved = !last || last[1] !== pt[1] || last[2] !== pt[2] || !same(last[3], pt[3]);
       if (!last || (moved && now - last[0] >= minGapMs) || now - last[0] >= heartbeatMs) {
         x.pts.push(pt); added++;
-        if (x.pts.length > maxPts) x.pts.splice(0, x.pts.length - maxPts);
+        x.reads = (x.reads || x.pts.length - 1) + 1;
+        if (x.pts.length > maxPts) shrink(x);
       }
     }
     prune(now);
     return added;
   }
+  // the newest quarter stays whole; the rest is thinned to make room
+  function shrink(x) {
+    const recent = Math.floor(maxPts / 4);
+    x.pts = thin(x.pts, Math.floor(maxPts * 0.8), { diff: gameDiff, start: x.start, protectFrom: x.pts.length - recent });
+    x.thinned = true;
+  }
   function prune(now = Date.now()) {
-    for (const [k, x] of series) if (ms(x.start) != null && ms(x.start) < now - keepMs) series.delete(k);
+    for (const [k, x] of series) {
+      if (ms(x.start) == null || ms(x.start) >= now - keepMs) continue;
+      series.delete(k);
+      if (onDrop) { try { onDrop(x); } catch { /* the archive's problem, not the live board's */ } }
+    }
   }
   const forGame = id => [...series.values()].filter(x => x.game === String(id));
   const dump = () => [...series.values()];
@@ -249,10 +267,11 @@ function createHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 
     for (const d of docs || []) {
       if (!d || !d.id || !Array.isArray(d.pts)) continue;
       const had = series.get(d.id);
-      if (!had) { series.set(d.id, { ...d, pts: d.pts.slice(-maxPts) }); continue; }
+      if (!had) { const x = { ...d, pts: d.pts.slice() }; if (x.pts.length > maxPts) shrink(x); series.set(d.id, x); continue; }
       // a restore after the live series started: older points go in front
       const first = had.pts[0]?.[0] ?? Infinity;
-      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts].slice(-maxPts);
+      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts];
+      if (had.pts.length > maxPts) shrink(had);
     }
   }
   return { observe, prune, forGame, dump, load, size: () => series.size, points: () => [...series.values()].reduce((a, x) => a + x.pts.length, 0) };

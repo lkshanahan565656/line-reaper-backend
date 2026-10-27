@@ -26,8 +26,8 @@
   --border2: #263044;
   --text: #e2e8f0;
   --text2: #94a3b8;
-  --muted: #64748b;
-  --muted2: #475569;
+  --muted: #8391a7;
+  --muted2: #7b8a9f;
   --green: #10b981;
   --green2: #34d399;
   --red: #f87171;
@@ -242,6 +242,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
     <a class="btn sm" href="/app?start=login" style="display:{{LOGIN_DISPLAY}}">Log in</a>
   </div>
 </nav>
+<main id="main" tabindex="-1">
 
 
 <header class="hero">
@@ -354,7 +355,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <thead><tr><th>Kind of bet</th><th class="n">Graded</th><th class="n hide-sm">Beat close</th><th class="n">CLV</th><th class="n hide-sm">After 2 min</th><th class="n">Profit</th></tr></thead>
         <tbody><tr><td colspan="6" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
       </table>
-      <p class="track-note">Read live from the app's close scoreboard. CLV is the average closing line value at the flagged price; after 2 min is the same at the price two minutes later. Profit is the units won at one unit a game: it shows "not shown yet" until the results clear chance, because beating the close comes first and profit takes far more bets to show. <a class="textlink" href="/app?start=results">See every record in the app, losers included</a>.</p>
+      <p class="track-note">Read live from the app's close scoreboard. CLV is the average closing line value at the flagged price; after 2 min is the same at the price two minutes later. Profit is the units won at one unit a game: it shows "not shown yet" until the results clear chance, because beating the close comes first and profit takes far more bets to show. <a class="textlink" href="/app?start=results">See every record in the app, losers included</a>, <a class="textlink" href="/alerts">every alert we sent, graded the same way</a>, and <a class="textlink" href="/r#board">the bettor leaderboard: published records ranked by CLV against Pinnacle's close</a>.</p>
 
       <div class="tx" id="texas">
         <div class="num" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px;margin:36px 0 12px">WORKS IN TEXAS</div>
@@ -394,13 +395,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <div class="intro"></div>
         <p class="pdesc">See how it works and follow the record before you pay anything.</p>
         <ul>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Top 3 Best Plays</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The odds screen with every venue's price</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>How many prices sit above the fair right now</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Sharp Tail alerts on a 30 minute delay</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The profit on every open arb</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Esports match boards</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>All calculators, My Bets and the full public record</li>
+          {{FREE_LIST}}
         </ul>
         <a class="btn" href="/app?start=signup">{{SIGNUP_LABEL}}</a>
       </div>
@@ -410,18 +405,12 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <div class="intro" style="visibility:{{INTRO_VISIBILITY}}">${{INTRO_PRICE}} a month for the first {{INTRO_SEATS}} members</div>
         <p class="pdesc">The full screen: every fair price, EV and ranked row.</p>
         <ul>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every Best Play, ranked by its record</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>The fair price, EV and line history on the odds screen</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>The Exchange Shopper ranked list, with fill size at your stake</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Real-time Sharp Tail (research) with the trader and price</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every arb and middle with its legs, prices and stakes</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Props and esports model boards, tagged model, not an edge</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Phone push alerts, the same text for every member</li>
+          {{PRO_LIST}}
         </ul>
         <a class="btn primary" href="/app?start=pro">Get Pro</a>
       </div>
     </div>
-    <p class="price-fine">Billed monthly through Stripe. Cancel any time from your account. See the <a href="/refunds">refund policy</a>.</p>
+    <p class="price-fine">Billed monthly through Stripe. Cancel any time from your account. Paying buys the tool, not an edge: every member gets the same alerts and the same units. <a href="/pricing">Compare the plans in full</a>, or see the <a href="/refunds">refund policy</a>.</p>
   </div>
 </section>
 
@@ -458,13 +447,14 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
   </div>
 </section>
 
+</main>
 <footer>
   <div class="wrap">
     <div class="foot-top">
       <a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a>
       <div class="foot-links">
         <a href="/app?start=app">App</a>
-        <a href="#pricing">Pricing</a>
+        <a href="/pricing">Pricing</a>
         <a href="/learn">Learn</a>
         <a href="/leagues">Leagues</a>
         <a href="/nfl">NFL</a>

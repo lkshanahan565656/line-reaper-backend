@@ -15,7 +15,7 @@ const { esc } = learn;
 
 const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e0b', kalshi: '#10b981', polymarketus: '#a78bfa', gemini: '#22d3ee', matchbook: '#f472b6',
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
-const colorOf = v => VENUE_COLOR[v] || '#64748b';
+const colorOf = v => VENUE_COLOR[v] || '#8391a7';
 const cleanOrigin = o => String(o || '').replace(/[^\w.:/-]/g, '').replace(/\/+$/, '');
 // American odds in the widget's format (data-odds: american, decimal, fractional or probability)
 const am = (a, fmt = 'american') => (a == null || !Number.isFinite(Number(a)) ? '—' : oddsFmt.fromAm(Number(a), fmt));
@@ -26,7 +26,7 @@ const usd = n => `$${Math.round(n).toLocaleString('en-US')}`;
 const impliedOf = a => (a == null || !Number.isFinite(a) || a === 0 ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 
 const WIDGET_CSS = `
-:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
+:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#8391a7; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
 * { box-sizing:border-box; }
 html, body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
 .w { border:1px solid var(--border); border-radius:8px; background:var(--card); padding:10px 12px; min-width:0; overflow:hidden; }
@@ -125,8 +125,8 @@ function chartSvg(points, { w = 420, h = 210, withFair = true } = {}) {
   const ticks = [0, 0.5, 1].map(f => y0 + f * (y1 - y0));
   const xt = [x0, (x0 + x1) / 2, x1];
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Implied win chance at each venue over time">
-${ticks.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#1e2738"/><text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">${(v * 100).toFixed(1)}%</text>`).join('')}
-${xt.map((t, i) => `<text x="${X(t).toFixed(1)}" y="${h - 6}" fill="#64748b" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}" font-family="monospace">${new Date(t).toISOString().slice(11, 16)}</text>`).join('')}
+${ticks.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#1e2738"/><text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" fill="#8391a7" font-size="10" text-anchor="end" font-family="monospace">${(v * 100).toFixed(1)}%</text>`).join('')}
+${xt.map((t, i) => `<text x="${X(t).toFixed(1)}" y="${h - 6}" fill="#8391a7" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}" font-family="monospace">${new Date(t).toISOString().slice(11, 16)}</text>`).join('')}
 ${fair.length ? `<path d="${path(fair)}" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>` : ''}
 ${lines.map(l => `<path d="${path(l.pts)}" fill="none" stroke="${colorOf(l.v)}" stroke-width="2"/>`).join('')}
 </svg>`;
@@ -242,6 +242,7 @@ code { font:13px var(--mono); color:#cbd5e1; overflow-wrap:anywhere; }
 .btn { font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); background:transparent; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; cursor:pointer; }
 .btn:hover { border-color:var(--green2); }
 .btn.warn { color:#fca5a5; border-color:rgba(252,165,165,.4); }
+a.btn { display:inline-block; text-decoration:none; }
 .keybox { border:1px solid var(--border); border-radius:10px; background:var(--card); padding:14px 16px; margin:0 0 18px; }
 .keybox input { width:100%; max-width:320px; background:#05070b; color:var(--text); border:1px solid var(--border2); border-radius:6px; padding:8px 10px; font:14px var(--mono); }
 .keybox label { display:block; font:600 10px var(--mono); letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin:0 0 4px; }
@@ -255,12 +256,12 @@ code { font:13px var(--mono); color:#cbd5e1; overflow-wrap:anywhere; }
 .h3s { font:600 11px var(--mono); letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin:10px 0 4px; overflow-wrap:anywhere; }
 .h3s code { text-transform:none; letter-spacing:0; font-size:11px; }
 `;
-function developersPage({ origin = '', endpoints = [], examples = {}, limits, widgetLimit, keyCreate, licences = null, bettor = null, feedHandles = 10 } = {}) {
+function developersPage({ origin = '', endpoints = [], examples = {}, limits, widgetLimit, keyCreate, licences = null, planLimits = null, bettor = null, feedHandles = 10 } = {}) {
   const o = cleanOrigin(origin);
   const exampleOf = p => {
     const ex = examples[p];
     if (!ex) return '<p class="note">No live example: this endpoint needs a value from another (an id or a week).</p>';
-    return `<div class="h3s">Live example: <code>GET ${esc(ex.url)}</code>, read ${esc(hhmm(ex.at))}</div><pre data-ex="${esc(p)}">${esc(JSON.stringify(ex.body, null, 2))}</pre>`;
+    return `<div class="h3s">Live example: <code>GET ${esc(ex.url)}</code>, read ${esc(hhmm(ex.at))}</div><pre data-ex="${esc(p)}" tabindex="0" aria-label="Example response from ${esc(p)}">${esc(JSON.stringify(ex.body, null, 2))}</pre>`;
   };
   const eps = endpoints.map(e => `<section class="ep" id="ep-${esc(e.path.replace(/[^\w]+/g, '-'))}">
 <h3>${esc(e.title)}</h3>
@@ -274,15 +275,15 @@ ${examples[e.path] ? `<button class="btn" type="button" data-try="${esc(examples
   const frame = (kind, q, h) => `<iframe src="${o}/embed/${kind}${q}" title="Line Reaper ${kind.replace('-', ' ')}" style="width:100%;height:${h}px;border:0" loading="lazy"></iframe>`;
   const widget = (kind, title, about, attrs, q, h) => `<div class="wg"><h3 style="margin:0 0 6px">${esc(title)}</h3><p style="color:var(--text2);font-size:14px">${esc(about)}</p>
 <iframe src="/embed/${kind}${q}${q ? '&' : '?'}_id=pv-${kind}" data-lr-id="pv-${kind}" title="${esc(title)} preview" style="height:${h}px" loading="lazy"></iframe>
-<div class="h3s">With the script (sizes itself)</div><pre>${esc(snippet(kind, attrs))}</pre><button class="btn" type="button" data-copy="${esc(snippet(kind, attrs))}">COPY</button>
-<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>${esc(frame(kind, q, h))}</pre><button class="btn" type="button" data-copy="${esc(frame(kind, q, h))}">COPY</button></div>`;
+<div class="h3s">With the script (sizes itself)</div><pre tabindex="0">${esc(snippet(kind, attrs))}</pre><button class="btn" type="button" data-copy="${esc(snippet(kind, attrs))}">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre tabindex="0">${esc(frame(kind, q, h))}</pre><button class="btn" type="button" data-copy="${esc(frame(kind, q, h))}">COPY</button></div>`;
   // a bettor's record: the preview shows the record with the most picks graded on the public list, when there is one
   const bh = bettor && /^[a-z0-9_]{3,20}$/.test(bettor) ? bettor : null;
   const bSnip = snippet('record', ` data-handle="${bh || 'your_handle'}"`), bFrame = frame('record', `?handle=${bh || 'your_handle'}`, 300);
   const bettorBlock = `<div class="wg" id="widget-bettor"><h3 style="margin:0 0 6px">A bettor's record</h3><p style="color:var(--text2);font-size:14px">Any published record at /r/&lt;handle&gt;: picks logged before their start, each app and venue against Pinnacle's close with its own label (proven only on the strict rule, never pooled), picks logged late counted apart, and no profit. Put the handle in data-handle. A bettor gets theirs from MY SLIPS &gt; RECORD &gt; WIDGET.</p>
 ${bh ? `<iframe src="/embed/record?handle=${bh}&_id=pv-bettor" data-lr-id="pv-bettor" title="A bettor's record preview" style="height:300px" loading="lazy"></iframe><p class="note">Preview: @${esc(bh)}, the record with the most picks graded on the <a href="/r">public list</a>.</p>` : '<p class="note">No record on the <a href="/r">public list</a> has a pick logged before its start yet, so there is nothing to preview. The snippet works for any published handle.</p>'}
-<div class="h3s">With the script (sizes itself)</div><pre>${esc(bSnip)}</pre><button class="btn" type="button" data-copy="${esc(bSnip)}">COPY</button>
-<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>${esc(bFrame)}</pre><button class="btn" type="button" data-copy="${esc(bFrame)}">COPY</button></div>`;
+<div class="h3s">With the script (sizes itself)</div><pre tabindex="0">${esc(bSnip)}</pre><button class="btn" type="button" data-copy="${esc(bSnip)}">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre tabindex="0">${esc(bFrame)}</pre><button class="btn" type="button" data-copy="${esc(bFrame)}">COPY</button></div>`;
   const lic = licences && licences.kalshi === false ? '<li>Kalshi prices are left out of the API and widgets until Kalshi gives written permission to show its data to other people; Polymarket the same.</li>' : '';
   return `<!doctype html>
 <html lang="en">
@@ -321,9 +322,10 @@ ${lic}</ul>
 
 <h2 id="auth">Using it</h2>
 <p>Send the key in an <code>X-API-Key</code> header (or as <code>?key=</code> where a header is awkward). Any site may call it from a browser: CORS is open to every origin.</p>
-<pre>curl -H "X-API-Key: lr_…" ${esc(o)}/api/v1/best-prices?league=nfl</pre>
+<pre tabindex="0">curl -H "X-API-Key: lr_…" ${esc(o)}/api/v1/best-prices?league=nfl</pre>
 <ul>
-<li><b>Limits:</b> ${limits.perMinute} calls a minute and ${limits.perDay.toLocaleString('en-US')} a day (UTC) per key. Every answer says where you are in <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code> (seconds) and <code>X-RateLimit-Daily-Remaining</code>. Over the limit is a 429 with <code>Retry-After</code>. Counts restart when the server redeploys.</li>
+<li><b>Limits:</b> ${planLimits ? `Pro keys ${planLimits.pro.apiPerMinute} calls a minute and ${planLimits.pro.apiPerDay.toLocaleString('en-US')} a day (UTC); Free keys ${planLimits.free.apiPerMinute} a minute and ${planLimits.free.apiPerDay.toLocaleString('en-US')} a day. A key takes the plan of the account it was made from (<a href="/pricing">plans</a>)` : `${limits.perMinute} calls a minute and ${limits.perDay.toLocaleString('en-US')} a day (UTC) per key`}. Every answer says where you are in <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code> (seconds) and <code>X-RateLimit-Daily-Remaining</code>. Over the limit is a 429 with <code>Retry-After</code>. Counts restart when the server redeploys.</li>
+<li id="lines"><b>Line history:</b> every market's prices at each venue we read, Pinnacle included, kept 30 days after the start, as JSON or CSV (<code>?format=csv</code>) from <code>/api/v1/lines</code>. ${planLimits ? `Pro keys read all ${planLimits.pro.historyDays} days; Free keys the last ${planLimits.free.historyDays}.` : 'Every key reads all 30 days.'} The same charts are public at <a href="/lines">/lines</a>.</li>
 <li><b>Caching:</b> each answer has an <code>ETag</code>. Send it back in <code>If-None-Match</code> and an unchanged answer is a 304 with no body. Most data changes about once a minute.</li>
 <li><b>Errors</b> are JSON: <code>{"error":{"code":"…","message":"…"}}</code> with 400 (bad parameter), 401 (no key or an unknown one), 404 and 429.</li>
 <li><b>New keys:</b> at most ${keyCreate.perHour} an hour from one address.</li>
@@ -360,6 +362,58 @@ ${eps}
 <div id="frOut" class="msg">Connect a Discord webhook above first: the records ride on it.</div>
 </div>
 <p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>PUT /api/v1/feed/records</code> with <code>{"handles":["…"],"results":true}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
+
+<h2 id="bot">Discord and Telegram bots: commands in your chat</h2>
+<p>Run the Line Reaper slash commands on your own server, under your own Discord application. Members type a command and the bot answers in the channel with the same public numbers as this API.</p>
+<ul class="rules">
+<li><code>/odds game</code>: a game's best price at each venue (for the server's state), with Pinnacle's price and a line history link.</li>
+<li><code>/props player</code>: each pick'em app's line for a player, beside Pinnacle's where Pinnacle hangs the prop.</li>
+<li><code>/moves</code>: today's biggest line moves and which venues followed. <code>/lines market</code>: the markets we keep, each with a chart and a CSV.</li>
+<li><code>/record</code>: the public record as RESULTS says it, or <code>/record handle</code> for a bettor's verified record.</li>
+<li><code>/settings</code>: the server's state (only venues a resident there can use) and odds format. Manage Server only.</li>
+</ul>
+<ol class="steps">
+<li>At <b>discord.com/developers/applications</b> tap <b>New Application</b>, name it and tap <b>Create</b>.</li>
+<li>On <b>General Information</b>, copy the <b>Application ID</b> and the <b>Public Key</b> into the boxes below.</li>
+<li>Open <b>Bot</b>, tap <b>Reset Token</b>, then <b>Copy</b>, and paste it below. It is used once to add the commands and is never kept.</li>
+<li>Tap <b>CONNECT BOT</b>. The answer gives your <b>Interactions Endpoint URL</b>: paste it on <b>General Information</b> and tap <b>Save Changes</b> (Discord checks it there and then).</li>
+<li>Open the install link from the answer, pick your server and tap <b>Authorize</b>. Type <code>/odds</code> in any channel.</li>
+</ol>
+<ul class="rules">
+<li>Everyone who asks the same thing gets the same answer. Nothing is sized or picked per person, and nothing places a bet.</li>
+<li>Each command is one API call on this key's plan, so the key's limits apply. A record is called proven only where RESULTS proves it, with a profit only where RESULTS shows one.</li>
+</ul>
+<div class="keybox">
+<form id="bt" autocomplete="off">
+<div class="row2"><div style="flex:1 1 200px;min-width:0"><label for="btApp">Application ID</label><input id="btApp" name="appId" inputmode="numeric" maxlength="22" placeholder="123456789012345678"></div>
+<div style="flex:1 1 200px;min-width:0"><label for="btKey">Public key</label><input id="btKey" name="publicKey" maxlength="64" placeholder="64 letters and digits"></div></div>
+<div class="row2" style="margin-top:8px"><div style="flex:1 1 260px;min-width:0"><label for="btTok">Bot token</label><input id="btTok" name="botToken" type="password" maxlength="100" placeholder="used once, never kept"></div><button class="btn" type="submit">CONNECT BOT</button></div>
+</form>
+<div class="row2" style="margin-top:8px"><button class="btn" type="button" id="btCheck">CHECK BOT</button><button class="btn warn" type="button" id="btOff">DISCONNECT BOT</button></div>
+<div id="btOut" class="msg">Needs a key from this page, saved in this browser.</div>
+</div>
+<p class="note">With code: <code>PUT /api/v1/bot/discord</code> with <code>{"appId":"…","publicKey":"…","botToken":"…"}</code>, <code>GET /api/v1/bot</code> and <code>DELETE /api/v1/bot/discord</code>, each with your <code>X-API-Key</code>.</p>
+
+<h3 id="bot-telegram">Telegram bot: the same commands</h3>
+<p>The same commands in a Telegram group or a private chat, under your own Telegram bot: <code>/odds Lakers</code>, <code>/props Mahomes</code>, <code>/moves nba line 3h</code>, <code>/record</code> or <code>/record @handle</code>, <code>/lines Lakers</code>, <code>/settings TX decimal</code> (a group admin only) and <code>/help</code>.</p>
+<ol class="steps">
+<li>In Telegram, open a chat with <b>@BotFather</b> (the one with the blue tick) and tap <b>Start</b>.</li>
+<li>Send <code>/newbot</code>, then a display name (like Line Reaper Odds), then a username that ends in <b>bot</b>.</li>
+<li>BotFather answers with a token like <code>123456789:AA…</code>. Tap it to copy, paste it below and tap <b>CONNECT TELEGRAM BOT</b>. The server points the bot at your own webhook and adds the command menu.</li>
+<li>Open your bot from the answer and send <code>/odds Lakers</code>, or tap <b>ADD TO A GROUP</b> and pick the group. In the group an admin can set the state with <code>/settings TX</code>.</li>
+</ol>
+<ul class="rules">
+<li>The token is kept sealed on the server, only to send the answers; DISCONNECT removes it and stops the webhook.</li>
+<li>Each command is one API call on this key's plan, and the same answer goes to everyone who asks the same thing. Nothing places a bet.</li>
+</ul>
+<div class="keybox">
+<form id="tg" autocomplete="off">
+<div class="row2"><div style="flex:1 1 260px;min-width:0"><label for="tgTok">Telegram bot token</label><input id="tgTok" name="botToken" type="password" maxlength="100" placeholder="123456789:AA…"></div><button class="btn" type="submit">CONNECT TELEGRAM BOT</button></div>
+</form>
+<div class="row2" style="margin-top:8px"><button class="btn" type="button" id="tgCheck">CHECK TELEGRAM BOT</button><button class="btn warn" type="button" id="tgOff">DISCONNECT TELEGRAM BOT</button></div>
+<div id="tgOut" class="msg">Needs a key from this page, saved in this browser.</div>
+</div>
+<p class="note">With code: <code>PUT /api/v1/bot/telegram</code> with <code>{"botToken":"…"}</code>, <code>GET /api/v1/bot</code> and <code>DELETE /api/v1/bot/telegram</code>, each with your <code>X-API-Key</code>.</p>
 
 <h2 id="widgets">Widgets</h2>
 <p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-handle</code> (a bettor's record), <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-state</code> (a two-letter state: only venues a resident can use), <code>data-game</code>, <code>data-side</code> and <code>data-odds</code> (american, decimal, fractional or probability; American when none).</p>
@@ -465,6 +519,73 @@ ${bettorBlock}
       .catch(function () { frOut.className = 'msg err'; frOut.textContent = 'Could not reach the server. Try again.'; });
   });
   document.getElementById('fdOff').addEventListener('click', function () { fdCall('DELETE', '/api/v1/feed/discord'); });
+  // the Discord bot: connect (the token goes to the server once), check, disconnect
+  var btOut = document.getElementById('btOut');
+  function btShow(j) {
+    var d = j && j.discord;
+    if (!d) return;
+    if (d.connected) btOut.innerHTML = 'Connected: application ' + esc(d.appId) + ', since ' + esc(String(d.addedAt).slice(0, 10)) + '. Last command ' + (d.lastUseAt ? esc(String(d.lastUseAt).slice(0, 16).replace('T', ' ')) + ' UTC' : 'not yet') + '.<br>Interactions Endpoint URL:<div class="keyout" id="btEndpoint">' + esc(d.endpoint) + '</div><button class="btn" type="button" data-copy="' + esc(d.endpoint) + '">COPY URL</button> <a class="btn" href="' + esc(d.install) + '" target="_blank" rel="noopener">INSTALL ON A SERVER</a>';
+    else btOut.textContent = 'No Discord bot on this key.';
+  }
+  function btCall(method, path, body) {
+    var k = get();
+    if (!k) { btOut.className = 'msg err'; btOut.textContent = 'Make a key first (top of the page): the bot is tied to it.'; document.getElementById('kname').focus(); return; }
+    btOut.className = 'msg'; btOut.textContent = method === 'PUT' ? 'Adding the commands with Discord…' : 'Asking…';
+    var h = { 'X-API-Key': k };
+    if (body) h['Content-Type'] = 'application/json';
+    fetch(path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { btOut.className = 'msg err'; btOut.textContent = j.error.message; return; }
+        btShow(j);
+        if (j.note) btOut.insertAdjacentText('afterbegin', j.note + ' ');
+      })
+      .catch(function () { btOut.className = 'msg err'; btOut.textContent = 'Could not reach the server. Try again.'; });
+  }
+  document.getElementById('bt').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var a = document.getElementById('btApp').value.trim(), pk = document.getElementById('btKey').value.trim(), t = document.getElementById('btTok').value.trim();
+    if (!/^[0-9]{15,22}$/.test(a)) { btOut.className = 'msg err'; btOut.textContent = 'The Application ID is the long number on General Information (step 2).'; return; }
+    if (!/^[0-9a-fA-F]{64}$/.test(pk)) { btOut.className = 'msg err'; btOut.textContent = 'The Public Key is 64 letters and digits on General Information (step 2).'; return; }
+    if (!t) { btOut.className = 'msg err'; btOut.textContent = 'Paste the bot token from Bot > Reset Token (step 3).'; return; }
+    document.getElementById('btTok').value = '';
+    btCall('PUT', '/api/v1/bot/discord', { appId: a, publicKey: pk, botToken: t });
+  });
+  document.getElementById('btCheck').addEventListener('click', function () { btCall('GET', '/api/v1/bot'); });
+  document.getElementById('btOff').addEventListener('click', function () { btCall('DELETE', '/api/v1/bot/discord'); });
+  // the Telegram bot: connect (the token is sealed on the server), check, disconnect
+  var tgOut = document.getElementById('tgOut');
+  function tgShow(j) {
+    var d = j && j.telegram;
+    if (!d) return;
+    if (d.connected) tgOut.innerHTML = 'Connected: ' + (d.username ? '@' + esc(d.username) : 'bot ' + esc(d.botId)) + ', since ' + esc(String(d.addedAt).slice(0, 10)) + '. Last command ' + (d.lastUseAt ? esc(String(d.lastUseAt).slice(0, 16).replace('T', ' ')) + ' UTC' : 'not yet') + '.' +
+      (d.open ? '<br><a class="btn" href="' + esc(d.open) + '" target="_blank" rel="noopener">OPEN THE BOT</a> <a class="btn" href="' + esc(d.addToGroup) + '" target="_blank" rel="noopener">ADD TO A GROUP</a>' : '');
+    else tgOut.textContent = 'No Telegram bot on this key.';
+  }
+  function tgCall(method, path, body) {
+    var k = get();
+    if (!k) { tgOut.className = 'msg err'; tgOut.textContent = 'Make a key first (top of the page): the bot is tied to it.'; document.getElementById('kname').focus(); return; }
+    tgOut.className = 'msg'; tgOut.textContent = method === 'PUT' ? 'Connecting the bot with Telegram…' : 'Asking…';
+    var h = { 'X-API-Key': k };
+    if (body) h['Content-Type'] = 'application/json';
+    fetch(path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { tgOut.className = 'msg err'; tgOut.textContent = j.error.message; return; }
+        tgShow(j);
+        if (j.note) tgOut.insertAdjacentText('afterbegin', j.note + ' ');
+      })
+      .catch(function () { tgOut.className = 'msg err'; tgOut.textContent = 'Could not reach the server. Try again.'; });
+  }
+  document.getElementById('tg').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = document.getElementById('tgTok').value.trim();
+    if (!/^[0-9]{5,15}:[A-Za-z0-9_-]{30,60}$/.test(t)) { tgOut.className = 'msg err'; tgOut.textContent = 'The token is what @BotFather sent after /newbot: numbers, a colon, then letters (step 3).'; return; }
+    document.getElementById('tgTok').value = '';
+    tgCall('PUT', '/api/v1/bot/telegram', { botToken: t });
+  });
+  document.getElementById('tgCheck').addEventListener('click', function () { tgCall('GET', '/api/v1/bot'); });
+  document.getElementById('tgOff').addEventListener('click', function () { tgCall('DELETE', '/api/v1/bot/telegram'); });
   document.getElementById('mineForget').addEventListener('click', function () { set(null); mine(); out.className = 'msg'; out.textContent = 'Forgotten in this browser. The key still works wherever you use it.'; });
   document.addEventListener('click', function (e) {
     var c = e.target.closest && e.target.closest('[data-copy]');
