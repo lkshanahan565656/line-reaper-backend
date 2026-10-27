@@ -51,6 +51,11 @@ if (!OWLS_API_KEY) console.warn('OWLS_API_KEY is not set: Owls feeds will fail a
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
 
 app.use(cors({ origin: '*' }));
+// gzip/brotli on every answer big enough to gain (the odds screen is ~400 KB
+// raw, ~40 KB compressed). Event streams are left alone so each event still
+// leaves at once; answers that set their own Content-Encoding pass through.
+const compression = require('compression');
+app.use(compression({ filter: (req, res) => !/text\/event-stream/i.test(String(res.getHeader('Content-Type') || '')) && compression.filter(req, res) }));
 // focus ring, skip link and reduced motion on every server-drawn page (a11y.js); /app has its own
 app.use(require('./a11y').middleware(req => req.path === '/app'));
 
@@ -4926,16 +4931,26 @@ const publicJobs = jobs => Object.fromEntries(Object.entries(jobs).map(([k, j]) 
 // The app itself. Served from here it talks to this same server, so one
 // deploy ships both and there's no backend URL to keep in sync.
 const APP_FILE = path.join(__dirname, 'public', 'index.html');
-let appHtml = null;
+const APP_JS = path.join(__dirname, 'public', 'app.js');
+const appbundle = require('./appbundle');
+// The page (public/index.html) and its script (public/app.js) are read once.
+// The script goes out as /assets/app.<hash>.js: the hash changes with every
+// deploy that changes it, so a browser keeps it for a year and a revisit only
+// revalidates the small page. The script is compressed once (appbundle.js).
+let appBundle = null;
 function loadApp() {
-  if (appHtml) return appHtml;
+  if (appBundle) return appBundle.html;
   try {
-    appHtml = fs.readFileSync(APP_FILE, 'utf8')
+    const js = fs.readFileSync(APP_JS, 'utf8')
       .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;')
-      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`)
+      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`);
+    const hash = require('crypto').createHash('sha256').update(js).digest('hex').slice(0, 12);
+    const html = fs.readFileSync(APP_FILE, 'utf8')
+      .replace('<script src="/app.js"></script>', `<script src="/assets/app.${hash}.js"></script>`)
       .replace('/*@@LRVENUE@@*/', () => fs.readFileSync(path.join(__dirname, 'venuelinks.js'), 'utf8').replace(/<\/script/gi, '<\\/script'));
-  } catch { appHtml = null; }
-  return appHtml;
+    appBundle = { html, hash, packed: appbundle.pack(js) };
+  } catch { appBundle = null; }
+  return appBundle?.html ?? null;
 }
 legal.mount(app);
 // The Learn pages (learn.js): no-vig, EV, CLV, hold and arbs, middles, Kelly,
@@ -5026,6 +5041,16 @@ app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
   res.set('Cache-Control', 'no-cache').type('html').send(html);
+});
+// The app's script. The current hash is kept a year; any other hash (a page
+// cached from before a deploy) gets today's script, revalidated every time.
+app.get('/assets/app.:hash.js', (req, res) => {
+  if (!loadApp()) return res.sendStatus(404);
+  const { packed, hash } = appBundle, current = req.params.hash === hash;
+  res.set({ 'Cache-Control': current ? 'public, max-age=31536000, immutable' : 'no-cache', Vary: 'Accept-Encoding' }).type('application/javascript');
+  const enc = appbundle.pick(packed, req.get('accept-encoding'));
+  if (!enc) return res.send(packed.raw);
+  res.set('Content-Encoding', enc).send(enc === 'br' ? packed.br : packed.gz);
 });
 // The calculator math the TOOLS tab runs in the browser (the same file the
 // tests check), so the page and the tests can't drift apart.
@@ -10892,6 +10917,8 @@ if (require.main === module || process.env.LR_DESKTOP) {
   resultsBackup.load().then(() => ops.mark('backup read'), () => {});
   const server = app.listen(PORT, async () => {
     ops.mark('listening');
+    // read the app and start compressing its script now, so the first visitor gets brotli
+    if (loadApp()) appBundle.packed.ready.then(() => ops.mark('app compressed'));
     console.log(`Line Reaper v${VERSION} on port ${PORT} (${ops.state().boot.map(b => `${b.mark} ${b.ms} ms`).join(', ')})`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
@@ -10947,6 +10974,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
+  appBundleReady: () => (loadApp(), appBundle ? appBundle.packed.ready : Promise.resolve()),
   alertLog, tgConnectOwner, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
   app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,

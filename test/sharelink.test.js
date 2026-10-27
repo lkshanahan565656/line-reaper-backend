@@ -1,12 +1,10 @@
-// Share links (public/index.html, LRShare): a screen packed after the # of the
+// Share links (public/app.js, LRShare): a screen packed after the # of the
 // app's URL. The block is pure, so it runs here on its own.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
 const vm = require('vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const html = require('./app-source').both;
 const block = html.match(/^\/\/ LR_SHARE_BEGIN\n([\s\S]*?)^\/\/ LR_SHARE_END$/m)[1];
 const S = vm.runInNewContext(`${block}\nLRShare`, { URLSearchParams });
 const TABS = ['best', 'odds', 'tail', 'results', 'esports', 'props', 'betlog', 'myslips'];
