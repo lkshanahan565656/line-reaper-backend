@@ -327,6 +327,32 @@ ${lines.map(([k, v, col], i) => `${txt(48, 296 + i * 58, k.toUpperCase(), { size
   return frame({ kind, label: { text: state, tone: 'plain' }, readAt: d.builtAt, origin, body, foot: 'Proven only where RESULTS proves it; units are a profit only where RESULTS shows one. 21+.' });
 }
 
+// ── the alert history (alertlog.view): what was sent, and how its bets graded ──
+// PROVEN only where a label row is proven on RESULTS; the pooled CLV is never a claim
+const ALERT_TONE = { proven: 'proven', building: 'lead', research: 'research', 'losing to the close': 'losing' };
+function alertsCard(v, { origin = '' } = {}) {
+  const s = v.summary;
+  const kind = 'Alert history';
+  const since = v.startedAt ? String(v.startedAt).slice(0, 10) : 'storing began';
+  if (!s.alerts) return emptyCard({ kind, label: { text: 'NOTHING SENT YET', tone: 'plain' }, title: 'No alert sent since storing began',
+    why: `Every alert is kept from ${since}. The first one sent will show here, graded against the close.`, readAt: v.at, origin });
+  const proven = s.byLabel.find(r => r.label === 'proven');
+  const label = proven ? { text: 'INCLUDES A PROVEN KIND', tone: 'proven' } : { text: 'NOTHING PROVEN', tone: 'plain' };
+  const rows = s.byLabel.slice(0, 4).map((r, i) => {
+    const y = 300 + i * 52;
+    const u = r.units == null ? '' : r.profitShown ? ` · ${r.units > 0 ? '+' : ''}${r.units.toFixed(1)}u` : '';
+    return `${txt(48, y, String(r.label).toUpperCase(), { size: 18, weight: 700, fill: TONE[ALERT_TONE[r.label]] || C.text2, max: 300 })}${txt(360, y, `${r.alerts} alert${r.alerts === 1 ? '' : 's'} · ${r.graded} graded · CLV ${pct(r.avgClvPct)}${r.wins + r.losses ? ` · ${r.wins}-${r.losses}` : ''}${u}`, { size: 20, fill: C.text, max: W - 408 })}`;
+  }).join('\n');
+  const body = `${tileRow(124, [
+    { name: 'Alerts sent', value: s.alerts.toLocaleString('en-US'), note: `since ${since}` },
+    { name: 'Bets graded', value: String(s.graded), note: `${s.open} still open` },
+    { name: 'CLV at alert price', value: pct(s.avgClvPct), note: 'pooled: never a claim' },
+    { name: 'Vs Pinnacle close', value: pct(s.avgPinClvPct), note: `${s.pinGraded} with it kept` },
+  ], { size: 32 })}
+${rows}`;
+  return frame({ kind, label, readAt: v.at, origin, body, foot: 'The same alert went to everyone. Proven only where RESULTS proves it; a profit only where RESULTS shows one. 21+.' });
+}
+
 // ── PNG: resvg with the bundled fonts, loaded once; null when it is not there ──
 let resvg;
 function loadResvg() {
@@ -449,5 +475,5 @@ function safeOpen(to) {
   return '/app';
 }
 
-module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, digestCard, emptyCard, pickSeries, chartSvg,
+module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
   renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };

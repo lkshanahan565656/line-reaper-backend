@@ -57,6 +57,10 @@
       "why": "new in v3.186.0 (the weekly digest on RESULTS): the recording predates it, so the offline server answers from its own empty record; the digest flow checks the view against a labelled test body built by digest.js, and digest tests check the numbers"
     },
     {
+      "key": "^/api/alerts/history(\\?|$)",
+      "why": "new in v3.213.0 (RESULTS > ALERT HISTORY, alertlog.js): the recording predates it, so the offline server answers from its own empty log; the alert history flow checks the view against a labelled test body built by alertlog.js, and alertlog tests check the grades"
+    },
+    {
       "key": "^/api/ops$",
       "why": "the server's own ops counters (venue link taps since boot), read live from the offline server by the venue-link flow; never recorded"
     },

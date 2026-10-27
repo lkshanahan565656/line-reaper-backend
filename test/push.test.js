@@ -87,7 +87,7 @@ test('the installable app files are in place', () => {
 test('server mounts the app files and push routes', () => {
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   for (const r of ["get('/manifest.webmanifest'", "get('/sw.js'", "get('/icons/:name'", "get('/api/push/key'", "post('/api/push/subscribe'", "post('/api/push/unsubscribe'"]) assert.ok(server.includes(`app.${r}`), r);
-  assert.match(server, /withPush\(webhookOnly, push\)/);
+  assert.match(server, /withPush\(webhookOnly, push[,)]/);
 });
 
 const { kindOf, KIND_KEYS, keyIdOf } = require('../push');
@@ -107,7 +107,7 @@ const scripted = script => { // endpoint → list of statusCodes to throw before
 test('every alert title the server sends maps to a kind; unknown ones go to other', () => {
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   const titles = new Set();
-  for (const m of server.matchAll(/(?:postAlert|webhook\.send)\(.*,\s*'([^']+)'\)\s*;?\s*$/gm)) titles.add(m[1]);
+  for (const m of server.matchAll(/(?:postAlert|webhook\.send|\bsend)\(.*?,\s*'([^']+)'(?:,\s*\{.*\})?\)\s*;?\s*$/gm)) titles.add(m[1]);
   assert.ok(titles.size >= 10, `found ${[...titles].join(', ')}`);
   for (const t of titles) if (t !== 'Startup') assert.notEqual(kindOf(t), 'other', `${t} has no kind`);
   assert.equal(kindOf('Something new'), 'other');

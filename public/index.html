@@ -1009,6 +1009,10 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
 .dg-sum b { color:#e2e8f0; }
 .dg-tbl td:first-child { min-width:92px; max-width:120px; } .dg-tbl td:first-child .rec-lab { white-space:normal; display:block; }
 .dg-tbl td:nth-child(2) { min-width:150px; }
+.ah-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin:0 0 8px; min-width:0; }
+.ah-head { display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; font-size:12px; }
+.ah-sub { font-size:11px; color:var(--text2); }
+.ah-text { white-space:pre-wrap; word-break:break-word; font:11.5px/1.5 'JetBrains Mono', monospace; color:#cbd5e1; margin:6px 0; }
 @media (max-width:640px) { .rec-dl { margin-left:0; } .rec-tbl .why { max-width:200px; } }
 .acct-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:9999; padding:16px; }
 .acct-modal.open { display:flex; }
@@ -1907,6 +1911,15 @@ body::before { display:none !important; }
   <div class="row rec-bar rec-views">
     <button class="sport-chip active" data-recview="record" onclick="resultsView('record')">RECORD</button>
     <button class="sport-chip" data-recview="digest" onclick="resultsView('digest')" title="One summary a week of the same record, published Monday 13:00 UTC">WEEKLY DIGEST</button>
+    <button class="sport-chip" data-recview="alerts" onclick="resultsView('alerts')" title="Every alert the site sent, each bet graded against the close">ALERT HISTORY</button>
+  </div>
+  <div id="alertHistView" style="display:none">
+    <div class="row rec-bar">
+      <button class="sport-chip active" data-ahdays="0" onclick="alertHistDays(0)">ALL</button>
+      <button class="sport-chip" data-ahdays="7" onclick="alertHistDays(7)">7 DAYS</button>
+      <span class="rec-dl"><a class="sport-chip" href="/alerts" target="_blank" rel="noopener">OPEN SHARE PAGE</a><a class="sport-chip" id="ahJson" href="/api/alerts/history" download>JSON</a></span>
+    </div>
+    <div id="alertHistContent"></div>
   </div>
   <div id="digestView" style="display:none">
     <div class="row rec-bar" id="digestWeeks"></div>
@@ -3270,6 +3283,7 @@ function scOptions() {
   for (const lg of lgs.slice(0, 2)) out.push({ k: 'league', q: { league: lg, state: lrState, odds: scFmt() }, kind: 'LEAGUE', what: `${SC_LEAGUE_NAME[lg]}: games, ${lrState ? `${lrStateName()} venues` : 'venues'} and the best prices above the fair` });
   out.push({ k: 'record', q: {}, kind: 'RESULTS', what: 'The public record: what RESULTS proves, nothing more' });
   if (page?.id === 'page-results') out.push({ k: 'digest', q: {}, kind: 'WEEKLY DIGEST', what: "Last week's record digest" });
+  if (page?.id === 'page-results') out.push({ k: 'alerts', q: {}, kind: 'ALERT HISTORY', what: 'Every alert we sent, graded against the close' });
   return out;
 }
 const scQs = o => new URLSearchParams(Object.entries(o.q).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)])).toString();
@@ -5856,7 +5870,9 @@ function welcomeInit() {
     // a tab by name, e.g. ?start=results from the sales page's record
     // ?start=digest: RESULTS opened on the weekly digest
     if (start === 'digest') window.lrDigestStart = true;
-    const tabName = start === 'digest' ? 'results' : start.replace(/[^a-z]/g, '');
+    // ?start=alerts: RESULTS opened on the alert history
+    if (start === 'alerts') window.lrAlertsStart = true;
+    const tabName = start === 'digest' || start === 'alerts' ? 'results' : start.replace(/[^a-z]/g, '');
     const tabBtn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${tabName}',this)`);
     if (tabBtn) tabBtn.click();
     // the sales page's "Open the app" (or a tab link): a new device still gets the tour once
@@ -9973,11 +9989,63 @@ function renderGas() {
 const resultsUi = { days: 0, view: 'record', week: null, weeks: null };
 // RECORD (the public record) or WEEKLY DIGEST (digest.js, one summary a week of it)
 function resultsView(v) {
-  resultsUi.view = v === 'digest' ? 'digest' : 'record';
+  resultsUi.view = v === 'digest' || v === 'alerts' ? v : 'record';
   document.querySelectorAll('#page-results [data-recview]').forEach(b => b.classList.toggle('active', b.dataset.recview === resultsUi.view));
   document.getElementById('recView').style.display = resultsUi.view === 'record' ? '' : 'none';
   document.getElementById('digestView').style.display = resultsUi.view === 'digest' ? '' : 'none';
-  if (resultsUi.view === 'digest') loadDigest(); else loadResults();
+  document.getElementById('alertHistView').style.display = resultsUi.view === 'alerts' ? '' : 'none';
+  if (resultsUi.view === 'digest') loadDigest(); else if (resultsUi.view === 'alerts') loadAlertHistory(); else loadResults();
+}
+// ALERT HISTORY (alertlog.js via /api/alerts/history): every alert sent since
+// the site began storing them, each bet graded by its tracker on RESULTS' rule
+const ahUi = { days: 0 };
+function alertHistDays(d) {
+  ahUi.days = d;
+  document.querySelectorAll('#alertHistView [data-ahdays]').forEach(b => b.classList.toggle('active', +b.dataset.ahdays === d));
+  loadAlertHistory();
+}
+async function loadAlertHistory() {
+  const el = document.getElementById('alertHistContent');
+  const q = ahUi.days ? `?days=${ahUi.days}` : '';
+  document.getElementById('ahJson').href = `${BACKEND_URL}/api/alerts/history${q}`;
+  el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { renderAlertHistory(await tailGet(`/api/alerts/history${q}`)); }
+  catch (e) { el.innerHTML = tailEmpty('COULD NOT LOAD THE ALERT HISTORY', escAttr(e.old ? 'The alert history needs backend v3.213 or later.' : lrErr(e))); }
+}
+function renderAlertHistory(v) {
+  const el = document.getElementById('alertHistContent'), s = v.summary;
+  const pc = x => x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(1)}%`;
+  const col = x => x == null ? 'var(--text2)' : x > 0 ? 'var(--green)' : x < 0 ? 'var(--red)' : 'var(--text2)';
+  const units = (u, shown) => u == null ? '—' : shown ? `<span style="color:${col(u)}">${u > 0 ? '+' : ''}${Number(u).toFixed(1)}u</span>` : `<span style="color:var(--text2)" title="Not a profit claim: this kind is not proven, or its units do not clear chance">${u > 0 ? '+' : ''}${Number(u).toFixed(1)}u*</span>`;
+  const lab = l => { const [t, c] = REC_LABEL[l] || [String(l || '').toUpperCase(), '#64748b']; return `<span class="rec-lab" style="color:${c}">${escAttr(t)}</span>`; };
+  const when = x => x ? new Date(x).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const tiles = `<div class="rec-tiles">
+    <div class="rec-tile"><span>ALERTS SENT</span><b>${s.alerts.toLocaleString()}</b><i>${s.bets} bet${s.bets === 1 ? '' : 's'} named</i></div>
+    <div class="rec-tile"><span>GRADED</span><b>${s.graded}</b><i>${s.open} still open</i></div>
+    <div class="rec-tile"><span>CLV AT ALERT PRICE</span><b style="color:${col(s.avgClvPct)}">${pc(s.avgClvPct)}</b><i>every label pooled · never a claim</i></div>
+    <div class="rec-tile"><span>VS PINNACLE'S CLOSE</span><b style="color:${col(s.avgPinClvPct)}">${pc(s.avgPinClvPct)}</b><i>${s.pinGraded} with Pinnacle's close kept</i></div>
+  </div>`;
+  const byLab = (s.byLabel || []).map(r => `<tr><td>${lab(r.label)}</td><td style="text-align:right">${r.alerts}</td><td style="text-align:right">${r.graded}/${r.bets}</td>
+    <td style="text-align:right;color:${col(r.avgClvPct)}">${pc(r.avgClvPct)}<div style="font-size:10px;color:var(--text2)">beat ${r.beatPct == null ? '—' : Math.round(r.beatPct) + '%'}</div></td>
+    <td style="text-align:right">${r.wins + r.losses ? `${r.wins}-${r.losses}` : '—'}<div style="font-size:10px">${units(r.units, r.profitShown)}</div></td></tr>`).join('');
+  const labTable = byLab ? `<div class="esm-table-wrap"><table class="esm-table rec-tbl"><thead><tr><th></th><th style="text-align:right">Alerts</th><th style="text-align:right">Graded</th><th style="text-align:right">CLV</th><th style="text-align:right">W-L</th></tr></thead><tbody>${byLab}</tbody></table></div>` : '';
+  const item = i => `<tr><td><b>${escAttr(i.pick || '—')}</b>${i.bookName ? ` · ${escAttr(i.bookName)}` : ''}<div class="why">${escAttr([String(i.sport || '').toUpperCase(), i.event].filter(Boolean).join(' · '))}</div>${lab(i.label)}</td>
+    <td style="text-align:right">${i.priceAmerican != null ? escAttr(i.priceAmerican > 0 ? `+${i.priceAmerican}` : String(i.priceAmerican)) : '—'}</td>
+    <td style="text-align:right;color:${col(i.clvPct)}">${i.state === 'ok' ? pc(i.clvPct) : escAttr(i.state || '')}<div style="font-size:10px;color:var(--text2)">Pinnacle ${i.pinClvPct != null ? pc(i.pinClvPct) : escAttr(i.pinState || '—')}</div></td>
+    <td style="text-align:right">${i.result ? escAttr(i.result.toUpperCase()) : '—'}<div style="font-size:10px">${units(i.units, i.profitShown)}</div></td></tr>`;
+  const list = (v.alerts || []).map(a => {
+    const head = `<div class="ah-head"><b>${escAttr(a.title)}</b> <span class="ah-sub">${escAttr(when(a.sentAt))} · reached ${Number(a.reached?.phones || 0)} phone${a.reached?.phones === 1 ? '' : 's'}</span> ${lab(a.label)}</div>`;
+    if (a.masked) return `<div class="ah-card">${head}<div class="ah-sub">${a.bets ? `${a.bets} bet${a.bets === 1 ? '' : 's'}: shown once ${a.bets === 1 ? 'its game starts' : 'every game on it starts'}.` : 'Shown a day after it was sent.'} Live alerts are for Pro.</div></div>`;
+    const text = `<pre class="ah-text">${(a.lines || []).map(escAttr).join('\n')}${a.more ? `\n…and ${a.more} more lines` : ''}</pre>`;
+    const bets = a.items?.length ? `<div class="esm-table-wrap"><table class="esm-table rec-tbl"><thead><tr><th>Bet</th><th style="text-align:right">Shown</th><th style="text-align:right">CLV</th><th style="text-align:right">Result</th></tr></thead><tbody>${a.items.map(item).join('')}</tbody></table></div>`
+      : `<div class="ah-sub">${escAttr(a.why || '')}</div>`;
+    return `<div class="ah-card">${head}${text}${bets}</div>`;
+  }).join('');
+  el.innerHTML = `<div class="dg-state">${escAttr(v.note)}</div>` + tiles
+    + `<h3 class="rec-h">BY LABEL</h3>` + (labTable || `<div class="rec-tags"><div>No alert has been sent since storing began.</div></div>`)
+    + `<div class="rec-cols">${escAttr(v.rule)} * marks units that are not a profit claim.</div>`
+    + `<h3 class="rec-h">ALERTS, NEWEST FIRST</h3>` + (list || `<div class="rec-tags"><div>No alert has been sent since storing began. The first one will show here.</div></div>`)
+    + (v.next ? `<div class="rec-cols">Showing the newest ${v.shown} of ${v.total}. <a class="sport-chip" href="/alerts?before=${encodeURIComponent(v.next)}" target="_blank" rel="noopener">OLDER ALERTS</a></div>` : '');
 }
 async function loadDigest() {
   const el = document.getElementById('digestContent'), wk = document.getElementById('digestWeeks');
@@ -10059,7 +10127,9 @@ function resultsDays(d) {
 }
 async function loadResults() {
   if (window.lrDigestStart) { window.lrDigestStart = false; return resultsView('digest'); }
+  if (window.lrAlertsStart) { window.lrAlertsStart = false; return resultsView('alerts'); }
   if (resultsUi.view === 'digest') return loadDigest();
+  if (resultsUi.view === 'alerts') return loadAlertHistory();
   const el = document.getElementById('resultsContent'), rec = document.getElementById('recordContent');
   const q = resultsUi.days ? `?days=${resultsUi.days}` : '';
   // the downloads follow the window picked above

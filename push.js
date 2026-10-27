@@ -285,16 +285,23 @@ function createPush({ store, webpush = require('web-push'), env = process.env, l
 
 // The webhook plus push as one sink with the webhook's send() shape. Startup
 // notices stay on the webhook: a deploy shouldn't buzz every phone.
-function withPush(webhook, push) {
+// onSent({ text, what, kind, meta, webhooks, phones }), after both deliveries:
+// the alert log (alertlog.js) keeps every alert as it went out. meta is the
+// caller's optional third argument (the bets an alert names); 'Startup' is a
+// note to the owner, not an alert, and is neither pushed nor logged.
+function withPush(webhook, push, { onSent = null } = {}) {
   return {
     ...webhook,
     enabled: true,
     hookEnabled: webhook.enabled,
-    send: async (text, what) => {
-      const [a] = await Promise.all([
+    send: async (text, what, meta = null) => {
+      const [a, b] = await Promise.all([
         webhook.send(text, what),
         what === 'Startup' ? 0 : push.send(text, what).catch(() => 0),
       ]);
+      if (onSent && what !== 'Startup') {
+        try { await onSent({ text, what, kind: kindOf(what), meta, webhooks: a || 0, phones: b || 0 }); } catch { /* the log never stops an alert */ }
+      }
       return a;
     },
   };
