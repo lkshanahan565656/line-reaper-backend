@@ -1,0 +1,14 @@
+CFB board rows 1797 Counter({'2026-10-31': 238, '2026-10-29': 96, '2026-10-28': 83, '2026-10-27': 49, '2026-10-30': 34}) [('anytime_td', 72), ('first_td_scorer', 58), ('rush_yds', 41), ('rec_yds', 35), ('longest_rush', 32), ('pass_yds', 23), ('pass_tds', 23), ('1q|pass_yds', 22)]
+Isaiah Myers Missouri State Bears rec_yds 2026-10-28T00:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Nick Minicucci Delaware Blue Hens pass_yds 2026-10-27T23:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Chris Reed Sam Houston Bearkats rec_yds 2026-10-28T00:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Donovan Lewis Delaware Blue Hens rec_yds 2026-10-27T23:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Sean Wilson Delaware Blue Hens rec_yds 2026-10-27T23:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Henry Belin IV Missouri State Bears pass_yds 2026-10-28T00:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Jonathan Stafford Western Kentucky Hilltoppers rec_yds 2026-10-27T23:00:00Z ['underdog', 'prizepicks', 'sleeper']
+Ajay Allen Western Kentucky Hilltoppers rec_yds 2026-10-27T23:00:00Z ['underdog', 'prizepicks', 'sleeper']
+cfbmodel 354 {'games': 1500, 'seedGames': 1494, 'added': 6, 'schedule': 9, 'refreshedAt': '2026-10-27T21:59:54.429Z', 'errors': [], 'fitted': {'at': '2026-10-25T03:16:01.280Z', 'window': 'FBS seasons 2024, 2025 (box scores only)'}}
+full-game CFB rows 369
+cfbmodel rows sample [('MJ Dowdy', None, None), ('Landyn Locke', None, None), ('Michael Turner', None, None), ('Kaden Shields-Dutton', None, None), ('RJ Garcia II', None, None)]
+record kinds {'cfb-model': {'signals': 101, 'open': 101, 'execChecked': 94, 'execShare': 0.89, 'closed': 0, 'closeEvAvg': None, 'fairMoveAvg': None, 'movedOurWay': 0, 'movedAgainst': 0, 'graded': 0, 'wins': 0, 'losses': 0, 'hitRate': None, 'breakeven': None, 'units': 0, 'roi': None, 'avgEv': 20.38, 'execClosed': 0, 'execCloseEvAvg': None, 'execGraded': 0, 'execUnits': 0, 'execRoi': None, 'sharpClosed': 0, 'sharpCloseEvAvg': None, 'gapOutcomes': {}}, 'p6-cfb-model': None, 'ud-cfb-model': {'signals': 29, 'open': 29, 'execChecked': 28, 'execShare': 0.89, 'closed': 0, 'closeEvAvg': None, 'fairMoveAvg': None, 'movedOurWay': 0, 'movedAgainst': 0, 'graded': 0, 'wins': 0, 'losses': 0, 'hitRate': None, 'breakeven': None, 'units': 0, 'roi': None, 'avgEv': 13.16, 'execClosed': 0, 'execCloseEvAvg': None, 'execGraded': 0, 'execUnits': 0, 'execRoi': None, 'sharpClosed': 0, 'sharpCloseEvAvg': None, 'gapOutcomes': {}}}
+version 3.220.0
