@@ -11,6 +11,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci --omit=dev --ignore-scripts
-      - run: mkdir -p out && node diag/ipdry.js > out/dry.txt 2>&1 || true
+      - run: mkdir -p out && node diag/ipfinals.js > out/dry.txt 2>&1 || true
       - run: |
           cp -r out /tmp/o && cd /tmp/o && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-ipdry-out
