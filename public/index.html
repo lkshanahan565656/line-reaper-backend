@@ -1337,6 +1337,7 @@ body.no-help .clv-info { display:none; }
 .mb-venues button.on { border-color:#34d399; color:#34d399; background:rgba(52,211,153,.08); }
 .os-log { cursor:pointer; margin-right:6px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; border-radius:5px; font:700 9px 'JetBrains Mono',monospace; letter-spacing:.06em; padding:2px 5px; vertical-align:1px; }
 .os-log:hover { color:#34d399; border-color:#34d399; }
+.emu-log { display:inline-block; margin:4px 0 0; padding:3px 8px; }
 .ln-add { cursor:pointer; width:22px; height:22px; border-radius:6px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; font:800 13px/1 'Inter',sans-serif; margin-right:6px; vertical-align:middle; }
 .ln-add:hover, .ln-add.on { color:#06110d; background:#34d399; border-color:#34d399; }
 /* PROMOS strip: the apps' discounted and boosted legs at their own payout */
@@ -4326,6 +4327,8 @@ async function msPublish() {
     await msPubSync(true);
   } catch (e) { msPub.hint = e.message; }
   finally { msPub.busy = false; msRenderPub(); }
+  // what the server holds now (slips on the page, on the list or not)
+  if (msPubGet()) msPubCheck().catch(() => {});
 }
 // a key saved from another browser
 async function msPubUseKey() {
@@ -4369,7 +4372,7 @@ async function mybPubSync() {
   const p = msPubGet();
   if (!p || p.unpublished || !(await mybReady())) return;
   const sent = new Set(p.sentBets || []);
-  const todo = myb.list.filter(b => b.track?.kind === 'line' && b.odds > 1 && !sent.has(b.id));
+  const todo = myb.list.filter(b => (b.track?.kind === 'line' || b.track?.kind === 'es') && b.odds > 1 && !sent.has(b.id));
   if (!todo.length) return;
   try {
     for (let i = 0; i < todo.length; i += 500) {
@@ -4379,6 +4382,16 @@ async function mybPubSync() {
       msPubSet({ ...(msPubGet() || p), sentBets: [...sent].slice(-6000) });
     }
   } catch (e) { msPub.hint = `Bets not sent: ${e.message}`; if (msPub.open) msRenderPub(); }
+}
+// on or off the public list at /r; the record stays at its own link either way
+async function msPubListed(listed) {
+  const p = msPubGet();
+  if (!p) return;
+  try {
+    await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/listing`, 'POST', { listed }, p.key);
+    showToast(listed ? `@${p.handle} is on the list of records` : `@${p.handle} is off the list. Its page stays at its link`);
+  } catch (e) { msPub.hint = e.message; }
+  await msPubCheck();
 }
 async function msPubCheck() {
   const p = msPubGet();
@@ -4424,7 +4437,8 @@ function msRenderPub() {
   const rules = `<ul><li>Every slip here, and every slip you add later, goes to a public page. Only the legs and the app go: no stake or payout.</li>
     <li>Each slip is stamped with the time it reaches us. One whose first game had already started is marked <b>LATE</b> and never counted, so an imported history shows but does not count. Log slips before the games start.</li>
     <li>Results come from the box scores, never from your marks. The page uses the RESULTS rule: an app is marked proven only after 50 legs against Pinnacle's close at their own line with a CLV t of 2.</li>
-    <li>A slip can't be removed one at a time. UNPUBLISH removes the whole record.</li></ul>`;
+    <li>A slip can't be removed one at a time. UNPUBLISH removes the whole record.</li>
+    <li>Records with a pick logged before its start are listed at <a href="/r" target="_blank" rel="noopener">/r</a>. You can take yours off the list; its page stays at its link.</li></ul>`;
   if (!p) {
     // what was typed survives a redraw (the slips regrade every two minutes)
     const typed = { h: document.getElementById('msPubHandle')?.value || '', k: document.getElementById('msPubKey')?.value || '' };
@@ -4446,6 +4460,7 @@ function msRenderPub() {
     <div class="ms-pub-row"><a class="ms-pub-link" href="${escAttr(url)}" target="_blank" rel="noopener">${escAttr(url.replace(/^https?:\/\//, ''))}</a></div>
     <div class="ms-pub-row"><a class="mb-btn primary" href="${escAttr(url)}" target="_blank" rel="noopener">OPEN PAGE</a><button class="mb-btn" onclick="msPubCopy('${escAttr(url)}','Link')">COPY LINK</button><button class="mb-btn" onclick="msPubSync(true)">SEND NEW SLIPS</button><button class="mb-btn" onclick="msUnpublish()">${msPub.drop ? 'TAP AGAIN TO UNPUBLISH' : 'UNPUBLISH'}</button><button class="mb-btn" onclick="msPubToggle(false)">CLOSE</button></div>
     <div class="tl-note">${sent} slip${sent === 1 ? '' : 's'} sent from this browser${srv ? `, ${srv.slips} on the page` : ''}. New slips go up as you add them.</div>
+    <div class="ms-pub-row"><span class="tl-note" style="margin:0">${srv?.listed === false ? 'Not on the public list of records.' : 'Listed on the public list of records once a pick is logged before its start.'} <a href="/r" target="_blank" rel="noopener">See the list</a></span>${srv ? `<button class="mb-btn" onclick="msPubListed(${srv.listed === false})">${srv.listed === false ? 'ADD TO THE LIST' : 'TAKE OFF THE LIST'}</button>` : ''}</div>
     <div class="tl-note">Your key, the only way to add slips or unpublish from another browser. Save it somewhere safe: <span class="ms-pub-key">${escAttr(p.key)}</span> <button class="mb-btn" onclick="msPubCopy('${escAttr(p.key)}','Key')">COPY KEY</button></div>
     ${rules}${hint}`;
 }
@@ -4642,7 +4657,7 @@ const mybSlipCount = () => (ms.ready && window.LRSlips ? ms.slips.filter(sl => L
 async function mybAutoSettle(force) {
   if (!myb.ready || myb.settling || (!force && Date.now() - myb.lastSettle < 120e3)) return;
   // a game line stops asking once its close and result are in, or it was logged too late to follow
-  const lineDone = b => b.track?.kind === 'line' && (['late', 'nopin'].includes(b.lineClose?.status) || (b.lineClose?.status === 'closed' && b.result !== 'open'));
+  const lineDone = b => (b.track?.kind === 'line' || b.track?.kind === 'es') && (['late', 'nopin'].includes(b.lineClose?.status) || (b.lineClose?.status === 'closed' && b.result !== 'open'));
   const want = myb.list.filter(b => b.track && (b.result === 'open' || !b.closeOdds) && !lineDone(b)).slice(0, 200).map(b => ({ id: b.id, track: b.track }));
   if (!want.length) return;
   myb.settling = true; myb.lastSettle = Date.now();
@@ -4733,6 +4748,7 @@ function mybRenderList(rows) {
 // a game line's follow: Pinnacle when logged, now or at the close, the final
 function mybLineTxt(b) {
   const lc = b.lineClose;
+  if (b.track?.kind === 'es') return mybEsTxt(b);
   if (b.track?.kind !== 'line') return '';
   if (!lc) return '<span class="mb-line dim">following Pinnacle at this number...</span>';
   const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
@@ -4743,6 +4759,20 @@ function mybLineTxt(b) {
   const sc = lc.score ? ` · final ${lc.score.away}-${lc.score.home}` : lc.outcome ? '' : ' · waiting on the final';
   if (!lc.closeOk) return `<span class="mb-line dim">close read ${Math.round(lc.closeAgeMin)} min before the start: not counted${sc}</span>`;
   return `<span class="mb-line">Pinnacle close ${lc.pin != null ? osAm(lc.pin) + ' · ' : ''}fair ${pct(lc.fair)}${log != null ? ` (${pct(log)} when logged)` : ''}${sc}</span>`;
+}
+// an esports series from MATCHUPS: Pinnacle's series price when logged, now or at the close, the result
+function mybEsTxt(b) {
+  const lc = b.lineClose;
+  if (!lc) return '<span class="mb-line dim">following Pinnacle\'s series price...</span>';
+  const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+  const log = b.logFair ?? lc.logFair;
+  const why = { late: 'logged after the series started: no close to grade', unknown: 'series not on MATCHUPS right now' }[lc.status];
+  if (why) return `<span class="mb-line dim">${why}</span>`;
+  if (lc.status === 'open') return lc.fair != null ? `<span class="mb-line">Pinnacle fair ${pct(lc.fair)} now${log != null ? ` (${pct(log)} when logged)` : ''}</span>` : '<span class="mb-line dim">Pinnacle has no price on this series yet</span>';
+  const sc = lc.score ? ` · series ${lc.score.s1}-${lc.score.s2}` : lc.outcome ? '' : ' · waiting on the result';
+  if (lc.fair == null) return `<span class="mb-line dim">unpriced: Pinnacle never priced this series${sc}</span>`;
+  if (!lc.closeOk) return `<span class="mb-line dim">close read ${Math.round(lc.closeAgeMin)} min before the start: not counted${sc}</span>`;
+  return `<span class="mb-line">Pinnacle close fair ${pct(lc.fair)}${log != null ? ` (${pct(log)} when logged)` : ''}${sc}</span>`;
 }
 function mybRenderBreak(scope) {
   const by = myb.ui.by, el = document.getElementById('mybBreak');
@@ -4804,7 +4834,7 @@ async function mybForm(id, prefill) {
   const inp = (k, v, attrs = '') => `<input id="mb_${k}" value="${escAttr(v ?? '')}" ${attrs}>`;
   document.getElementById('mybModal').innerHTML = `<div class="lay-box mb-box" role="dialog" aria-label="${b ? 'Edit bet' : 'Log a bet'}">
     <h3>${b ? 'Edit bet' : prefill ? 'Log this bet' : 'Add a bet'}</h3>
-    <p>${myb.edit.track?.kind === 'line' ? 'Tracked: we follow Pinnacle\'s price at this number to the start (your CLV) and grade it from the final score. ' : myb.edit.track ? 'This play is tracked: it settles on its own once our tracker grades it. ' : ''}Enter the price and stake you actually got.</p>${venues}
+    <p>${myb.edit.track?.kind === 'line' ? 'Tracked: we follow Pinnacle\'s price at this number to the start (your CLV) and grade it from the final score. ' : myb.edit.track?.kind === 'es' ? 'Tracked: checked before the series starts, followed on Pinnacle\'s series price to the start where Pinnacle prices it (unpriced otherwise), and graded from the series result. ' : myb.edit.track ? 'This play is tracked: it settles on its own once our tracker grades it. ' : ''}Enter the price and stake you actually got.</p>${venues}
     <div class="tl-fields">
       ${fld('pick', 'Bet', inp('pick', f.pick, 'placeholder="Chiefs -3, Over 38.5 kills, Yes"'), true)}
       ${fld('event', 'Event', inp('event', f.event, 'placeholder="Optional"'), true)}
@@ -4856,13 +4886,13 @@ async function mybFormSave() {
   // a new game-line bet is checked with the server first: logged on Pinnacle's
   // price from this second, or refused when its game has started
   let stamp = null;
-  if (!prev && myb.edit?.track?.kind === 'line') {
+  if (!prev && (myb.edit?.track?.kind === 'line' || myb.edit?.track?.kind === 'es')) {
     const hint = document.getElementById('mbHint');
     try {
       const r = await fetch(`${BACKEND_URL}/api/bets/stamp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track: myb.edit.track }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || `The server answered ${r.status}`);
-      if (!j.ok) { if (hint) { hint.innerHTML = `<b class="neg">Not logged.</b> ${escAttr(j.why || 'The game has started.')}`; hint.setAttribute('role', 'alert'); } return; }
+      if (!j.ok) { if (hint) { hint.innerHTML = `<b class="neg">Not logged.</b> ${escAttr(j.why || (myb.edit?.track?.kind === 'es' ? 'The series has started.' : 'The game has started.'))}`; hint.setAttribute('role', 'alert'); } return; }
       stamp = { at: j.at, status: j.status, start: j.start || null, logFair: j.logFair ?? null, ...(j.why ? { note: j.why } : {}) };
     } catch (e) { if (hint) hint.innerHTML = `<b class="neg">Not logged:</b> the server couldn't check this bet (${escAttr(lrErr(e))}). Try again.`; return; }
     if (!myb.edit) return;
@@ -7964,7 +7994,9 @@ function emuCard(mu) {
     const kk = kp != null ? (i === 0 ? kp : 1 - kp) : null;
     const up = u?.prob != null ? (i === 0 ? u.prob : 1 - u.prob) : null;
     const meta = v ? `${v.rating}${v.rd ? ` ±${v.rd}` : ''} · ${escEs(v.home || '—')} · last 10 ${escEs(v.form?.last10 || '—')}` : 'not in our data';
-    return `<div class="emu-row">${esmAvatar(t.code || t.name)}<div class="esm-name"><b>${escEs(t.name)}</b><div class="emu-meta">${meta}</div></div>
+    const pp = mu.pinnacle?.prob != null ? (i === 0 ? mu.pinnacle.prob : 1 - mu.pinnacle.prob) : null;
+    const logBtn = emuLoggable(mu, i) ? `<button class="os-log emu-log" title="Log this team in MY BETS: checked with the server before the series starts, followed on Pinnacle's series price to the close where Pinnacle prices it, and graded from the series result" onclick="emuLog('${escEs(mu.id)}',${i})">LOG</button>` : '';
+    return `<div class="emu-row">${esmAvatar(t.code || t.name)}<div class="esm-name"><b>${escEs(t.name)}</b><div class="emu-meta">${meta}${pp != null ? ` · Pinnacle ${esmPct(pp)}` : ''}</div>${logBtn}</div>
       <div class="emu-num model">${mp != null ? `<b>${esmPct(mp)}</b><small>MODEL</small>` : '<b>—</b><small>MODEL</small>'}</div>
       <div class="emu-num mkt">${kk != null ? `<b>${esmPct(kk)}</b><small>KALSHI</small>` : '<b>—</b><small>KALSHI</small>'}</div>
       <div class="emu-num mkt">${up != null ? `<b>${esmPct(up)}</b><small>PM US</small>` : '<b>—</b><small>PM US</small>'}</div></div>`;
@@ -7990,6 +8022,29 @@ function emuCard(mu) {
     <div class="esm-sub">${sub.join('')}<button class="esm-more" onclick="toggleEmuOpen('${escEs(mu.id)}')">${open ? 'Hide' : 'Why'}</button></div>
     ${detail}
   </div>`;
+}
+// LOG a team from a MATCHUPS card: MY BETS opens at the cheapest price to buy
+// it (Kalshi or Polymarket US, fee in); tap the other venue in the form to
+// switch. The server checks the series hasn't started (the engine's start, not
+// this page's) and follows Pinnacle's series price to the close.
+function emuVenues(mu, i) {
+  const k = mu.markets?.kalshi, u = mu.markets?.pmus;
+  return [['Kalshi', k?.sides?.[i]?.cost], ['Polymarket US', u?.sides?.[i]?.cost]]
+    .filter(([, c]) => c > 0 && c < 1).map(([name, c]) => ({ name, decimal: Math.round(1e4 / c) / 1e4, american: null })).sort((a, b) => b.decimal - a.decimal);
+}
+const emuLoggable = (mu, i) => !!mu && mu.state !== 'inProgress' && Date.parse(mu.start) > Date.now() && emuVenues(mu, i).length > 0;
+async function emuLog(id, i) {
+  const mu = (emuState.data?.matchups || []).find(x => String(x.id) === String(id));
+  if (!emuLoggable(mu, i)) { showToast('This series has started or has no price to buy', 'danger'); return; }
+  if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
+  const venues = emuVenues(mu, i), best = venues[0], gl = EMU_GAMES[mu.game] || mu.game;
+  const pin = mu.pinnacle?.prob != null ? (i === 0 ? mu.pinnacle.prob : 1 - mu.pinnacle.prob) : null;
+  const pre = { event: `${mu.teams[0].name} vs ${mu.teams[1].name}${mu.league ? ` (${mu.league})` : ''}`, pick: `${mu.teams[i].name} to win the series`, book: best.name, sport: gl, tool: 'Matchups',
+    odds: best.decimal, cents: false, logFair: pin, venues,
+    track: { kind: 'es', game: mu.game, match: String(mu.id), side: i, start: mu.start } };
+  const u = mybUnit();
+  if (u.set) pre.stake = u.unit;
+  mybForm(null, pre);
 }
 function renderEsMatchups() {
   if (emuState.game === 'SOCCER') return renderSoccer();

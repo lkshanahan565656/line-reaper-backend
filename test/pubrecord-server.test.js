@@ -94,3 +94,30 @@ test('game-line bets: added with the key, on the page, and checked at save', asy
   const past = await (await post('/api/bets/stamp', { track: { ...bets[0].track, start: new Date(Date.now() - 3600e3).toISOString() } })).json();
   assert.equal(past.ok, false); assert.equal(past.status, 'started'); assert.match(past.why, /A bet goes on your record only before its game starts/);
 });
+
+test('esports series from MATCHUPS: a series the engine does not list is refused at save', async () => {
+  assert.equal((await post('/api/bets/stamp', { track: { kind: 'es', game: 'DOTA', match: 'x', side: 0 } })).status, 400);
+  const j = await (await post('/api/bets/stamp', { track: { kind: 'es', game: 'LOL', match: 'no-such-series', side: 1, start: new Date(Date.now() + 3600e3).toISOString() } })).json();
+  assert.equal(j.ok, false); assert.equal(j.status, 'unknown'); assert.match(j.why, /not on MATCHUPS/);
+  const st = await (await fetch(`${base}/api/status`)).json();
+  assert.deepEqual(Object.keys(st.esBets).sort(), ['closeOk', 'closed', 'graded', 'noClose', 'open']);
+});
+
+test('the list of records at /r: only on-time picks list a record; the owner can take it off', async () => {
+  const pub = await (await post('/api/records', { handle: 'listed_one' })).json();
+  assert.equal((await post('/api/records/listed_one/listing', { listed: false })).status, 403, 'no key');
+  const off = await (await post('/api/records/listed_one/listing', { listed: false }, pub.token)).json();
+  assert.equal(off.listed, false);
+  assert.equal((await (await post('/api/records/listed_one/check', null, pub.token)).json()).listed, false);
+  await post('/api/records/listed_one/listing', { listed: true }, pub.token);
+  const idx = await (await fetch(`${base}/api/records`)).json();
+  // nothing grades offline, so no pick is on time yet: listed handles stay off the list until one is
+  assert.equal(idx.records, 0);
+  assert.ok(idx.hidden >= 1);
+  assert.match(idx.rule, /never counted/);
+  const page = await fetch(`${base}/r`);
+  assert.equal(page.status, 200);
+  const h = await page.text();
+  assert.match(h, /Bettor records/); assert.match(h, /No records yet/);
+  assert.ok(!/undefined|NaN|guaranteed/i.test(h));
+});

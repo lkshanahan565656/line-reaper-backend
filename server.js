@@ -5155,7 +5155,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.210.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.211.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5883,6 +5883,14 @@ app.get('/api/esports/matchups', (req, res) => {
   const days = Math.min(14, Math.max(1, parseInt(req.query.days, 10) || 8));
   const league = req.query.league ? String(req.query.league) : null;
   const matchups = E.list({ days, league, board: esportsBoardFor(req) });
+  // Pinnacle's no-vig series price beside the venues (the number a logged bet is graded against), when its feed is fresh
+  const pinAt = Date.parse(esBooksState.pinAt || '');
+  if (Date.now() - pinAt <= esBetsLib.PIN_MAX_AGE_MS) {
+    for (const mu of matchups) {
+      const pf = esBetsLib.pinFair(esBooksState.pin, game, mu.teams.map(x => x.name), mu.start, 0);
+      if (pf) mu.pinnacle = { prob: pf.p, at: esBooksState.pinAt };
+    }
+  }
   res.json({
     game, label: 'model', note: matchupNote(game), games: Object.keys(matchupEngines), status: E.status(), count: matchups.length,
     priced: matchups.filter(m => m.model.priced).length, withKalshi: matchups.filter(m => m.markets?.kalshi).length,
@@ -6753,7 +6761,9 @@ async function refreshEsBooks() {
     if (bv) errors.push(...bv.errors.slice(0, 3).map(e => `bovada ${e}`));
     if (pin) {
       esBooksState.pin = pin;
+      esBooksState.pinAt = new Date().toISOString();
       observePinTotals(pin).catch(e => console.warn('Pinnacle totals:', e.message));
+      esBets.observe(esBetsCtx()).catch(e => console.warn('Esports bets: observe:', e.message));
     }
     Object.assign(esBooksState, { errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
     runEsBooksScreen();
@@ -7370,6 +7380,41 @@ const lineBets = require('./linebets').createLineBets({
   store: resultsBackup.wrap('lineBets', createEvStoreFromEnv(process.env, { table: 'line_bets', fileVar: 'LINE_BETS_FILE', file: 'line-bets.json' })),
 });
 lineBets.ready().catch(e => console.error('Line bets: store failed to initialise:', e.message));
+// MATCHUPS' esports series bets (esbets.js): a team logged from a MATCHUPS card
+// is checked against the matchup engine's start, followed on Pinnacle's
+// esports series price to the start where Pinnacle prices it (unpriced
+// otherwise) and graded from the engine's finished series.
+const esBetsLib = require('./esbets');
+const esBets = esBetsLib.createEsBets({
+  store: resultsBackup.wrap('esBets', createEvStoreFromEnv(process.env, { table: 'es_bets', fileVar: 'ES_BETS_FILE', file: 'es-bets.json' })),
+});
+esBets.ready().catch(e => console.error('Esports bets: store failed to initialise:', e.message));
+// the engine's own series (start, teams, state); every viewer sees the same board for this
+const esBetLookup = (game, id) => {
+  const E = matchupEngines[game];
+  if (!E) return null;
+  const m = E.get(id, { board: esportsBoard.state.matches || [] });
+  return m ? { id: m.id, start: m.start, teams: m.teams, league: m.league, state: m.state } : null;
+};
+const esBetsCtx = () => ({ lookup: esBetLookup, pin: { list: esBooksState.pin || [], at: esBooksState.pinAt || null } });
+// a finished series for a bet's row, oriented to its teams
+function esBetResult(game, row) {
+  const E = matchupEngines[game];
+  if (!E) return null;
+  const s = E.series.get(String(row.match));
+  if (s && Number.isFinite(s.s1)) {
+    const M = require('./esmatchup');
+    const flip = Math.min(M.nameScore(row.teams[0], s.b), M.nameScore(row.teams[1], s.a)) > Math.min(M.nameScore(row.teams[0], s.a), M.nameScore(row.teams[1], s.b));
+    return flip ? { s1: s.s2, s2: s.s1 } : { s1: s.s1, s2: s.s2 };
+  }
+  const t = Date.parse(row.start);
+  const recent = [...E.series.values()].filter(x => Math.abs(Date.parse(x.t) - t) < 2 * 86400e3);
+  return esmatchupdata.findResult(recent, row);
+}
+async function gradeEsBets() {
+  try { await esBets.observe(esBetsCtx()); await esBets.grade(esBetResult); } catch (e) { console.warn('Esports bets: grade:', e.message); }
+}
+
 async function gradeLineBets() {
   try { await lineBets.grade(bigGrader, lg => EV_RESULT_LEAGUE[lg] || null); } catch (e) { console.warn('Line bets: grade:', e.message); }
 }
@@ -8989,12 +9034,14 @@ app.post('/api/bets/settle', async (req, res) => {
     const list = (Array.isArray(req.body?.bets) ? req.body.bets : []).slice(0, 200).filter(b => b && typeof b === 'object');
     const lic = licenceOf(req), all = { limit: 1e9 };
     const wants = k => list.some(b => b.track?.kind === k);
-    const [tail, picks, lines] = await Promise.all([
+    const [tail, picks, lines, es] = await Promise.all([
       wants('tail') && lic.polymarket ? tailTracker.list(all) : [],
       wants('prop') ? tracker.list(all) : [],
       // game lines from the odds screen: logged on first sight, graded on Pinnacle's close and the final
-      wants('line') ? lineBets.settle(list.filter(b => b.track?.kind === 'line'), { games: freeBooksState.games || {} }) : {}]);
-    res.set('Cache-Control', 'no-store').json({ results: { ...betsLib.matchTracked(list, { tail, picks, sportKey: pickSportKey, outcomeFor: pickOutcomeFor }), ...lines } });
+      wants('line') ? lineBets.settle(list.filter(b => b.track?.kind === 'line'), { games: freeBooksState.games || {} }) : {},
+      // esports series winners from MATCHUPS: Pinnacle's series price where it has one, the engine's result
+      wants('es') ? esBets.settle(list.filter(b => b.track?.kind === 'es'), esBetsCtx()) : {}]);
+    res.set('Cache-Control', 'no-store').json({ results: { ...betsLib.matchTracked(list, { tail, picks, sportKey: pickSportKey, outcomeFor: pickOutcomeFor }), ...lines, ...es } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // One game-line bet checked the moment MY BETS saves it: logged in the line-bet
@@ -9003,6 +9050,21 @@ app.post('/api/bets/settle', async (req, res) => {
 app.post('/api/bets/stamp', async (req, res) => {
   try {
     const t = req.body?.track;
+    // an esports series from MATCHUPS: its start is the matchup engine's, and a
+    // series we can't find is refused (its start can't be checked)
+    if (t?.kind === 'es') {
+      if (!esBetsLib.clean(t)) return res.status(400).json({ error: 'an esports series track is needed' });
+      const now = Date.now(), at = new Date(now).toISOString();
+      const g = (await esBets.settle([{ id: 'stamp', track: t }], esBetsCtx())).stamp || { close: { status: 'unknown' } };
+      const c = g.close || {}, st = Date.parse(c.start || '');
+      const started = c.status === 'late' || (Number.isFinite(st) && st <= now);
+      const when = Number.isFinite(st) ? slipstamp.etTime(new Date(st).toISOString(), now) : '';
+      const ok = !started && c.status !== 'unknown';
+      return res.set('Cache-Control', 'no-store').json({ at, ok, status: started ? 'started' : c.status || 'unknown', start: c.start || null, logFair: c.logFair ?? null,
+        why: started ? `The series started${when ? ` at ${when}` : ''}. A bet goes on your record only before its series starts.`
+          : c.status === 'unknown' ? 'This series is not on MATCHUPS right now, so its start cannot be checked. Refresh MATCHUPS and try again.'
+          : c.status === 'open' && c.logFair == null ? 'Pinnacle has no price on this series yet. It is followed to the start; if Pinnacle never prices it, it stays on your record as unpriced.' : null });
+    }
     if (!require('./linebets').clean(t)) return res.status(400).json({ error: 'a game-line track is needed' });
     const now = Date.now(), at = new Date(now).toISOString();
     const g = (await lineBets.settle([{ id: 'stamp', track: t }], { games: freeBooksState.games || {} })).stamp || { close: { status: 'unknown' } };
@@ -9055,7 +9117,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.210.0',
+  version: '3.211.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9072,6 +9134,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
   oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
   lineBets: lineBets.counts(),
+  esBets: esBets.counts(),
   propHistory: { series: propHistory.size(), points: propHistory.points(), observedAt: propHistoryState.observedAt, markets: propHistoryState.markets, ms: propHistoryState.ms, error: propHistoryState.error },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
@@ -9682,7 +9745,9 @@ async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
       if (legsN >= maxLegs) break;
       // game-line bets: the odds screen's line-bet log (linebets.js), Pinnacle's close and the final
       const pb = pubRecords.pendingBets(h).slice(0, 200);
-      if (pb.length) changed += await pubRecords.applyBetGrades(h, await lineBets.settle(pb, { games: freeBooksState.games || {} }));
+      const pbLine = pb.filter(b => b.track?.kind !== 'es'), pbEs = pb.filter(b => b.track?.kind === 'es');
+      if (pbLine.length) changed += await pubRecords.applyBetGrades(h, await lineBets.settle(pbLine, { games: freeBooksState.games || {} }));
+      if (pbEs.length) changed += await pubRecords.applyBetGrades(h, await esBets.settle(pbEs, esBetsCtx()));
       const chunk = pubRecords.pendingLegs(h).slice(0, Math.min(300, maxLegs - legsN));
       if (!chunk.length) continue;
       legsN += chunk.length;
@@ -9695,6 +9760,8 @@ async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
   return pubRecordState;
 }
 schedule('7,17,27,37,47,57 * * * *', () => gradePubRecords().catch(() => {}));
+// MATCHUPS' esports series bets: closes and results every ten minutes (Pinnacle's reads also observe)
+schedule('3,13,23,33,43,53 * * * *', () => gradeEsBets());
 const recordKey = req => { const a = String(req.get('authorization') || ''); return /^Bearer\s+/i.test(a) ? a.replace(/^Bearer\s+/i, '').trim() : String(req.body?.key || ''); };
 const pubTables = () => ({ pick6: pick6.state.payouts || null });
 // the view, memoised a minute per handle and page (a shared link is opened by every previewer at once)
@@ -9711,7 +9778,7 @@ async function pubView(handle, page = 1) {
   pubViewMemo.set(key, { at: Date.now(), v });
   return v;
 }
-const pubForget = h => { for (const k of [...pubViewMemo.keys()]) if (k.startsWith(`${h}|`)) pubViewMemo.delete(k); shareImgMemo.clear(); };
+const pubForget = h => { for (const k of [...pubViewMemo.keys()]) if (k.startsWith(`${h}|`)) pubViewMemo.delete(k); shareImgMemo.clear(); pubIndexMemo = null; };
 app.post('/api/records', async (req, res) => {
   try {
     const out = await pubRecords.publish({ handle: req.body?.handle, token: recordKey(req) || null, who: publicApi.callerOf(req) });
@@ -9740,6 +9807,35 @@ app.post('/api/records/:handle/bets', async (req, res) => {
     res.set('Cache-Control', 'no-store').json(out);
   } catch (e) { sendErr(res, e); }
 });
+// the owner takes the record off the public list at /r, or puts it back. body: { listed }
+app.post('/api/records/:handle/listing', async (req, res) => {
+  try {
+    const out = await pubRecords.setListed(req.params.handle, recordKey(req), req.body?.listed !== false);
+    pubIndexMemo = null; pubForget(out.handle);
+    res.set('Cache-Control', 'no-store').json(out);
+  } catch (e) { sendErr(res, e); }
+});
+// the public list of records: one row a listed record, from its own view, memoised two minutes
+let pubIndexMemo = null;
+async function pubIndex() {
+  await pubRecords.init();
+  if (pubIndexMemo && Date.now() - pubIndexMemo.at < 120e3) return pubIndexMemo.v;
+  const rows = [];
+  for (const h of pubRecords.listedHandles()) {
+    const v = await pubView(h, 1);
+    if (v && v.status === 'live') rows.push(pubRecord.indexRow(v));
+  }
+  const v = pubRecord.indexView(rows);
+  pubIndexMemo = { at: Date.now(), v };
+  return v;
+}
+app.get('/api/records', widgetGate, async (req, res) => {
+  try { res.set('Cache-Control', 'public, max-age=60').json(await pubIndex()); } catch (e) { sendErr(res, e); }
+});
+app.get('/r', widgetGate, async (req, res) => {
+  try { res.set('Cache-Control', 'public, max-age=60').type('html').send(pubRecord.indexHtml(await pubIndex(), { origin: siteOrigin(req) })); }
+  catch (e) { res.status(500).set('Cache-Control', 'no-store').type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">The list of records could not be read just now. Try again in a minute.</body>'); console.warn('Records index:', e.message); }
+});
 app.delete('/api/records/:handle', async (req, res) => {
   try { const out = await pubRecords.unpublish(req.params.handle, recordKey(req)); pubForget(out.handle); res.set('Cache-Control', 'no-store').json(out); } catch (e) { sendErr(res, e); }
 });
@@ -9748,7 +9844,7 @@ app.post('/api/records/:handle/check', async (req, res) => {
   await pubRecords.init().catch(() => {});
   const h = pubRecord.cleanHandle(req.params.handle).handle;
   const r = h && pubRecords.get(h);
-  res.set('Cache-Control', 'no-store').json({ handle: h || null, exists: !!r, status: r?.status || null, owner: !!(h && pubRecords.owns(h, recordKey(req))), slips: r ? pubRecords.slipsOf(h).length : 0, bets: r ? pubRecords.betsOf(h).length : 0 });
+  res.set('Cache-Control', 'no-store').json({ handle: h || null, exists: !!r, status: r?.status || null, owner: !!(h && pubRecords.owns(h, recordKey(req))), slips: r ? pubRecords.slipsOf(h).length : 0, bets: r ? pubRecords.betsOf(h).length : 0, listed: r ? !r.unlisted : null });
 });
 app.get('/api/records/:handle', widgetGate, async (req, res) => {
   try {
