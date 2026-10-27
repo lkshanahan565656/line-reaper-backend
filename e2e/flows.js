@@ -1535,6 +1535,8 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
         // the Discord feed without a key says to make one, rather than doing nothing
         await page.locator('#fdCheck').click();
         expect(/Make a key first/.test(await text(page, '#fdOut')), 'CHECK FEED without a key gave no answer');
+        await page.locator('#btCheck').click();
+        expect(/Make a key first/.test(await text(page, '#btOut')), 'CHECK BOT without a key gave no answer');
         await page.locator('#kname').fill('e2e site');
         await page.locator('#mk button[type=submit]').click();
         await page.locator('#keyText').waitFor({ timeout: 6000 });
@@ -1560,6 +1562,21 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
         await page.locator('#fdOff').click();
         await page.waitForFunction(() => /Disconnected/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
         expect(await fits(), 'the developers page scrolls sideways after the feed steps');
+        // the Discord bot with the key: checked, a wrong id refused on the page, a
+        // right-looking app sent to Discord (offline or refused here, so it says so)
+        await page.locator('#btCheck').click();
+        await page.waitForFunction(() => /No Discord bot on this key/.test(document.getElementById('btOut').textContent), null, { timeout: 6000 });
+        await page.locator('#btApp').fill('12');
+        await page.locator('#bt button[type=submit]').click();
+        expect(/Application ID/.test(await text(page, '#btOut')), `CONNECT BOT with a wrong id said "${await text(page, '#btOut')}"`);
+        await page.locator('#btApp').fill('123456789012345678');
+        await page.locator('#btKey').fill('a'.repeat(64));
+        await page.locator('#btTok').fill(`MTIzNDU2Nzg5MDEyMzQ1Njc4.Gab12C.${'x'.repeat(38)}`);
+        await page.locator('#bt button[type=submit]').click();
+        await page.waitForFunction(() => !/Adding the commands/.test(document.getElementById('btOut').textContent), null, { timeout: 15000 });
+        expect(/Discord|Commands added/.test(await text(page, '#btOut')), `CONNECT BOT said "${await text(page, '#btOut')}"`);
+        expect(await page.locator('#btTok').inputValue() === '', 'the bot token stayed in the box');
+        expect(await fits(), 'the developers page scrolls sideways after the bot steps');
         await page.locator('#mineUse').click();
         await page.waitForFunction(() => /Used \d+ of/.test(document.getElementById('mineInfo').textContent), null, { timeout: 6000 });
         await page.locator('#mineRevoke').click();
