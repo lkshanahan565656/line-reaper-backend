@@ -67,14 +67,15 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await init();
     const d = check(key);
     if (!d) return null;
-    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked', feed: null };
+    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked', feed: null, bot: null };
     byHash.set(d.hash, out);
     await store.put(out);
     return publicKey(out);
   }
   const listFor = userId => (userId ? [...byHash.values()].filter(d => d.userId === userId).map(publicKey) : []);
   const stats = () => ({ keys: [...byHash.values()].filter(d => !d.revokedAt).length, revoked: [...byHash.values()].filter(d => d.revokedAt).length,
-    feeds: [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).length });
+    feeds: [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).length,
+    bots: [...byHash.values()].filter(d => !d.revokedAt && d.bot).length });
   // ── the Discord feed a key's owner connected (outfeed.js): one webhook per
   // key, kept sealed (the caller seals it), dropped with the key on revoke ──
   async function setFeed(key, feed) {
@@ -101,7 +102,30 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await store.put(out);
     return feed;
   }
-  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed };
+  // ── the Discord app a key's owner connected for slash commands
+  // (discordbot.js): { appId, publicKey, addedAt }; the public key is public,
+  // the bot token is never kept. One app per key, dropped on revoke ──
+  async function setBot(key, bot) {
+    await init();
+    const d = check(key);
+    if (!d) return null;
+    const out = { ...d, bot: bot || null };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  // the live key that connected this app id, or null
+  const botFor = appId => [...byHash.values()].find(d => !d.revokedAt && d.bot && d.bot.appId === String(appId)) || null;
+  const bots = () => [...byHash.values()].filter(d => !d.revokedAt && d.bot).map(d => ({ keyId: d.id, bot: d.bot }));
+  async function markBot(keyId, patch) {
+    const d = [...byHash.values()].find(x => x.id === keyId);
+    if (!d || !d.bot) return null;
+    const out = { ...d, bot: { ...d.bot, ...patch } };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out.bot;
+  }
+  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed, setBot, botFor, bots, markBot };
 }
 const publicKey = d => ({ id: d.id, name: d.name, createdAt: d.createdAt, revokedAt: d.revokedAt || null, signedIn: !!d.userId });
 
