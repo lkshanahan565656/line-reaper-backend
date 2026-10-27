@@ -51,10 +51,34 @@ function verifyWebhook(rawBody, header, secret, { toleranceSec = 300, now = Date
   return JSON.parse(payload);
 }
 
-function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = console }) {
+// introPriceId (optional): the founding price, used for checkout while
+// introOpen() says seats are left. Stripe's own amounts are read once an hour
+// (prices()), so the pricing page shows what Stripe will really charge.
+function createBilling({ http, secretKey, priceId, introPriceId = null, introOpen = async () => false, store, trialDays = 0, log = console, now = () => Date.now() }) {
   const headers = () => ({ Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded' });
   const post = async (path, body) => (await http.post(`${STRIPE}${path}`, form(body).toString(), { headers: headers(), timeout: 15000 })).data;
   const configured = () => !!(secretKey && priceId);
+  const priceCache = new Map();   // id → { at, value }
+  // { amount (major units), currency, interval } or null; never throws
+  async function priceOf(id) {
+    if (!secretKey || !id) return null;
+    const hit = priceCache.get(id);
+    if (hit && now() - hit.at < 3600e3) return hit.value;
+    try {
+      const p = (await http.get(`${STRIPE}/prices/${encodeURIComponent(id)}`, { headers: headers(), timeout: 10000 })).data || {};
+      const value = Number.isFinite(p.unit_amount) ? { amount: p.unit_amount / 100, currency: String(p.currency || 'usd'), interval: p.recurring?.interval || null, active: p.active !== false } : null;
+      priceCache.set(id, { at: now(), value });
+      return value;
+    } catch (e) {
+      log.warn?.(`Billing: could not read price ${id}: ${e.response?.data?.error?.message || e.message}`);
+      priceCache.set(id, { at: now() - 3300e3, value: hit?.value || null });   // retry in 5 minutes
+      return hit?.value || null;
+    }
+  }
+  async function prices() {
+    const [main, intro] = await Promise.all([priceOf(priceId), introPriceId ? priceOf(introPriceId) : null]);
+    return { main, intro };
+  }
 
   async function ensureCustomer(user) {
     if (user.stripeCustomerId) return user.stripeCustomerId;
@@ -67,9 +91,12 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
   async function checkout(user, { successUrl, cancelUrl, legalUrl = null }) {
     if (!configured()) throw Object.assign(new Error('Billing is not set up yet'), { status: 503 });
     const customer = await ensureCustomer(user);
+    // the founding price while seats are left (an account that paid before pays the full price)
+    const founding = !!introPriceId && !user.subscriptionId && await introOpen(user);
     const session = await post('/checkout/sessions', {
       mode: 'subscription', customer, client_reference_id: user.id,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: founding ? introPriceId : priceId, quantity: 1 }],
+      ...(founding ? { metadata: { founding: '1' } } : {}),
       success_url: successUrl, cancel_url: cancelUrl,
       allow_promotion_codes: 'true',
       // the automatic-renewal terms, right above the pay button (state
@@ -120,6 +147,8 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
         user.plan = event.type === 'customer.subscription.deleted' ? 'free' : 'pro';
         user.planStatus = event.type === 'customer.subscription.deleted' ? 'canceled' : obj.status;
         user.subscriptionId = obj.id;
+        // a founding seat is taken for good once a subscription on the intro price exists
+        if (introPriceId && event.type !== 'customer.subscription.deleted' && (obj.items?.data || []).some(i => i?.price?.id === introPriceId)) user.founding = true;
         // cancelled in the portal but still inside the paid period
         user.cancelAtPeriodEnd = event.type !== 'customer.subscription.deleted' && !!obj.cancel_at_period_end;
         // after a deletion the paid period is over; don't keep honouring it
@@ -133,7 +162,7 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
     }
   }
 
-  return { checkout, portal, handleEvent, configured };
+  return { checkout, portal, handleEvent, configured, prices, priceOf };
 }
 
 module.exports = { createBilling, verifyWebhook, form, renewalNotice };

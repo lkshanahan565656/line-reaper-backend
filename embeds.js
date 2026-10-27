@@ -232,7 +232,7 @@ code { font:13px var(--mono); color:#cbd5e1; overflow-wrap:anywhere; }
 .h3s { font:600 11px var(--mono); letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin:10px 0 4px; overflow-wrap:anywhere; }
 .h3s code { text-transform:none; letter-spacing:0; font-size:11px; }
 `;
-function developersPage({ origin = '', endpoints = [], examples = {}, limits, widgetLimit, keyCreate, licences = null } = {}) {
+function developersPage({ origin = '', endpoints = [], examples = {}, limits, widgetLimit, keyCreate, licences = null, planLimits = null } = {}) {
   const o = cleanOrigin(origin);
   const exampleOf = p => {
     const ex = examples[p];
@@ -293,7 +293,7 @@ ${lic}</ul>
 <p>Send the key in an <code>X-API-Key</code> header (or as <code>?key=</code> where a header is awkward). Any site may call it from a browser: CORS is open to every origin.</p>
 <pre>curl -H "X-API-Key: lr_…" ${esc(o)}/api/v1/best-prices?league=nfl</pre>
 <ul>
-<li><b>Limits:</b> ${limits.perMinute} calls a minute and ${limits.perDay.toLocaleString('en-US')} a day (UTC) per key. Every answer says where you are in <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code> (seconds) and <code>X-RateLimit-Daily-Remaining</code>. Over the limit is a 429 with <code>Retry-After</code>. Counts restart when the server redeploys.</li>
+<li><b>Limits:</b> ${planLimits ? `Pro keys ${planLimits.pro.apiPerMinute} calls a minute and ${planLimits.pro.apiPerDay.toLocaleString('en-US')} a day (UTC); Free keys ${planLimits.free.apiPerMinute} a minute and ${planLimits.free.apiPerDay.toLocaleString('en-US')} a day. A key takes the plan of the account it was made from (<a href="/pricing">plans</a>)` : `${limits.perMinute} calls a minute and ${limits.perDay.toLocaleString('en-US')} a day (UTC) per key`}. Every answer says where you are in <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code> (seconds) and <code>X-RateLimit-Daily-Remaining</code>. Over the limit is a 429 with <code>Retry-After</code>. Counts restart when the server redeploys.</li>
 <li><b>Caching:</b> each answer has an <code>ETag</code>. Send it back in <code>If-None-Match</code> and an unchanged answer is a 304 with no body. Most data changes about once a minute.</li>
 <li><b>Errors</b> are JSON: <code>{"error":{"code":"…","message":"…"}}</code> with 400 (bad parameter), 401 (no key or an unknown one), 404 and 429.</li>
 <li><b>New keys:</b> at most ${keyCreate.perHour} an hour from one address.</li>

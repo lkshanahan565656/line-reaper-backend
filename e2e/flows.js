@@ -1441,6 +1441,48 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     }
   },
 
+  async 'pricing page: plans from one table, honest words, fits the screen'(page, w, opts) {
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    const claimy = /guaranteed|risk[- ]free|sure thing|lock of|beat the books|undefined|NaN|\{\{/i;
+    try {
+      const res = await page.goto(`${opts.base}/pricing`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/pricing answered ${res && res.status()}`);
+      expect(/Free and Pro/.test(await text(page, 'h1')), 'the pricing page heading is missing');
+      expect(await fits(), 'the pricing page scrolls sideways at this size');
+      const body = await page.evaluate(() => document.body.innerText);
+      expect(!claimy.test(body), 'the pricing page shows a claim or broken text');
+      expect(/Paying buys the tool, not an edge/.test(body), 'the pricing page lost the not-an-edge line');
+      expect(/same alerts/.test(body), 'the pricing page lost the same-alerts line');
+      expect(/What the record backs today/.test(body), 'the record block is missing');
+      // the API row reads the same limits the server enforces
+      expect(/10 a minute, 500 a day/.test(body) && /60 a minute, 5,000 a day/.test(body), 'the API limits are missing from the table');
+      // every button goes somewhere that answers
+      const hrefs = await page.evaluate(() => [...document.querySelectorAll('.card .cta')].map(a => a.getAttribute('href')));
+      expect(hrefs.length === 2 && hrefs.every(h => h && h !== '#'), `the plan buttons are ${JSON.stringify(hrefs)}`);
+      for (const h of hrefs.filter(x => x.startsWith('/'))) {
+        const r = await page.request.get(`${opts.base}${h}`);
+        expect(r.status() === 200, `${h} from the pricing page answered ${r.status()}`);
+      }
+      // PROVEN only with the record behind it
+      expect(!/PROVEN/.test(body), 'the pricing page shouts PROVEN');
+      // the sales page links here, and its plan lists come from the same table
+      await page.goto(`${opts.base}/`, { waitUntil: 'domcontentloaded' });
+      expect(await page.locator('a[href="/pricing"]').count() >= 1, 'the sales page does not link to /pricing');
+      const landing = await page.evaluate(() => document.querySelector('#pricing').innerText);
+      expect(/Sharp Tail \(research\)/.test(landing) && !claimy.test(landing), 'the sales page plan lists are not the plans table');
+      expect(await fits(), 'the sales page scrolls sideways at this size');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+    // CUSTOMIZE > Plans and pricing opens /pricing
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect(await page.locator('#layPricing').getAttribute('href') === '/pricing', 'CUSTOMIZE has no Plans and pricing link');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+  },
+
   async 'sales page and Learn claim only what the record proves'(page, w, opts) {
     // TEST DATA, not a recording: one proven row shaped like /api/claims, so the
     // page is checked against known numbers. The live check reads the real API.

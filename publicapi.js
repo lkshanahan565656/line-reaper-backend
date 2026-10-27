@@ -87,7 +87,7 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     return out;
   }
   // every live key's feed: [{ keyId, feed }]
-  const feeds = () => [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).map(d => ({ keyId: d.id, feed: d.feed }));
+  const feeds = () => [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).map(d => ({ keyId: d.id, feed: d.feed, userId: d.userId || null }));
   // after a send: ok resets the failure count; dead (or 5 fails in a row) retires the feed
   async function markFeed(keyId, r) {
     const d = [...byHash.values()].find(x => x.id === keyId);
@@ -106,9 +106,11 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
 const publicKey = d => ({ id: d.id, name: d.name, createdAt: d.createdAt, revokedAt: d.revokedAt || null, signedIn: !!d.userId });
 
 // ── rate limits: fixed windows, a minute and a UTC day, per key (or per address for widgets) ──
-function createLimiter({ perMinute = LIMITS.perMinute, perDay = LIMITS.perDay, now = () => Date.now() } = {}) {
+function createLimiter({ perMinute: perMinuteDefault = LIMITS.perMinute, perDay: perDayDefault = LIMITS.perDay, now = () => Date.now() } = {}) {
   const used = new Map();   // id → { m, mn, d, dn }
-  function take(id) {
+  // lim: this caller's plan limits ({ perMinute, perDay }), else the limiter's own
+  function take(id, lim = null) {
+    const perMinute = lim?.perMinute ?? perMinuteDefault, perDay = lim?.perDay ?? perDayDefault;
     const t = now();
     const m = Math.floor(t / 60e3), d = Math.floor(t / 86400e3);
     let u = used.get(id);

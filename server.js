@@ -970,8 +970,14 @@ function splitsMap() {
 const AUTH_SECRET = process.env.AUTH_SECRET || require('crypto').randomBytes(32).toString('hex');
 if (!process.env.AUTH_SECRET) console.warn('AUTH_SECRET is not set: logins will not survive a restart.');
 const auth = createAuth({ store: createUserStoreFromEnv(), secret: AUTH_SECRET, termsVersion: legal.TERMS_VERSION, minAge: legal.MIN_AGE });
+// Plans (plans.js): what Free and Pro get, enforced below and shown on /pricing.
+const plans = require('./plans');
+// founding seats taken: accounts whose subscription was on the intro price
+const foundingTaken = () => auth.store.count(u => !!u.founding).catch(() => 0);
 const billing = createBilling({
   http: axios, secretKey: process.env.STRIPE_SECRET_KEY, priceId: process.env.STRIPE_PRICE_ID,
+  introPriceId: String(process.env.STRIPE_INTRO_PRICE_ID || '').trim() || null,
+  introOpen: async () => plans.priceView({ env: process.env, paywall: true, foundingTaken: await foundingTaken() }).intro != null,
   store: auth.store, trialDays: parseInt(process.env.STRIPE_TRIAL_DAYS) || 0,
 });
 // PAYWALL=on turns the gates on. Off by default so a deploy never locks you out.
@@ -3368,6 +3374,14 @@ function hasPro(req) {
   if (isAdmin(req)) return true;
   return isPro(req.user);
 }
+// 'pro' or 'free' (plans.js): the same answer as hasPro, as a plan name
+const planOfReq = req => plans.planOf({ paywall: PAYWALL, admin: isAdmin(req), pro: isPro(req.user) });
+// an API key's plan: its account's (a key made signed out is Free once the paywall is on)
+async function planOfUserId(userId) {
+  if (!PAYWALL) return 'pro';
+  const user = userId ? await auth.store.get(userId).catch(() => null) : null;
+  return plans.planOf({ paywall: PAYWALL, pro: isPro(user) });
+}
 
 // Data licences. Polymarket's terms give a personal licence and Kalshi's data
 // terms are personal and non-commercial, so showing either to other people
@@ -5024,20 +5038,38 @@ app.get('/bets.js', (req, res) => {
 // The footer links to /terms, /privacy and /refunds.
 const LANDING_FILE = path.join(__dirname, 'public', 'landing.html');
 let landingSrc = null;
+// Stripe's own prices and the founding seats taken, read at most hourly
+// (billing.prices caches), so the pages show what checkout will charge.
+const priceState = { at: 0, main: null, intro: null, founding: 0, pending: null };
+function refreshPrices() {
+  if (priceState.pending || Date.now() - priceState.at < 10 * 60e3) return priceState.pending || Promise.resolve(priceState);
+  priceState.pending = (async () => {
+    try {
+      const [p, founding] = await Promise.all([billing.configured() ? billing.prices() : { main: null, intro: null }, foundingTaken()]);
+      Object.assign(priceState, { main: p.main, intro: p.intro, founding: founding || 0 });
+    } catch (e) { console.warn('Prices:', e.message); }
+    priceState.at = Date.now();
+    priceState.pending = null;
+    return priceState;
+  })();
+  return priceState.pending;
+}
+const priceNow = ({ paywall = PAYWALL, env = process.env, live = env === process.env } = {}) => plans.priceView({ env, paywall,
+  stripe: live ? priceState.main : null, introStripe: live ? priceState.intro : null, foundingTaken: live ? priceState.founding : 0 });
 function landingHtml({ paywall = PAYWALL, env = process.env, origin = '' } = {}) {
   if (landingSrc == null) { try { landingSrc = fs.readFileSync(LANDING_FILE, 'utf8'); } catch { return null; } }
-  const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) && n >= 0 ? n : d; };
-  const money = n => (Number.isInteger(n) ? String(n) : n.toFixed(2));
-  const price = num(env.PRICE_MONTHLY, 79), intro = num(env.PRICE_INTRO, 49), seats = Math.round(num(env.INTRO_SEATS, 100));
+  const pv = priceNow({ paywall, env });
   const vals = {
-    PRICE: money(price), INTRO_PRICE: money(intro), INTRO_SEATS: String(seats),
-    INTRO_VISIBILITY: intro > 0 && intro < price && seats > 0 ? 'visible' : 'hidden',
+    PRICE: plans.money(pv.monthly), INTRO_PRICE: plans.money(pv.intro ?? 0), INTRO_SEATS: String(pv.seats),
+    INTRO_VISIBILITY: pv.intro != null ? 'visible' : 'hidden',
     EARLY_DISPLAY: paywall ? 'none' : 'block',
     // without AUTH_SECRET there are no accounts yet, so the buttons just open the app
     SIGNUP_LABEL: env.AUTH_SECRET ? 'Create a free account' : 'Start free',
     LOGIN_DISPLAY: env.AUTH_SECRET ? 'inline-flex' : 'none',
     CONTACT_HREF: String(env.LEGAL_EMAIL || '').trim() ? `mailto:${String(env.LEGAL_EMAIL).trim().replace(/[^\w.+@-]/g, '')}` : '/legal#contact',
     ORIGIN: String(origin).replace(/[^\w.:/-]/g, ''),
+    // the plan cards' lists, from the same table as /pricing (plans.js)
+    FREE_LIST: plans.planListHtml('free'), PRO_LIST: plans.planListHtml('pro'),
   };
   return landingSrc.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (k in vals ? vals[k] : m));
 }
@@ -5046,7 +5078,7 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /leagues\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /pricing\nAllow: /leagues\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 // ── LEAGUE PAGES (leagues.js) ──
 // /nfl ... /esports/dota2 and /leagues: public, server-rendered from the live
 // board and the strict public record, the same for everyone (the webhook's
@@ -5144,18 +5176,19 @@ app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async 
 });
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/learn', '/status', '/developers', '/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/pricing', '/learn', '/status', '/developers', '/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
 // own health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '')) {
+    refreshPrices();
     const html = landingHtml({ origin: siteOrigin(req) });
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.211.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.212.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5183,7 +5216,33 @@ app.post('/api/auth/delete', async (req, res) => {
 app.get('/api/legal', (req, res) => res.json({ termsVersion: legal.TERMS_VERSION, minAge: legal.MIN_AGE, pages: legal.ORDER.map(k => ({ slug: k, path: `/${k}`, title: legal.PAGES[k].title })) }));
 app.get('/api/auth/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not logged in' });
-  res.json({ user: publicUser(req.user), paywall: PAYWALL, billing: billing.configured() });
+  res.json({ user: publicUser(req.user), paywall: PAYWALL, billing: billing.configured(), plan: planOfReq(req), limits: plans.limitsOf(planOfReq(req)) });
+});
+// ── PLANS (plans.js): what Free and Pro get, the price, and this viewer's plan ──
+app.get('/api/plans', async (req, res) => {
+  await refreshPrices();
+  res.set('Cache-Control', 'no-store').json(plans.plansBody({ paywall: PAYWALL, billingConfigured: billing.configured(), price: priceNow(),
+    viewerPlan: planOfReq(req), signedIn: !!req.user }));
+});
+const pricingMemo = require('./ops').createMemo({ ttlMs: 60e3, max: 4 });
+// read Stripe's prices once soon after boot, so the first visitor sees them
+if (billing.configured()) setTimeout(() => refreshPrices(), 20e3).unref?.();
+app.get('/pricing', async (req, res) => {
+  try {
+    await refreshPrices();
+    const origin = siteOrigin(req);
+    const html = await pricingMemo(origin, async () => {
+      let claimsBody = null;
+      try {
+        const lic = webhookLicence();
+        const [board, txBoard] = await Promise.all([closeBoardFor(lic, 0, null), closeBoardFor(lic, 0, 'TX')]);
+        claimsBody = claims.publicClaims({ board, txBoard, alertBooks: evBookProven });
+      } catch (e) { console.warn('Pricing page: record:', e.message); }
+      return plans.pricingPage({ origin, paywall: PAYWALL, billingConfigured: billing.configured(), accounts: !!process.env.AUTH_SECRET, price: priceNow(),
+        claims: claimsBody, legalEmail: String(process.env.LEGAL_EMAIL || '').trim().replace(/[^\w.+@-]/g, '') });
+    });
+    res.set('Cache-Control', 'public, max-age=60').type('html').send(html);
+  } catch (e) { console.warn('Pricing page:', e.message); res.status(500).type('text/plain').send('The pricing page could not be built just now. Try again in a minute.'); }
 });
 // where Stripe should send people back to: the page they came from
 function returnUrl(req, fallback = '/') {
@@ -9117,7 +9176,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.211.0',
+  version: '3.212.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9199,7 +9258,9 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   digest: typeof digestState !== 'undefined' ? digestState : null,
   outFeed: typeof outFeedStatus === 'function' ? outFeedStatus() : null,
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
-  accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
+  accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET,
+    // the switch to charging (plans.readiness): which settings are set, by name only
+    plans: (({ ready, missing }) => ({ ready, missing, pricing: '/pricing' }))(plans.readiness(process.env, { billingConfigured: billing.configured() })) },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchups: matchupEngine ? matchupEngine.status() : { off: true },
@@ -9467,29 +9528,48 @@ app.use('/api/v1', (req, res, next) => {
   next();
 });
 const v1KeyOf = req => req.get('x-api-key') || (typeof req.query.key === 'string' ? req.query.key : '');
-function v1Auth(req, res, next) {
+// a key's limits follow its plan (plans.js): its account's, or Free for a key
+// made signed out once the paywall is on; the admin token is always Pro
+async function v1PlanOf(req, doc) {
+  if (isAdmin(req)) return 'pro';
+  return planOfUserId(doc.userId);
+}
+const v1Limits = plan => { const l = plans.limitsOf(plan); return { perMinute: l.apiPerMinute, perDay: l.apiPerDay }; };
+async function v1Auth(req, res, next) {
   const key = v1KeyOf(req);
   const doc = apiKeys.check(key);
   if (!doc) return v1Fail(res, new V1Error(401, key ? 'bad_key' : 'no_key', key ? 'That key is not known or was revoked. Make a new one at /developers.' : 'Send your key in an X-API-Key header. Make one free at /developers.'));
-  const lim = apiLimiter.take(doc.id);
+  const plan = await v1PlanOf(req, doc);
+  const lim = apiLimiter.take(doc.id, v1Limits(plan));
   publicApi.limitHeaders(res, lim);
-  if (!lim.ok) return v1Fail(res, new V1Error(429, 'rate_limited', lim.over === 'day' ? `Over ${lim.dayLimit} calls today (UTC). Try again tomorrow.` : `Over ${lim.limit} calls this minute. Try again in ${lim.retryAfter} s.`));
+  res.set('X-Line-Reaper-Plan', plan);
+  const more = plan === 'free' && PAYWALL ? ' Pro keys get more: /pricing.' : '';
+  if (!lim.ok) return v1Fail(res, new V1Error(429, 'rate_limited', lim.over === 'day' ? `Over ${lim.dayLimit} calls today (UTC). Try again tomorrow.${more}` : `Over ${lim.limit} calls this minute. Try again in ${lim.retryAfter} s.${more}`));
   req.apiKey = doc;
+  req.apiPlan = plan;
   next();
 }
 const v1Route = fn => async (req, res) => {
   try { publicApi.sendCached(req, res, v1Safe(await fn(req))); } catch (e) { v1Fail(res, e); }
 };
 app.get('/api/v1', (req, res) => publicApi.sendCached(req, res, { version: publicApi.VERSION, docs: '/developers', auth: 'X-API-Key header (or ?key=)', limits: publicApi.LIMITS,
+  plans: PAYWALL ? Object.fromEntries(plans.PLAN_IDS.map(id => [id, v1Limits(id)])) : null, pricing: '/pricing',
   endpoints: publicApi.ENDPOINTS.map(e => ({ path: e.path, title: e.title, params: Object.fromEntries(e.params) })), widgets: ['/embed/best-price', '/embed/line-move', '/embed/record', '/embed.js'],
   feed: { status: 'GET /api/v1/feed', connect: 'PUT /api/v1/feed/discord with {"url": "<Discord webhook URL>"}', disconnect: 'DELETE /api/v1/feed/discord', docs: '/developers#feed' } }, { scope: 'public', maxAge: 300 }));
 app.post('/api/v1/keys', async (req, res) => {
   try {
+    // a signed-in account keeps at most its plan's number of live keys
+    const plan = req.user ? planOfReq(req) : (PAYWALL ? 'free' : 'pro');
+    if (req.user) {
+      await apiKeys.init();
+      const live = apiKeys.listFor(req.user.id).filter(k => !k.revokedAt).length, max = plans.limitsOf(plan).apiKeys;
+      if (live >= max) throw new V1Error(403, 'plan_limit', `Your plan keeps ${max} live API key${max === 1 ? '' : 's'}. Revoke one at /developers${plan === 'free' ? ', or see /pricing for Pro' : ''}.`);
+    }
     const out = await apiKeys.create({ name: req.body?.name, userId: req.user?.id || null, who: publicApi.callerOf(req) });
-    res.status(201).set('Cache-Control', 'no-store').json({ ...out, note: 'Shown once: keep it somewhere safe. Only a hash of it is stored.', limits: publicApi.LIMITS });
+    res.status(201).set('Cache-Control', 'no-store').json({ ...out, note: 'Shown once: keep it somewhere safe. Only a hash of it is stored.', plan, limits: v1Limits(plan) });
   } catch (e) {
     if (e.retryAfter) res.set('Retry-After', String(e.retryAfter));
-    v1Fail(res, e.status ? new V1Error(e.status, e.status === 429 ? 'rate_limited' : 'unavailable', e.message) : e);
+    v1Fail(res, e.status && !(e instanceof V1Error) ? new V1Error(e.status, e.status === 429 ? 'rate_limited' : 'unavailable', e.message) : e);
   }
 });
 // a signed-in account's keys (never the keys themselves)
@@ -9498,7 +9578,7 @@ app.get('/api/v1/keys', async (req, res) => {
   await apiKeys.init().catch(() => {});
   res.set('Cache-Control', 'no-store').json({ keys: apiKeys.listFor(req.user.id) });
 });
-app.get('/api/v1/key', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ key: publicApi.publicKey(req.apiKey), usage: apiLimiter.usage(req.apiKey.id), limits: publicApi.LIMITS }));
+app.get('/api/v1/key', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ key: publicApi.publicKey(req.apiKey), usage: apiLimiter.usage(req.apiKey.id), plan: req.apiPlan, limits: v1Limits(req.apiPlan) }));
 app.delete('/api/v1/key', v1Auth, async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json({ revoked: await apiKeys.revoke(v1KeyOf(req)) }); } catch (e) { v1Fail(res, e); }
 });
@@ -9909,7 +9989,7 @@ app.get('/developers', async (req, res) => {
   try {
     const examples = await devMemo('examples', developerExamples);
     res.set('Cache-Control', 'public, max-age=60').type('html').send(embeds.developersPage({ origin: siteOrigin(req), endpoints: publicApi.ENDPOINTS, examples,
-      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence() }));
+      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence(), planLimits: PAYWALL ? plans.LIMITS : null }));
   } catch (e) { console.warn('Developers page:', e.message); res.status(500).type('text').send('The developers page could not be built. Try again in a minute.'); }
 });
 // ─── OUTBOUND FEED: DISCORD AND TELEGRAM (outfeed.js) ────────────────────────
@@ -9926,9 +10006,12 @@ const outFeedSeal = outFeed.sealer(process.env.FEED_SECRET ? require('crypto').c
 const outFeedStore = resultsBackup.wrap('outFeed', createEvStoreFromEnv(process.env, { table: 'out_feed', fileVar: 'OUT_FEED_FILE', file: 'out-feed.json' }), { appendOnly: false });
 const outFeedReady = outFeedStore.init().catch(e => console.warn('Feed store:', e.message));
 const outFeedState = { record: { checkedAt: null, rows: 0, posted: null, error: null }, moves: { last: null, error: null }, digest: { last: null, error: null }, ownerCheck: null, connects: new Map() };
-function feedSubscribers() {
+// a customer's channel gets the feed while the key's plan includes it
+// (plans.js: Pro once the paywall is on); a lapsed plan pauses it, nothing is deleted
+async function feedSubscribers() {
   const out = [];
-  for (const { keyId, feed } of apiKeys.feeds()) {
+  for (const { keyId, feed, userId } of apiKeys.feeds()) {
+    if (!plans.limitsOf(await planOfUserId(userId)).discordFeed) continue;
     const url = outFeedSeal.open(feed.sealed);
     if (url) out.push({ kind: 'discord', id: `key-${keyId}`, keyId, url });
   }
@@ -10007,9 +10090,11 @@ function feedView(doc) {
     stoppedWhy: f.deadAt ? 'Discord said the webhook is gone, or 5 posts in a row failed. Connect it again to restart.' : null };
 }
 const FEED_ABOUT = { posts: ['weekly record digest, Mondays 13:00 UTC', 'record changes on RESULTS, checked hourly', "today's biggest line moves, daily 21:00 UTC"], same: 'Every channel gets the same posts. Nothing is sized or picked per person.' };
-app.get('/api/v1/feed', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ discord: feedView(req.apiKey), ...FEED_ABOUT }));
+const feedPlanNote = plan => (plans.limitsOf(plan).discordFeed ? null : 'The Discord feed is a Pro feature: a connected channel gets no posts on the Free plan. See /pricing.');
+app.get('/api/v1/feed', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ discord: feedView(req.apiKey), plan: req.apiPlan, planNote: feedPlanNote(req.apiPlan), ...FEED_ABOUT }));
 app.put('/api/v1/feed/discord', v1Auth, async (req, res) => {
   try {
+    if (!plans.limitsOf(req.apiPlan).discordFeed) throw new V1Error(402, 'plan_required', 'The Discord feed is a Pro feature. Make the key while signed in to a Pro account, or see /pricing.');
     const hook = outFeed.parseDiscord(req.body?.url);
     if (!hook) throw new V1Error(400, 'bad_parameter', 'That is not a Discord webhook URL. It starts https://discord.com/api/webhooks/ (Server Settings > Integrations > Webhooks > Copy Webhook URL).');
     const t = Date.now(), seen = (outFeedState.connects.get(req.apiKey.id) || []).filter(x => t - x < 3600e3);
