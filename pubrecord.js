@@ -73,6 +73,27 @@ function cleanSlip(s) {
     ...(s.format ? { format: str(s.format, 20) } : {}), ...(s.timed ? { timed: true } : s.timed === false ? { timed: false } : {}) };
 }
 
+// a single game-line bet from MY BETS (a moneyline, spread or total logged from
+// the ODDS SCREEN or the Exchange Shopper) → what we keep: the venue, the pick,
+// the price taken and the game reference Pinnacle's close is read on. No stake.
+const LB = require('./linebets');
+function cleanBet(b) {
+  if (!b || typeof b !== 'object') return null;
+  const id = str(b.id, 80);
+  const c = LB.clean(b.track);
+  const dec = Number(b.decimal);
+  if (!id || !c || !(dec > 1.0001 && dec < 1001)) return null;
+  const start = Date.parse(b.track?.start || b.start || '');
+  return { id, venue: str(b.venue, 30) || 'other', venueName: str(b.venueName || b.venue, 40) || 'Other', event: str(b.event, 100), pick: str(b.pick, 80),
+    decimal: Math.round(dec * 1e4) / 1e4, track: { kind: 'line', ...c, league: str(b.track?.league, 40) }, start: Number.isFinite(start) ? new Date(start).toISOString() : null };
+}
+// what we keep of a line bet's grade (linebets.view)
+function slimBetGrade(g) {
+  if (!g || typeof g !== 'object' || !g.close) return null;
+  const c = g.close;
+  return { status: c.status || null, start: c.start || null, logFair: c.logFair ?? null, closeFair: c.fair ?? null, closeOk: c.closeOk ?? null, outcome: c.outcome || null, note: g.note || null };
+}
+
 // what we keep of a grade: enough to show and check it
 function slimGrade(g) {
   if (!g || typeof g !== 'object') return null;
@@ -91,6 +112,7 @@ function slimGrade(g) {
 function createRecordStore({ store, now = () => Date.now(), random = n => crypto.randomBytes(n), log = console, perHour = CREATE_PER_HOUR } = {}) {
   const records = new Map();   // handle → record doc
   const slips = new Map();     // handle → Map(slipId → slip doc)
+  const bets = new Map();      // handle → Map(betId → bet doc)
   const created = new Map();   // who → [times]
   let ready = null;
   function init() {
@@ -101,6 +123,7 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
           if (!d || !d.handle) continue;
           if (d.kind === 'record') records.set(d.handle, d);
           else if (d.kind === 'slip' && d.slip) { if (!slips.has(d.handle)) slips.set(d.handle, new Map()); slips.get(d.handle).set(d.slip.id, d); }
+          else if (d.kind === 'bet' && d.bet) { if (!bets.has(d.handle)) bets.set(d.handle, new Map()); bets.get(d.handle).set(d.bet.id, d); }
         }
       })().catch(e => { log.warn?.(`Public records: load failed: ${e.message}`); });
     }
@@ -162,6 +185,32 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
     return { added, skipped, bad, total: [...have.values()].filter(d => d.status === 'live').length };
   }
 
+  // single game-line bets in, stamped like slips; an id we have is left alone
+  async function addBets(handle, token, list) {
+    await init();
+    const h = cleanHandle(handle).handle;
+    const r = h && live(h);
+    if (!r) throw err(404, 'No published record with that handle.');
+    if (!owns(r, token)) throw err(403, 'That key does not manage this record.');
+    if (!Array.isArray(list)) throw err(400, 'bets needed');
+    if (list.length > MAX_POST) throw err(413, `At most ${MAX_POST} bets at a time.`);
+    if (!bets.has(h)) bets.set(h, new Map());
+    const have = bets.get(h);
+    const at = new Date(now()).toISOString();
+    let added = 0, skipped = 0, bad = 0;
+    for (const raw of list) {
+      const b = cleanBet(raw);
+      if (!b) { bad++; continue; }
+      if (have.has(b.id)) { skipped++; continue; }
+      if ([...have.values()].filter(d => d.status === 'live').length >= MAX_SLIPS) { bad++; continue; }
+      const doc = { id: `bet|${h}|${b.id}`, kind: 'bet', status: 'live', handle: h, bet: b, receivedAt: at, grade: null };
+      have.set(b.id, doc);
+      await store.put(doc);
+      added++;
+    }
+    return { added, skipped, bad, total: [...have.values()].filter(d => d.status === 'live').length };
+  }
+
   // the whole record out: every slip emptied, the handle kept for its owner
   async function unpublish(handle, token) {
     await init();
@@ -174,6 +223,12 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
       if (d.status !== 'live') continue;
       const out = { id: d.id, kind: 'slip', status: 'removed', handle: h, slip: { id: d.slip.id }, removedAt: at };
       slips.get(h).set(d.slip.id, out);
+      await store.put(out);
+    }
+    for (const d of bets.get(h)?.values() || []) {
+      if (d.status !== 'live') continue;
+      const out = { id: d.id, kind: 'bet', status: 'removed', handle: h, bet: { id: d.bet.id }, removedAt: at };
+      bets.get(h).set(d.bet.id, out);
       await store.put(out);
     }
     const doc = { ...r, status: 'unpublished', unpublishedAt: at };
@@ -214,12 +269,38 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
     return S.gradeRequest(docs.map(gradeSlip), undefined, grades);
   }
 
+  // live bets not settled yet, as POST /api/bets/settle tracks: [{ id, track }]
+  // (a bet no odds screen knows is asked about for a week, then left)
+  function pendingBets(handle) {
+    const have = bets.get(handle);
+    if (!have) return [];
+    const t = now();
+    return [...have.values()].filter(d => d.status === 'live' && !d.grade?.outcome && d.grade?.status !== 'late' && !(t - Date.parse(d.receivedAt) > 10 * 86400e3))
+      .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt)).map(d => ({ id: d.bet.id, track: d.bet.track }));
+  }
+  async function applyBetGrades(handle, results) {
+    const have = bets.get(handle);
+    if (!have || !results) return 0;
+    let changed = 0;
+    for (const [id, g] of Object.entries(results)) {
+      const d = have.get(id);
+      if (!d || d.status !== 'live') continue;
+      const v = slimBetGrade(g);
+      if (!v || JSON.stringify(v) === JSON.stringify(d.grade)) continue;
+      const out = { ...d, grade: v };
+      have.set(id, out); await store.put(out); changed++;
+    }
+    return changed;
+  }
+
   const get = h => records.get(h) || null;
   const slipsOf = h => [...(slips.get(h)?.values() || [])].filter(d => d.status === 'live');
+  const betsOf = h => [...(bets.get(h)?.values() || [])].filter(d => d.status === 'live');
   const liveHandles = () => [...records.values()].filter(r => r.status === 'live').map(r => r.handle);
   const stats = () => ({ live: liveHandles().length, unpublished: [...records.values()].filter(r => r.status !== 'live').length,
-    slips: [...slips.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0) });
-  return { init, publish, addSlips, unpublish, applyGrades, pendingLegs, get, slipsOf, liveHandles, stats, owns: (h, t) => owns(records.get(h), t) };
+    slips: [...slips.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0),
+    bets: [...bets.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0) });
+  return { init, publish, addSlips, addBets, unpublish, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, stats, owns: (h, t) => owns(records.get(h), t) };
 }
 const publicMeta = r => ({ handle: r.handle, status: r.status, createdAt: r.createdAt, publishedAt: r.publishedAt, unpublishedAt: r.unpublishedAt || null, restarts: (r.restarts || []).length });
 
@@ -302,8 +383,65 @@ function labelOf(t) {
   return { label: 'proven', why: null };
 }
 
+// ── single game-line bets ──
+// on time: its game starts after the bet reached us; counted when Pinnacle hung
+// its number then (linebets logged it: open, later closed)
+function betRow(d) {
+  const b = d.bet, g = d.grade || null, got = Date.parse(d.receivedAt);
+  const start = g?.start || b.start || null, st = Date.parse(start || '');
+  const timing = g?.status === 'late' || (Number.isFinite(st) && st <= got) ? 'late' : g && (g.status === 'open' || g.status === 'closed') ? 'on time' : 'checking';
+  const pin = !!g && g.status === 'closed' && g.closeOk === true && g.closeFair > 0;
+  const clv = pin ? r2((b.decimal * g.closeFair - 1) * 100) : null;
+  const o = g?.outcome || null;
+  const units = o === 'win' ? r2(b.decimal - 1) : o === 'loss' ? -1 : o === 'push' ? 0 : null;
+  const note = !g ? 'checking' : g.status === 'nopin' ? 'Pinnacle does not hang this number' : g.status === 'unknown' ? 'game not on the odds screen' : g.status === 'closed' && !pin ? 'Pinnacle read over an hour early' : null;
+  return { d, b, g, timing, start, pin, clv, outcome: o, units, note };
+}
+function betStats(rows) {
+  const pin = rows.filter(r => r.pin);
+  const c = meanT(pin.map(r => r.clv));
+  const graded = rows.filter(r => r.outcome);
+  const pinGraded = pin.filter(r => r.outcome === 'win' || r.outcome === 'loss');
+  const exp = pinGraded.reduce((a, r) => a + r.g.closeFair, 0), vr = pinGraded.reduce((a, r) => a + r.g.closeFair * (1 - r.g.closeFair), 0);
+  const pinWins = pinGraded.filter(r => r.outcome === 'win').length;
+  const u = meanT(graded.map(r => r.units));
+  const t = {
+    bets: rows.length, pinN: pin.length, target: BAR, clv: r2(c.mean), clvT: r2(c.t), beat: pin.length ? r4(pin.filter(r => r.clv > 0).length / pin.length) : null,
+    graded: graded.length, won: graded.filter(r => r.outcome === 'win').length, lost: graded.filter(r => r.outcome === 'loss').length, push: graded.filter(r => r.outcome === 'push').length,
+    open: rows.filter(r => !r.outcome).length, shortZ: vr > 0 ? r2((pinWins - exp) / Math.sqrt(vr)) : null,
+    units: graded.length ? r2(graded.reduce((a, r) => a + r.units, 0)) : null, unitsT: r2(u.t),
+  };
+  t.record = `${t.won}-${t.lost}${t.push ? `-${t.push}` : ''}`;
+  return { ...t, ...betLabel(t) };
+}
+// the same rule as a slip leg's, worded for bets
+function betLabel(t) {
+  if (!t.pinN) return { label: 'not graded yet', why: 'No bet logged before its start has Pinnacle\'s close at its own number yet.' };
+  if (t.pinN < BAR) return { label: t.clv > 0 ? 'building' : 'too early', why: `${t.pinN} of ${BAR} bets graded against Pinnacle's close.` };
+  if (t.clv < 0) return { label: 'losing to the close', why: `Bets average ${t.clv}% against Pinnacle's close.` };
+  if (!(t.clvT >= CLV_T)) return { label: 'building', why: `The CLV t is ${t.clvT ?? '—'}, under ${CLV_T}.` };
+  if (t.shortZ != null && t.shortZ < -SHORT_SD) return { label: 'building', why: `Results are running ${Math.abs(t.shortZ)} sd under what Pinnacle's close expected.` };
+  return { label: 'proven', why: null };
+}
+function betsView(docs) {
+  const rows = (docs || []).map(betRow).sort((a, b) => Date.parse(b.d.receivedAt) - Date.parse(a.d.receivedAt) || String(b.b.id).localeCompare(String(a.b.id)));
+  const counted = rows.filter(r => r.timing === 'on time');
+  const venues = [...new Set(counted.map(r => r.b.venue))].map(venue => ({ venue, venueName: counted.find(r => r.b.venue === venue).b.venueName, ...betStats(counted.filter(r => r.b.venue === venue)) }))
+    .map(x => ({ ...x, profitShown: x.label === 'proven' && x.units > 0 && x.unitsT >= CLV_T }))
+    .sort((a, b) => b.pinN - a.pinN || b.bets - a.bets);
+  const late = rows.filter(r => r.timing === 'late');
+  return {
+    counts: { bets: rows.length, onTime: counted.length, late: late.length, checking: rows.filter(r => r.timing === 'checking').length },
+    venues, proven: venues.filter(x => x.label === 'proven').map(x => x.venueName),
+    pooled: { ...betStats(counted), label: 'pooled, never proven', why: 'Every venue together. A record is judged one venue at a time.', profitShown: false },
+    late: { bets: late.length, ...(() => { const s = betStats(late); return { graded: s.graded, record: s.record }; })(), note: 'Logged after the game started: shown, never counted.' },
+    rows: rows.map(r => ({ id: r.b.id, venue: r.b.venue, venueName: r.b.venueName, event: r.b.event, pick: r.b.pick, decimal: r.b.decimal, market: r.b.track.market, receivedAt: r.d.receivedAt,
+      start: r.start, timing: r.timing, counted: r.timing === 'on time', pinClose: r.pin ? r.g.closeFair : null, clv: r.clv, outcome: r.outcome, units: r.units, note: r.note })),
+  };
+}
+
 // tables: the apps' live payout tables (Pick6's as last read)
-function recordView(meta, docs, { tables = null, now = Date.now(), page = 1, perPage = 100 } = {}) {
+function recordView(meta, docs, { tables = null, now = Date.now(), page = 1, perPage = 100, bets = [] } = {}) {
   const grades = Object.assign({}, ...docs.map(d => d.grades || {}));
   const rows = docs.map(d => {
     const sl = gradeSlip(d);
@@ -339,6 +477,7 @@ function recordView(meta, docs, { tables = null, now = Date.now(), page = 1, per
     late: { slips: late.length, legs: lateStats.legs, graded: lateStats.graded, hits: lateStats.hits, hitRate: lateStats.hitRate, record: lateStats.record, note: 'Logged after the first game started (an imported history, or a slip typed in late). Graded from the box scores and shown, never counted in the record.' },
     page: p, pages, perPage,
     slips: rows.slice((p - 1) * perPage, p * perPage).map(slipOut),
+    bets: betsView(bets),
   };
 }
 
@@ -450,7 +589,8 @@ ${tags}
   const cls = x => (x == null ? '' : x > 0 ? 'pos' : x < 0 ? 'neg' : '');
   const label = l => `<span class="tag ${TAG[l] || ''}">${esc(l)}</span>`;
   const restarted = v.restarts.length ? ` Restarted ${v.restarts.length} time${v.restarts.length === 1 ? '' : 's'}: the earlier record was unpublished and its slips removed (last restart ${esc(utc(v.restarts[v.restarts.length - 1].republishedAt))}).` : '';
-  const headline = v.proven.length ? `<span class="tag pv">proven at ${esc(v.proven.join(', '))}</span>` : '<span class="tag">nothing proven yet</span>';
+  const provenAll = [...v.proven, ...(v.bets?.proven || [])];
+  const headline = provenAll.length ? `<span class="tag pv">proven at ${esc(provenAll.join(', '))}</span>` : '<span class="tag">nothing proven yet</span>';
   let body = `<p class="kicker">Bettor record · imported, not placed through us</p>
 <h1>@${esc(v.handle)}</h1>
 <p class="lead">Pick'em slips this bettor logged on Line Reaper, each leg graded against Pinnacle's close at its own line and settled from the box scores. Published ${esc(utc(v.publishedAt))}.${restarted}</p>
@@ -462,7 +602,7 @@ ${stat('CLV vs Pinnacle', pc(p.clv), p.clvT != null ? `t ${p.clvT} · beat ${sha
 ${stat('Legs hit', share(p.hitRate), p.be != null ? `vs ${(p.be * 100).toFixed(1)}% break-even, ${p.graded} graded` : `${p.graded} graded`)}
 ${stat('Slips', p.record, `${unitsText(p.units, false)} at 1u a slip · ${p.open} open`, cls(p.units))}
 </div>`;
-  if (!v.counts.slips) {
+  if (!v.counts.slips && !v.bets?.counts.bets) {
     body += `<div class="ex"><div class="ex-h">No slips yet</div><p>Nothing logged yet. Slips appear here the moment the bettor adds them in MY SLIPS, stamped with the time they reached us.</p></div>`;
   }
   // by app: each app judged on its own
@@ -472,6 +612,20 @@ ${v.apps.map(a => `<tr><td>${esc(a.appName)}</td><td>${label(a.label)}${a.why ? 
 <tr><td>All apps</td><td>${label(p.label)}<span class="sub">${esc(p.why)}</span></td><td>${p.pinN}</td><td class="${cls(p.clv)}">${pc(p.clv)}</td><td>${share(p.hitRate)}</td><td>${p.record}</td><td class="${cls(p.units)}">${unitsText(p.units, false)}</td></tr>
 </tbody></table></div>
 <p class="note">* Units are 1 unit a slip settled from the box scores at the app's standard payout table${p.noTable ? ` (${p.noTable} slip${p.noTable === 1 ? '' : 's'} at an app with no fixed table count in the record, not the units)` : ''}. ${esc(v.rule.text)}</p>`;
+  // single game-line bets (MY BETS from the ODDS SCREEN or Exchange Shopper), each venue on its own
+  const bv = v.bets;
+  if (bv && bv.counts.bets) {
+    const bp = bv.pooled;
+    body += `<h2>Game-line bets</h2>
+<p class="note">Moneylines, spreads and totals logged in MY BETS, each against Pinnacle's no-vig close at the bet's own number (CLV is the price taken times that close, minus one) and settled from the final score. 1 unit a bet.</p>
+<div class="scroll"><table><thead><tr><th>Venue</th><th>Label</th><th>Bets vs Pinnacle</th><th>CLV</th><th>Record</th><th>Units</th></tr></thead><tbody>
+${bv.venues.map(x => `<tr><td>${esc(x.venueName)}</td><td>${label(x.label)}${x.why ? `<span class="sub">${esc(x.why)}</span>` : ''}</td><td>${x.pinN} / ${BAR}</td><td class="${cls(x.clv)}">${pc(x.clv)}${x.clvT != null ? `<span class="sub">t ${x.clvT}</span>` : ''}</td><td>${x.record}${x.open ? `<span class="sub">${x.open} open</span>` : ''}</td><td class="${cls(x.units)}">${unitsText(x.units, x.profitShown)}</td></tr>`).join('')}
+<tr><td>All venues</td><td>${label(bp.label)}<span class="sub">${esc(bp.why)}</span></td><td>${bp.pinN}</td><td class="${cls(bp.clv)}">${pc(bp.clv)}</td><td>${bp.record}</td><td class="${cls(bp.units)}">${unitsText(bp.units, false)}</td></tr>
+</tbody></table></div>
+<p class="note">${bv.counts.onTime} on time, ${bv.counts.late} late (logged after the start: shown, never counted), ${bv.counts.checking} still matching to a game.</p>
+${bv.rows.slice(0, 100).map(b => `<div class="slip${b.timing === 'late' ? ' late' : ''}"><div class="slip-h"><b>${esc(b.venueName)}</b><span>${esc(b.pick)}</span><span>@ ${esc(b.decimal.toFixed(2))}</span><span class="${b.outcome === 'win' ? 'pos' : b.outcome === 'loss' ? 'neg' : ''}">${esc(b.outcome ? b.outcome.toUpperCase() : 'open')}${b.units != null ? ` ${b.units > 0 ? '+' : ''}${b.units.toFixed(2)}u` : ''}</span>${b.timing === 'late' ? '<span class="tag late">LATE · not counted</span>' : b.timing === 'checking' ? '<span class="tag">matching</span>' : ''}</div>
+<div class="meta">${esc(b.event)} · logged ${esc(utc(b.receivedAt))}${b.start ? ` · starts ${esc(utc(b.start))}` : ''} · ${b.clv != null ? `PIN close ${(b.pinClose * 100).toFixed(1)}%, CLV ${esc(pc(b.clv))}` : esc(b.note || 'Pinnacle close at the start')}</div></div>`).join('')}`;
+  }
   body += `<h2>Late slips</h2><p class="note">${v.late.slips ? `${v.late.slips} slip${v.late.slips === 1 ? '' : 's'} (${v.late.legs} legs, ${v.late.graded} graded, ${share(v.late.hitRate)} hit). ` : 'None. '}${esc(v.late.note)}</p>`;
   const base = `/r/${encodeURIComponent(v.handle)}`;
   body += `<div class="links"><a class="go" href="/api/records/${encodeURIComponent(v.handle)}/slips.csv">DOWNLOAD CSV</a><a class="go" href="/api/records/${encodeURIComponent(v.handle)}/slips.json">DOWNLOAD JSON</a><a class="go" href="/card/record-${encodeURIComponent(v.handle)}.png">SHARE CARD</a></div>`;
@@ -489,4 +643,4 @@ ${s.legs.map(l => `<div class="leg"><div class="who"><b>${esc(l.player)}</b> ${e
   return head + body + foot;
 }
 
-module.exports = { createRecordStore, cleanHandle, cleanSlip, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
+module.exports = { createRecordStore, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };

@@ -8,7 +8,7 @@
 // view by link and open it cold on a fresh device, export and print a screen,
 // and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
-/* global pk, renderPkTray, pkClear -- the app's own slip tray, read in page.evaluate */
+/* global pk, renderPkTray, pkClear, mybFormClose -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -17,6 +17,28 @@ const { watch, settle, openTab, enterApp, newAppPage, checkText, checkOverflow, 
 const ls = (page, k) => page.evaluate(key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }, k);
 const text = (page, sel) => page.locator(sel).first().innerText({ timeout: 4000 }).catch(() => '');
 function expect(cond, msg) { if (!cond) throw new Error(msg); }
+
+// Log bet on a game-line bet: the server checks it first (POST /api/bets/stamp).
+// Offline the recording's games are days old, so the server rightly refuses
+// them as started: that refusal is checked, then (TEST DATA) the check is
+// answered ok so the save itself is tested. Live, a game under way is refused
+// in words, which is the right answer. → the saved bets, or null when refused live
+async function mybSaveChecked(page, w, opts, before, where) {
+  await page.locator('#mybModal button.primary').click();
+  await settle(page, w, opts, 200);
+  if (!opts.live) {
+    expect(/Not logged\..*started/.test(await text(page, '#mbHint')) && ((await ls(page, 'lr_bets'))?.length || 0) === before, `a bet on a started game from ${where} should be refused in the form: "${await text(page, '#mbHint')}"`);
+    const ok = route => route.fulfill({ json: { at: new Date().toISOString(), ok: true, status: 'open', start: null, logFair: 0.5, why: null } });
+    await page.route('**/api/bets/stamp', ok);
+    await page.locator('#mybModal button.primary').click();
+    await settle(page, w, opts, 200);
+    await page.unroute('**/api/bets/stamp', ok);
+  } else if (/Not logged\..*started/.test(await text(page, '#mbHint'))) { await page.evaluate(() => mybFormClose()); return null; }
+  const list = await ls(page, 'lr_bets');
+  expect(list?.length === before + 1, `the bet from ${where} was not logged: "${await text(page, '#mbHint')}"`);
+  expect(list[0].stamp?.at, `the bet from ${where} carries no server check`);
+  return list;
+}
 
 // the Pikkit export the import reads: one row per bet, legs split by |
 function pikkitCsv(now) {
@@ -345,12 +367,29 @@ const FLOWS = {
     expect(await page.locator('#mybModal .mb-venues button').count() > 0, 'the form shows no venues to pick a price from');
     await page.locator('#mybModal .mb-venues button').first().click();
     if (!(await page.inputValue('#mb_stake'))) await page.fill('#mb_stake', '20');
-    await page.locator('#mybModal button.primary').click();
-    await settle(page, w, opts, 200);
-    const list = await ls(page, 'lr_bets');
-    expect(list?.length === before + 1, 'the bet from the odds screen was not logged');
+    const list = await mybSaveChecked(page, w, opts, before, 'the odds screen');
+    if (!list) return;
     const bet = list.find(b => b.pick === pick);
     expect(bet?.track?.kind === 'line', `the odds screen bet is not tracked as a line (${JSON.stringify(bet?.track)})`);
+  },
+
+  async 'log a game line from the Exchange Shopper'(page, w, opts) {
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 250);
+    // the ranked list keeps each market folded: open the first one
+    if (!(await page.locator('#shpContent button.os-log').count()) && await page.locator('#shpContent tr.shp-row').count()) { await page.locator('#shpContent tr.shp-row').first().click(); await settle(page, w, opts, 150); }
+    const log = page.locator('#shpContent button.os-log').first();
+    await log.waitFor({ timeout: 6000 });
+    const before = (await ls(page, 'lr_bets'))?.length || 0;
+    await log.click();
+    await page.locator('#mybModal.open').waitFor({ timeout: 4000 });
+    expect(await page.inputValue('#mb_pick'), 'the bet form opened without the pick filled in');
+    if (await page.locator('#mybModal .mb-venues button').count()) await page.locator('#mybModal .mb-venues button').first().click();
+    if (!(await page.inputValue('#mb_stake'))) await page.fill('#mb_stake', '20');
+    const list = await mybSaveChecked(page, w, opts, before, 'the Exchange Shopper');
+    if (!list) return;
+    expect(list[0].track?.kind === 'line' && list[0].track.game && ['ml', 'spread', 'total'].includes(list[0].track.market), `the shopper bet is not tracked as a game line (${JSON.stringify(list[0].track)})`);
   },
 
   async 'log a slip from PROPS'(page, w, opts) {

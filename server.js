@@ -5155,7 +5155,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.209.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.210.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8997,6 +8997,24 @@ app.post('/api/bets/settle', async (req, res) => {
     res.set('Cache-Control', 'no-store').json({ results: { ...betsLib.matchTracked(list, { tail, picks, sportKey: pickSportKey, outcomeFor: pickOutcomeFor }), ...lines } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// One game-line bet checked the moment MY BETS saves it: logged in the line-bet
+// log now (Pinnacle's price at its number followed from this second), or
+// refused when its game has started. body: { track } → { at, ok, status, start, why }
+app.post('/api/bets/stamp', async (req, res) => {
+  try {
+    const t = req.body?.track;
+    if (!require('./linebets').clean(t)) return res.status(400).json({ error: 'a game-line track is needed' });
+    const now = Date.now(), at = new Date(now).toISOString();
+    const g = (await lineBets.settle([{ id: 'stamp', track: t }], { games: freeBooksState.games || {} })).stamp || { close: { status: 'unknown' } };
+    const c = g.close || {}, st = Date.parse(c.start || t.start || '');
+    const started = c.status === 'late' || (Number.isFinite(st) && st <= now);
+    const when = Number.isFinite(st) ? slipstamp.etTime(new Date(st).toISOString(), now) : '';
+    res.set('Cache-Control', 'no-store').json({ at, ok: !started, status: started ? 'started' : c.status || 'unknown', start: c.start || null, logFair: c.logFair ?? null,
+      why: started ? `The game started${when ? ` at ${when}` : ''}. A bet goes on your record only before its game starts.`
+        : c.status === 'nopin' ? 'Pinnacle does not hang this number right now, so this bet has no close to grade against.'
+        : c.status === 'unknown' ? 'This game is not on the odds screen right now, so its start and close cannot be checked.' : null });
+  } catch (e) { sendErr(res, e); }
+});
 // The encrypted snapshot the results-backup Action keeps (backup.js).
 app.get('/api/results/backup', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await resultsBackup.exportSnapshot()); }
@@ -9037,7 +9055,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.209.0',
+  version: '3.210.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -9662,6 +9680,9 @@ async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
     const start = all.length ? pubRecordTurn++ % all.length : 0;
     for (const h of [...all.slice(start), ...all.slice(0, start)]) {
       if (legsN >= maxLegs) break;
+      // game-line bets: the odds screen's line-bet log (linebets.js), Pinnacle's close and the final
+      const pb = pubRecords.pendingBets(h).slice(0, 200);
+      if (pb.length) changed += await pubRecords.applyBetGrades(h, await lineBets.settle(pb, { games: freeBooksState.games || {} }));
       const chunk = pubRecords.pendingLegs(h).slice(0, Math.min(300, maxLegs - legsN));
       if (!chunk.length) continue;
       legsN += chunk.length;
@@ -9685,7 +9706,7 @@ async function pubView(handle, page = 1) {
   if (!meta) return null;
   const key = `${c.handle}|${page}`, hit = pubViewMemo.get(key);
   if (hit && Date.now() - hit.at < 60e3) return hit.v;
-  const v = meta.status === 'live' ? pubRecord.recordView(meta, pubRecords.slipsOf(c.handle), { tables: pubTables(), page }) : { handle: meta.handle, status: meta.status, unpublishedAt: meta.unpublishedAt, at: new Date().toISOString() };
+  const v = meta.status === 'live' ? pubRecord.recordView(meta, pubRecords.slipsOf(c.handle), { tables: pubTables(), page, bets: pubRecords.betsOf(c.handle) }) : { handle: meta.handle, status: meta.status, unpublishedAt: meta.unpublishedAt, at: new Date().toISOString() };
   if (pubViewMemo.size > 200) pubViewMemo.clear();
   pubViewMemo.set(key, { at: Date.now(), v });
   return v;
@@ -9709,6 +9730,16 @@ app.post('/api/records/:handle/slips', async (req, res) => {
     res.set('Cache-Control', 'no-store').json(out);
   } catch (e) { sendErr(res, e); }
 });
+// MY BETS' game-line bets (a track { kind: 'line' }) to the same record
+app.post('/api/records/:handle/bets', async (req, res) => {
+  try {
+    const out = await pubRecords.addBets(req.params.handle, recordKey(req), req.body?.bets);
+    const h = pubRecord.cleanHandle(req.params.handle).handle;
+    pubForget(h);
+    if (out.added) gradePubRecords({ only: h, maxLegs: 600 }).then(() => pubForget(h)).catch(() => {});
+    res.set('Cache-Control', 'no-store').json(out);
+  } catch (e) { sendErr(res, e); }
+});
 app.delete('/api/records/:handle', async (req, res) => {
   try { const out = await pubRecords.unpublish(req.params.handle, recordKey(req)); pubForget(out.handle); res.set('Cache-Control', 'no-store').json(out); } catch (e) { sendErr(res, e); }
 });
@@ -9717,7 +9748,7 @@ app.post('/api/records/:handle/check', async (req, res) => {
   await pubRecords.init().catch(() => {});
   const h = pubRecord.cleanHandle(req.params.handle).handle;
   const r = h && pubRecords.get(h);
-  res.set('Cache-Control', 'no-store').json({ handle: h || null, exists: !!r, status: r?.status || null, owner: !!(h && pubRecords.owns(h, recordKey(req))), slips: r ? pubRecords.slipsOf(h).length : 0 });
+  res.set('Cache-Control', 'no-store').json({ handle: h || null, exists: !!r, status: r?.status || null, owner: !!(h && pubRecords.owns(h, recordKey(req))), slips: r ? pubRecords.slipsOf(h).length : 0, bets: r ? pubRecords.betsOf(h).length : 0 });
 });
 app.get('/api/records/:handle', widgetGate, async (req, res) => {
   try {
@@ -9731,7 +9762,7 @@ app.get('/api/records/:handle/slips.:ext', widgetGate, async (req, res) => {
     if (!/^(csv|json)$/.test(req.params.ext)) return res.status(404).json({ error: 'csv or json' });
     const v = await pubView(req.params.handle, 1);
     if (!v || v.status !== 'live') return res.status(404).json({ error: 'No published record with that handle.' });
-    const all = pubRecord.recordView(pubRecords.get(v.handle), pubRecords.slipsOf(v.handle), { tables: pubTables(), perPage: 1e6 });
+    const all = pubRecord.recordView(pubRecords.get(v.handle), pubRecords.slipsOf(v.handle), { tables: pubTables(), perPage: 1e6, bets: pubRecords.betsOf(v.handle) });
     const name = `line-reaper-record-${v.handle}-${new Date().toISOString().slice(0, 10)}.${req.params.ext}`;
     res.set({ 'Cache-Control': 'public, max-age=60', 'Content-Disposition': `attachment; filename="${name}"` });
     if (req.params.ext === 'csv') return res.type('text/csv; charset=utf-8').send(pubRecord.csv(all));

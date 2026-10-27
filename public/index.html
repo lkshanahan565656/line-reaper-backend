@@ -4359,7 +4359,26 @@ async function msPubSync(now) {
       msPubSet({ ...p, sent: [...sent].slice(-6000) });
     }
   } catch (e) { msPub.hint = `Slips not sent: ${e.message}`; }
+  await mybPubSync();
   if (msPub.open) msRenderPub();
+}
+// MY BETS' game-line bets (logged from the ODDS SCREEN or the Exchange
+// Shopper) go to the same record: the venue, the pick, the price and the game
+// reference. No stake. The server stamps each one when it arrives.
+async function mybPubSync() {
+  const p = msPubGet();
+  if (!p || p.unpublished || !(await mybReady())) return;
+  const sent = new Set(p.sentBets || []);
+  const todo = myb.list.filter(b => b.track?.kind === 'line' && b.odds > 1 && !sent.has(b.id));
+  if (!todo.length) return;
+  try {
+    for (let i = 0; i < todo.length; i += 500) {
+      const chunk = todo.slice(i, i + 500);
+      await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/bets`, 'POST', { bets: chunk.map(b => ({ id: b.id, venue: String(b.book || 'other').toLowerCase().replace(/[^a-z0-9]+/g, ''), venueName: b.book || 'Other', event: b.event, pick: b.pick, decimal: b.odds, track: b.track })) }, p.key);
+      for (const b of chunk) sent.add(b.id);
+      msPubSet({ ...(msPubGet() || p), sentBets: [...sent].slice(-6000) });
+    }
+  } catch (e) { msPub.hint = `Bets not sent: ${e.message}`; if (msPub.open) msRenderPub(); }
 }
 async function msPubCheck() {
   const p = msPubGet();
@@ -4375,7 +4394,7 @@ async function msUnpublish() {
   try {
     await msPubCall(`/api/records/${encodeURIComponent(p.handle)}`, 'DELETE', null, p.key);
     // the key is kept, so the same handle can be published again later
-    msPubSet({ handle: p.handle, key: p.key, url: p.url, sent: [], unpublished: true });
+    msPubSet({ handle: p.handle, key: p.key, url: p.url, sent: [], sentBets: [], unpublished: true });
     showToast(`@${p.handle} unpublished: its slips were removed`);
   } catch (e) { msPub.hint = e.message; }
   msRenderPub();
@@ -4383,7 +4402,7 @@ async function msUnpublish() {
 async function msRepublish() {
   const p = msPubGet();
   if (!p) return;
-  try { await msPubCall('/api/records', 'POST', { handle: p.handle }, p.key); msPubSet({ ...p, unpublished: false, sent: [] }); await msPubSync(true); }
+  try { await msPubCall('/api/records', 'POST', { handle: p.handle }, p.key); msPubSet({ ...p, unpublished: false, sent: [], sentBets: [] }); await msPubSync(true); }
   catch (e) { msPub.hint = e.message; }
   msRenderPub();
 }
@@ -4831,9 +4850,23 @@ function mybPickVenue(el, name, dec) {
   mybFormHint();
 }
 function mybFormClose() { document.getElementById('mybModal').classList.remove('open'); myb.edit = null; }
-function mybFormSave() {
+async function mybFormSave() {
   const v = k => document.getElementById(`mb_${k}`)?.value ?? '';
   const prev = myb.edit?.id ? myb.list.find(b => b.id === myb.edit.id) : null;
+  // a new game-line bet is checked with the server first: logged on Pinnacle's
+  // price from this second, or refused when its game has started
+  let stamp = null;
+  if (!prev && myb.edit?.track?.kind === 'line') {
+    const hint = document.getElementById('mbHint');
+    try {
+      const r = await fetch(`${BACKEND_URL}/api/bets/stamp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track: myb.edit.track }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `The server answered ${r.status}`);
+      if (!j.ok) { if (hint) { hint.innerHTML = `<b class="neg">Not logged.</b> ${escAttr(j.why || 'The game has started.')}`; hint.setAttribute('role', 'alert'); } return; }
+      stamp = { at: j.at, status: j.status, start: j.start || null, logFair: j.logFair ?? null, ...(j.why ? { note: j.why } : {}) };
+    } catch (e) { if (hint) hint.innerHTML = `<b class="neg">Not logged:</b> the server couldn't check this bet (${escAttr(lrErr(e))}). Try again.`; return; }
+    if (!myb.edit) return;
+  }
   const result = v('result');
   const keepSettle = prev && prev.result === result;
   const b = LRBets.make({
@@ -4843,6 +4876,7 @@ function mybFormSave() {
     settledAt: keepSettle ? prev.settledAt : undefined, settledBy: keepSettle ? prev.settledBy : 'manual',
   }, { unitUsd: prev?.unitUsd || mybUnit().unit });
   if (b.error) { showToast(b.error, 'danger'); return; }
+  if (stamp) b.stamp = stamp; else if (prev?.stamp) b.stamp = prev.stamp;
   if (prev) myb.list = myb.list.map(x => (x.id === prev.id ? b : x));
   else myb.list.unshift(b);
   myb.list = LRBets.sortNewest(myb.list);
@@ -4852,7 +4886,9 @@ function mybFormSave() {
   renderCLV();
   // a new tracked bet: the server logs the line now, before anything moves
   if (tracked) mybAutoSettle(true);
-  showToast(prev ? 'Bet saved' : `Logged: ${b.pick} at ${mybPrice(b)}, ${mybUsd(b.stake)}`);
+  if (stamp) mybPubSync();
+  const pub = stamp && msPubGet();
+  showToast(prev ? 'Bet saved' : `Logged: ${b.pick} at ${mybPrice(b)}, ${mybUsd(b.stake)}${pub && !pub.unpublished ? `. On your record @${pub.handle}` : ''}${stamp?.note ? `. ${stamp.note}` : ''}`, undefined, stamp?.note ? 9000 : undefined);
 }
 
 // one tap from a play: the form opens prefilled at the user's unit
@@ -12076,7 +12112,8 @@ function shpMarketTable(m) {
   const fv = shpUi.opts.favVenues || [];
   cols.sort((a, b) => (b.ref - a.ref) || (fv.includes(b.provider) - fv.includes(a.provider)) || (b.texas - a.texas) || a.name.localeCompare(b.name));
   const th = cols.map(cc => `<th class="shp-cell" title="${cc.secondHand ? 'Copy read from Action Network' : cc.ref ? 'Sharp reference, not a place to bet' : ''}">${escAttr(cc.name)}${cc.texas ? '<span class="shp-tag tx">TX</span>' : ''}</th>`).join('');
-  const tr = m.sides.map(s => {
+  const canLog = shpLoggable(m);
+  const tr = m.sides.map((s, si) => {
     const cells = cols.map(cc => {
       const p = s.prices.find(x => x.provider === cc.provider);
       if (!p) return '<td class="shp-cell shp-dim">—</td>';
@@ -12085,9 +12122,32 @@ function shpMarketTable(m) {
         fair: s.fair, fairSrc: SHP_FAIR[m.fair?.source] || m.fair?.source, ev: p.ref ? null : p.ev, fill: shpFillUsd(p.size, p.sizedAt), readAt: shpReadAt(p.ageSec), tag: [p.ref ? 'reference' : p.best ? 'best' : '', p.secondHand ? 'copy' : '', p.freshness === 'stale' ? 'stale' : '', p.oneWay ? 'one-way' : '', p.feeUnknown ? 'commission not in the price' : ''].filter(Boolean).join(', ') });
       return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
-    return `<tr${s.prices.some(p => !p.ref) ? ' data-vrow="1"' : ''}><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
+    return `<tr${s.prices.some(p => !p.ref) ? ' data-vrow="1"' : ''}><td style="white-space:nowrap">${canLog && s.prices.some(p => !p.ref && p.bettable !== false) ? `<button class="os-log" title="Log this bet in MY BETS: checked with the server, followed on Pinnacle's price at this number to the close and graded from the final" onclick="event.stopPropagation();shpLog('${escAttr(m.key)}',${si})">LOG</button>` : ''}${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
   return `<div class="shp-scroll"><table class="shp-tbl"><thead><tr><th></th>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+// a full-game moneyline, spread or total: the shopper keys games by the same
+// id as the odds screen (pin-<Pinnacle id>), so MY BETS follows it to
+// Pinnacle's close (linebets.js)
+const SHP_LINE = { moneyline: 'ml', spread: 'spread', total: 'total' };
+const shpLoggable = m => !!(m && SHP_LINE[m.marketType] && m.eventId && !m.player && (!m.period || m.period === 'full_game' || m.period === 'regulation'));
+async function shpLog(key, si) {
+  const d = shpUi.data;
+  const m = d?.markets?.find(x => x.key === key) || d?.opportunities?.map(x => x.view).find(x => x?.key === key);
+  const s = m?.sides?.[si];
+  if (!s || !shpLoggable(m)) return;
+  if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
+  const market = SHP_LINE[m.marketType];
+  const side = { home: m.home, away: m.away, over: 'Over', under: 'Under', draw: 'Draw' }[s.side] || s.name;
+  const venues = s.prices.filter(p => !p.ref && p.bettable !== false && p.effective > 1).sort((a, b) => b.effective - a.effective);
+  const best = venues[0] || null;
+  const pre = { event: `${m.away} @ ${m.home}`, pick: market === 'ml' ? `${s.name} ML` : s.name, book: best?.name || '', sport: String(m.league || '').toUpperCase(), tool: 'Odds screen',
+    odds: best ? Math.round(best.effective * 1e4) / 1e4 : null, cents: false, logFair: s.fair ?? null,
+    track: { kind: 'line', game: String(m.eventId), league: m.league, market, side, point: market === 'ml' ? null : m.line, start: m.start },
+    venues: venues.map(p => ({ name: p.name, decimal: p.effective, american: null })) };
+  const u = mybUnit();
+  if (u.set) pre.stake = u.unit;
+  mybForm(null, pre);
 }
 // what a venue link needs from a shopper price: its URL, or the market id it was read under
 const shpVctx = (m, s, p) => ({ url: p.url, id: p.sourceIds?.id || p.sourceIds?.marketId, league: m.league, player: m.player || null, what: `${s.name}${m.event ? ` (${m.event})` : ''}` });
