@@ -5993,6 +5993,9 @@ function gsRender() {
   });
   list.innerHTML = html;
 }
+// the highlighted result is read out at once (not batched like lrSay): one
+// arrow press, one name
+function gsSay(t) { const el = document.getElementById('lrLive'); if (el && t) el.textContent = t; }
 function gsKey(e) {
   const n = gsUi.hits.length;
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {

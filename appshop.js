@@ -76,9 +76,8 @@ function kindLeg(kind, s, books, { beOf = breakEven, minGap = MIN_GAP } = {}) {
   return null;
 }
 
-// gap as a share of the line, and the buckets the check reports
+// the gap buckets the check reports
 const gapBucket = g => (g >= 5 ? '5+' : g >= 2 ? '2-5' : g >= 1 ? '1-2' : '<1');
-const gapShareBucket = (g, line) => { const r = line > 0 ? g / line : 0; return r >= 0.1 ? '10%+' : r >= 0.05 ? '5-10%' : '<5%'; };
 
 // P(over line) for a row: a function line → p, from a mean on the stat's curve.
 // mean: from the sharp fair at one line ({ line, p }) or, without one, the
@@ -245,4 +244,4 @@ function redactShop(r) {
   return { ...r, sides: r.sides.map(s => ({ ...s, fair: null, fairSource: null, ev: null })), middles: r.middles.length ? [{ locked: true, count: r.middles.length }] : [], curve: null, bestEv: null };
 }
 
-module.exports = { RECORD_KINDS, hasCurve, APPS, LABEL, KINDS, MIN_GAP, breakEven, softest, kindLeg, gapBucket, gapShareBucket, curveFor, middles, middleOutcome, shopRows, recordLegs, middleRecord, recordSummary, redactShop };
+module.exports = { RECORD_KINDS, hasCurve, APPS, LABEL, KINDS, MIN_GAP, breakEven, softest, kindLeg, gapBucket, curveFor, middles, middleOutcome, shopRows, recordLegs, middleRecord, recordSummary, redactShop };
