@@ -8,7 +8,7 @@
 // view by link and open it cold on a fresh device, export and print a screen,
 // and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
-/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen -- the app's own functions, called in page.evaluate */
+/* global pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState -- the app's own functions, called in page.evaluate */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -403,6 +403,52 @@ const FLOWS = {
     expect(list[0].track?.kind === 'line' && list[0].track.game && ['ml', 'spread', 'total'].includes(list[0].track.market), `the shopper bet is not tracked as a game line (${JSON.stringify(list[0].track)})`);
   },
 
+  async 'log an esports series from MATCHUPS'(page, w, opts) {
+    await openTab(page, 'esports', w, opts);
+    // the recording has no upcoming series (none were listed when it was made):
+    // offline, TEST DATA stands in, one made-up series three hours ahead with a price to buy each side
+    const fakeMu = route => route.fulfill({ json: { game: 'LOL', label: 'model', note: 'TEST DATA', games: ['LOL'], status: { ready: true, series: 1 }, count: 1, priced: 0, withKalshi: 1, leagues: ['TEST'],
+      matchups: [{ id: 'test-series-1', game: 'LOL', start: new Date(Date.now() + 3 * 3600e3).toISOString(), league: 'TEST', bestOf: 3, state: 'unstarted', teams: [{ name: 'Test Team A', code: 'TTA' }, { name: 'Test Team B', code: 'TTB' }],
+        model: { priced: false, confidence: 'insufficient', reasons: [] }, teamViews: [], explain: ['TEST DATA'], label: 'model',
+        markets: { kalshi: { prob: 0.55, sides: [{ ask: 0.56, cost: 0.5773 }, { ask: 0.46, cost: 0.4774 }], url: null, ticker: 'TEST' }, pmus: null, polymarketRef: null, paired: null }, compare: null }],
+      backtest: null, record: { tracked: 0 }, licence: {} } });
+    if (!opts.live) await page.route('**/api/esports/matchups?game=*', fakeMu);
+    await page.evaluate(() => { emuState.data = null; emuState.at = 0; emuState.loading = false; });
+    await page.locator('#esModeMatchups').click();
+    await settle(page, w, opts, 300);
+    if (!opts.live) await page.unroute('**/api/esports/matchups?game=*', fakeMu);
+    const log = page.locator('#emuContent button.emu-log:visible');
+    try { await log.first().waitFor({ timeout: 8000 }); } catch {
+      // live, every series on the board may have started or have no price to buy: nothing to log is right then
+      if (opts.live) return;
+      expect(false, `MATCHUPS shows no LOG (${await page.locator('#emuContent .esm-card').count()} series)`);
+      return;
+    }
+    const before = (await ls(page, 'lr_bets'))?.length || 0;
+    await log.first().click();
+    await page.locator('#mybModal.open').waitFor({ timeout: 4000 });
+    expect(/to win the series/.test(await page.inputValue('#mb_pick')), `the MATCHUPS form opened without the team: "${await page.inputValue('#mb_pick')}"`);
+    expect(await page.locator('#mybModal .mb-venues button').count() >= 1, 'the MATCHUPS form lists no venue to buy at');
+    expect(/Pinnacle's series price/.test(await text(page, '#mybModal p')), 'the MATCHUPS form does not say how the bet is followed');
+    if (!(await page.inputValue('#mb_stake'))) await page.fill('#mb_stake', '20');
+    await page.locator('#mybModal button.primary').click();
+    await settle(page, w, opts, 250);
+    if (!opts.live) {
+      // offline the server has no matchup engine data, so it can't check the
+      // start and refuses in words; then (TEST DATA) the check is answered ok
+      expect(/Not logged\./.test(await text(page, '#mbHint')) && ((await ls(page, 'lr_bets'))?.length || 0) === before, `an unchecked series should be refused in the form: "${await text(page, '#mbHint')}"`);
+      const ok = route => route.fulfill({ json: { at: new Date().toISOString(), ok: true, status: 'open', start: null, logFair: 0.5, why: null } });
+      await page.route('**/api/bets/stamp', ok);
+      await page.locator('#mybModal button.primary').click();
+      await settle(page, w, opts, 250);
+      await page.unroute('**/api/bets/stamp', ok);
+    } else if (/Not logged\./.test(await text(page, '#mbHint'))) { await page.evaluate(() => mybFormClose()); return; }
+    const list = await ls(page, 'lr_bets');
+    expect(list?.length === before + 1, `the MATCHUPS bet was not logged: "${await text(page, '#mbHint')}"`);
+    expect(list[0].track?.kind === 'es' && list[0].track.match && [0, 1].includes(list[0].track.side) && list[0].stamp?.at, `the MATCHUPS bet is not tracked as an esports series (${JSON.stringify(list[0].track)})`);
+    expect(list[0].tool === 'Matchups', `the MATCHUPS bet is filed under ${list[0].tool}`);
+  },
+
   async 'log a slip from PROPS'(page, w, opts) {
     await openTab(page, 'props', w, opts);
     const lines = page.locator('#page-props button', { hasText: /^LINES$/ });
@@ -529,6 +575,25 @@ const FLOWS = {
       const rows = csv.ok() ? (await csv.text()).split('\n').filter(Boolean) : [];
       expect(/^slip_id,/.test(rows[0] || '') && rows.filter(x => /Josh Allen|Stefon Diggs/.test(x)).length >= 2, 'the CSV should hold the pasted legs');
     } finally { await p2.close(); }
+    // the list of records: take this one off it and back on, then read /r
+    const off = page.locator('#msPub button', { hasText: 'TAKE OFF THE LIST' });
+    await off.waitFor({ timeout: 4000 });
+    await off.click();
+    await settle(page, w, opts, 300);
+    expect(await page.locator('#msPub button', { hasText: 'ADD TO THE LIST' }).count() === 1, 'TAKE OFF THE LIST did not take');
+    await page.locator('#msPub button', { hasText: 'ADD TO THE LIST' }).click();
+    await settle(page, w, opts, 300);
+    const p3 = await page.context().newPage();
+    try {
+      await p3.setViewportSize(page.viewportSize());
+      const r = await p3.goto(`${opts.base}/r`, { waitUntil: 'domcontentloaded' });
+      expect(r.status() === 200, `/r answered ${r.status()}`);
+      const body = await p3.locator('body').innerText();
+      expect(/Bettor records/.test(body) && /never counted/.test(body), 'the list of records lacks its rule');
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(body), 'the list of records shows broken text or a claim');
+      const over = await p3.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over <= 0, `the list of records is ${over} px too wide`);
+    } finally { await p3.close(); }
     // unpublish: the first tap asks, the second removes the page
     await page.locator('#msPub button', { hasText: 'UNPUBLISH' }).click();
     await settle(page, w, opts, 80);

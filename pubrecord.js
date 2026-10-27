@@ -76,22 +76,28 @@ function cleanSlip(s) {
 // a single game-line bet from MY BETS (a moneyline, spread or total logged from
 // the ODDS SCREEN or the Exchange Shopper) → what we keep: the venue, the pick,
 // the price taken and the game reference Pinnacle's close is read on. No stake.
+// An esports series winner logged from MATCHUPS (a track { kind: 'es' },
+// esbets.js) is kept the same way; its start is the server's, read from the
+// matchup engine when the bet is first checked.
 const LB = require('./linebets');
+const EB = require('./esbets');
 function cleanBet(b) {
   if (!b || typeof b !== 'object') return null;
   const id = str(b.id, 80);
-  const c = LB.clean(b.track);
+  const es = b.track?.kind === 'es';
+  const c = es ? EB.clean(b.track) : LB.clean(b.track);
   const dec = Number(b.decimal);
   if (!id || !c || !(dec > 1.0001 && dec < 1001)) return null;
   const start = Date.parse(b.track?.start || b.start || '');
   return { id, venue: str(b.venue, 30) || 'other', venueName: str(b.venueName || b.venue, 40) || 'Other', event: str(b.event, 100), pick: str(b.pick, 80),
-    decimal: Math.round(dec * 1e4) / 1e4, track: { kind: 'line', ...c, league: str(b.track?.league, 40) }, start: Number.isFinite(start) ? new Date(start).toISOString() : null };
+    decimal: Math.round(dec * 1e4) / 1e4, track: es ? { kind: 'es', ...c } : { kind: 'line', ...c, league: str(b.track?.league, 40) }, start: Number.isFinite(start) ? new Date(start).toISOString() : null };
 }
 // what we keep of a line bet's grade (linebets.view)
 function slimBetGrade(g) {
   if (!g || typeof g !== 'object' || !g.close) return null;
   const c = g.close;
-  return { status: c.status || null, start: c.start || null, logFair: c.logFair ?? null, closeFair: c.fair ?? null, closeOk: c.closeOk ?? null, outcome: c.outcome || null, note: g.note || null };
+  return { status: c.status || null, start: c.start || null, logFair: c.logFair ?? null, closeFair: c.fair ?? null, closeOk: c.closeOk ?? null, outcome: c.outcome || null, note: g.note || null,
+    ...(c.unpriced ? { unpriced: true } : {}) };
 }
 
 // what we keep of a grade: enough to show and check it
@@ -293,6 +299,20 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
     return changed;
   }
 
+  // the owner takes a record off the public list at /r (or puts it back);
+  // the record itself stays at /r/<handle> either way
+  async function setListed(handle, token, listed) {
+    await init();
+    const h = cleanHandle(handle).handle;
+    const r = h && live(h);
+    if (!r) throw err(404, 'No published record with that handle.');
+    if (!owns(r, token)) throw err(403, 'That key does not manage this record.');
+    const doc = { ...r, unlisted: !listed };
+    records.set(h, doc);
+    await store.put(doc);
+    return { handle: h, listed: !!listed };
+  }
+
   const get = h => records.get(h) || null;
   const slipsOf = h => [...(slips.get(h)?.values() || [])].filter(d => d.status === 'live');
   const betsOf = h => [...(bets.get(h)?.values() || [])].filter(d => d.status === 'live');
@@ -300,9 +320,10 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
   const stats = () => ({ live: liveHandles().length, unpublished: [...records.values()].filter(r => r.status !== 'live').length,
     slips: [...slips.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0),
     bets: [...bets.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0) });
-  return { init, publish, addSlips, addBets, unpublish, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, stats, owns: (h, t) => owns(records.get(h), t) };
+  const listedHandles = () => liveHandles().filter(h => !records.get(h).unlisted);
+  return { init, publish, addSlips, addBets, unpublish, setListed, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, listedHandles, stats, owns: (h, t) => owns(records.get(h), t) };
 }
-const publicMeta = r => ({ handle: r.handle, status: r.status, createdAt: r.createdAt, publishedAt: r.publishedAt, unpublishedAt: r.unpublishedAt || null, restarts: (r.restarts || []).length });
+const publicMeta = r => ({ handle: r.handle, status: r.status, createdAt: r.createdAt, publishedAt: r.publishedAt, unpublishedAt: r.unpublishedAt || null, restarts: (r.restarts || []).length, listed: !r.unlisted });
 
 // the slip as the graders see it: the bet time is the one the bettor gave when
 // it is not after the slip reached us (a later one is taken as the arrival)
@@ -394,8 +415,11 @@ function betRow(d) {
   const clv = pin ? r2((b.decimal * g.closeFair - 1) * 100) : null;
   const o = g?.outcome || null;
   const units = o === 'win' ? r2(b.decimal - 1) : o === 'loss' ? -1 : o === 'push' ? 0 : null;
-  const note = !g ? 'checking' : g.status === 'nopin' ? 'Pinnacle does not hang this number' : g.status === 'unknown' ? 'game not on the odds screen' : g.status === 'closed' && !pin ? 'Pinnacle read over an hour early' : null;
-  return { d, b, g, timing, start, pin, clv, outcome: o, units, note };
+  const es = b.track?.kind === 'es';
+  const note = !g ? 'checking' : g.status === 'nopin' ? 'Pinnacle does not hang this number' : g.status === 'unknown' ? (es ? 'series not on MATCHUPS' : 'game not on the odds screen')
+    : g.status === 'closed' && !pin ? (g.unpriced || g.closeFair == null ? 'unpriced: Pinnacle did not price this series' : 'Pinnacle read over an hour early')
+    : g.status === 'open' && es && g.closeFair == null ? 'Pinnacle has no price on this series yet' : null;
+  return { d, b, g, timing, start, pin, clv, outcome: o, units, note, es };
 }
 function betStats(rows) {
   const pin = rows.filter(r => r.pin);
@@ -426,7 +450,9 @@ function betLabel(t) {
 function betsView(docs) {
   const rows = (docs || []).map(betRow).sort((a, b) => Date.parse(b.d.receivedAt) - Date.parse(a.d.receivedAt) || String(b.b.id).localeCompare(String(a.b.id)));
   const counted = rows.filter(r => r.timing === 'on time');
-  const venues = [...new Set(counted.map(r => r.b.venue))].map(venue => ({ venue, venueName: counted.find(r => r.b.venue === venue).b.venueName, ...betStats(counted.filter(r => r.b.venue === venue)) }))
+  // a venue's esports series bets are a kind of their own: never pooled with its game lines
+  const gk = r => (r.es ? `${r.b.venue}|es` : r.b.venue);
+  const venues = [...new Set(counted.map(gk))].map(k => { const one = counted.find(r => gk(r) === k); return { venue: k, venueName: one.es ? `${one.b.venueName} esports` : one.b.venueName, kind: one.es ? 'esports series' : 'game lines', ...betStats(counted.filter(r => gk(r) === k)) }; })
     .map(x => ({ ...x, profitShown: x.label === 'proven' && x.units > 0 && x.unitsT >= CLV_T }))
     .sort((a, b) => b.pinN - a.pinN || b.bets - a.bets);
   const late = rows.filter(r => r.timing === 'late');
@@ -435,7 +461,7 @@ function betsView(docs) {
     venues, proven: venues.filter(x => x.label === 'proven').map(x => x.venueName),
     pooled: { ...betStats(counted), label: 'pooled, never proven', why: 'Every venue together. A record is judged one venue at a time.', profitShown: false },
     late: { bets: late.length, ...(() => { const s = betStats(late); return { graded: s.graded, record: s.record }; })(), note: 'Logged after the game started: shown, never counted.' },
-    rows: rows.map(r => ({ id: r.b.id, venue: r.b.venue, venueName: r.b.venueName, event: r.b.event, pick: r.b.pick, decimal: r.b.decimal, market: r.b.track.market, receivedAt: r.d.receivedAt,
+    rows: rows.map(r => ({ id: r.b.id, venue: r.b.venue, venueName: r.b.venueName, event: r.b.event, pick: r.b.pick, decimal: r.b.decimal, market: r.es ? 'series' : r.b.track.market, kind: r.es ? 'esports' : 'line', receivedAt: r.d.receivedAt,
       start: r.start, timing: r.timing, counted: r.timing === 'on time', pinClose: r.pin ? r.g.closeFair : null, clv: r.clv, outcome: r.outcome, units: r.units, note: r.note })),
   };
 }
@@ -497,6 +523,89 @@ function slipOut(r) {
         outcome: g?.outcome || (g?.status === 'void' ? 'void' : null), stat: g?.result ?? null, gradedBy: g?.gradeSource || null };
     }),
   };
+}
+
+// ── the public list of records (/r) ──
+// One row a record from its own view (recordView): each app and each venue
+// judged on its own, the strict label only where that record's page shows it,
+// nothing pooled and nothing logged late counted. No profit or units here: a
+// row links to the record, where units show only on a proven kind.
+function indexRow(v) {
+  const kinds = [
+    ...(v.apps || []).map(a => ({ kind: 'app', name: a.appName, n: a.pinN, clv: a.clv, clvT: a.clvT, label: a.label, graded: a.graded, unit: 'legs' })),
+    ...(v.bets?.venues || []).map(x => ({ kind: 'venue', name: x.venueName, n: x.pinN, clv: x.clv, clvT: x.clvT, label: x.label, graded: x.graded, unit: 'bets' })),
+  ].sort((a, b) => (b.label === 'proven') - (a.label === 'proven') || b.n - a.n);
+  const top = kinds[0] || null;
+  const onTime = (v.counts?.onTime || 0) + (v.bets?.counts.onTime || 0);
+  const late = (v.counts?.late || 0) + (v.bets?.counts.late || 0);
+  return {
+    handle: v.handle, publishedAt: v.publishedAt, url: `/r/${v.handle}`, card: `/card/record-${v.handle}.png`,
+    onTime, late, pinGraded: kinds.reduce((a, k) => a + (k.n || 0), 0),
+    proven: [...(v.proven || []), ...(v.bets?.proven || [])],
+    top: top ? { name: top.name, unit: top.unit, n: top.n, target: BAR, clv: top.clv, clvT: top.clvT, label: top.label } : null,
+    kinds: kinds.map(k => ({ name: k.name, unit: k.unit, n: k.n, label: k.label })),
+  };
+}
+// rows: indexRow()s → sorted: proven first, then the most graded single kind
+function indexView(rows, { now = Date.now() } = {}) {
+  const list = rows.filter(r => r.onTime > 0)
+    .sort((a, b) => (b.proven.length > 0) - (a.proven.length > 0) || (b.top?.n || 0) - (a.top?.n || 0) || b.onTime - a.onTime || a.handle.localeCompare(b.handle));
+  return {
+    at: new Date(now).toISOString(), records: list.length, proven: list.filter(r => r.proven.length).length, hidden: rows.length - list.length, rows: list,
+    rule: `A record is marked proven at an app or venue only with ${BAR} picks logged before their start and graded against Pinnacle's own close at the pick's number, a CLV t of ${CLV_T} or more, and results not running ${SHORT_SD} sd under what that close expected. Never pooled across apps or venues. Picks logged after the start (imported histories included) are shown on each record and never counted.`,
+    note: 'Records appear once they have one pick logged before its start. A bettor can take their record off this list from MY SLIPS; the record stays at its own link. Line Reaper does not check who is behind a handle.',
+  };
+}
+function indexHtml(view, { origin = '' } = {}) {
+  const v = view;
+  const title = 'Bettor records';
+  const description = `${v.records} public bettor record${v.records === 1 ? '' : 's'}, every pick logged before its start and graded against Pinnacle's close. ${v.proven ? `${v.proven} proven on the strict rule.` : 'None proven yet on the strict rule.'}`;
+  const { CSS, LOGO, FAVICON } = require('./learn');
+  const label = l => `<span class="tag ${TAG[l] || ''}">${esc(l)}</span>`;
+  const cls = x => (x == null ? '' : x > 0 ? 'pos' : x < 0 ? 'neg' : '');
+  const rows = v.rows.map(r => {
+    const t = r.top;
+    const status = r.proven.length ? `<span class="tag pv">proven at ${esc(r.proven.join(', '))}</span>` : t ? `${label(t.label === 'proven' ? 'building' : t.label)}<span class="sub">${t.n} of ${t.target} ${esc(t.unit)} at ${esc(t.name)} graded vs Pinnacle</span>` : '<span class="tag">nothing graded yet</span>';
+    return `<tr><td><a href="${esc(r.url)}">@${esc(r.handle)}</a><span class="sub">since ${esc(utc(r.publishedAt).slice(0, 10))}</span></td><td>${status}</td>`
+      + `<td>${t ? `${t.n} / ${t.target}<span class="sub">${esc(t.name)}</span>` : '—'}</td>`
+      + `<td class="${cls(t?.clv)}">${t ? pc(t.clv) : '—'}${t?.clvT != null ? `<span class="sub">t ${t.clvT}</span>` : ''}</td>`
+      + `<td>${r.onTime}${r.late ? `<span class="sub">${r.late} late, not counted</span>` : ''}</td>`
+      + `<td><a href="${esc(r.url)}">RECORD</a> · <a href="${esc(r.card)}">CARD</a></td></tr>`;
+  }).join('');
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)} | Line Reaper</title>
+<meta name="description" content="${esc(description)}">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#080b10">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Line Reaper"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">
+${origin ? `<meta property="og:url" content="${esc(origin)}/r"><meta property="og:image" content="${esc(origin)}/og.png">` : ''}
+<link rel="icon" href="${FAVICON}">
+<style>${CSS}${PAGE_CSS}</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/">${LOGO}<span>LINE<b>REAPER</b></span></a><a class="back" href="/app?start=myslips">PUBLISH YOURS</a></div></header>
+<main>
+<p class="kicker">Public bettor records</p>
+<h1>Bettor records</h1>
+<p class="lead">Every bettor who published a record on Line Reaper. Each pick is stamped with the time it reached us, graded against Pinnacle's close at its own number and settled from the box scores or the series result.</p>
+<div class="disc">${esc(v.note)}</div>
+<div class="stats">
+<div class="stat"><span>Records</span><b>${v.records}</b><small>with a pick on time</small></div>
+<div class="stat"><span>Proven</span><b class="${v.proven ? 'pos' : ''}">${v.proven}</b><small>on the strict rule</small></div>
+</div>
+${v.rows.length ? `<div class="scroll"><table><thead><tr><th>Bettor</th><th>Label</th><th>Best kind vs Pinnacle</th><th>CLV</th><th>Picks on time</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+    : '<div class="ex"><div class="ex-h">No records yet</div><p>Nobody has a pick logged before its start yet. Publish yours from MY SLIPS > PUBLISH RECORD, then log slips and bets before the games start.</p></div>'}
+<p class="note">Best kind is the bettor's app or venue with the most picks graded against Pinnacle's close. ${esc(v.rule)}</p>
+<p class="note" style="margin-top:18px">Read ${esc(utc(v.at))}. The same page for everyone: no follow, copy or alert buttons, no stake sizes and no profit figures. Open a record for its units, which show only on a proven kind.</p>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/results">Our own record</a><a href="/learn">Learn</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook or a picks seller. It does not take bets. A bettor's record is their own; past results do not predict future ones. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>`;
 }
 
 // ── downloads ──
@@ -617,7 +726,7 @@ ${v.apps.map(a => `<tr><td>${esc(a.appName)}</td><td>${label(a.label)}${a.why ? 
   if (bv && bv.counts.bets) {
     const bp = bv.pooled;
     body += `<h2>Game-line bets</h2>
-<p class="note">Moneylines, spreads and totals logged in MY BETS, each against Pinnacle's no-vig close at the bet's own number (CLV is the price taken times that close, minus one) and settled from the final score. 1 unit a bet.</p>
+<p class="note">Moneylines, spreads and totals logged in MY BETS, and esports series winners logged from MATCHUPS, each against Pinnacle's no-vig close at the bet's own number (CLV is the price taken times that close, minus one) and settled from the final score or the series result. An esports series Pinnacle never priced is shown as unpriced and never graded against a close. Each venue's esports bets are judged apart from its game lines. 1 unit a bet.</p>
 <div class="scroll"><table><thead><tr><th>Venue</th><th>Label</th><th>Bets vs Pinnacle</th><th>CLV</th><th>Record</th><th>Units</th></tr></thead><tbody>
 ${bv.venues.map(x => `<tr><td>${esc(x.venueName)}</td><td>${label(x.label)}${x.why ? `<span class="sub">${esc(x.why)}</span>` : ''}</td><td>${x.pinN} / ${BAR}</td><td class="${cls(x.clv)}">${pc(x.clv)}${x.clvT != null ? `<span class="sub">t ${x.clvT}</span>` : ''}</td><td>${x.record}${x.open ? `<span class="sub">${x.open} open</span>` : ''}</td><td class="${cls(x.units)}">${unitsText(x.units, x.profitShown)}</td></tr>`).join('')}
 <tr><td>All venues</td><td>${label(bp.label)}<span class="sub">${esc(bp.why)}</span></td><td>${bp.pinN}</td><td class="${cls(bp.clv)}">${pc(bp.clv)}</td><td>${bp.record}</td><td class="${cls(bp.units)}">${unitsText(bp.units, false)}</td></tr>
@@ -628,7 +737,7 @@ ${bv.rows.slice(0, 100).map(b => `<div class="slip${b.timing === 'late' ? ' late
   }
   body += `<h2>Late slips</h2><p class="note">${v.late.slips ? `${v.late.slips} slip${v.late.slips === 1 ? '' : 's'} (${v.late.legs} legs, ${v.late.graded} graded, ${share(v.late.hitRate)} hit). ` : 'None. '}${esc(v.late.note)}</p>`;
   const base = `/r/${encodeURIComponent(v.handle)}`;
-  body += `<div class="links"><a class="go" href="/api/records/${encodeURIComponent(v.handle)}/slips.csv">DOWNLOAD CSV</a><a class="go" href="/api/records/${encodeURIComponent(v.handle)}/slips.json">DOWNLOAD JSON</a><a class="go" href="/card/record-${encodeURIComponent(v.handle)}.png">SHARE CARD</a></div>`;
+  body += `<div class="links"><a class="go" href="/api/records/${encodeURIComponent(v.handle)}/slips.csv">DOWNLOAD CSV</a><a class="go" href="/api/records/${encodeURIComponent(v.handle)}/slips.json">DOWNLOAD JSON</a><a class="go" href="/card/record-${encodeURIComponent(v.handle)}.png">SHARE CARD</a><a class="go" href="/r">ALL RECORDS</a></div>`;
   body += `<h2>Slip by slip</h2><p class="note">Newest first. Times are when each slip reached Line Reaper. ${v.counts.onTime} on time, ${v.counts.late} late, ${v.counts.checking} still matching to a game.</p>`;
   body += v.slips.map(s => {
     const res = s.result === 'open' ? 'open' : s.result === 'paid' ? `paid ${s.multiple}x` : s.result;
@@ -643,4 +752,4 @@ ${s.legs.map(l => `<div class="leg"><div class="who"><b>${esc(l.player)}</b> ${e
   return head + body + foot;
 }
 
-module.exports = { createRecordStore, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
+module.exports = { createRecordStore, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
