@@ -56,3 +56,16 @@ test('a missing or broken file starts empty; flushSync writes what is pending', 
   assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), [{ id: 1 }]);
   assert.equal(s.pending(), false);
 });
+
+test('storeStats names the files that write most', async () => {
+  const file = tmpFile();
+  const s = createJsonFileStore(file, { delayMs: 5 });
+  await s.init();
+  for (let i = 0; i < 50; i++) await s.put({ id: i, v: 'x'.repeat(100) });
+  await s.flush();
+  const { storeStats } = require('../jsonstore');
+  const st = storeStats();
+  const row = st.files.find(f => f.file === 'rows.json');
+  assert.ok(row && row.writes >= 1 && row.rows === 50, JSON.stringify(st.files));
+  assert.ok(typeof st.delayMs === 'number');
+});

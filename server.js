@@ -41,6 +41,11 @@ app.get('/api/ops/profile', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await profiler.profile(parseFloat(req.query.s) || 20)); }
   catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
+const heapSampler = require('./ops').createHeapSampler();
+app.get('/api/ops/heap', async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json(await heapSampler.sample(parseFloat(req.query.s) || 30)); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
 
 // Keys come from the environment only (Railway variables / local .env).
 // Never commit a fallback key: anything in source ships to every buyer.
