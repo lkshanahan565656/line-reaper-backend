@@ -342,7 +342,7 @@ test('GET /api/record and its downloads: the Results page reads the same rule as
   assert.equal(js.status, 200);
   assert.equal(js.body.kind, null, 'a malformed filter is ignored');
   assert.ok(Array.isArray(js.body.flags) && js.body.n === js.body.flags.length);
-  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const app = require('./app-source').both;
   assert.ok(app.includes('/api/record${q}') && app.includes('/api/record/flags.csv'), 'the Results tab reads the public record');
 });
 
