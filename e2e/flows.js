@@ -573,6 +573,12 @@ const FLOWS = {
     await page.locator('#msLogcGo').click();
     await settle(page, w, opts, 150);
     expect(/not logged/.test(await text(page, '#msLogcOut')) && ((await ls(page, 'lr_slips'))?.length === before + 1), 'an old slip should be refused by LOG A SLIP');
+    // a share link and a pick copied off the board with both sides: each said in plain words, nothing logged
+    await page.fill('#msLogcText', 'Check out my lineup on PrizePicks! https://prizepicks.onelink.me/abc123\nTesta Onefake\nPHX vs LAL Sat 8:30pm\nPlayer Pick\n21.5\nPoints\nLess\nMore');
+    await page.locator('#msLogcGo').click();
+    await settle(page, w, opts, 150);
+    const why = await text(page, '#msLogcOut');
+    expect(/share link/.test(why) && /both More and Less/.test(why) && ((await ls(page, 'lr_slips'))?.length === before + 1), `LOG A SLIP should say why a link and a two-sided pick weren't read: "${why.slice(0, 300)}"`);
     // shared from the app's Share sheet to the installed app
     await page.goto(`${opts.base}/app?share_text=${encodeURIComponent('Underdog\nTesta Threefake\nHigher 1.5 Kills\nTesta Fourfake\nLower 30.5 Kills')}`, { waitUntil: 'domcontentloaded' });
     await settle(page, w, opts, 300);
