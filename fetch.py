@@ -11,7 +11,7 @@ def get(u,t=40):
     return None
 os.makedirs('out/pdf',exist_ok=True)
 slots=[]
-for d in ['2026-10-21','2026-10-22','2026-10-23','2026-10-24','2026-10-25']:
+for d in ['2026-10-25','2026-10-26']:
     for h in list(range(9,12))+[12]+list(range(1,12)):
         ap='AM' if h in (9,10,11) else 'PM'
         for m in ('00','15','30','45'):
@@ -33,3 +33,7 @@ for name,u in [('espn-injuries','https://site.api.espn.com/apis/site/v2/sports/b
                ('espn-news','https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news?limit=50'),
                ('espn-scoreboard','https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261025')]:
     b=get(u); open(f'out/{name}.json','wb').write(b or b'null'); print(name,len(b or b''))
+
+L='https://line-reaper-backend-production.up.railway.app'
+for name,u in [('live-injury',L+'/api/props/injury'),('live-ops',L+'/api/ops'),('live-record',L+'/api/props/record')]:
+    b=get(u,60); open(f'out/{name}.json','wb').write(b or b'null'); print(name,len(b or b''))
