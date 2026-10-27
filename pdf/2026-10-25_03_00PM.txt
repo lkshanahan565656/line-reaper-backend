@@ -1,0 +1,124 @@
+Injury Report: 10/25/26 03:00 PM
+GameDate GameTime Matchup Team PlayerName CurrentStatus Reason
+10/25/2026 05:00(ET) LAL@UTA LosAngelesLakers Carr,Cameron Out Injury/Illness-RightObliqueStrain
+Kessler,Walker Available Injury/Illness-LeftFingerSplint
+Injury/Illness-LeftKneeEffusion/
+Thiero,Adou Out
+Swelling
+UtahJazz Alexander,Trey Out GLeague-Two-Way
+Bufkin,Kobe Out GLeague-Two-Way
+Ingram,Harrison Out GLeague-Two-Way
+Injury/Illness-Right2ndPlantar
+Nurkic,Jusuf Out
+PlateTear
+06:00(ET) IND@BKN IndianaPacers Brown,Kobe Probable GLeague-Two-Way
+Injury/Illness-RightACLRepair/
+Furphy,Johnny Out
+Surgery
+McConnell,T.J. Out Injury/Illness-RightHamstringStrain
+Nesmith,Aaron Probable Injury/Illness-LeftHamstringStrain
+Sheppard,Ben Out Injury/Illness-LeftMeniscusTear
+Slawson,Jalen Probable GLeague-Two-Way
+Smith,Braden Doubtful GLeague-Two-Way
+BrooklynNets Bilodeau,Tyler Out Injury/Illness-RightShoulderSprain
+BrownJr.,Mikel Out Injury/Illness-Back,Injury
+Page1of5
+Injury Report: 10/25/26 03:00 PM
+Management
+Injury/Illness-RightKneeInjury
+07:00(ET) LAC@OKC LAClippers Beal,Bradley Out
+Management
+Ingram,Brandon Out Injury/Illness-RightHeelSurgery
+Injury/Illness-LeftRotatorCuff
+Miller,Jordan Out
+Surgery
+Niederhauser,YanicKonan Out Injury/Illness-RightLisfrancSurgery
+Injury/Illness-RightPlantarFascia
+Strus,Max Out
+Tear
+OklahomaCityThunder Sorber,Thomas Out Injury/Illness-RightKneeSurgery
+Topic,Nikola Out Injury/Illness-LowBackSurgery
+Injury/Illness-RightLowGradeHigh
+ORL@NYK OrlandoMagic Banchero,Paolo Out
+AnkleSprain
+Black,Anthony Questionable Injury/Illness-RightAnkleSprain
+Injury/Illness-LeftKneeInjury
+Isaac,Jonathan Out
+Management
+Injury/Illness-LeftAnkleInjury
+Nelson,Izaiyah Out
+Recovery
+Injury/Illness-RightPartiallyTorn
+Penda,Noah Out
+Hamstring
+NewYorkKnicks Alvarado,Jose Questionable Injury/Illness-LeftAnkleSprain
+TOR@MIN TorontoRaptors Bittle,Nate Out Injury/Illness-RightFootAvulsion
+Page2of5
+Injury Report: 10/25/26 03:00 PM
+Fracture
+Smith,Malachi Out GLeague-Two-Way
+Injury/Illness-RightAchillesTendon
+MinnesotaTimberwolves DiVincenzo,Donte Out
+Repair/Surgery
+07:30(ET) DET@PHI DetroitPistons Duren,Jalen Out Injury/Illness-RightHamstringStrain
+Harkless,Elijah Questionable GLeague-Two-Way
+Jones,Isaac Questionable GLeague-Two-Way
+Onyenso,Ugonna Out GLeague-Two-Way
+Thompson,Ausar Questionable Injury/Illness-RightAnkleSprain
+Injury/Illness-LowBackStress
+Philadelphia76ers Barlow,Dominick Out
+Reaction
+Injury/Illness-RightPlantarfasciitis
+Embiid,Joel Out
+injurymanagement
+Fall,Tacko Out Injury/Illness-LeftQuadricepsStrain
+Injury/Illness-RightAchillesTendon
+Hukporti,Ariel Out
+Rupture/Tear
+Walker,Jabari Out Injury/Illness-LeftKneeSoreness
+09:00(ET) MEM@SAC MemphisGrizzlies Coward,Cedric Questionable Injury/Illness-LeftWristSprain
+Injury/Illness-LeftAnkleInjury
+Edey,Zach Out
+Management
+SacramentoKings Cardwell,Dylan Out Injury/Illness-LeftCalfStrain
+Page3of5
+Injury Report: 10/25/26 03:00 PM
+Murray,Keegan Doubtful Injury/Illness-LeftAnklecapsulitis
+Pedulla,Sean Out GLeague-Two-Way
+Injury/Illness-RightPatella
+Raynaud,Maxime Out
+Subluxation
+Injury/Illness-RightAchillesTendon
+Simmons,Ben Out
+Repair/Surgery
+10/26/2026 07:00(ET) MIN@CLE MinnesotaTimberwolves NOTYETSUBMITTED
+Injury/Illness-LeftKneeInjury
+ClevelandCavaliers Diop,Khalifa Out
+Management
+Injury/Illness-LeftLowBackStress
+Tomlin,Nae'Qwan Out
+Reaction
+Udeh,Jr.,Ernest Out GLeague-Two-Way
+WAS@CHA WashingtonWizards NOTYETSUBMITTED
+CharlotteHornets NOTYETSUBMITTED
+07:30(ET) CHI@BOS ChicagoBulls Claxton,Nic Out Injury/Illness-LeftHamstringStrain
+Essengue,Noa Questionable Injury/Illness-RightHeadContusion
+Injury/Illness-RightAdductor/Groin
+Williams,Patrick Questionable
+Soreness/Tightness
+BostonCeltics NOTYETSUBMITTED
+DAL@MIA DallasMavericks NOTYETSUBMITTED
+MiamiHeat NOTYETSUBMITTED
+Page4of5
+Injury Report: 10/25/26 03:00 PM
+08:00(ET) IND@MIL IndianaPacers NOTYETSUBMITTED
+MilwaukeeBucks NOTYETSUBMITTED
+PHX@OKC PhoenixSuns NOTYETSUBMITTED
+OklahomaCityThunder NOTYETSUBMITTED
+08:30(ET) ATL@HOU AtlantaHawks NOTYETSUBMITTED
+HoustonRockets NOTYETSUBMITTED
+09:00(ET) MEM@UTA MemphisGrizzlies NOTYETSUBMITTED
+UtahJazz NOTYETSUBMITTED
+10:00(ET) GSW@DEN GoldenStateWarriors NOTYETSUBMITTED
+DenverNuggets NOTYETSUBMITTED
+Page5of5
