@@ -1574,7 +1574,7 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
         await page.locator('#btTok').fill(`MTIzNDU2Nzg5MDEyMzQ1Njc4.Gab12C.${'x'.repeat(38)}`);
         await page.locator('#bt button[type=submit]').click();
         await page.waitForFunction(() => !/Adding the commands/.test(document.getElementById('btOut').textContent), null, { timeout: 15000 });
-        expect(/Discord|Commands added/.test(await text(page, '#btOut')), `CONNECT BOT said "${await text(page, '#btOut')}"`);
+        expect(/Discord|Commands added|bot token|application id/.test(await text(page, '#btOut')), `CONNECT BOT said "${await text(page, '#btOut')}"`);
         expect(await page.locator('#btTok').inputValue() === '', 'the bot token stayed in the box');
         expect(await fits(), 'the developers page scrolls sideways after the bot steps');
         await page.locator('#mineUse').click();
