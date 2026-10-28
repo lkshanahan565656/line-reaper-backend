@@ -1283,6 +1283,9 @@ body.no-help .clv-info { display:none; }
 .ms-pub input[type=text]:focus { outline:none; border-color:var(--green); }
 .ms-pub .ms-pub-link { font:600 13px 'JetBrains Mono',monospace; color:var(--green2); overflow-wrap:anywhere; }
 .ms-pub .ms-pub-key { font:11px 'JetBrains Mono',monospace; color:var(--text2); overflow-wrap:anywhere; word-break:break-all; }
+.ms-pub .ms-pub-tool { border-top:1px solid var(--border); margin-top:10px; padding-top:8px; }
+.ms-pub .ms-pub-snip { display:block; font:11px/1.5 'JetBrains Mono',monospace; color:var(--text); background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:8px 10px; overflow-wrap:anywhere; word-break:break-all; white-space:pre-wrap; margin:6px 0; }
+.ms-pub .ms-pub-frame { display:block; width:100%; height:300px; border:0; border-radius:8px; background:#080b10; margin:6px 0; }
 .ms-pub ul { margin:6px 0 4px; padding-left:18px; font-size:11px; color:var(--text2); line-height:1.6; }
 .ms-slip { background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; }
 .ms-slip-head { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 14px; background:rgba(0,0,0,.15); font-size:12px; }
@@ -4368,7 +4371,7 @@ function msRenderImports() {
 // not counted. The key that manages the record is kept in this browser
 // (lr_pub_record) and shown here to save. No stake or payout is sent.
 const MS_PUB = 'lr_pub_record';
-const msPub = { open: false, busy: false, drop: false, hint: '', server: null, timer: null };
+const msPub = { open: false, busy: false, drop: false, hint: '', server: null, timer: null, tool: null, feed: null, feedHint: '', feedBusy: false };
 function msPubGet() { try { const v = JSON.parse(lsGet(MS_PUB) || 'null'); return v && v.handle && v.key ? v : null; } catch { return null; } }
 function msPubSet(v) { lsSet(MS_PUB, v ? JSON.stringify(v) : 'null'); }
 function msPubToggle(on) {
@@ -4499,6 +4502,66 @@ async function msPubCopy(text, what) {
   try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); ok = true; } } catch {}
   showToast(ok ? `${what} copied` : `Copy it by hand: ${text}`, ok ? undefined : 'danger', ok ? undefined : 12000);
 }
+// the record's own widget and feed (MY SLIPS > RECORD > WIDGET / FEED)
+function msPubTool(t) { msPub.tool = msPub.tool === t ? null : t; msPub.feedHint = ''; if (msPub.tool === 'feed') msPubFeedRead(); msRenderPub(); }
+const msPubSnippet = h => `<script src="${location.origin}/embed.js" async></` + `script>\n<div data-line-reaper="record" data-handle="${h}"></div>`;
+async function msPubFeedRead() {
+  const p = msPubGet();
+  if (!p) return;
+  try { msPub.feed = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed`, 'GET', null, p.key); } catch (e) { msPub.feed = null; msPub.feedHint = e.message; }
+  msRenderPub();
+}
+async function msPubFeedConnect(kind) {
+  const p = msPubGet();
+  if (!p || msPub.feedBusy) return;
+  let body;
+  if (kind === 'discord') {
+    const u = (document.getElementById('msFeedHook')?.value || '').trim();
+    if (!/^https:\/\/(ptb\.|canary\.)?discord(app)?\.com\/api\/(v\d+\/)?webhooks\/\d+\/[\w-]+\/?$/.test(u)) { msPub.feedHint = 'That is not a Discord webhook URL. In Discord: Server Settings > Integrations > Webhooks > New Webhook > Copy Webhook URL.'; msRenderPub(); return; }
+    body = { discord: u };
+  } else {
+    const token = (document.getElementById('msFeedTgToken')?.value || '').trim(), chat = (document.getElementById('msFeedTgChat')?.value || '').trim();
+    if (!/^\d{5,15}:[\w-]{30,60}$/.test(token)) { msPub.feedHint = 'That is not a bot token. @BotFather gives one like 123456789:AA... when you make a bot.'; msRenderPub(); return; }
+    if (!/^(-?\d{3,20}|@[A-Za-z]\w{3,31})$/.test(chat)) { msPub.feedHint = 'The chat is a @channelname or a number like -1001234567890.'; msRenderPub(); return; }
+    body = { telegram: { token, chat } };
+  }
+  msPub.feedBusy = true; msPub.feedHint = kind === 'discord' ? 'Checking the webhook with Discord...' : 'Sending a first post to Telegram...'; msRenderPub();
+  try { const j = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed`, 'PUT', body, p.key); msPub.feed = j; msPub.feedHint = j.note || 'Connected.'; }
+  catch (e) { msPub.feedHint = e.message; }
+  msPub.feedBusy = false;
+  msRenderPub();
+}
+async function msPubFeedOff(kind) {
+  const p = msPubGet();
+  if (!p) return;
+  try { const j = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed?kind=${kind}`, 'DELETE', null, p.key); msPub.feed = j; msPub.feedHint = j.note || 'Disconnected.'; }
+  catch (e) { msPub.feedHint = e.message; }
+  msRenderPub();
+}
+function msPubToolHtml(p) {
+  if (msPub.tool === 'widget') {
+    const snip = msPubSnippet(p.handle);
+    return `<div class="ms-pub-tool" id="msPubWidget"><b>Widget for your site</b><div class="tl-note" style="margin-top:4px">Paste this into any page: it shows your record as the page does (picks logged before the start, each app and venue against Pinnacle's close, the strict label, no profit) and links back to it. It refreshes every minute.</div>
+      <code class="ms-pub-snip">${escAttr(snip)}</code>
+      <div class="ms-pub-row"><button class="mb-btn primary" data-copy="${escAttr(snip)}" onclick="msPubCopy(this.dataset.copy,'Widget code')">COPY WIDGET CODE</button><a class="mb-btn" href="/developers#widget-bettor" target="_blank" rel="noopener">MORE OPTIONS</a></div>
+      <iframe class="ms-pub-frame" src="/embed/record?handle=${encodeURIComponent(p.handle)}" title="Your record widget" loading="lazy"></iframe></div>`;
+  }
+  if (msPub.tool === 'feed') {
+    const f = msPub.feed;
+    const line = (x, name, kind) => !x ? '' : x.connected ? `<div class="ms-pub-row"><span class="tl-note" style="margin:0">${name}: connected, ${escAttr(x.where)}${x.lastOkAt ? `, last post ${escAttr(new Date(x.lastOkAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}` : ''}.</span><button class="mb-btn" onclick="msPubFeedOff('${kind}')">DISCONNECT ${name.toUpperCase()}</button></div>`
+      : x.stoppedAt ? `<div class="tl-note">${name}: stopped. ${escAttr(x.stoppedWhy || '')}${x.lastError ? ` (${escAttr(x.lastError)})` : ''}</div>` : '';
+    const dOn = f?.discord?.connected, tOn = f?.telegram?.connected;
+    const typed = { h: document.getElementById('msFeedHook')?.value || '', t: document.getElementById('msFeedTgToken')?.value || '', c: document.getElementById('msFeedTgChat')?.value || '' };
+    const html = `<div class="ms-pub-tool" id="msPubFeed"><b>Post your picks to Discord or Telegram</b><div class="tl-note" style="margin-top:4px">Each pick you log before its start posts the moment the server matches it to its game, with the server's time stamp and the price, and its graded result posts after the game. Picks logged late never post. No stake, units or profit, and nothing is placed. Anyone can add your handle to their own Discord on <a href="/developers#feed-records" target="_blank" rel="noopener">/developers</a>; it is the same post.</div>
+      ${f ? line(f.discord, 'Discord', 'discord') + line(f.telegram, 'Telegram', 'telegram') : '<div class="tl-note">Reading your channels...</div>'}${f?.subscribers ? `<div class="tl-note">${f.subscribers} other channel${f.subscribers === 1 ? '' : 's'} added your handle.</div>` : ''}
+      ${dOn ? '' : `<div class="ms-pub-row"><input type="text" id="msFeedHook" inputmode="url" maxlength="300" placeholder="Discord webhook URL" autocomplete="off"><button class="mb-btn primary" onclick="msPubFeedConnect('discord')">${msPub.feedBusy ? 'CHECKING...' : 'CONNECT DISCORD'}</button></div>`}
+      ${tOn ? '' : `<div class="ms-pub-row"><input type="text" id="msFeedTgToken" maxlength="80" placeholder="Telegram bot token" autocomplete="off"><input type="text" id="msFeedTgChat" maxlength="40" placeholder="@channel or chat id" autocomplete="off"><button class="mb-btn" onclick="msPubFeedConnect('telegram')">CONNECT TELEGRAM</button></div>`}
+      ${msPub.feedHint ? `<div class="mb-hint" id="msFeedHint">${escAttr(msPub.feedHint)}</div>` : ''}</div>`;
+    setTimeout(() => { for (const [id, v] of [['msFeedHook', typed.h], ['msFeedTgToken', typed.t], ['msFeedTgChat', typed.c]]) { const el = document.getElementById(id); if (el && v && !el.value) el.value = v; } }, 0);
+    return html;
+  }
+  return '';
+}
 function msRenderPub() {
   const el = document.getElementById('msPub');
   if (!el) return;
@@ -4535,6 +4598,8 @@ function msRenderPub() {
     <div class="ms-pub-row"><a class="mb-btn primary" href="${escAttr(url)}" target="_blank" rel="noopener">OPEN PAGE</a><button class="mb-btn" onclick="msPubCopy('${escAttr(url)}','Link')">COPY LINK</button><button class="mb-btn" onclick="msPubSync(true)">SEND NEW SLIPS</button><button class="mb-btn" onclick="msUnpublish()">${msPub.drop ? 'TAP AGAIN TO UNPUBLISH' : 'UNPUBLISH'}</button><button class="mb-btn" onclick="msPubToggle(false)">CLOSE</button></div>
     <div class="tl-note">${sent} slip${sent === 1 ? '' : 's'} sent from this browser${srv ? `, ${srv.slips} on the page` : ''}. New slips go up as you add them.</div>
     <div class="ms-pub-row"><span class="tl-note" style="margin:0">${srv?.listed === false ? 'Not on the public list of records.' : 'Listed on the public list of records once a pick is logged before its start.'} <a href="/r" target="_blank" rel="noopener">See the list</a></span>${srv ? `<button class="mb-btn" onclick="msPubListed(${srv.listed === false})">${srv.listed === false ? 'ADD TO THE LIST' : 'TAKE OFF THE LIST'}</button>` : ''}</div>
+    <div class="ms-pub-row"><button class="mb-btn${msPub.tool === 'widget' ? ' primary' : ''}" onclick="msPubTool('widget')">WIDGET</button><button class="mb-btn${msPub.tool === 'feed' ? ' primary' : ''}" onclick="msPubTool('feed')">FEED</button><span class="tl-note" style="margin:0">Your record on your own site, Discord or Telegram.</span></div>
+    ${msPubToolHtml(p)}
     <div class="tl-note">Your key, the only way to add slips or unpublish from another browser. Save it somewhere safe: <span class="ms-pub-key">${escAttr(p.key)}</span> <button class="mb-btn" onclick="msPubCopy('${escAttr(p.key)}','Key')">COPY KEY</button></div>
     ${rules}${hint}`;
 }
