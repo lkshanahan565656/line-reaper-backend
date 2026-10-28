@@ -3197,6 +3197,8 @@ function acctRender() {
   }
 }
 const escAttr = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// a lane closed for good (coldstore.js on the server): its record is final
+const closedLaneLine = c => (c?.final ? `<div class="closed-lane" role="note"><b>CLOSED ${escAttr(c.at)}, FINAL.</b> ${escAttr(String(c.note || '').replace(/^Closed [^,]*, final: /, ''))}</div>` : '');
 
 function acctOpen(mode, pitch) {
   acct.mode = mode;
@@ -4509,6 +4511,7 @@ function renderPromos() {
   const more = (d.total || 0) > rows.length ? `<button class="sport-chip" style="margin:8px 0 0" onclick="pmState.open=true;pmState.limit=120;pmState.at=0;loadPromos()">SHOW ${Math.min(120, d.total)} OF ${d.total.toLocaleString()} PRICED</button>` : pmState.open ? `<button class="sport-chip" style="margin:8px 0 0" onclick="pmState.open=false;pmState.limit=8;renderPromos()">SHOW FEWER</button>` : '';
   el.innerHTML = `<div class="pm-wrap">
     <div class="pm-head"><b>PROMOS</b><span>${c.total.toLocaleString()} discounted or boosted legs on the apps now · ${c.priced.toLocaleString()} with a sharp price · ${c.plusEv} above the hit rate their payout needs</span></div>
+    ${closedLaneLine(rec?.closed)}
     <div class="pm-chips">${chips}</div>
     ${rows.length ? `<div class="pm-list">${head}${rows.map(row).join('')}</div>` : `<div class="pm-note">No promo leg has a sharp price right now${pmState.app ? ' on this app' : ''}.</div>`}${more}
     <div class="pm-note">${types ? `${types}.<br>` : ''}Each leg at its own payout: a goblin, Power Up or boosted side needs the hit rate its multiplier sets, not the standard slip's. PrizePicks does not publish goblin and demon payouts, so those show the multiplier they would need. <b style="color:#fbbf24">Not a bet:</b> on last weekend's boards Underdog boosted sides won 41.7% of 247 vs 49.5% needed. Record (alerts off until 50 graded live): ${recTxt}.</div>
@@ -5137,21 +5140,22 @@ function renderExprops() {
   const byKind = new Map(d.kinds.map(k => [k.kind, k]));
   const nOf = (role, x) => { const k = byKind.get(`kxprop-${role}-${String(x.league).toLowerCase()}-${x.mkey}`); return `${k ? k.graded : 0} of ${d.of ?? 50}`; };
   const note = `<div class="mlb-note"><b>RESEARCH, NOT AN EDGE.</b> Kalshi lists player stat ladders: a rung "25+ points" is the same bet as Pinnacle's Over 24.5, and its NO is the Under. Where Pinnacle hangs its main line exactly on a rung, Pinnacle's no-vig chance is a fair for the rung. TAKE buys at Kalshi's ask with the 7% taker fee in; BID is a resting order 2%+ under fair with Kalshi's maker fee in, counted only when a trade prints through it. Each league, stat and way of playing keeps its own record, graded on Pinnacle's close and Kalshi's settlement, and none is an edge until 50 graded beat the close. No alerts; nothing here places an order.</div>`;
+  const closedTop = closedLaneLine(d.closed);
   if (mode === 'record') {
     const bt = d.backtest;
     const live = d.kinds.length ? `<div class="nflm-cards">${d.kinds.map(k => xprCard(`Live, ${xprKindName(k)}`, k)).join('')}</div>` : `<div class="empty-wrap"><div class="empty-sub">No flag or bid has closed yet. A rung is flagged 2 min to 24 h before the start and graded after Kalshi settles it.</div></div>`;
     const btCards = bt && Array.isArray(bt.kinds) ? `<div class="nflm-bt">${escAttr(bt.summary || '')}</div><div class="nflm-cards">${bt.kinds.map(k => xprCard(`Backtest, ${xprKindName(k)}`, k)).join('')}</div>` : '';
     const q = String(pbState.q || '').trim().toLowerCase();
     const rows = (d.recent || []).filter(r => !q || `${r.player} ${r.league} ${xprStat(r.mkey)}`.toLowerCase().includes(q)).map(r => `<tr data-vrow="1"><td>${escAttr(r.league)}</td><td>${escAttr(r.player)} ${escAttr(r.side === 'yes' ? 'over' : 'under')} ${r.line} ${escAttr(xprStat(r.mkey))}<div class="shp-dim">${r.role === 'maker' ? 'resting bid' : 'taken'} · ${pbFmtStart(r.start)}</div><div>${vLink('kalshi', { url: r.url, ticker: r.ticker, what: `${r.player} ${r.line} ${xprStat(r.mkey)}` })}</div></td><td>${afContract('kalshi', r.role === 'maker' ? { price: r.bid, fee: r.fee ?? null, maker: true } : { price: r.price }, xprC(r.role === 'maker' ? r.bid : r.price))}</td><td>${xprC(r.fairAtPost)}</td><td>${r.closeFair == null ? escAttr(r.closeMissing || '—') : xprC(r.closeFair)}</td><td>${escAttr(r.status === 'graded' ? r.outcome : r.status)}</td><td>${r.clv == null ? '—' : xprPct(r.clv)}</td></tr>`).join('');
-    el.innerHTML = note + bar + live + btCards + (rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Play</th><th>Price</th><th>Fair at flag</th><th>Pin close</th><th>Status</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '');
+    el.innerHTML = closedTop + note + bar + live + btCards + (rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Play</th><th>Price</th><th>Fair at flag</th><th>Pin close</th><th>Status</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '');
     return;
   }
-  if (!(d.kalshi && d.pinnacle)) { el.innerHTML = note + bar + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">PRICES OFF</div><div class="empty-sub">Kalshi's and Pinnacle's prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
+  if (!(d.kalshi && d.pinnacle)) { el.innerHTML = closedTop + note + bar + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">PRICES OFF</div><div class="empty-sub">Kalshi's and Pinnacle's prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
   const q = String(pbState.q || '').trim().toLowerCase();
   const hit = x => !q || `${x.player} ${x.league} ${xprStat(x.mkey)}`.toLowerCase().includes(q);
   const rows = (d.board || []).filter(hit);
-  if (!rows.length && q) { el.innerHTML = note + bar + `<div class="empty-wrap"><div class="empty-sub">No rung matches "${escAttr(pbState.q)}".</div></div>`; return; }
-  if (!rows.length) { el.innerHTML = note + bar + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO RUNGS ON PINNACLE'S LINE</div><div class="empty-sub">No Kalshi player-prop rung${lg ? ` in ${lg}` : ''} sits exactly on Pinnacle's main line for a game in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a few minutes after a restart)'}. Yardage rungs come in 10-yard steps, so most miss Pinnacle's number.</div></div>`; return; }
+  if (!rows.length && q) { el.innerHTML = closedTop + note + bar + `<div class="empty-wrap"><div class="empty-sub">No rung matches "${escAttr(pbState.q)}".</div></div>`; return; }
+  if (!rows.length) { el.innerHTML = closedTop + note + bar + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO RUNGS ON PINNACLE'S LINE</div><div class="empty-sub">No Kalshi player-prop rung${lg ? ` in ${lg}` : ''} sits exactly on Pinnacle's main line for a game in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a few minutes after a restart)'}. Yardage rungs come in 10-yard steps, so most miss Pinnacle's number.</div></div>`; return; }
   const side = (x, s) => {
     const v = x.sides[s];
     const take = v.ev == null ? '—' : `<span class="${v.ev >= (d.edge ?? 0.02) ? 'nflm-pos' : 'shp-dim'}">${xprPct(v.ev)}</span>`;
@@ -5164,7 +5168,7 @@ function renderExprops() {
       <td>${escAttr(x.league)}</td><td><b>${escAttr(x.player)}</b> ${x.line} ${escAttr(xprStat(x.mkey))}<div class="shp-dim">YES = over · ${pbFmtStart(x.start)}</div><div>${vLink('kalshi', { url: x.url, ticker: x.ticker, what: `${x.player} ${x.line} ${xprStat(x.mkey)}` })}</div></td>${side(x, 'yes')}${side(x, 'no')}</tr>`;
   }).join('');
   const nTake = rows.filter(x => Math.max(x.sides.yes.ev ?? -1, x.sides.no.ev ?? -1) >= (d.edge ?? 0.02)).length;
-  el.innerHTML = note + bar + `<div class="shp-dim" style="margin-bottom:8px">${rows.length} rungs on Pinnacle's line · ${nTake} take 2%+ over fair after the fee · read ${escAttr(d.boardAt ? pbFmtStart(d.boardAt) : '—')}. Each TAKE and BID shows its own record's graded count.</div>
+  el.innerHTML = closedTop + note + bar + `<div class="shp-dim" style="margin-bottom:8px">${rows.length} rungs on Pinnacle's line · ${nTake} take 2%+ over fair after the fee · read ${escAttr(d.boardAt ? pbFmtStart(d.boardAt) : '—')}. Each TAKE and BID shows its own record's graded count.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Rung</th><th>Fair over</th><th>YES ask</th><th>Take over</th><th>Bid over</th><th>Fair under</th><th>NO ask</th><th>Take under</th><th>Bid under</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function renderPropsBoard() {
@@ -8594,7 +8598,7 @@ function renderXarbs() {
     ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${br.filled} filled${br.fillRate != null ? ` (${Math.round(br.fillRate * 100)}% of those finished)` : ''}, ${br.locked} locked a profit, ${br.lost} lost${br.avgLock != null ? `, average ${br.avgLock > 0 ? '+' : ''}${br.avgLock}% a fill` : ''}. ${br.cancelled} cancelled when the hedge ran, ${br.unfilled} never filled.</div>`
     : br ? `<div class="xa-sub" style="margin:0 0 8px">Every plan here is tracked until its game starts: whether the bid filled and what the hedge cost by then. ${br.open} being tracked now.</div>` : '';
   const bidSec = sec('BID, THEN HEDGE', bids.length ? `${bids.length} · two bets: a limit bid, then the other side once it fills` : 'none right now',
-      bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
+      closedLaneLine(d.bidClosed) + bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
   // bid plans lead only once they've shown they fill: live, 0 of 271 had by 10-13 17:49 (the hedge ran first)
   const bidsProven = br && br.filled >= 5 && br.fillRate >= 0.2;
   const bidFold = bids.length || br?.cancelled ? `<details class="xa-how"><summary>Bid, then hedge (${bids.length} open)${br && (br.filled || br.cancelled) ? ` · ${br.filled} of ${br.filled + br.unfilled + br.cancelled} filled so far` : ''}</summary>${bidSec}</details>` : '';
@@ -8883,6 +8887,7 @@ function trInplayHTML(d) {
   const live = (d.live || []).filter(l => l.pMap != null);
   const rec = (d.recent || []).slice(0, 8);
   return `<div class="trm"><div class="es-hdr"><h3>LIVE MAPS ON KALSHI</h3><span class="sub">${escEs(d.note || '')}</span></div>
+    ${closedLaneLine(d.closed)}
     <div class="pb-sum tr-sum">
       <div class="pb-stat"><b>${c.graded} <small>of ${d.summary.bar}</small></b><span>Maps graded</span></div>
       <div class="pb-stat"><b>${c.wins}-${c.losses}</b><span>Record</span></div>
@@ -9891,13 +9896,15 @@ function kmkRender() {
   if (kmkUi.error) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">${escEs(kmkUi.error)}</div></div>`; return; }
   const d = kmkUi.data;
   if (!d) return;
+  // closed: no board, the record stays
+  if (d.closed && kmkUi.view !== 'record') { el.innerHTML = `${closedLaneLine(d.closed)}<div class="empty-wrap"><div class="empty-big">CLOSED</div><div class="empty-sub">No bids are posted any more. The final record is under RECORD.</div></div>`; return; }
   if (kmkUi.view === 'record') {
     const bt = d.backtest, b2 = bt?.byEdge?.[String(d.edge)] || null;
     const kname = { 'kalshi-maker': 'kalshi-maker', 'kalshi-maker-nhl': 'kalshi-maker-nhl, NHL spreads and totals (no maker fee)' };
     const btCards = b2 ? (b2.kinds ? Object.entries(b2.kinds).map(([k, x]) => kmkRecordCard(`Backtest at 2%, ${kname[k] || k} (judged)`, x)).join('') : kmkRecordCard('Backtest at 2% (judged)', b2.all)) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
       + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged, both kinds)`, x.all)).join('') : '';
     const rows = (d.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td><td>${afContract('kalshi', { price: r.bid, fee: r.fee ?? null, maker: true }, kmkC(r.bid))}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
-    el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
+    el.innerHTML = `${closedLaneLine(d.closed)}<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
       <div class="nflm-cards">${d.kinds ? Object.entries(d.kinds).map(([k, x]) => kmkRecordCard(`Live record, ${kname[k] || k}`, x)).join('') : kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, kalshi-maker, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
       ${bt ? `<div class="nflm-bt">${escEs(bt.summary || '')}</div><div class="nflm-cards">${btCards}</div>` : ''}
       ${rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Bid on</th><th>Bid</th><th>Fair at post</th><th>Pin close</th><th>Status</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">No bid has closed yet: a bid is posted 2 min to 24 h before the start and decided from Kalshi\'s prints after it.</div></div>'}`;
