@@ -295,8 +295,12 @@ const requestsFor = (dest, post) => (dest.kind === 'telegram' ? telegramRequests
 const scrub = s => String(s || '').replace(/bot\d+:[\w-]+/g, 'bot…').replace(/webhooks\/\d+\/[\w-]+/g, 'webhooks/…').slice(0, 200);
 
 // ── sealing a customer's webhook URL at rest ──
-function sealer(key) {
+// older: keys earlier versions sealed with (FEED_SECRET set later, or a new
+// results backup key). They only open; new seals use `key`, so changing the
+// key never disconnects anyone already connected.
+function sealer(key, older = []) {
   if (!key) return { seal: s => ({ plain: s }), open: x => x?.plain ?? null, on: false };
+  const openWith = [key, ...(older || []).filter(k => k && !k.equals(key))];
   return {
     on: true,
     seal(s) {
@@ -308,11 +312,14 @@ function sealer(key) {
     open(x) {
       if (!x) return null;
       if (x.plain) return x.plain;
-      try {
-        const d = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(x.iv, 'base64'));
-        d.setAuthTag(Buffer.from(x.tag, 'base64'));
-        return Buffer.concat([d.update(Buffer.from(x.data, 'base64')), d.final()]).toString('utf8');
-      } catch { return null; }
+      for (const k of openWith) {
+        try {
+          const d = crypto.createDecipheriv('aes-256-gcm', k, Buffer.from(x.iv, 'base64'));
+          d.setAuthTag(Buffer.from(x.tag, 'base64'));
+          return Buffer.concat([d.update(Buffer.from(x.data, 'base64')), d.final()]).toString('utf8');
+        } catch { /* the next key */ }
+      }
+      return null;
     },
   };
 }
