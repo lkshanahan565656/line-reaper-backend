@@ -33,7 +33,7 @@ module.exports = [
     files: ['public/app.js'],
     languageOptions: {
       ecmaVersion: 2024,
-      globals: { ...globals.browser, LRCalc: 'readonly', LRFees: 'readonly', LRGlossary: 'readonly', LRSlips: 'readonly', LRBets: 'readonly', LRVenue: 'readonly' },
+      globals: { ...globals.browser, LRCalc: 'readonly', LRFees: 'readonly', LRGlossary: 'readonly', LRSlips: 'readonly', LRBets: 'readonly', LRVenue: 'readonly', LRSync: 'readonly' },
     },
     rules: { 'no-unused-vars': ['error', { vars: 'local', args: 'none', caughtErrors: 'none', ignoreRestSiblings: true, varsIgnorePattern: '^_' }] },
   },
