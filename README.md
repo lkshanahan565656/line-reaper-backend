@@ -85,7 +85,7 @@ the map.
 | **User features** | `bets.js` (MY BETS), `slips.js`, `slip.js`, `slipbuild.js`, `slipgrade.js`, `sliplog.js`, `slipstamp.js` (MY SLIPS), `linebets.js`, `pubrecord.js` (`/r/<handle>`), `leaderboard.js` (`/r`), `auth.js` (accounts, sync), `billing.js` (Stripe), `plans.js` (Free and Pro), `licences.js` |
 | **Outbound** | `alerts.js`, `push.js` (Web Push), `webhook.js`, `outfeed.js` (Discord and Telegram feed), `discordbot.js`, `telegrambot.js`, `publicapi.js` (`/api/v1`), `embeds.js` (widgets, `/developers`), `sharecards.js` |
 | **Public pages** | `landing.html` (sales page), `learn.js`, `glossary.js`, `leagues.js`, `linehist.js` (`/lines`), `legal.js`, `status.js`, `a11y.js` (skip link, focus ring on every server page) |
-| **Platform** | `jsonstore.js` (file stores), `backup.js` (results snapshot), `ops.js` (`/api/ops`), `livecheck.js`, `quota.js` (Odds API credits), `appbundle.js` (hashed, pre-compressed app script) |
+| **Platform** | `jsonstore.js` (file stores), `backup.js` (results snapshot), `ops.js` (`/api/ops`), `security.js` (headers, per-address write and sign-in limits, JSON errors, the `security` block in `/api/ops`), `livecheck.js`, `quota.js` (Odds API credits), `appbundle.js` (hashed, pre-compressed app script) |
 
 ### The app (`public/`)
 
