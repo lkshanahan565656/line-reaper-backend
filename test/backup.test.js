@@ -10,7 +10,7 @@ const quiet = { log() {}, warn() {} };
 // a backup whose "GitHub" is one in-memory file
 function setup({ file = null, k = key, fetchJson } = {}) {
   const remote = { file };
-  const b = createBackup({ key: k, sources: ['mem://x'], fetchJson: fetchJson || (async () => remote.file), log: quiet });
+  const b = createBackup({ key: k, sources: ['mem://x'], fetchJson: fetchJson || (async () => remote.file), log: quiet, bootRetryMs: 5 });
   return { b, remote };
 }
 
@@ -138,7 +138,7 @@ test('an unreadable backup source pauses exports instead of overwriting', async 
 test('off without a key; Railway ids make one; repo from Railway vars', async () => {
   assert.equal(keyFromEnv({}), null);
   assert.equal(keyFromEnv({ RAILWAY_PROJECT_ID: 'p', RAILWAY_SERVICE_ID: 's' }).length, 32);
-  const b = createBackup({ key: null, fetchJson: async () => { throw new Error('never'); }, log: quiet });
+  const b = createBackup({ key: null, fetchJson: async () => { throw new Error('never'); }, log: quiet, bootRetryMs: 5 });
   const s = b.wrap('tail', createMemoryStore());
   await s.init();
   await s.put({ id: 'x' });

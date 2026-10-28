@@ -120,7 +120,8 @@ async function openAsync(key, env) {
 }
 
 // fetchJson(url) → parsed body, or null for "no such file"; throws otherwise.
-function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = console, retryMs = 5 * 60e3, now = () => Date.now() } = {}) {
+function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = console, retryMs = 5 * 60e3, bootRetryMs = 2000, now = () => Date.now() } = {}) {
+  // bootRetryMs: the first boot retry waits this long, the second twice it
   keys = (keys || (key !== undefined ? [key] : keysFromEnv())).filter(Boolean);
   key = keys[0] || null;   // new snapshots are sealed with this one
   let readWith = null;     // 'current' | 'older' once a snapshot was opened
@@ -186,7 +187,7 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
       for (let i = 0; i < 3; i++) {
         try { const p = await readOnce(); state = 'ready'; return p; }
         catch (e) { note = e.keep ? e.message : `could not read the backup: ${e.message}`; }
-        if (i < 2) await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+        if (i < 2) await new Promise(r => setTimeout(r, bootRetryMs * (i + 1)));
       }
       state = 'retrying';
       log.warn?.(`Results backup: ${note}; exports paused, retrying in the background`);
