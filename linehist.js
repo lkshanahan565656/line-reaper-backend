@@ -355,6 +355,7 @@ const PAGE_CSS = `
 .st-pick select, .st-pick button, .st-pick input { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
 .st-pick span { flex-basis:100%; font-size:11px; }
+@media (max-width:560px) { .st-pick { display:grid; grid-template-columns:max-content minmax(0,1fr); } .st-pick button, .st-pick span { grid-column:1 / -1; } .st-pick button { justify-self:start; } }
 .links { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
 .links .go { margin:0; }
 td.n, th.n { text-align:right; white-space:nowrap; }

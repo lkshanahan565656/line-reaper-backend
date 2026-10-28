@@ -27,13 +27,13 @@ const PLAN_IDS = Object.keys(LIMITS);
 // says how the server holds it back, for the engineering record and tests.
 const FEATURES = [
   { id: 'screen', group: 'Odds', label: 'Odds screen: every venue we read, side by side', where: 'ODDS SCREEN', free: true, pro: true, gate: 'none' },
-  { id: 'fair', group: 'Odds', label: 'Pinnacle no-vig fair price, EV and line history', where: 'ODDS SCREEN, SHOPPER', free: 'How many prices sit above the fair', pro: true, gate: 'oddsScreen.stripPro, shopper.stripPro' },
+  { id: 'fair', group: 'Odds', label: 'Pinnacle no-vig fair price, EV and line history', where: 'ODDS SCREEN', free: 'How many prices sit above the fair', pro: true, gate: 'oddsScreen.stripPro, shopper.stripPro' },
   { id: 'history', group: 'Odds', label: 'Line history: every market\'s prices at each venue, Pinnacle included, with a chart and a CSV or JSON download', where: '/lines, /api/v1/lines', free: `The last ${LIMITS.free.historyDays} days`, pro: `${LIMITS.pro.historyDays} days`, gate: 'limitsOf(plan).historyDays' },
-  { id: 'shopper', group: 'Odds', label: 'Exchange Shopper ranked list, with what the order book fills at your stake', where: 'SHOPPER', free: 'Prices only', pro: true, gate: 'shopper.stripPro' },
+  { id: 'shopper', group: 'Odds', label: 'Exchange Shopper ranked list, with what the order book fills at your stake', where: 'ODDS SCREEN > BEST PRICES ABOVE FAIR', free: 'Prices only', pro: true, gate: 'shopper.stripPro' },
   { id: 'best', group: 'Odds', label: 'Best Plays, ranked by their own record', where: 'BEST PLAYS', free: 'Top 3', pro: 'Every play', gate: 'BEST_FREE_PREVIEW' },
   { id: 'arbs', group: 'Odds', label: 'Arbs and middles with legs, prices and stakes', where: 'ARBS', free: 'Count and profit %', pro: true, gate: '/api/xarbs free view' },
   { id: 'props', group: 'Models', label: 'Pick\'em and props boards, priced against the sharp number', where: 'PROPS', free: 'The board; picks on lines above the fair hidden', pro: true, gate: 'redactForFree' },
-  { id: 'esports', group: 'Models', label: 'Esports match boards and our ratings (tagged model, not an edge)', where: 'MATCHUPS', free: 'Match boards', pro: true, gate: 'redactForFree, requirePro on best slips' },
+  { id: 'esports', group: 'Models', label: 'Esports match boards and our ratings (tagged model, not an edge)', where: 'ESPORTS > MATCHUPS', free: 'Match boards', pro: true, gate: 'redactForFree, requirePro on best slips' },
   { id: 'tail', group: 'Research', label: 'Sharp Tail (research): big accounts\' entries with the trader and price', where: 'SHARP TAIL', free: '30 minute delay', pro: 'Real time', gate: 'TAIL_FREE_DELAY_MS' },
   { id: 'alerts', group: 'Alerts', label: 'Live alerts in the app, and phone push', where: 'CUSTOMIZE > Push alerts', free: false, pro: 'Same text for every member', gate: 'requirePro on /api/ev/stream, /api/esports/stream, /api/push/subscribe' },
   { id: 'feed', group: 'Alerts', label: 'The Line Reaper feed in your Discord server (weekly digest, record changes, biggest moves)', where: '/developers#feed', free: false, pro: 'One channel per key; the same posts for everyone', gate: 'PUT /api/v1/feed/discord, feed subscribers' },
@@ -47,7 +47,7 @@ const FEATURES = [
   { id: 'bettor', group: 'Record', label: 'Your own public bettor record at /r/your-name, with CSV, JSON and a share card', where: 'MY SLIPS > PUBLISH RECORD', free: true, pro: true, gate: 'none' },
   { id: 'leaderboard', group: 'Record', label: 'The bettor leaderboard: published records ranked by CLV against Pinnacle\'s close, ranked only at 50 graded', where: '/r', free: true, pro: true, gate: 'none' },
   { id: 'tools', group: 'Record', label: 'Calculators, MY BETS, MY SLIPS, imports, EXPORT and PRINT', where: 'TOOLS, MY BETS, MY SLIPS', free: true, pro: true, gate: 'none' },
-  { id: 'views', group: 'Record', label: 'Saved views, favorites, My state, odds format, after-fee prices', where: 'CUSTOMIZE, SHOPPER', free: true, pro: true, gate: 'none' },
+  { id: 'views', group: 'Record', label: 'Saved views, favorites, My state, odds format, after-fee prices', where: 'CUSTOMIZE, ODDS SCREEN', free: true, pro: true, gate: 'none' },
 ];
 // The fair-in-the-API row is a rule for everyone, not a plan difference: kept
 // in the table so /api/plans says it, left off the plan cards.
