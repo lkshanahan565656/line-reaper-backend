@@ -194,17 +194,19 @@ function sumOf(items) {
 const LABEL_ORDER = ['proven', 'building', 'too early', 'losing to the close', 'research', 'copied book', 'no sharp close', 'not graded yet', LABEL_NONE];
 
 // docs (newest first) → the public view. hidden: wallets withheld (licences.mentions)
-// full: show the bets of alerts whose game has not started (subscribers);
+// full: show the bets of alerts whose game has not started (Pro);
 // false: an alert stays a time and a title until every bet on it has started,
-// or for a day when it names none (today's live alerts are what Pro pays for)
-function view(docs, { rows = {}, labelOf = () => null, now = Date.now(), startedAt = null, full = true, days = 0, kind = null, limit = 100, before = null, hide = () => false } = {}) {
+// or for a day when it names none (today's live alerts are what Pro pays for);
+// delayMs (Plus): with full false, an alert also opens once it is that old
+function view(docs, { rows = {}, labelOf = () => null, now = Date.now(), startedAt = null, full = true, delayMs = null, days = 0, kind = null, limit = 100, before = null, hide = () => false } = {}) {
   const since = days > 0 ? now - days * 86400e3 : 0;
   const all = docs.filter(d => d.type === 'alert' && Date.parse(d.sentAt) >= since && (!kind || d.kind === kind) && !hide(d));
   const graded = all.map(d => {
     const items = (d.items || []).map(it => gradeItem(it, { rows, labelOf, now }));
     const open = items.length ? items.some(i => !i.started) : now - Date.parse(d.sentAt) < 86400e3;
     const top = items.length ? items.map(i => i.label).sort((a, b) => LABEL_ORDER.indexOf(a) - LABEL_ORDER.indexOf(b))[0] : LABEL_NONE;
-    return { ...d, items, label: top, why: items.length ? null : noGradeWhy(d.title), open, masked: !full && open };
+    const aged = delayMs != null && delayMs >= 0 && now - Date.parse(d.sentAt) >= delayMs;
+    return { ...d, items, label: top, why: items.length ? null : noGradeWhy(d.title), open, masked: !full && open && !aged };
   });
   const flat = graded.flatMap(d => d.items);
   // per label (an alert counts under each label its bets carry) and per title

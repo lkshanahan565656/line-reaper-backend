@@ -1666,7 +1666,7 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     try {
       const res = await page.goto(`${opts.base}/pricing`, { waitUntil: 'domcontentloaded' });
       expect(res && res.status() === 200, `/pricing answered ${res && res.status()}`);
-      expect(/Free and Pro/.test(await text(page, 'h1')), 'the pricing page heading is missing');
+      expect(/Free, Plus and Pro/.test(await text(page, 'h1')), 'the pricing page heading is missing');
       expect(await fits(), 'the pricing page scrolls sideways at this size');
       const body = await page.evaluate(() => document.body.innerText);
       expect(!claimy.test(body), 'the pricing page shows a claim or broken text');
@@ -1677,7 +1677,16 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
       expect(/10 a minute, 500 a day/.test(body) && /60 a minute, 5,000 a day/.test(body), 'the API limits are missing from the table');
       // every button goes somewhere that answers
       const hrefs = await page.evaluate(() => [...document.querySelectorAll('.card .cta')].map(a => a.getAttribute('href')));
-      expect(hrefs.length === 2 && hrefs.every(h => h && h !== '#'), `the plan buttons are ${JSON.stringify(hrefs)}`);
+      expect(hrefs.length >= 3 && hrefs.every(h => h && h !== '#'), `the plan buttons are ${JSON.stringify(hrefs)}`);
+      // the monthly/annual switch, when shown, swaps every paid card's price
+      if (await page.locator('label[for="billY"]').count()) {
+        const shown = () => page.evaluate(() => [...document.querySelectorAll('.card .price')].filter(e => e.offsetParent).map(e => e.textContent));
+        expect((await shown()).every(t => !/year/.test(t)), 'annual prices show before ANNUAL is picked');
+        await page.locator('label[for="billY"]').click();
+        const yearly = await shown();
+        expect(yearly.filter(t => /year/.test(t)).length >= 2, `ANNUAL did not swap the prices: ${JSON.stringify(yearly)}`);
+        await page.locator('label[for="billM"]').click();
+      }
       for (const h of hrefs.filter(x => x.startsWith('/'))) {
         const r = await page.request.get(`${opts.base}${h}`);
         expect(r.status() === 200, `${h} from the pricing page answered ${r.status()}`);

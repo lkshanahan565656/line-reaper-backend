@@ -834,7 +834,7 @@ const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLo
 const webhook = require('./push').withPush(webhookOnly, push, {
   onSent: ({ text, what, kind, meta, webhooks, phones }) => alertLog.record({ text, title: what, kind, reached: { webhooks, phones }, items: meta?.items || [] }),
 });
-const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
+const { createAuth, createUserStoreFromEnv, publicUser, isPro, tierOf } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
 const legal = require('./legal');
 const { createBilling, verifyWebhook } = require('./billing');
@@ -1020,6 +1020,8 @@ const plans = require('./plans');
 const foundingTaken = () => auth.store.count(u => !!u.founding).catch(() => 0);
 const billing = createBilling({
   http: axios, secretKey: process.env.STRIPE_SECRET_KEY, priceId: process.env.STRIPE_PRICE_ID,
+  // optional: each one puts that plan and period on sale (plans.readiness lists them)
+  annualPriceId: process.env.STRIPE_PRICE_ANNUAL_ID, plusPriceId: process.env.STRIPE_PLUS_PRICE_ID, plusAnnualPriceId: process.env.STRIPE_PLUS_PRICE_ANNUAL_ID,
   introPriceId: String(process.env.STRIPE_INTRO_PRICE_ID || '').trim() || null,
   introOpen: async () => plans.priceView({ env: process.env, paywall: true, foundingTaken: await foundingTaken() }).intro != null,
   store: auth.store, trialDays: parseInt(process.env.STRIPE_TRIAL_DAYS) || 0,
@@ -3412,19 +3414,30 @@ tracker.ready().then(
 function isAdmin(req) {
   return security.safeEqual(req.get('x-admin-token'), process.env.TRACKER_ADMIN_TOKEN);
 }
+// Two kinds of gate (plans.js says what each plan gets):
+//   hasPro / requirePro    any paid plan, Plus or Pro: the research tabs, fair
+//                          prices, EV, model boards in full
+//   hasLive / requireLive  Pro only: live alert streams and phone push
+// The API limits, keys, the Discord feed and line history go by planOfReq.
 function hasPro(req) {
   if (!PAYWALL) return true;
   if (isAdmin(req)) return true;
   return isPro(req.user);
 }
-// 'pro' or 'free' (plans.js): the same answer as hasPro, as a plan name
-const planOfReq = req => plans.planOf({ paywall: PAYWALL, admin: isAdmin(req), pro: isPro(req.user) });
+// 'free', 'plus' or 'pro' (plans.js)
+const planOfReq = req => plans.planOf({ paywall: PAYWALL, admin: isAdmin(req), tier: tierOf(req.user) });
+const hasLive = req => planOfReq(req) === 'pro';
 // an API key's plan: its account's (a key made signed out is Free once the paywall is on)
 async function planOfUserId(userId) {
   if (!PAYWALL) return 'pro';
   const user = userId ? await auth.store.get(userId).catch(() => null) : null;
-  return plans.planOf({ paywall: PAYWALL, pro: isPro(user) });
+  return plans.planOf({ paywall: PAYWALL, tier: tierOf(user) });
 }
+// how late this viewer sees an alert, in ms: 0 live (Pro), the Plus delay, or
+// null for none at all (Free; requirePro answers before this is asked)
+const alertDelayMs = req => { const m = plans.limitsOf(planOfReq(req)).alertDelayMin; return m == null ? null : m * 60e3; };
+// rows of an alert list this viewer may see now: Plus waits out the delay
+const delayed = (rows, req, now = Date.now()) => { const d = alertDelayMs(req); return d ? rows.filter(r => now - Date.parse(r.at) >= d) : rows; };
 
 // Data licences. Polymarket's terms give a personal licence and Kalshi's data
 // terms are personal and non-commercial, so showing either to other people
@@ -3454,8 +3467,16 @@ function licenceState(req) {
 function requirePro(req, res, next) {
   if (hasPro(req)) return next();
   res.status(req.user ? 402 : 401).json({
-    error: req.user ? 'This needs a Line Reaper Pro subscription' : 'Log in to use this',
-    upgrade: !!req.user,
+    error: req.user ? 'This needs a Line Reaper Plus or Pro plan' : 'Log in to use this',
+    upgrade: !!req.user, plan: 'plus',
+  });
+}
+// live alerts and push: Pro only (Plus sees the same alerts later in the app)
+function requireLive(req, res, next) {
+  if (hasLive(req)) return next();
+  res.status(req.user ? 402 : 401).json({
+    error: req.user ? `Live alerts are part of Line Reaper Pro. Plus shows the same alerts ${plans.ALERT_DELAY_MIN} minutes later in the app.` : 'Log in to use this',
+    upgrade: !!req.user, plan: 'pro',
   });
 }
 // Free users still see the board, with the actual picks on +EV lines hidden,
@@ -5016,7 +5037,7 @@ app.get('/api/push/key', async (req, res) => {
 });
 // the alert kinds a device can choose (Settings → Phone app)
 app.get('/api/push/kinds', (req, res) => res.json({ kinds: require('./push').KINDS.map(({ key, label }) => ({ key, label })) }));
-app.post('/api/push/subscribe', (req, res, next) => (hasPro(req) ? next() : requirePro(req, res, next)), async (req, res) => {
+app.post('/api/push/subscribe', requireLive, async (req, res) => {
   try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent'), kinds: req.body?.kinds })); } catch (e) { sendErr(res, e); }
 });
 app.post('/api/push/unsubscribe', async (req, res) => {
@@ -5118,13 +5139,13 @@ const LANDING_FILE = path.join(__dirname, 'public', 'landing.html');
 let landingSrc = null;
 // Stripe's own prices and the founding seats taken, read at most hourly
 // (billing.prices caches), so the pages show what checkout will charge.
-const priceState = { at: 0, main: null, intro: null, founding: 0, pending: null };
+const priceState = { at: 0, main: null, intro: null, catalog: null, founding: 0, pending: null };
 function refreshPrices() {
   if (priceState.pending || Date.now() - priceState.at < 10 * 60e3) return priceState.pending || Promise.resolve(priceState);
   priceState.pending = (async () => {
     try {
       const [p, founding] = await Promise.all([billing.configured() ? billing.prices() : { main: null, intro: null }, foundingTaken()]);
-      Object.assign(priceState, { main: p.main, intro: p.intro, founding: founding || 0 });
+      Object.assign(priceState, { main: p.main, intro: p.intro, catalog: p, founding: founding || 0 });
     } catch (e) { console.warn('Prices:', e.message); }
     priceState.at = Date.now();
     priceState.pending = null;
@@ -5133,7 +5154,16 @@ function refreshPrices() {
   return priceState.pending;
 }
 const priceNow = ({ paywall = PAYWALL, env = process.env, live = env === process.env } = {}) => plans.priceView({ env, paywall,
-  stripe: live ? priceState.main : null, introStripe: live ? priceState.intro : null, foundingTaken: live ? priceState.founding : 0 });
+  stripe: live ? priceState.main : null, introStripe: live ? priceState.intro : null, catalog: live ? priceState.catalog : null,
+  sale: live ? billing.onSale() : null, foundingTaken: live ? priceState.founding : 0 });
+const plansLine = pv => {
+  const plus = pv.plans.plus, pro = pv.plans.pro, sym = pv.symbol;
+  const parts = [];
+  if (plus.onSale.month) parts.push(`Plus is ${sym}${plans.money(plus.monthly)} a month: every research tab, and the same alerts ${plans.ALERT_DELAY_MIN} minutes after Pro.`);
+  const free = Math.max(pro.onSale.year ? pro.monthsFree : 0, plus.onSale.year ? plus.monthsFree : 0);
+  if (free > 0) parts.push(`Annual billing gets up to ${free} month${free === 1 ? '' : 's'} free.`);
+  return parts.join(' ');
+};
 function landingHtml({ paywall = PAYWALL, env = process.env, origin = '' } = {}) {
   if (landingSrc == null) { try { landingSrc = fs.readFileSync(LANDING_FILE, 'utf8'); } catch { return null; } }
   const pv = priceNow({ paywall, env });
@@ -5148,6 +5178,8 @@ function landingHtml({ paywall = PAYWALL, env = process.env, origin = '' } = {})
     ORIGIN: String(origin).replace(/[^\w.:/-]/g, ''),
     // the plan cards' lists, from the same table as /pricing (plans.js)
     FREE_LIST: plans.planListHtml('free'), PRO_LIST: plans.planListHtml('pro'),
+    // the cheaper plan and the annual prices, named only once they can be bought (or as the preview before the paywall)
+    PLANS_LINE: plansLine(pv),
   };
   return landingSrc.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (k in vals ? vals[k] : m));
 }
@@ -5346,7 +5378,11 @@ app.post('/api/billing/checkout', async (req, res) => {
     const back = returnUrl(req, `${req.protocol}://${req.get('host')}/`);
     const sep = back.includes('?') ? '&' : '?';
     const origin = `${(req.get('x-forwarded-proto') || req.protocol).split(',')[0].trim()}://${req.get('host')}`;
-    res.json(await billing.checkout(req.user, { successUrl: `${back}${sep}upgraded=1`, cancelUrl: back, legalUrl: origin }));
+    // which plan and period (the price comes from the server's own list, never the body)
+    const plan = req.body?.plan === 'plus' ? 'plus' : req.body?.plan == null || req.body.plan === 'pro' ? 'pro' : null;
+    const interval = req.body?.interval === 'year' ? 'year' : req.body?.interval == null || req.body.interval === 'month' ? 'month' : null;
+    if (!plan || !interval) return res.status(400).json({ error: 'Pick Plus or Pro, monthly or annual' });
+    res.json(await billing.checkout(req.user, { successUrl: `${back}${sep}upgraded=1`, cancelUrl: back, legalUrl: origin, plan, interval }));
   } catch (e) { console.error('Checkout failed:', e.response?.data?.error?.message || e.message); sendErr(res, e); }
 });
 app.post('/api/billing/portal', async (req, res) => {
@@ -5412,7 +5448,7 @@ app.get('/api/ev', (req, res) => {
     // free users see a lock per row the Pro view shows at its default floor (+1%)
     stale: pro ? staleOut : redactEv(staleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, stale: true })), staleAt: staleState.screenedAt, staleLag: staleState.enabled ? staleState.engine.lagSummary() : null,
     esStale: pro ? esStaleOut : redactEv(esStaleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, es: true, stale: true })), esStaleAt: esStaleState.screenedAt, esStaleLag: esStaleState.enabled ? esStaleState.engine.lagSummary() : null,
-    count: total, counts, pro, updated: new Date(at).toISOString(), feeds, state: venues.stateInfo(req.query.state) });
+    count: total, counts, pro, live: hasLive(req), updated: new Date(at).toISOString(), feeds, state: venues.stateInfo(req.query.state) });
 });
 // New edges as they appear: event "ev" carries an array of rows.
 // ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
@@ -5642,7 +5678,7 @@ app.get('/digest/:week', async (req, res) => {
 // tracker with RESULTS' code and label. The same for everyone; with the
 // paywall on, a free viewer sees an alert's bets once their games start.
 const alertViewMemo = require('./ops').createMemo({ ttlMs: 60e3, max: 40 });
-async function alertHistory({ days = 0, kind = null, limit = 100, before = null, full = true } = {}) {
+async function alertHistory({ days = 0, kind = null, limit = 100, before = null, full = true, delayMs = null } = {}) {
   const docs = await alertLog.all();
   const want = { ev: new Set(), xvalue: new Set(), esports: new Set() };
   for (const d of docs) for (const it of d.items || []) if (want[it.tracker]) want[it.tracker].add(it.ref);
@@ -5653,7 +5689,7 @@ async function alertHistory({ days = 0, kind = null, limit = 100, before = null,
   const labelOf = (k, book) => { const r = rec.get(`${k}|${book}`); return r ? { label: r.label, why: r.why, profitShown: !!r.profitShown } : null; };
   const hidden = hiddenWallets();
   return alertLogLib.view(docs, { rows: { ev: pick(evRows, want.ev), xvalue: pick(xvRows, want.xvalue), esports: pick(esRows, want.esports) }, labelOf, startedAt: alertLog.startedAt(),
-    full, days, kind, limit, before, hide: d => hidden.length > 0 && mentions(d.lines, hidden) });
+    full, delayMs, days, kind, limit, before, hide: d => hidden.length > 0 && mentions(d.lines, hidden) });
 }
 const alertQueryOf = (q = {}) => ({
   days: Math.max(0, parseFloat(q.days) || 0),
@@ -5661,7 +5697,8 @@ const alertQueryOf = (q = {}) => ({
   limit: Math.min(500, Math.max(1, parseInt(q.limit, 10) || 100)),
   before: typeof q.before === 'string' && Number.isFinite(Date.parse(q.before)) ? new Date(Date.parse(q.before)).toISOString() : null,
 });
-const alertQuery = req => ({ ...alertQueryOf(req.query), full: hasPro(req) });
+// Pro sees open alerts live; Plus once the delay has passed; Free once the games start
+const alertQuery = req => ({ ...alertQueryOf(req.query), full: hasLive(req), delayMs: hasPro(req) && !hasLive(req) ? alertDelayMs(req) : null });
 const alertHistoryFor = q => alertViewMemo(JSON.stringify(q), () => alertHistory(q));
 app.get('/api/alerts/history', async (req, res) => {
   try { res.set('Cache-Control', `${PAYWALL ? 'private' : 'public'}, max-age=60`).json(await alertHistoryFor(alertQuery(req))); }
@@ -5689,8 +5726,10 @@ app.get('/api/stale/history', requirePro, (req, res) => {
   if (!licenceOf(req).kalshi) delete h.sources.kalshi;
   res.json(h);
 });
-app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.filter(evRowOk(licenceOf(req))).slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
-app.get('/api/ev/stream', requirePro, (req, res) => {
+// Plus: the same list, each alert shown once ALERT_DELAY_MIN has passed
+app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: delayed(evRecent, req).filter(evRowOk(licenceOf(req))).slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN,
+  delayMinutes: alertDelayMs(req) / 60e3, live: hasLive(req) }));
+app.get('/api/ev/stream', requireLive, (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   res.flushHeaders?.();
   // what this viewer may see (data licences), fixed for the connection
@@ -9184,11 +9223,12 @@ app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
 
 // ── ALERTS ────────────────────────────────────────────────────────────────────
 app.get('/api/esports/alerts', requirePro, (req, res) => {
-  res.json({ alerts: alerter.recent(Math.min(parseInt(req.query.limit) || 50, 200)) });
+  // Plus: the same alerts once ALERT_DELAY_MIN has passed (the list keeps the newest 200)
+  res.json({ alerts: delayed(alerter.recent(200), req).slice(0, Math.min(parseInt(req.query.limit) || 50, 200)), delayMinutes: alertDelayMs(req) / 60e3, live: hasLive(req) });
 });
 
 // Server-sent events: one `alert` event per edge / move / gone.
-app.get('/api/esports/stream', requirePro, (req, res) => {
+app.get('/api/esports/stream', requireLive, (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   res.flushHeaders?.();
   res.write(`retry: 10000\n\n`);
@@ -9561,7 +9601,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET,
     // the switch to charging (plans.readiness): which settings are set, by name only
-    plans: (({ ready, missing }) => ({ ready, missing, pricing: '/pricing' }))(plans.readiness(process.env, { billingConfigured: billing.configured() })) },
+    plans: (({ ready, missing, optionalMissing }) => ({ ready, missing, optionalMissing, onSale: billing.onSale(), pricing: '/pricing' }))(plans.readiness(process.env, { billingConfigured: billing.configured() })) },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchups: matchupEngine ? matchupEngine.status() : { off: true },
