@@ -1105,6 +1105,7 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
 .xa-empty { font-size:13px; color:#94a3b8; background:var(--card); border:1px dashed var(--border2); border-radius:10px; padding:14px; line-height:1.5; }
 .xa-card { background:var(--card); border:1px solid rgba(16,185,129,.35); border-radius:12px; margin-bottom:10px; overflow:hidden; }
 .xa-card.check { border-color:rgba(245,158,11,.4); }
+.xa-card.xa-ref { border-style:dashed; }
 .xa-head { display:flex; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border); }
 .xa-pct { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; color:var(--green); white-space:nowrap; }
 .xa-title { font-size:14px; font-weight:700; color:#f1f5f9; min-width:0; }
@@ -2008,6 +2009,11 @@ body::before { display:none !important; }
 </div>
 
 <div class="page" id="page-arb">
+  <div data-state-bar></div>
+  <div class="clv-info" style="border-left:3px solid var(--purple)">
+    <strong style="color:#e8e8e8">ARBS</strong> — sets of bets at different venues that pay back more than they cost whichever way the game ends, fees included. EXCHANGES checks Kalshi and Polymarket US against each other, and its sportsbook sections add FanDuel and BetRivers. PRICES shows each game line's price on both exchanges side by side. SPORTSBOOKS is the stake splitter for any set of prices.
+    <span style="color:#94a3b8;font-size:11px">A set is only placeable if every bet is at a venue open where you bet (CUSTOMIZE &gt; My state). Sets with a bet at a closed venue stay listed as <b>reference</b> and sort last. Prices move within minutes: check each one is still there before you place the next.</span>
+  </div>
   <div class="arb-modes">
     <button class="sport-chip active" id="arbModeEx" onclick="arbMode('exchanges')">EXCHANGES</button>
     <button class="sport-chip" id="arbModePrices" onclick="arbMode('prices')">PRICES</button>
