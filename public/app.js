@@ -537,6 +537,69 @@ function showTab(name, el) {
   if (name === 'clv') mybReady().then(renderCLV);
 }
 
+// ─── PRICE AGE (/api/price-age, priceage.js) ─────────────────────────────────
+// Seconds or minutes since each venue last answered, beside its prices on ODDS
+// SCREEN, SHOP, BEST PLAYS and the shopper, greyed once older than that venue's
+// stale mark. The board responses carry the venues' read times; the chips
+// count up every second from them (corrected for the server's clock) and the
+// times are re-read every 15 s while one of those screens is open.
+const PA = { v: {}, byName: {}, skew: 0, timer: null };
+function paTake(pa) {
+  if (!pa?.venues) return;
+  const t = Date.parse(pa.now);
+  if (isFinite(t)) PA.skew = t - Date.now();
+  PA.v = pa.venues;
+  PA.byName = {};
+  for (const [k, v] of Object.entries(pa.venues)) PA.byName[String(v.name || k).toLowerCase()] = k;
+}
+const paVenue = key => PA.v[key] || PA.v[PA.byName[String(key || '').toLowerCase()]] || null;
+const paSec = at => { const t = Date.parse(at || ''); return isFinite(t) ? Math.max(0, Math.round((Date.now() + PA.skew - t) / 1000)) : null; };
+const paFmt = s => (s == null ? '—' : s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : `${Math.floor(s / 86400)}d`);
+function paTitle(name, sec, staleSec, via) {
+  const t = sec < 60 ? `${sec} s` : sec < 3600 ? `${Math.floor(sec / 60)} min` : `${Math.floor(sec / 3600)} h`;
+  return `${name} price read ${t} ago${via === 'stream' ? ' (Kalshi live stream)' : ''}${sec > staleSec ? `. Stale: older than ${Math.max(1, Math.round(staleSec / 60))} min, check the venue` : ''}`;
+}
+// a venue's age chip (key or display name); `at` is the price's own read time when it has one
+function paChip(key, at = null) {
+  const v = paVenue(key);
+  const when = at || v?.at;
+  if (!when) return v ? `<span class="pa stale" title="${escAttr(`${v.name}: no read yet`)}">—</span>` : '';
+  const st = v?.staleSec ?? 300, sec = paSec(when), via = at ? 'poll' : v?.via;
+  return `<span class="pa${sec > st ? ' stale' : ''}${via === 'stream' ? ' live' : ''}" data-pa-at="${escAttr(when)}" data-pa-st="${st}" data-pa-n="${escAttr(v?.name || key)}" data-pa-via="${via || ''}" title="${escAttr(paTitle(v?.name || key, sec, st, via))}">${paFmt(sec)}</span>`;
+}
+// several venues on one play ("Kalshi + Polymarket US"): the oldest read
+function paChipAll(keys, at = null) {
+  if (at) return paChip(keys[0], at);
+  let worst = null;
+  for (const k of keys) { const v = paVenue(k); if (v && (!worst || (Date.parse(v.at || 0) || 0) < (Date.parse(worst.v.at || 0) || 0))) worst = { k, v }; }
+  return worst ? paChip(worst.k) : '';
+}
+// a venue's read is stale: its prices are greyed ([data-pv] cells)
+const paStale = key => { const v = paVenue(key); if (!v) return false; const s = paSec(v.at); return s == null || s > v.staleSec; };
+let paTicks = 0;
+function paTick() {
+  if (document.hidden) return;
+  const root = document.querySelector('.page.active');
+  if (!root) return;
+  root.querySelectorAll('.pa[data-pa-at]').forEach(el => {
+    const sec = paSec(el.dataset.paAt), st = +el.dataset.paSt;
+    const txt = paFmt(sec);
+    if (el.textContent !== txt) el.textContent = txt;
+    el.classList.toggle('stale', sec > st);
+    el.title = paTitle(el.dataset.paN, sec, st, el.dataset.paVia);
+  });
+  if (++paTicks % 5 === 0) root.querySelectorAll('[data-pv]').forEach(el => el.classList.toggle('pa-dim', paStale(el.dataset.pv)));
+}
+setInterval(paTick, 1000);
+async function paLoad() {
+  clearTimeout(PA.timer);
+  const on = ['page-odds', 'page-best', 'page-props'].some(id => document.getElementById(id)?.classList.contains('active'));
+  if (on && !document.hidden) {
+    try { const r = await fetch(`${BACKEND_URL}/api/price-age`); if (r.ok) paTake(await r.json()); } catch {}
+  }
+  PA.timer = setTimeout(paLoad, 15e3);
+}
+setTimeout(paLoad, 15e3);
 // ─── ODDS SCREEN ──────────────────────────────────────────────────────────────
 // /api/odds-screen: every venue on one row per side, Pinnacle's no-vig fair,
 // the best bettable price in green. A game's MOVES button draws its line
@@ -567,6 +630,7 @@ async function loadOdds() {
     const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     osUi.data = await r.json();
+    paTake(osUi.data.priceAge);
     osUi.refreshErr = null;
   } catch (e) {
     osUi.refreshErr = lrErr(e);
@@ -602,7 +666,7 @@ function renderOdds() {
   for (const id of Object.keys(osUi.open)) if (osUi.open[id]) osDrawChart(id);
 }
 function osGame(g, cols, pro) {
-  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.legal === 'yes' ? 'tx' : v.legal === 'unknown' ? 'lr-v-unk' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.legal === 'yes' ? `Legal in ${escAttr(lrStateName())}` : v.legal === 'unknown' ? `Not sure in ${escAttr(lrStateName())}: check with the venue. Never marked best` : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}${v.legal === 'unknown' ? '<span class="os-copy">?</span>' : ''}</th>`).join('')}</tr>`;
+  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.legal === 'yes' ? 'tx' : v.legal === 'unknown' ? 'lr-v-unk' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.legal === 'yes' ? `Legal in ${escAttr(lrStateName())}` : v.legal === 'unknown' ? `Not sure in ${escAttr(lrStateName())}: check with the venue. Never marked best` : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}${v.legal === 'unknown' ? '<span class="os-copy">?</span>' : ''}${paChip(v.key)}</th>`).join('')}</tr>`;
   const rows = g.markets.map(m => {
     const hold = m.bestHold == null ? '' : m.bestHold < 0 ? `<span style="color:#34d399">arb ${osPct(-m.bestHold)}</span>` : `hold at the best prices ${(m.bestHold * 100).toFixed(1)}%`;
     const mk = `<tr class="mk"><td class="side">${g.markets.length > 1 ? escAttr(m.label) : ''}</td><td colspan="${cols.length + (pro ? 1 : 0)}">${hold}</td></tr>`;
@@ -613,9 +677,10 @@ function osGame(g, cols, pro) {
         const xp = xpA({ event: `${g.away} @ ${g.home}`, league: g.leagueLabel, start: g.start, market: m.label, selection: s.label, line: x.point, venue: x.venue, venueName: x.name, american: x.american, decimal: x.decimal,
           fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, card: x.ref ? null : { k: 'move', game: g.id, market: m.key, side: s.label, i: si }, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
         const vctx = { url: x.url, league: g.league, what: `${g.away} @ ${g.home}, ${s.label}` };
-        if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
+        const pv = ` data-pv="${escAttr(x.venue)}"`, dim = paStale(x.venue) ? ' pa-dim' : '';
+        if (x.lineDiffers) return `<td class="diff${dim}"${pv}${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
         const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : x.legal === 'unknown' ? 'lr-v-unk' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : x.legal === 'unknown' ? 'lr-v-unk' : ''}${dim}"${pv}${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -4708,6 +4773,7 @@ async function loadShop(seq) {
     const d = await r.json();
     if (seq !== pbState.seq) return;
     pbState.data = d;
+    paTake(d.priceAge);
     renderPropsBoard();
   } catch (e) {
     const el = document.getElementById('pbContent');
@@ -4781,13 +4847,13 @@ function renderShop() {
   const name = k => PB_BOOKS.find(x => x[0] === k)?.[1] || k, code = k => PB_BOOKS.find(x => x[0] === k)?.[2] || k;
   const multTxt = (k, c, side) => { const m = side === 'Over' ? c.over : c.under; return k === 'prizepicks' || m == null || m === 1 ? '' : ` ${m}x`; };
   const body = rows.map(r => {
-    const apps = Object.entries(r.apps).map(([k, c]) => `<span class="aps-app" style="--bk:${PB_COLOR[k]}"><i></i>${code(k)} ${c.line}</span>`).join('');
+    const apps = Object.entries(r.apps).map(([k, c]) => `<span class="aps-app${paStale(k) ? ' pa-dim' : ''}" data-pv="${k}" style="--bk:${PB_COLOR[k]}"><i></i>${code(k)} ${c.line}</span>`).join('');
     const sides = r.sides.map(s => {
       const c = r.apps[s.app];
       const tied = s.tied.length > 1 ? ` <span class="dim">(also ${s.tied.filter(a => a !== s.app).map(code).join(', ')})</span>` : '';
       const fair = s.fair != null ? `<span class="dim" title="${s.fairSource === 'sharp' ? 'Pinnacle or Kalshi at this number' : 'FanDuel or BetRivers only, not sharp'}">fair ${s.fair}%${s.fairSource === 'books' ? ' (books)' : ''}</span>` : d.pro ? '<span class="dim">no sharp price</span>' : '<span class="dim">fair: Pro</span>';
       const ev = s.ev != null ? `<span class="aps-ev ${s.ev > 0 ? 'pos' : 'neg'}" title="At ${escAttr(name(s.app))}'s own break-even ${(s.be * 100).toFixed(1)}%. Grey: research, not a play">EV ${pbEvTxt(s.ev)}</span>` : '';
-      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b>${multTxt(s.app, c, s.side)} ${vLink(s.app, { league: r.sport, player: r.player, what: `${r.player} ${r.market} ${s.line}` })}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
+      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b> ${paChip(s.app)}${multTxt(s.app, c, s.side)} ${vLink(s.app, { league: r.sport, player: r.player, what: `${r.player} ${r.market} ${s.line}` })}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
     }).join('');
     const mids = (r.middles || []).map(m => m.locked ? `<div class="aps-mid dim">${m.count} middle${m.count > 1 ? 's' : ''} worth more than zero: Pro</div>`
       : `<div class="aps-mid"><span class="aps-gap" style="color:#94a3b8">MIDDLE</span> <button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.over.app}','Over')">+</button> ${pbSideWord(m.over.app, 'Over')} ${m.over.line} ${code(m.over.app)} &nbsp;<button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.under.app}','Under')">+</button> ${pbSideWord(m.under.app, 'Under')} ${m.under.line} ${code(m.under.app)} <span class="dim">· window ${m.width} · both win ${(m.pMiddle * 100).toFixed(0)}% · ${m.expUnits > 0 ? '+' : ''}${m.expUnits}u a pair expected, on ${m.source === 'apps' ? "the apps' own numbers (no sharp price)" : 'the sharp price'} · two slips, one per app</span></div>`).join('');
@@ -8315,7 +8381,7 @@ async function loadBest() {
   clearTimeout(bestUi.timer);
   const el = document.getElementById('bestContent');
   if (!bestUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
-  try { bestUi.data = await tailGet(`/api/best?limit=500${stateQ()}`); bestUi.error = null; lrStateNotes(bestUi.data.state, 'best'); }
+  try { bestUi.data = await tailGet(`/api/best?limit=500${stateQ()}`); bestUi.error = null; paTake(bestUi.data.priceAge); lrStateNotes(bestUi.data.state, 'best'); }
   catch (e) { bestUi.error = e.old ? 'Best plays need a newer backend.' : lrErr(e); }
   renderBest();
   if (document.getElementById('page-best').classList.contains('active')) bestUi.timer = setTimeout(loadBest, 60000);
@@ -8355,12 +8421,13 @@ function renderBest() {
   const edge = r => (r.ev != null ? `+${(r.ev * 100).toFixed(1)}%` : '—');
   const when = t => { const x = new Date(t); return t && Number.isFinite(x.getTime()) ? x.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
   bestUi.shown = rows;
+  const age = r => paChipAll(r.venueKeys?.length ? r.venueKeys : bestBooks(r), r.priceAt);
   const body = rows.map((r, i) => { const [v, c] = VC[r.verdict] || VC.early; return `<tr>
       <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span><div style="font-size:10px;color:var(--text2)">${escAttr(r.label)}</div></td>
       <td><b>${tailLink(r.url, escAttr(r.bet))}</b><div style="font-size:11px;color:var(--text2)">${escAttr(r.title)}${r.startsAt ? ` · ${escAttr(when(r.startsAt))}` : ''}</div>
-        <div class="bp-m">${escAttr(r.venue)} · ${price(r)}${r.maxPrice != null ? ` (max ${tailC(r.maxPrice)})` : ''} · ${size(r)} · <span style="color:var(--green)">${edge(r)}</span></div>
+        <div class="bp-m">${escAttr(r.venue)} ${age(r)} · ${price(r)}${r.maxPrice != null ? ` (max ${tailC(r.maxPrice)})` : ''} · ${size(r)} · <span style="color:var(--green)">${edge(r)}</span></div>
         <div style="font-size:11px;color:#94a3b8;margin-top:2px">${(r.why || []).map(escAttr).join(' · ')}</div>${r.warning ? `<div class="xa-warn">${escAttr(r.warning)}</div>` : ''}</td>
-      <td class="bp-c">${escAttr(r.venue)}</td>
+      <td class="bp-c">${escAttr(r.venue)} ${age(r)}</td>
       <td class="bp-c" style="text-align:right">${price(r)}${r.maxPrice != null ? `<div style="font-size:10px;color:var(--text2)">max ${tailC(r.maxPrice)}</div>` : ''}</td>
       <td class="bp-c" style="text-align:right">${size(r)}</td>
       <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td>
@@ -8374,7 +8441,7 @@ function renderBest() {
       <tbody>${body}</tbody></table></div>` : !d.total && d.outOfState && lrState ? `${tailEmpty(`NOTHING AT A ${escAttr(String(d.state?.name || lrStateName()).toUpperCase())} VENUE RIGHT NOW`, `${d.outOfState} play${d.outOfState === 1 ? ' is' : 's are'} at venues not legal in ${escAttr(d.state?.name || lrStateName())} (CUSTOMIZE &gt; My state). Nothing is better than a bad bet.`)}<div style="text-align:center;margin:-8px 0 12px"><button class="lr-sbar-b" onclick="lrSetState('')">SHOW ALL STATES</button></div>`
       : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
     ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Plus unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">UPGRADE</button></div>` : ''}
-    <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). The timer by each venue is how long ago that price was read; grey means stale. Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
 }
 
 async function loadXarbs() {
@@ -10325,7 +10392,7 @@ function shpOpps(d) {
     return `<tr class="shp-row"${xp} data-vrow="1" tabindex="0" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
+      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${paChip(x.provider, shpReadAt(x.ageSec ?? x.view?.ageSec))} ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -10350,7 +10417,7 @@ function shpMarketTable(m) {
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
       const xp = xpA({ event: m.event, league: String(m.league || '').toUpperCase(), start: m.start, market: shpMkt(m), selection: s.name, line: m.line, venue: p.provider, venueName: p.name, decimal: p.effective,
         fair: s.fair, fairSrc: SHP_FAIR[m.fair?.source] || m.fair?.source, ev: p.ref ? null : p.ev, fill: shpFillUsd(p.size, p.sizedAt), readAt: shpReadAt(p.ageSec), tag: [p.ref ? 'reference' : p.best ? 'best' : '', p.secondHand ? 'copy' : '', p.freshness === 'stale' ? 'stale' : '', p.oneWay ? 'one-way' : '', p.feeUnknown ? 'commission not in the price' : ''].filter(Boolean).join(', ') });
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}${p.freshness === 'stale' ? ' pa-dim' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}<div>${paChip(p.provider, shpReadAt(p.ageSec))}</div>${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr${s.prices.some(p => !p.ref) ? ' data-vrow="1"' : ''}><td style="white-space:nowrap">${canLog && s.prices.some(p => !p.ref && p.bettable !== false) ? `<button class="os-log" title="Log this bet in MY BETS: checked with the server, followed on Pinnacle's price at this number to the close and graded from the final" onclick="event.stopPropagation();shpLog('${escAttr(m.key)}',${si})">LOG</button>` : ''}${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
