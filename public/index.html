@@ -1527,11 +1527,12 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
 /* PRICE AGE: how long ago the venue answered; grey once stale */
-.pa { display:inline-block; margin-left:4px; font:600 9px 'JetBrains Mono',monospace; color:#34d399; letter-spacing:0; vertical-align:middle; font-variant-numeric:tabular-nums; }
+.pa { display:inline-block; margin-left:4px; font:600 9px 'JetBrains Mono',monospace; color:#34d399; letter-spacing:0; text-transform:none; vertical-align:middle; font-variant-numeric:tabular-nums; }
 .pa.live::before { content:''; display:inline-block; width:5px; height:5px; margin-right:3px; border-radius:50%; background:#34d399; vertical-align:middle; }
 .pa.stale { color:var(--muted2); }
 .pa.stale::before { background:var(--muted2); }
 .pa-dim, .pa-dim a, .pa-dim .ev { color:var(--muted2) !important; }
+.pa-dim .ev { opacity:1; }
 .os-tbl td.best.pa-dim, .os-tbl td.top.pa-dim { background:transparent; outline:1px dashed var(--muted2); font-weight:400; }
 .shp-dim { color:var(--text2); font-size:11px; }
 .mv-t td { vertical-align:top; }
