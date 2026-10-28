@@ -831,8 +831,13 @@ const push = require('./push').createPush({ store: process.env.DATABASE_URL ? pu
 // grade the bets each one named. Append-only on the results backup, so a deploy keeps it.
 const alertLogLib = require('./alertlog');
 const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLog', require('./evtrack').createStoreFromEnv(process.env, { table: 'alert_log', fileVar: 'ALERT_LOG_FILE', file: 'alert-log.json' })) });
+// the owned Discord server's alert channels (OUTBOUND FEED below) hear every alert here
+let discordAlertTap = null;
 const webhook = require('./push').withPush(webhookOnly, push, {
-  onSent: ({ text, what, kind, meta, webhooks, phones }) => alertLog.record({ text, title: what, kind, reached: { webhooks, phones }, items: meta?.items || [] }),
+  onSent: ({ text, what, kind, meta, webhooks, phones }) => {
+    try { discordAlertTap?.({ text, title: what, kind }); } catch { /* the Discord copy never stops an alert */ }
+    return alertLog.record({ text, title: what, kind, reached: { webhooks, phones }, items: meta?.items || [] });
+  },
 });
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
@@ -5004,7 +5009,15 @@ app.get(['/learn', '/learn/:slug'], (req, res) => {
 // Installable app: manifest, service worker (root scope) and icons, then the push routes.
 const PUB = path.join(__dirname, 'public');
 app.get('/manifest.webmanifest', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/manifest+json').sendFile(path.join(PUB, 'manifest.webmanifest')));
-app.get('/sw.js', (req, res) => res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }).type('application/javascript').sendFile(path.join(PUB, 'sw.js')));
+// the worker carries the version, so each deploy is a new worker the browser
+// installs on its next load (and it drops the old version's saved copies)
+let swJs = null;
+app.get('/sw.js', (req, res) => {
+  if (swJs == null) {
+    try { swJs = fs.readFileSync(path.join(PUB, 'sw.js'), 'utf8').replace(/__LR_VERSION__/g, require('./package.json').version); } catch { return res.status(404).end(); }
+  }
+  res.set({ 'Cache-Control': 'no-cache, no-store', 'Service-Worker-Allowed': '/' }).type('application/javascript').send(swJs);
+});
 app.get('/icons/:name', (req, res) => {
   if (!/^[a-z0-9-]+\.png$/.test(req.params.name)) return res.sendStatus(404);
   res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(PUB, 'icons', req.params.name), e => { if (e && !res.headersSent) res.sendStatus(404); });
@@ -5148,6 +5161,9 @@ function landingHtml({ paywall = PAYWALL, env = process.env, origin = '' } = {})
     ORIGIN: String(origin).replace(/[^\w.:/-]/g, ''),
     // the plan cards' lists, from the same table as /pricing (plans.js)
     FREE_LIST: plans.planListHtml('free'), PRO_LIST: plans.planListHtml('pro'),
+    // the owned Discord server: a link only when its invite is set
+    DISCORD_LINK: require('./outfeed').parseInvite(env.DISCORD_INVITE_URL) ? '<a href="/discord">Discord</a>' : '',
+    DISCORD_CTA: require('./outfeed').parseInvite(env.DISCORD_INVITE_URL) ? '<a class="btn" href="/discord">Join the Discord</a>' : '',
   };
   return landingSrc.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (k in vals ? vals[k] : m));
 }
@@ -9556,6 +9572,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   // the alert history (alertlog.js): when storing began, how many kept, the last
   alertLog: alertLog.stats(),
   outFeed: typeof outFeedStatus === 'function' ? outFeedStatus() : null,
+  // the owned Discord server's public invite (DISCORD_INVITE_URL), or null: pages show JOIN only when set
+  community: { discord: DISCORD_INVITE },
   discordBot: typeof botStatus === 'function' ? botStatus() : null,
   telegramBot: typeof tgStatus === 'function' ? tgStatus() : null,
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
@@ -10439,6 +10457,28 @@ async function feedSubscribers() {
 const outFeedSender = outFeed.createFeed({ owner: outFeedOwner.dests, subscribers: feedSubscribers,
   onResult: (d, r) => { if (d.keyId) apiKeys.markFeed(d.keyId, r).catch(e => console.warn('Feed: status save failed:', e.message)); } });
 const feedOn = () => outFeedOwner.dests.length > 0 || apiKeys.feeds().length > 0;
+// ── the owned Discord server (DEPLOY.md, "Owned Discord server") ──
+// Owner channels named alerts=… (or some alert kinds) get the tracker's alerts,
+// the same text as the alert webhook and phone push, DISCORD_ALERT_DELAY_MIN
+// minutes after members get them (default 30; 0 posts them as they go out).
+// One post per channel per minute at most. DISCORD_INVITE_URL is the server's
+// public invite: /discord redirects to it and the pages show a JOIN link.
+const DISCORD_INVITE = outFeed.parseInvite(process.env.DISCORD_INVITE_URL);
+if (process.env.DISCORD_INVITE_URL && !DISCORD_INVITE) console.warn('Feed: DISCORD_INVITE_URL is not a discord.gg or discord.com/invite link; no JOIN link is shown');
+const DISCORD_ALERT_DELAY_MIN = (() => {
+  const raw = process.env.DISCORD_ALERT_DELAY_MIN;
+  const n = raw == null || String(raw).trim() === '' ? 30 : Number(raw);
+  return Number.isFinite(n) ? Math.min(1440, Math.max(0, Math.round(n))) : 30;
+})();
+const ownerAlerts = outFeed.createAlertRelay({ owner: outFeedOwner.dests, sendTo: (d, p) => outFeedSender.sendTo(d, p), delayMs: DISCORD_ALERT_DELAY_MIN * 60e3, origin: () => digestOrigin() });
+if (ownerAlerts.on) {
+  discordAlertTap = a => ownerAlerts.add(a);
+  setInterval(() => { ownerAlerts.flush().catch(e => console.warn('Owner alerts:', e.message)); }, 60e3).unref();
+}
+app.get('/discord', (req, res) => {
+  if (DISCORD_INVITE) return res.redirect(302, DISCORD_INVITE);
+  res.status(404).set('Cache-Control', 'no-cache').type('html').send('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Line Reaper Discord</title><body style="background:#080b10;color:#e2e8f0;font:14px/1.6 system-ui,sans-serif;padding:32px 16px;max-width:560px;margin:0 auto"><h1 style="font-size:18px">The Line Reaper Discord is not open yet.</h1><p>The record, alert history and line moves are on the site in the meantime.</p><p><a style="color:#34d399" href="/app">Open the app</a> · <a style="color:#34d399" href="/alerts">Alert history</a></p></body>');
+});
 async function feedDoc(id) { await outFeedReady; return (await outFeedStore.all()).find(d => d.id === id) || null; }
 const feedBackupOk = () => { const bk = process.env.DATABASE_URL ? 'ready' : resultsBackup.status().state; return bk === 'ready' || bk === 'off'; };
 // the Monday digest, from publishDigest once the week is frozen
@@ -10481,20 +10521,24 @@ async function feedMoves(now = Date.now()) {
 // once, so setting the variables in Railway shows at once whether they work.
 async function feedOwnerCheck() {
   if (!outFeedOwner.dests.length) return null;
-  const ids = outFeedOwner.dests.map(d => d.id).sort().join(',');
+  const ids = outFeedOwner.dests.map(d => `${d.id}:${(d.topics || []).join('+')}`).sort().join(',') + (ownerAlerts.on ? `|delay${DISCORD_ALERT_DELAY_MIN}` : '');
   const hash = require('crypto').createHash('sha256').update(ids).digest('hex').slice(0, 16);
   const prev = await feedDoc('owner-check');
   if (prev?.hash === hash) { outFeedState.ownerCheck = prev.result; return prev.result; }
-  const p = outFeed.welcomePost({ origin: digestOrigin() });
   const result = { at: new Date().toISOString(), channels: [] };
-  for (const d of outFeedOwner.dests) { const r = await outFeedSender.sendTo(d, p); result.channels.push({ kind: d.kind, ok: r.ok, why: r.ok ? null : r.why }); }
+  for (const d of outFeedOwner.dests) {
+    const p = outFeed.welcomePost({ origin: digestOrigin(), topics: d.topics || null, alertDelayMin: DISCORD_ALERT_DELAY_MIN });
+    const r = await outFeedSender.sendTo(d, p);
+    result.channels.push({ kind: d.kind, topics: outFeed.topicsOf(d), ok: r.ok, why: r.ok ? null : r.why });
+  }
   outFeedState.ownerCheck = result;
   if (result.channels.every(c => c.ok)) await outFeedStore.put({ id: 'owner-check', hash, result });
   return result;
 }
 function outFeedStatus() {
   const s = outFeedSender.stats();
-  return { on: feedOn(), owner: { discord: outFeedOwner.dests.filter(d => d.kind === 'discord').length, telegram: outFeedOwner.dests.filter(d => d.kind === 'telegram').length, problems: outFeedOwner.problems },
+  return { on: feedOn(), owner: { discord: outFeedOwner.dests.filter(d => d.kind === 'discord').length, telegram: outFeedOwner.dests.filter(d => d.kind === 'telegram').length, problems: outFeedOwner.problems,
+    channels: outFeedOwner.dests.map(d => ({ kind: d.kind, topics: outFeed.topicsOf(d) })), invite: !!DISCORD_INVITE, alerts: ownerAlerts.stats() },
     customers: apiKeys.feeds().length, sealed: outFeedSeal.on, schedule: { digest: 'Monday 13:00 UTC', record: 'hourly at :30, a change posts once it holds two reads', moves: 'daily 21:00 UTC' },
     ownerCheck: outFeedState.ownerCheck, record: outFeedState.record, moves: outFeedState.moves, digest: outFeedState.digest,
     sent: s.sent, failed: s.failed, posts: s.posts, lastAt: s.lastAt, lastError: s.lastError, recent: s.recent };
@@ -11032,7 +11076,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 
 module.exports = {
   appBundleReady: () => (loadApp(), appBundle ? appBundle.packed.ready : Promise.resolve()),
-  alertLog, tgConnectOwner, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
+  alertLog, tgConnectOwner, webhook, ownerAlerts, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
   app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,

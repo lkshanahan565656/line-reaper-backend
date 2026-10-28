@@ -76,6 +76,14 @@ test('the installable app files are in place', () => {
   assert.equal(m.display, 'standalone');
   assert.ok(m.start_url && m.icons.some(i => i.sizes === '192x192') && m.icons.some(i => i.sizes === '512x512') && m.icons.some(i => i.purpose === 'maskable'));
   for (const i of m.icons) assert.ok(fs.existsSync(path.join(pub, i.src)), i.src);
+  // home-screen shortcuts open real tabs (?start=<tab>, or alerts: RESULTS on the alert history)
+  const src = require('./app-source').both;
+  assert.ok(m.shortcuts.length >= 3);
+  for (const sc of m.shortcuts) {
+    const tab = new URL(sc.url, 'https://x').searchParams.get('start');
+    assert.ok(tab === 'alerts' || src.includes(`showTab('${tab}',this)`), sc.url);
+    for (const i of sc.icons || []) assert.ok(fs.existsSync(path.join(pub, i.src)), i.src);
+  }
   assert.ok(fs.existsSync(path.join(pub, 'icons', 'apple-touch-icon.png')));
   const sw = fs.readFileSync(path.join(pub, 'sw.js'), 'utf8');
   assert.match(sw, /addEventListener\('push'/);
