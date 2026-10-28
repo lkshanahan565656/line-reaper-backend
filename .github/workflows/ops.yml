@@ -26,3 +26,11 @@ jobs:
           for k,v in j.items():
             if k not in ('stalls','jobs','loop','gc','stores'): print(k, json.dumps(v)[:300])
           "
+          echo "status-sizes:"; curl -s -m 60 $U/api/status > st.json
+          python3 -c "
+          import json
+          j=json.load(open('st.json'))
+          for k in ['oddsScreen','lineArchive','propHistory','alertLog','resultsBackup','steam','bigMoves','offshoreRef','esportsBoard','propsBoard','freeBooks','shopDepth','xarb']:
+            print(k, json.dumps(j.get(k))[:500])
+          big=sorted(((len(json.dumps(v)),k) for k,v in j.items()), reverse=True)[:12]; print('largest status sections', big)
+          "
