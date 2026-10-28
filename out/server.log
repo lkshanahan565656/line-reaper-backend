@@ -1,0 +1,115 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Line Reaper v3.221.1 on port 4999 (modules loaded 2171 ms, listening 2173 ms)
+Tracker: store ready
+UD: 8923 lines (6114 boosted/demoted) · sports: MLB, NFL, NBA, WNBA, NHL, CFB, FIFA, LOL, TENNIS, PGA, MMA, MOTORSPORTS
+PP: 4878 lines (183 esports) · leagues: TENNIS, BAD, CS2, Dota2, Serie A, TT, VAL, SOCCER, LoL, NBA, NBA1H, NBA1Q
+Sleeper: 36 esports and 3190 sports lines from 3226 rows
+Startup complete
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Esports: PP=183 UD=285 SL=36/36 udMap=285
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+bo3 schema — general: games_count,games_won_count,games_lost_count,matches_count,matches_won_count,matches_lost_count,events_count,events_won_count,kills_sum,deaths_sum,assists_sum,damage_sum,rounds_count,rounds_won_count,player_id,player_nickname | map: map_name,maps_count,avg_player_rating_value,avg_player_rating,avg_kills,avg_damage | accuracy: hit_group,hits_sum,damage_sum,kills_sum
+bo3 dwushka: KPM=14.6 KPR=0.68 HS%=61 R=—
+bo3 frontales: KPM=15.7 KPR=0.74 HS%=34 R=—
+bo3 mizu: no usable kill fields — inspect /api/esports/probe/cs/mizu
+gol.gg: 2181 LoL players (S16)
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+bo3 n0rb3r7: KPM=14.9 KPR=0.70 HS%=55 R=—
+bo3 kade0: KPM=13.2 KPR=0.62 HS%=54 R=—
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Esports board: 166 matches (76 on both exchanges, 4 edges) in 6189ms
+OpenDota: 7753 pro player names indexed
+bo3 shalfey: KPM=16.2 KPR=0.73 HS%=54 R=—
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+bo3 Tauson: KPM=14.7 KPR=0.64 HS%=53 R=—
+bo3 Lucky: KPM=14.7 KPR=0.65 HS%=49 R=—
+bo3 REZ: KPM=15.8 KPR=0.69 HS%=53 R=—
+Ratings LOL: 4887 maps → 296 teams
+bo3 hypex: KPM=14.2 KPR=0.63 HS%=37 R=—
+bo3 cptkurtka023: KPM=14.2 KPR=0.69 HS%=60 R=—
+Matchups (CS2): 0 new results, 42822 series
+Matchups (VALORANT): 0 new results, 8145 series
+bo3 Kursy: KPM=15.6 KPR=0.69 HS%=60 R=—
+Matchups (LoL): 9 upcoming, 16 new results, 11442 series, 2 pages in 1171ms
+bo3 FL4MUS: KPM=17.3 KPR=0.76 HS%=62 R=—
+bo3 cairne: KPM=15.5 KPR=0.71 HS%=52 R=—
+bo3 Maka: KPM=16.2 KPR=0.72 HS%=41 R=—
+bo3 jackasmo: KPM=15.6 KPR=0.72 HS%=59 R=—
+bo3 jambo: KPM=16.0 KPR=0.74 HS%=36 R=—
+bo3 afro: KPM=15.6 KPR=0.70 HS%=33 R=—
+Ratings DOTA: 898 maps → 138 teams
+bo3 mazay: KPM=14.8 KPR=0.68 HS%=56 R=—
+bo3 Dawy: KPM=14.9 KPR=0.73 HS%=59 R=—
+bo3 fear: KPM=12.3 KPR=0.56 HS%=46 R=—
+bo3 nqz: KPM=15.3 KPR=0.68 HS%=34 R=—
+bo3 blameF: KPM=15.9 KPR=0.75 HS%=46 R=—
+bo3 gr1ks: KPM=15.0 KPR=0.71 HS%=29 R=—
+bo3 headtr1ck: KPM=15.5 KPR=0.76 HS%=31 R=—
+bo3 Yxngstxr: KPM=16.2 KPR=0.73 HS%=56 R=—
+bo3 faveN: KPM=13.9 KPR=0.66 HS%=59 R=—
+bo3 lux: KPM=13.6 KPR=0.61 HS%=53 R=—
+bo3 JDC: KPM=13.9 KPR=0.66 HS%=53 R=—
+Ratings VAL: 1525 maps → 186 teams
+bo3 tabseN: KPM=12.7 KPR=0.60 HS%=46 R=—
+OpenDota Yatoro: 7.8 kills/game over 40 matches
+OpenDota Larl: 8.1 kills/game over 40 matches
+OpenDota Batyuk: 6.7 kills/game over 40 matches
+OpenDota not me: 6.6 kills/game over 30 matches
+OpenDota rue: 2.9 kills/game over 40 matches
+OpenDota Natsumi: 6.0 kills/game over 40 matches
+bo3 Graviti: KPM=13.9 KPR=0.62 HS%=61 R=—
+OpenDota Topson: 7.3 kills/game over 40 matches
+OpenDota SSS: 10.8 kills/game over 40 matches
+Esports: rejected auto-pred for SSS (line=9.5, pred=13.8, 45% diff)
+OpenDota OneJey: 3.7 kills/game over 40 matches
+OpenDota skem: 3.0 kills/game over 40 matches
+PP league 121: 4878 lines (183 esports) · leagues: TENNIS, BAD, CS2, Dota2, Serie A, TT, VAL, SOCCER, NBA, NBA1H, NBA1Q, CFB
+bo3 insani: KPM=17.8 KPR=0.80 HS%=54 R=—
+UD: 8919 lines (6113 boosted/demoted) · sports: MLB, NFL, NBA, WNBA, NHL, CFB, FIFA, LOL, TENNIS, PGA, MMA, MOTORSPORTS
+bo3 AZUWU: KPM=14.0 KPR=0.63 HS%=59 R=—
+Sleeper: 36 esports and 3191 sports lines from 3227 rows
+bo3 tomaszin: KPM=15.1 KPR=0.66 HS%=49 R=—
+bo3 venomzera: KPM=14.7 KPR=0.66 HS%=61 R=—
+bo3 Rainwaker: KPM=14.5 KPR=0.65 HS%=45 R=—
+bo3 LNZ: KPM=13.0 KPR=0.58 HS%=54 R=—
+bo3 misutaaa: KPM=14.2 KPR=0.63 HS%=59 R=—
+bo3 onic: KPM=11.8 KPR=0.58 HS%=52 R=—
+bo3 zeRRoFIX: KPM=13.5 KPR=0.66 HS%=56 R=—
+Warmer: +20 CS profiles (0 still queued)
+Tail stream: no messages for 15s, reconnecting
+Esports board: 166 matches (76 on both exchanges, 4 edges) in 5125ms
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+H2H kills: 85 lines priced ({"CS":25,"DOTA":18,"VAL":42}), 0 clear with a sharp price, 39 model-only at +2%
+Esports: generated 337 picks (154 UD-sourced, 0 Sleeper-sourced, 36 Sleeper-priced, 0 manual, 67 need model input)
+Esports: PP=183 UD=285 SL=36/36 udMap=285
+Esports: rejected auto-pred for SSS (line=9.5, pred=13.8, 45% diff)
+OpenDota Yuma: 8.6 kills/game over 40 matches
+OpenDota RCY: 8.1 kills/game over 40 matches
+OpenDota Fayde: 5.5 kills/game over 40 matches
+OpenDota Bignum: 4.0 kills/game over 40 matches
+OpenDota Speeed: 2.8 kills/game over 40 matches
+OpenDota Darklord^: 7.3 kills/game over 40 matches
+OpenDota Stojkov: 7.9 kills/game over 40 matches
+OpenDota SaberLight: 6.3 kills/game over 40 matches
+Ratings CS: 10613 maps → 615 teams
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+H2H kills: 85 lines priced ({"CS":25,"DOTA":18,"VAL":42}), 0 clear with a sharp price, 39 model-only at +2%
+Esports: generated 337 picks (154 UD-sourced, 0 Sleeper-sourced, 36 Sleeper-priced, 0 manual, 67 need model input)
+Esports: PP=183 UD=285 SL=36/36 udMap=285
+Esports: rejected auto-pred for SSS (line=9.5, pred=13.8, 45% diff)
+Sleeper: 36 esports and 3190 sports lines from 3226 rows
+PP league 159: 4878 lines (183 esports) · leagues: TENNIS, BAD, CS2, Dota2, Serie A, TT, SOCCER, NBA, NBA1H, NBA1Q, CFB, NHL
+PP league 174: 4878 lines (183 esports) · leagues: TENNIS, BAD, CS2, Serie A, TT, SOCCER, NBA, NBA1H, NBA1Q, CFB, NHL, MLB
+Sleeper: 36 esports and 3190 sports lines from 3226 rows
+UD: 8903 lines (6101 boosted/demoted) · sports: MLB, NFL, NBA, WNBA, NHL, CFB, FIFA, LOL, TENNIS, PGA, MMA, MOTORSPORTS
+UD: 8903 lines (6101 boosted/demoted) · sports: MLB, NFL, NBA, WNBA, NHL, CFB, FIFA, LOL, TENNIS, PGA, MMA, MOTORSPORTS
+OpenDota Kidaro: 2.3 kills/game over 40 matches
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+H2H kills: 94 lines priced ({"CS":34,"DOTA":18,"VAL":42}), 0 clear with a sharp price, 40 model-only at +2%
+Esports: generated 337 picks (154 UD-sourced, 0 Sleeper-sourced, 34 Sleeper-priced, 0 manual, 67 need model input)
+Esports board: 166 matches (76 on both exchanges, 3 edges) in 6327ms

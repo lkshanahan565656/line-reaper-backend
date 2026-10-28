@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>blameF kills, maps 1-2: hit rates and line history (CS2) | Line Reaper</title>
+<meta name="description" content="blameF (BIG) Kills, Maps 1-2: how often he beat the current pick&#39;em line, splits by opponent and map, and each app&#39;s past lines from our records. Research, not a pick.">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#080b10">
+<link rel="canonical" href="https://127.0.0.1:4999/esports/research/CS/blameF">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#8391a7; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+.top-in, main, footer .in { max-width:980px; }
+.warn { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.35); color:#fcd34d; border-radius:10px; padding:10px 14px; margin:0 0 18px; font-size:14px; }
+.warn b { font:700 11px var(--mono); letter-spacing:.12em; margin-right:6px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
+.chip { font:600 11px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:5px 10px; white-space:nowrap; }
+.chip.on { color:var(--bg); background:var(--green2); border-color:var(--green2); }
+.note { color:var(--text2); font-size:14px; }
+.sub { display:block; color:var(--muted); font-size:11px; font-family:var(--mono); }
+.empty { background:var(--card); border:1px dashed var(--border2); border-radius:10px; padding:14px 16px; color:var(--text2); margin:0 0 18px; }
+.st-pick { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 16px; font:500 12px var(--mono); color:var(--muted); }
+.st-pick select, .st-pick button, .st-pick input { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
+.st-pick button { cursor:pointer; letter-spacing:1px; }
+td.n, th.n { text-align:right; white-space:nowrap; }
+.scroll td { white-space:nowrap; }
+td.o { color:var(--green2); } td.u { color:#f87171; }
+.ln { display:inline-block; font:600 11px var(--mono); border:1px solid var(--border2); border-radius:4px; padding:1px 6px; margin:0 4px 2px 0; color:var(--text); white-space:nowrap; }
+.ln i { font-style:normal; color:var(--muted); margin-right:4px; }
+ul.pl { list-style:none; padding:0; margin:0 0 18px; border-top:1px solid var(--border); }
+ul.pl li { border-bottom:1px solid var(--border); margin:0; }
+ul.pl a { display:block; padding:8px 0; color:var(--text); text-decoration:none; overflow-wrap:anywhere; }
+ul.pl a b { font-weight:600; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin:0 0 18px; }
+.cell { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.cell .k { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.cell .v { font:600 18px var(--mono); color:var(--text); }
+.chart { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px; margin:0 0 10px; overflow:hidden; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 14px; margin:0 0 14px; font:500 12px var(--mono); color:var(--text2); }
+.legend i { display:inline-block; width:12px; height:3px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+</style>
+<style id="lr-a11y">
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:focus-visible{outline:2px solid #34d399;outline-offset:2px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid #34d399;outline-offset:2px}
+main:focus{outline:none}
+.lr-skip{position:fixed;top:8px;left:8px;z-index:3000;padding:10px 14px;border-radius:8px;background:#e2e8f0;color:#080b10;font:700 13px system-ui,sans-serif;text-decoration:none;transform:translateY(-200%)}
+.lr-skip:focus{transform:none}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style></head>
+<body><a class="lr-skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app?start=props">OPEN THE APP</a></div></header>
+<main tabindex="-1" id="main">
+<p class="kicker"><a href="/esports/research">Esports research</a> · CS2</p>
+<h1>blameF</h1>
+<p class="lead">BIG vs fnatic · starts 10-28 17:00 UTC</p>
+<p class="warn" role="note"><b>RESEARCH · NOT A BET</b>A hit rate is how often his past total beat this line. It is history, not a price or a pick: the apps set their lines near the sharp median, and our esports prop models lost to the close.</p>
+<nav class="chips" aria-label="Markets"><a class="chip on" href="/esports/research/CS/blameF?m=k%7C1-2" aria-current="page">Kills, Maps 1-2</a><a class="chip" href="/esports/research/CS/blameF?m=hs%7C1-2">Headshots, Maps 1-2</a><a class="chip" href="/esports/research/CS/blameF?m=hs%7C3">Headshots, Map 3 · records</a></nav>
+<h2>Kills, Maps 1-2: today's lines</h2><div class="grid"><div class="cell"><div class="k">PrizePicks</div><div class="v">32.5</div><div class="sub">over and under open</div></div></div>
+<h2>Hit rate against the current line</h2>
+<div class="empty">No past results for this market yet in our records.</div>
+
+<h2>App line history <span class="note">our records</span></h2>
+<div class="empty">Our records hold no past kills, maps 1-2 for blameF yet. A line joins them when one of our trackers follows it to the start. 2 records on his other markets.</div>
+<h2>Sources</h2>
+<p class="note">CS2 has no free per-map stats source we may use (HLTV&#39;s terms forbid scraping), so this page shows only what our own records hold: the app lines we read on his past matches and the graded results.</p>
+<p class="note">Research, not a bet. A past hit rate is history, not a price: the apps set their lines near the sharp median, and our esports prop models lost to the close. Nothing here is a projection or a pick.</p>
+<div class="chips"><a class="chip" href="/api/esports/research/CS/blameF?m=k%7C1-2">THIS PAGE AS JSON</a><a class="chip" href="/esports/research">ALL PLAYERS</a></div>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/esports/research">Esports research</a><a href="/lines">Line history</a><a href="/leagues">Leagues</a><a href="/developers">API</a><a href="/learn">Learn</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take or place bets. Hit rates are past results, not predictions; a player's history is not a proven edge. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>

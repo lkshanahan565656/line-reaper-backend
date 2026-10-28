@@ -1,0 +1,36 @@
+players 172 Counter({'LOL': 61, 'VAL': 51, 'CS': 40, 'DOTA': 20}) sources {'LOL': 'lolesports.com and Leaguepedia', 'DOTA': 'OpenDota', 'CS': 'our records only', 'VAL': 'our records only', 'COD': 'our records only', 'R6': 'our records only'}
+LOL Busio 200 20.0s src=lolesports.com and Leaguepedia status=busy err=None link=None maps=0 series=0 hitFrom=None lines=[{'line': 1.5, 'apps': ['PP', 'UD']}] market=k|1-2
+    line 1.5 [(5, 0, 0, None), (10, 0, 0, None), (20, 0, 0, None), (None, 0, 0, None)] [('vs CFO', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    maps []
+LOL Caliste 200 3.7s src=lolesports.com status=ok err=None link=None maps=14 series=3 hitFrom=maps lines=[{'line': 10, 'apps': ['PP']}, {'line': 10.5, 'apps': ['UD']}] market=k|1-2
+    line 10 [(5, 0, 3, 6.7), (10, 0, 3, 6.7), (20, 0, 3, 6.7), (None, 0, 3, 6.7)] [('vs CFO', 0, 0), ('Series his team won', 0, 3), ('Series his team lost', 0, 0)]
+    line 10.5 [(5, 0, 3, 6.7), (10, 0, 3, 6.7), (20, 0, 3, 6.7), (None, 0, 3, 6.7)] [('vs CFO', 0, 0), ('Series his team won', 0, 3), ('Series his team lost', 0, 0)]
+    maps [('BILIBILI GAMING', 1, 4, 4), ('LYON', 1, 6, 8), ("Anyone's Legend", 1, 3, 6), ('MVK Esports', 3, 9, 3), ('MVK Esports', 2, 2, 6), ('MVK Esports', 1, 6, 1)]
+LOL kyeahoo 200 4.1s src=lolesports.com status=ok err=None link=None maps=14 series=3 hitFrom=maps lines=[{'line': 6.5, 'apps': ['UD']}, {'line': 7.5, 'apps': ['PP']}] market=k|1-2
+    line 6.5 [(5, 2, 3, 7), (10, 2, 3, 7), (20, 2, 3, 7), (None, 2, 3, 7)] [('vs CFO', 0, 0), ('Series his team won', 2, 3), ('Series his team lost', 0, 0)]
+    line 7.5 [(5, 2, 3, 7), (10, 2, 3, 7), (20, 2, 3, 7), (None, 2, 3, 7)] [('vs CFO', 0, 0), ('Series his team won', 2, 3), ('Series his team lost', 0, 0)]
+    maps [('BILIBILI GAMING', 1, 1, 8), ('LYON', 1, 1, 9), ("Anyone's Legend", 1, 1, 9), ('MVK Esports', 3, 4, 11), ('MVK Esports', 2, 5, 4), ('MVK Esports', 1, 4, 2)]
+LOL Caliste 200 0.0s src=lolesports.com status=ok err=None link=None maps=14 series=3 hitFrom=maps lines=[{'line': 10, 'apps': ['PP']}, {'line': 10.5, 'apps': ['UD']}] market=k|1-2
+    line 10 [(5, 0, 3, 6.7), (10, 0, 3, 6.7), (20, 0, 3, 6.7), (None, 0, 3, 6.7)] [('vs CFO', 0, 0), ('Series his team won', 0, 3), ('Series his team lost', 0, 0)]
+    line 10.5 [(5, 0, 3, 6.7), (10, 0, 3, 6.7), (20, 0, 3, 6.7), (None, 0, 3, 6.7)] [('vs CFO', 0, 0), ('Series his team won', 0, 3), ('Series his team lost', 0, 0)]
+    maps [('BILIBILI GAMING', 1, 4, 4), ('LYON', 1, 6, 8), ("Anyone's Legend", 1, 3, 6), ('MVK Esports', 3, 9, 3), ('MVK Esports', 2, 2, 6), ('MVK Esports', 1, 6, 1)]
+DOTA not me 200 1.0s src=OpenDota status=ok err=None link=None maps=0 series=0 hitFrom=None lines=[{'line': 8.5, 'apps': ['PP']}] market=k|1-2
+    line 8.5 [(5, 0, 0, None), (10, 0, 0, None), (20, 0, 0, None), (None, 0, 0, None)] [('vs OG', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    maps []
+DOTA Yatoro 200 1.2s src=OpenDota status=none err=None link=None maps=0 series=0 hitFrom=records lines=[{'line': 21.5, 'apps': ['PP']}] market=k|1-2
+    line 21.5 [(5, 0, 1, 12), (10, 0, 1, 12), (20, 0, 1, 12), (None, 0, 1, 12)] [('vs OG', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    maps []
+DOTA Batyuk 200 0.8s src=OpenDota status=ok err=None link=None maps=40 series=20 hitFrom=maps lines=[{'line': 13.5, 'apps': ['PP']}] market=k|1-2
+    line 13.5 [(5, 3, 5, 13.8), (10, 4, 10, 11.3), (20, 7, 20, 12.1), (None, 7, 20, 12.1)] [('vs OG', 0, 0), ('Series his team won', 5, 12), ('Series his team lost', 2, 8)]
+    maps [('PARIVISION', 3, 4, 11), ('PARIVISION', 2, 3, 4), ('PARIVISION', 1, 2, 15), ('Astra Invicta', 2, 8, 13), ('Astra Invicta', 1, 10, 14), ('BETBOOM TEAM', 2, 5, 26)]
+CS blameF 200 0.0s src=None status=unsupported err=None link=None maps=0 series=0 hitFrom=None lines=[{'line': 32.5, 'apps': ['PP']}] market=k|1-2
+    line 32.5 [(5, 0, 0, None), (10, 0, 0, None), (20, 0, 0, None), (None, 0, 0, None)] [('vs fnatic', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    maps []
+CS JDC 200 0.0s src=None status=unsupported err=None link=None maps=0 series=0 hitFrom=None lines=[{'line': 28.5, 'apps': ['PP']}] market=k|1-2
+    line 28.5 [(5, 0, 0, None), (10, 0, 0, None), (20, 0, 0, None), (None, 0, 0, None)] [('vs fnatic', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    maps []
+VAL bstrdd 200 0.0s src=None status=unsupported err=None link=None maps=0 series=0 hitFrom=None lines=[{'line': 31.5, 'apps': ['UD']}, {'line': 33, 'apps': ['PP']}] market=k|1-2
+    line 31.5 [(5, 0, 0, None), (10, 0, 0, None), (20, 0, 0, None), (None, 0, 0, None)] [('vs SK Nebula', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    line 33 [(5, 0, 0, None), (10, 0, 0, None), (20, 0, 0, None), (None, 0, 0, None)] [('vs SK Nebula', 0, 0), ('Series his team won', 0, 0), ('Series his team lost', 0, 0)]
+    maps []
+{'reads': 6, 'errors': 0, 'refused': 0, 'cached': 6, 'queued': {'LOL': 0, 'DOTA': 0}}
