@@ -126,7 +126,7 @@ test('buildRecordIndex: one entry per player, market and match, lines joined acr
 test('research: LoL hit rate from the map log, splits, and the line history from our records', () => {
   const bp = R.boardPlayers(board)[0];
   const records = R.buildRecordIndex(recRows).players.get('LOL|faker');
-  const log = { status: 'ok', at: Date.parse('2026-10-28T12:00:00Z'), ...R.lolMaps(lolRows, 'T1') };
+  const log = { status: 'ok', source: 'Leaguepedia', at: Date.parse('2026-10-28T12:00:00Z'), ...R.lolMaps(lolRows, 'T1') };
   const d = R.research({ game: 'LOL', player: 'Faker', board: bp, records, log, now: Date.parse('2026-10-28T12:00:00Z') });
   assert.equal(d.market, 'k|1-2');
   assert.equal(d.hitFrom, 'maps');
@@ -164,7 +164,7 @@ test('research: CS2 uses our records only, and says so', () => {
 test('pages: labelled research, no dead links, escaped names', () => {
   const bp = R.boardPlayers(board)[0];
   const records = R.buildRecordIndex(recRows).players.get('LOL|faker');
-  const log = { status: 'ok', at: Date.now(), ...R.lolMaps(lolRows, 'T1') };
+  const log = { status: 'ok', source: 'Leaguepedia', at: Date.now(), ...R.lolMaps(lolRows, 'T1') };
   const d = R.research({ game: 'LOL', player: 'Faker', board: bp, records, log });
   const html = R.playerPage(d);
   assert.match(html, /RESEARCH · NOT A BET/);
@@ -179,7 +179,7 @@ test('pages: labelled research, no dead links, escaped names', () => {
   const evil = R.indexPage({ players: [{ ...bp, player: '<script>x</script>' }], counts: {} });
   assert.doesNotMatch(evil, /<script>x/);
   const err = R.playerPage(R.research({ game: 'LOL', player: 'Faker', board: bp, records, log: { status: 'error', error: 'HTTP 429', maps: [] } }));
-  assert.match(err, /Leaguepedia didn't answer \(HTTP 429\)/);
+  assert.match(err, /lolesports\.com and Leaguepedia didn't answer \(HTTP 429\)/);
   assert.match(err, /Each value is his graded result on this market in our records/);
 });
 
@@ -204,4 +204,41 @@ test('createMapLogs: one read per player, cached, failures kept briefly, queue r
   const many = await Promise.all(['p1', 'p2', 'p3', 'p4'].map(p => logs.get('LOL', p)));
   assert.equal(many.filter(x => x.status === 'busy').length, 2);
   assert.equal(logs.stats().refused, 2);
+});
+
+test('lolesports: a team\'s last matches, each finished game\'s lines, the player found by his tag', async () => {
+  const sched = { data: { schedule: { events: [
+    { type: 'match', state: 'completed', startTime: '2026-10-20T10:00:00Z', league: { name: 'Worlds' }, match: { id: 'E2', teams: [{ name: 'T1', code: 'T1', result: { outcome: 'win' } }, { name: 'Gen.G', code: 'GEN', result: { outcome: 'loss' } }] } },
+    { type: 'match', state: 'completed', startTime: '2026-10-18T10:00:00Z', league: { name: 'Worlds' }, match: { id: 'E9', teams: [{ name: 'BLG', code: 'BLG' }, { name: 'TES', code: 'TES' }] } },
+    { type: 'match', state: 'unstarted', startTime: '2026-10-29T10:00:00Z', league: { name: 'Worlds' }, match: { id: 'E3', teams: [{ name: 'T1', code: 'T1' }, { name: 'KOI', code: 'KOI' }] } },
+  ], pages: {} } } };
+  const frame = (k1, k2) => ({ gameMetadata: { blueTeamMetadata: { participantMetadata: [{ participantId: 1, summonerName: 'T1 Faker', championId: 'Azir' }] }, redTeamMetadata: { participantMetadata: [{ participantId: 6, summonerName: 'GEN Chovy', championId: 'Ahri' }] } },
+    frames: [{ gameState: 'finished', blueTeam: { participants: [{ participantId: 1, kills: k1, deaths: 1, assists: 6 }] }, redTeam: { participants: [{ participantId: 6, kills: k2, deaths: 3, assists: 2 }] } }] });
+  const calls = [];
+  const http = { get: async (url, { params }) => {
+    calls.push(url);
+    if (url.endsWith('/getSchedule')) return { data: sched };
+    if (url.endsWith('/getEventDetails')) return { data: { data: { event: { match: { games: [{ id: 'G1', number: 1, state: 'completed' }, { id: 'G2', number: 2, state: 'completed' }, { id: 'G3', number: 3, state: 'unneeded' }] } } } } };
+    if (url.endsWith('/G1')) return { data: frame(4, 2) };
+    if (url.endsWith('/G2')) return { data: frame(5, 1) };
+    throw new Error('unexpected ' + url + JSON.stringify(params));
+  } };
+  const log = R.createLolesportsLog(http, { LOLE_API: 'https://api', LOLE_FEED: 'https://feed', LOLE_HEADERS: { 'User-Agent': 'x' } }, { pause: 0, sleep: async () => {} });
+  const { maps } = await log('Faker', 'T1');
+  assert.deepEqual(maps.map(m => [m.n, m.opp, m.k, m.a, m.champ, m.sw, m.league]), [[2, 'Gen.G', 5, 6, 'Azir', true, 'Worlds'], [1, 'Gen.G', 4, 6, 'Azir', true, 'Worlds']]);
+  assert.deepEqual(R.seriesTotals(maps, 'k|1-2').map(s => [s.value, s.won]), [[9, true]]);
+  // the opponent's player from the same games, no new game reads
+  const n = calls.length;
+  const chovy = await log('Chovy', 'Gen.G');
+  assert.deepEqual(chovy.maps.map(m => m.k), [1, 2]);
+  assert.equal(calls.filter((u, i) => i >= n && /\/G\d$/.test(u)).length, 0);
+  assert.equal(R.loleNameIs('BLG knight', 'knight'), true);
+  assert.equal(R.loleNameIs('Faker', 'Fak'), false);
+});
+
+test('lolChain: the next source when the first has nothing, the error only when all fail', async () => {
+  const ok = R.lolChain(['A', async () => ({ maps: [] })], ['B', async () => ({ maps: [{ mid: 'x', n: 1 }] })]);
+  assert.equal((await ok('p', 't')).source, 'B');
+  const bad = R.lolChain(['A', async () => ({ maps: [] })], ['B', async () => { throw new Error('rate limit'); }]);
+  await assert.rejects(bad('p', 't'), /rate limit/);
 });

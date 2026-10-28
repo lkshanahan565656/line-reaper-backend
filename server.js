@@ -7722,7 +7722,7 @@ app.get('/lines/prop', (req, res) => {
 const esResearch = require('./esresearch');
 const ES_RESEARCH_ON = !/^(off|0|false|no)$/i.test(String(process.env.ES_RESEARCH || '').trim());
 const esResearchMaps = esResearch.createMapLogs({ fetchers: {
-  LOL: (player, team) => esResearch.fetchLolMaps(axios, player, team),
+  LOL: esResearch.lolChain(['lolesports.com', esResearch.createLolesportsLog(axios, require('./graders'))], ['Leaguepedia', (player, team) => esResearch.fetchLolMaps(axios, player, team)]),
   DOTA: async player => {
     const id = await dotaAccountId(player);
     return id ? esResearch.fetchDotaMaps(axios, id) : { maps: [], note: 'OpenDota lists no pro player by this name' };
@@ -7787,8 +7787,8 @@ async function esResearchPlayer(req) {
   const player = board?.player || records[0].player, team = board?.team || records[0].team || '';
   let log = null;
   if (esResearch.GAMES[game].maps) {
-    // a slow source doesn't hold the page: past 12 s it renders from our records and says so
-    log = await Promise.race([esResearchMaps.get(game, player, team), new Promise(r => setTimeout(() => r({ status: 'busy' }), 12000).unref())]);
+    // a slow source doesn't hold the page: past 20 s it renders from our records and says so
+    log = await Promise.race([esResearchMaps.get(game, player, team), new Promise(r => setTimeout(() => r({ status: 'busy' }), 20000).unref())]);
   }
   return esResearch.research({ game, player, board, records, log, mkey: req.query.m ? String(req.query.m).slice(0, 40) : null });
 }

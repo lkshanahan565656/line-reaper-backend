@@ -12,7 +12,9 @@
 //              before the start, from our own records, with his result
 //
 // Where the numbers come from, and only from there:
-//   LoL   Leaguepedia's Cargo API (free, documented): ScoreboardPlayers
+//   LoL   lolesports.com's own feed (schedule, game details, live-stats
+//         windows: the source our LoL grader already reads), then
+//         Leaguepedia's Cargo API (free, documented) for other leagues
 //   Dota  OpenDota's explorer (free, documented): his pro games
 //   CS2, Valorant, CoD, R6: no free per-map source we may use (HLTV's terms
 //         forbid scraping), so these pages show only what our own line
@@ -31,7 +33,7 @@ const { normalizeMarket } = require('./esmarkets');
 const esmatch = require('./esmatch');
 
 const GAMES = {
-  LOL: { label: 'LoL', name: 'League of Legends', source: 'Leaguepedia', maps: true },
+  LOL: { label: 'LoL', name: 'League of Legends', source: 'lolesports.com and Leaguepedia', maps: true },
   DOTA: { label: 'Dota 2', name: 'Dota 2', source: 'OpenDota', maps: true },
   CS: { label: 'CS2', name: 'Counter-Strike 2', source: null, maps: false },
   VAL: { label: 'VALORANT', name: 'VALORANT', source: null, maps: false },
@@ -82,9 +84,10 @@ function marketLabel(mkey) {
   return `${s}, ${maps.length > 1 ? `Maps ${maps[0]}-${maps[maps.length - 1]}` : `Map ${maps[0]}`}`;
 }
 const playerKey = (game, player) => `${game}|${canon(player)}`;
+const cleanOpp = o => (o ? String(o).replace(/\s+(MAPS?|GAMES?)\s+[\d+\-\s]+$/i, '').trim() || null : null);
 const opponentOf = x => {
-  if (x.opponent) return x.opponent;
-  try { return esmatch.lineOpponent({ team: x.team || '', matchTitle: x.matchTitle || '', book: 'x' }) || null; } catch { return null; }
+  if (x.opponent) return cleanOpp(x.opponent);
+  try { return cleanOpp(esmatch.lineOpponent({ team: x.team || '', matchTitle: x.matchTitle || '', book: 'x' })); } catch { return null; }
 };
 const sameTeam = (a, b) => { try { return !!a && !!b && esmatch.sameTeam(a, b); } catch { return canon(a) === canon(b); } };
 
@@ -185,6 +188,7 @@ function seriesTotals(maps, mkey) {
     if (!s) by.set(m.mid, s = { mid: m.mid, t: m.t, team: m.team, opp: m.opp, league: m.league || '', maps: new Map(), wins: 0, played: 0 });
     s.t = Math.min(s.t, m.t);
     if (!s.maps.has(m.n)) { s.maps.set(m.n, m); s.played++; if (m.win === true) s.wins++; }
+    if (typeof m.sw === 'boolean') s.sw = m.sw;
   }
   const out = [];
   for (const s of by.values()) {
@@ -197,7 +201,7 @@ function seriesTotals(maps, mkey) {
       short = true;
     }
     out.push({ mid: s.mid, t: s.t, team: s.team, opp: s.opp, league: s.league, value: have.reduce((x, n) => x + num(s.maps.get(n)[field]), 0), maps: have.length, short,
-      won: s.played ? s.wins * 2 > s.played : null });
+      won: typeof s.sw === 'boolean' ? s.sw : [...s.maps.values()].every(x => typeof x.win === 'boolean') ? s.wins * 2 > s.played : null });
   }
   return out.sort((a, b) => b.t - a.t);
 }
@@ -294,6 +298,107 @@ async function fetchLolMaps(http, player, team) {
   return lolMaps(res.data?.cargoquery || [], team);
 }
 
+// ── lolesports (LoL, Riot's own feed) ──
+// Leaguepedia rate-limits shared IPs (Railway and GitHub's runners alike), so
+// LoL reads first from the feed lolesports.com itself uses: the schedule
+// lists each league's matches with both teams and the series result, the
+// event's details list its games, and each finished game's last live-stats
+// frame holds all ten players' kills, deaths and assists. One read covers a
+// team's last few matches for all five players and both teams, so it's cached
+// per team. Leagues lolesports lists only (LCK, LPL, LEC, LCS, CBLOL, Worlds
+// and the like); Leaguepedia after it for the rest.
+const sq = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+// a schedule team ({ name, code }) is the board's team
+function loleTeamIs(t, team) {
+  if (!t || !team) return false;
+  const q = sq(team);
+  return sq(t.code) === q || sq(t.name) === q || sameTeam(t.name, team) || (q.length <= 5 && sq(t.code) === q);
+}
+// a finished game's last frame → each player's line ({ name, side, k, d, a, champ })
+function loleGameLines(data) {
+  const frames = data?.frames || [];
+  const last = frames[frames.length - 1];
+  if (!last || last.gameState !== 'finished') return null;
+  const out = [];
+  for (const side of ['blue', 'red']) {
+    const meta = data.gameMetadata?.[`${side}TeamMetadata`]?.participantMetadata || [];
+    const rows = last[`${side}Team`]?.participants || [];
+    for (const m of meta) {
+      const r = rows.find(x => x.participantId === m.participantId);
+      if (r) out.push({ name: m.summonerName || '', side, k: num(r.kills), d: num(r.deaths), a: num(r.assists), champ: m.championId || '' });
+    }
+  }
+  return out.length ? out : null;
+}
+// "T1 Faker" or "Faker" is the player
+const loleNameIs = (summoner, player) => {
+  const s = sq(summoner), p = sq(player);
+  return !!p && (s === p || (p.length >= 3 && s.endsWith(p) && s.length - p.length <= 5));
+};
+// completed schedule events → a team's last n matches, newest first
+function loleTeamMatches(events, team, n = 6) {
+  return (events || []).filter(e => e?.type === 'match' && e.state === 'completed' && e.match?.id && (e.match.teams || []).some(t => loleTeamIs(t, team)))
+    .sort((a, b) => Date.parse(b.startTime) - Date.parse(a.startTime)).slice(0, n);
+}
+function createLolesportsLog(http, { LOLE_API, LOLE_FEED, LOLE_HEADERS }, { schedTtlMs = 3 * 3600e3, pages = 10, matches = 6, pause = 350, now = () => Date.now(), sleep = t => new Promise(r => setTimeout(r, t)) } = {}) {
+  let sched = { at: 0, events: [] };
+  const games = new Map();   // game id → lines (finished games only; compact)
+  const get = async (url, params, headers = LOLE_HEADERS) => { await sleep(pause); return http.get(url, { params, headers, timeout: 20000 }); };
+  async function schedule() {
+    if (now() - sched.at < schedTtlMs) return sched.events;
+    const events = [];
+    let token = null;
+    for (let i = 0; i < pages; i++) {
+      const res = await get(`${LOLE_API}/getSchedule`, { hl: 'en-US', ...(token ? { pageToken: token } : {}) });
+      const sc = res.data?.data?.schedule;
+      for (const e of sc?.events || []) if (e?.type === 'match' && e.state === 'completed') events.push({ startTime: e.startTime, state: e.state, type: e.type, league: { name: e.league?.name || '' }, match: { id: e.match?.id, teams: (e.match?.teams || []).map(t => ({ name: t.name, code: t.code, outcome: t.result?.outcome || null })) } });
+      token = sc?.pages?.older;
+      if (!token) break;
+    }
+    sched = { at: now(), events };
+    return events;
+  }
+  async function gameLines(id, startMs) {
+    if (games.has(id)) return games.get(id);
+    const t = Math.floor(Math.min(now() - 60e3, startMs + 14 * 3600e3) / 10000) * 10000;
+    const res = await get(`${LOLE_FEED}/${id}`, { startingTime: new Date(t).toISOString() }, { 'User-Agent': LOLE_HEADERS['User-Agent'] });
+    const lines = loleGameLines(res.data);
+    if (lines) { games.set(id, lines); while (games.size > 600) games.delete(games.keys().next().value); }
+    return lines;
+  }
+  return async function lolesportsMaps(player, team) {
+    if (!team) return { maps: [] };
+    const list = loleTeamMatches(await schedule(), team, matches);
+    const maps = [];
+    for (const ev of list) {
+      const mine = ev.match.teams.find(t => loleTeamIs(t, team)), opp = ev.match.teams.find(t => t !== mine);
+      const det = await get(`${LOLE_API}/getEventDetails`, { hl: 'en-US', id: ev.match.id });
+      const gs = (det.data?.data?.event?.match?.games || []).filter(g => g.state === 'completed');
+      const t0 = Date.parse(ev.startTime);
+      for (const g of gs) {
+        const lines = await gameLines(g.id, t0);
+        const me = (lines || []).find(l => loleNameIs(l.name, player));
+        if (!me) continue;
+        maps.push({ mid: `lole:${ev.match.id}`, n: Number(g.number) || 1, t: t0 + ((Number(g.number) || 1) - 1) * 45 * 60e3, team: mine?.name || team, opp: opp?.name || '',
+          win: null, sw: mine?.outcome === 'win' ? true : mine?.outcome === 'loss' ? false : null, k: me.k, d: me.d, a: me.a, champ: me.champ, league: ev.league?.name || '' });
+      }
+    }
+    return { maps: maps.sort((a, b) => b.t - a.t) };
+  };
+}
+// LoL: lolesports first, Leaguepedia when it has nothing for the player
+function lolChain(...fetchers) {
+  return async (player, team) => {
+    let lastErr = null;
+    for (const [source, f] of fetchers) {
+      try { const r = await f(player, team); if (r?.maps?.length) return { ...r, source }; }
+      catch (e) { lastErr = e; }
+    }
+    if (lastErr) throw lastErr;
+    return { maps: [] };
+  };
+}
+
 // ── OpenDota (Dota 2) ──
 function dotaPlayerSql(accountId, limit = 60) {
   const id = Number(accountId);
@@ -375,7 +480,7 @@ function createMapLogs({ fetchers = {}, okTtlMs = 3 * 3600e3, failTtlMs = 20 * 6
       stats.reads++;
       try {
         const r = await fetcher(player, team);
-        const v = { status: r?.maps?.length ? 'ok' : 'none', at: now(), maps: (r?.maps || []).slice(0, 80), link: r?.link || null, links: r?.links || [], note: r?.note || null, error: null };
+        const v = { status: r?.maps?.length ? 'ok' : 'none', at: now(), maps: (r?.maps || []).slice(0, 80), link: r?.link || null, links: r?.links || [], note: r?.note || null, source: r?.source || null, error: null };
         put(k, v);
         return v;
       } catch (e) {
@@ -427,7 +532,7 @@ function research({ game, player, board = null, records = [], log = null, mkey =
     game, label: g?.label || game, player: board?.player || records[0]?.player || player, team: board?.team || records[0]?.team || '', opponent,
     startTime: market?.startTime || board?.startTime || null, matchTitle: board?.matchTitle || '',
     markets, market: mk, marketLabel: mk ? marketLabel(mk) : null, lines,
-    source: { maps: g?.maps ? g.source : null, note: g?.maps ? null : NO_SOURCE_NOTE[game] || null, statOnMaps: !!fromMaps, status: log?.status || (g?.maps ? 'not-read' : 'unsupported'), error: log?.error || null, at: log?.at ? new Date(log.at).toISOString() : null, link: log?.link || null, links: log?.links || [], note2: log?.note || null },
+    source: { maps: g?.maps ? (log?.source || g.source) : null, note: g?.maps ? null : NO_SOURCE_NOTE[game] || null, statOnMaps: !!fromMaps, status: log?.status || (g?.maps ? 'not-read' : 'unsupported'), error: log?.error || null, at: log?.at ? new Date(log.at).toISOString() : null, link: log?.link || null, links: log?.links || [], note2: log?.note || null },
     hitFrom, hit, series: series.slice(0, 40), byMap: fromMaps ? byMapNumber(maps, stat) : [], maps: maps.slice(0, 40),
     records: rec.slice(0, 40).map(e => ({ t: new Date(e.t).toISOString(), opponent: e.opponent, first: e.first, last: e.last, result: e.result, short: e.short })),
     vsPosted: Object.values(vsPosted),
@@ -610,6 +715,6 @@ ${foot()}
 
 module.exports = {
   GAMES, GAME_ORDER, APPS, APP_NAME, gameOf, parseMkey, marketLabel, playerKey, boardPlayers, recordEntry, buildRecordIndex,
-  seriesTotals, hitRates, currentLines, splits, byMapNumber, lolQuery, lolMaps, fetchLolMaps, dotaPlayerSql, dotaMaps, fetchDotaMaps,
+  seriesTotals, hitRates, currentLines, splits, byMapNumber, loleTeamIs, loleGameLines, loleNameIs, loleTeamMatches, createLolesportsLog, lolChain, lolQuery, lolMaps, fetchLolMaps, dotaPlayerSql, dotaMaps, fetchDotaMaps,
   createMapLogs, research, indexPage, playerPage, playerHref,
 };
