@@ -89,6 +89,8 @@ const opponentOf = x => {
   if (x.opponent) return cleanOpp(x.opponent);
   try { return cleanOpp(esmatch.lineOpponent({ team: x.team || '', matchTitle: x.matchTitle || '', book: 'x' })); } catch { return null; }
 };
+const { teamCode } = require('./context');
+const teamCodeOf = (a, b) => { try { return (String(a).length <= 5 && !!teamCode(b, a)) || (String(b).length <= 5 && !!teamCode(a, b)); } catch { return false; } };
 const sameTeam = (a, b) => { try { return !!a && !!b && esmatch.sameTeam(a, b); } catch { return canon(a) === canon(b); } };
 
 // ── today's board: the props board's esports rows → one entry per player ──
@@ -153,8 +155,11 @@ function buildRecordIndex(rows) {
   for (const row of rows || []) {
     const e = recordEntry(row);
     if (!e) continue;
-    const id = `${e.key}|${e.mkey}|${new Date(e.t).toISOString().slice(0, 10)}|${canon(e.opponent || e.title)}`;
-    const old = seen.get(id);
+    // one app names the opponent by code ("AL"), another in full ("Anyone's Legend"): same day, same team is the same match
+    const id = `${e.key}|${e.mkey}|${new Date(e.t).toISOString().slice(0, 10)}`;
+    const day = seen.get(id) || [];
+    const opp = e.opponent || e.title;
+    const old = day.find(x => { const o = x.opponent || x.title; return !o || !opp || canon(o) === canon(opp) || sameTeam(o, opp) || teamCodeOf(o, opp); });
     if (old) {
       for (const [k, v] of Object.entries(e.first)) if (old.first[k] == null) old.first[k] = v;
       for (const [k, v] of Object.entries(e.last)) if (old.last[k] == null) old.last[k] = v;
@@ -163,7 +168,8 @@ function buildRecordIndex(rows) {
       if (!old.opponent && e.opponent) old.opponent = e.opponent;
       continue;
     }
-    seen.set(id, e);
+    day.push(e);
+    seen.set(id, day);
     if (!players.has(e.key)) players.set(e.key, []);
     players.get(e.key).push(e);
     n++;
@@ -565,7 +571,7 @@ td.o { color:var(--green2); } td.u { color:#f87171; }
 .ln i { font-style:normal; color:var(--muted); margin-right:4px; }
 ul.pl { list-style:none; padding:0; margin:0 0 18px; border-top:1px solid var(--border); }
 ul.pl li { border-bottom:1px solid var(--border); margin:0; }
-ul.pl a { display:block; padding:10px 0; color:var(--text); text-decoration:none; overflow-wrap:anywhere; }
+ul.pl a { display:block; padding:8px 0; color:var(--text); text-decoration:none; overflow-wrap:anywhere; }
 ul.pl a b { font-weight:600; }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin:0 0 18px; }
 .cell { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
@@ -606,7 +612,8 @@ function indexPage({ players = [], counts = {}, game = '', q = '', builtAt = nul
   const byGame = GAME_ORDER.map(g => [g, shown.filter(p => p.game === g)]).filter(([, l]) => l.length);
   const item = p => {
     const n = counts[p.key] || 0;
-    return `<li><a href="${esc(playerHref(p.game, p.player))}"><b>${esc(p.player)}</b> <span class="note">${esc(p.team || '')}${p.opponent ? ` vs ${esc(p.opponent)}` : ''}</span><span class="sub">${p.startTime ? `starts ${esc(whenUtc(p.startTime))} · ` : ''}${n ? `${n} past match${n === 1 ? '' : 'es'} in our records` : 'none in our records yet'}</span>${p.markets.map(m => `<span class="sub">${esc(m.label)}: ${lineChips(m.lines)}</span>`).join('')}</a></li>`;
+    const m = p.markets[0];
+    return `<li><a href="${esc(playerHref(p.game, p.player))}"><b>${esc(p.player)}</b> <span class="note">${esc(p.team || '')}${p.opponent ? ` vs ${esc(p.opponent)}` : ''}</span><span class="sub">${m ? `${esc(m.label)} ${lineChips(m.lines)}${p.markets.length > 1 ? ` +${p.markets.length - 1} more` : ''} · ` : ''}${p.startTime ? `${esc(whenUtc(p.startTime))} · ` : ''}${n ? `${n} in our records` : 'none in our records yet'}</span></a></li>`;
   };
   const form = `<form class="st-pick" method="get" action="/esports/research"><label for="rg">Game</label><select id="rg" name="game"><option value="">All</option>${GAME_ORDER.map(g => `<option value="${g}"${g === game ? ' selected' : ''}>${esc(GAMES[g].label)} (${players.filter(p => p.game === g).length})</option>`).join('')}</select><label for="rq">Find</label><input id="rq" name="q" value="${esc(q)}" placeholder="player or team" maxlength="40"><button type="submit">SHOW</button></form>`;
   const src = GAME_ORDER.map(g => `<tr><td>${esc(GAMES[g].label)}</td><td>${GAMES[g].maps ? `Every recent map from ${esc(GAMES[g].source)} (free API), plus our records` : 'Our records only: no free per-map source'}</td></tr>`).join('');
@@ -618,6 +625,7 @@ ${top()}
 <h1>Esports prop research</h1>
 <p class="lead">Every esports player prop the pick'em apps list today, with how often the player went over that line before, splits by opponent and map, and each app's past lines on him from our own records.</p>
 ${WARN}
+<nav class="chips" aria-label="Games"><a class="chip${!game ? ' on' : ''}" href="/esports/research${q ? `?q=${esc(encodeURIComponent(q))}` : ''}">ALL ${players.length}</a>${GAME_ORDER.filter(g => players.some(p => p.game === g)).map(g => `<a class="chip${g === game ? ' on' : ''}" href="/esports/research?game=${g}${q ? `&amp;q=${esc(encodeURIComponent(q))}` : ''}">${esc(GAMES[g].label.toUpperCase())} ${players.filter(p => p.game === g).length}</a>`).join('')}</nav>
 ${form}
 ${byGame.length ? byGame.map(([g, list]) => `<h2>${esc(GAMES[g].label)} <span class="note">${list.length} player${list.length === 1 ? '' : 's'}</span></h2><ul class="pl">${list.map(item).join('')}</ul>`).join('') : `<div class="empty">${players.length ? 'No player on the board matches that search.' : 'No esports player props are on the apps we read right now. Lines usually go up a day before the matches.'}</div>`}
 <h2>Where the numbers come from</h2>

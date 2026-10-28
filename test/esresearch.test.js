@@ -174,7 +174,8 @@ test('pages: labelled research, no dead links, escaped names', () => {
   assert.doesNotMatch(html, /href="#"/);
   const idx = R.indexPage({ players: [bp], counts: { 'LOL|faker': 3 } });
   assert.match(idx, /RESEARCH · NOT A BET/);
-  assert.match(idx, /3 past matches in our records/);
+  assert.match(idx, /3 in our records/);
+  assert.match(idx, />LOL 1<\/a>/);
   assert.match(idx, /href="\/esports\/research\/LOL\/Faker"/);
   const evil = R.indexPage({ players: [{ ...bp, player: '<script>x</script>' }], counts: {} });
   assert.doesNotMatch(evil, /<script>x/);
@@ -255,4 +256,14 @@ test('fetchDotaMaps: his own match list when the explorer has none of his games,
   const d = R.research({ game: 'DOTA', player: 'Yatoro', board: { player: 'Yatoro', markets: [{ mkey: 'k|1-2', label: 'Kills, Maps 1-2', lines: [{ app: 'UD', line: 14.5 }] }] }, log: { status: 'ok', source: 'OpenDota', at: Date.now(), ...r } });
   assert.deepEqual(d.series.map(s => s.value), [15]);
   assert.match(R.playerPage(d), /names no teams/);
+});
+
+test('buildRecordIndex: a code and a full name on the same day are one match', () => {
+  const rows = [
+    { sport: 'LOL', player: 'Quid', team: 'Team Liquid', matchTitle: "Team Liquid vs Anyone's Legend", market: 'Kills on Maps 1+2', startTime: '2026-10-26T10:00:00Z', status: 'graded', result: 3, signalLines: { UD: 6.5 }, closeLines: { UD: 6.5 } },
+    { sport: 'LOL', player: 'Quid', team: 'TL', opponent: 'AL', market: 'MAPS 1-2 Kills', startTime: '2026-10-26T10:00:00Z', status: 'graded', result: 3, signalLines: { PP: 6 }, closeLines: { PP: 6 } },
+  ];
+  const f = R.buildRecordIndex(rows).players.get('LOL|quid');
+  assert.equal(f.length, 1);
+  assert.deepEqual(f[0].last, { UD: 6.5, PP: 6 });
 });
