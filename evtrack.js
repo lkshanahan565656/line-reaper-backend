@@ -61,7 +61,7 @@ function createStoreFromEnv(env = process.env, { table = 'ev_bets', fileVar = 'E
 // threshold and coming back is the same bet, logged at its first price.
 const betId = r => `${r.group}|${r.side}|${r.book}`;
 const marketSide = r => `${r.group}|${r.side}`;
-const r2 = x => Math.round(x * 100) / 100;
+const { r2 } = require('./mathutil');
 
 // The delayed price only counts read within EXEC_WINDOW_MS of being due (2
 // minutes after the flag): a price read hours later grades a different bet.

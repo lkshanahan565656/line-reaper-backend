@@ -31,7 +31,7 @@ const VENUES = ['kalshi', 'gemini', 'polymarketus'];
 const MAX_READS = { kalshi: 30, gemini: 30, polymarketus: 3 };
 const MIN_N = 50;
 const CLOSE_MAX_AGE_MS = 20 * 60e3;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 const prob = a => { const x = Number(a); return !Number.isFinite(x) || x === 0 ? null : x < 0 ? -x / (-x + 100) : 100 / (x + 100); };
 // Kalshi's all-in cost a contract (fees.js), the same number the shopper ranks on
 const kcost = p => fees.allInCost('kalshi', p);

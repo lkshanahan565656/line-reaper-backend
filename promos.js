@@ -39,7 +39,7 @@ const slug = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').repl
 const kindOf = leg => `promo-${CODE[leg.book] || leg.book}-${slug(leg.type)}`;
 const OPTS = { maxShiftPts: 10, provenN: 50, provenZ: 2 };
 const EPS = 1e-9;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 
 // one leg → its break-even hit rate at its own payout, or null when the
 // payout isn't known (PrizePicks goblins and demons). Above 1: it can't pay.

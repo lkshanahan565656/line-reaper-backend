@@ -18,8 +18,7 @@
 const { multiMatchRows } = require('./esmatch');
 
 const MIN_N = 50;
-const r1 = x => Math.round(x * 10) / 10;
-const r2 = x => Math.round(x * 100) / 100;
+const { r1, r2 } = require('./mathutil');
 
 // which record a row belongs to; the h2h record holds both model-only legs
 // and legs Pinnacle agreed with (fair 'h2h-sharp'), judged apart

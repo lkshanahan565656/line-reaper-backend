@@ -41,8 +41,7 @@ const APP_NAME = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
 const GAME_LABEL = { LOL: 'LoL', DOTA: 'Dota 2', CS: 'CS2', VAL: 'Valorant' };
 
 const spanLabel = s => (String(s).includes('-') ? `Maps ${s}` : `Map ${s}`);
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2, r4 } = require('./mathutil');
 
 // a ladder (points { x: −line, p: P over }) → the mean it implies: line +
 // sd × z(P over), averaged over the points that aren't lopsided, or the main

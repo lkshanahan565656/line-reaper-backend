@@ -192,7 +192,7 @@ function americanToProb(a) {
   return x > 0 ? 100 / (x + 100) : -x / (-x + 100);
 }
 
-const r2 = x => Math.round(x * 100) / 100;
+const { r2 } = require('./mathutil');
 
 // Prices every cell. dfsEv(prob 0-1, book, mult) is the server's calcBookEV.
 // esPicks: index key → esports pick (side, prob, ppEv/udEv/sleeperEv).

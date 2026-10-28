@@ -64,11 +64,9 @@ const FUTURES_KIND = 'exchange-futures';
 const SEASON = { edge: 0.03, tier: 200, minFair: 0.03, maxMargin: 0.4, minRunners: 4, horizons: [['h24', 24 * 3600e3], ['d7', 7 * 86400e3]], slackMs: 2 * 3600e3, reflagMs: 7 * 86400e3 };
 const SEASON_SPORTS = new Set(['nfl', 'nba', 'nhl', 'cfb', 'cbb']);
 
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { r4OrNull: r4, num, toProb } = require('./mathutil');
 const amount = v => num(v && typeof v === 'object' ? v.value : v);
 const inUnit = p => p > 0 && p < 1;
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 
 // ── names ──
 // "Carlos Sainz Jr." / "Sainz" / "Søren Kjeldsen" → comparable words
