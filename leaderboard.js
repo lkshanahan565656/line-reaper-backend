@@ -189,6 +189,7 @@ const SECTION_CSS = `
 .st-pick { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 16px; font:500 12px var(--mono); color:var(--muted); }
 .st-pick select, .st-pick button { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
+@media (max-width:560px) { .st-pick { display:grid; grid-template-columns:max-content minmax(0,1fr); } .st-pick button, .st-pick span { grid-column:1 / -1; } .st-pick button { justify-self:start; } }
 .lb-f { margin:0 0 12px; }
 table.lb td:first-child { font-family:var(--mono); font-weight:700; }
 .st-yes { color:var(--green2); } .st-no { color:#f87171; } .st-unknown { color:#f59e0b; }
