@@ -13,6 +13,7 @@ const harness = require('./harness');
 const { crawl, makeReport, TABS } = require('./crawl');
 const flows = require('./flows');
 const verdict = require('./verdict');
+const offline = require('./offline');
 
 const VIEWPORTS = {
   desktop: { viewport: { width: 1280, height: 860 } },
@@ -46,6 +47,18 @@ async function main() {
         reports.push(rep);
       })());
     }
+    // offline: the only window with the service worker on (it installs, saves a
+    // screen, then the network is cut and the saved copy must say it is not live)
+    if (!process.env.E2E_TABS && process.env.E2E_OFFLINE !== '0') {
+      jobs.push((async () => {
+        const context = await newContext(browser, h, vp, { serviceWorkers: 'allow' });
+        const rep = makeReport();
+        rep.viewport = vp; rep.part = 'offline';
+        await offline.run(context, { ...opts, viewportName: vp }, rep);
+        await context.close();
+        reports.push(rep);
+      })());
+    }
     if (!process.env.E2E_TABS || process.env.E2E_FLOWS) {
       jobs.push((async () => {
         const context = await newContext(browser, h, vp);
@@ -67,8 +80,8 @@ async function main() {
   process.exit(out.failures.length ? 1 : 0);
 }
 
-async function newContext(browser, h, vp) {
-  const context = await browser.newContext({ ...VIEWPORTS[vp], serviceWorkers: 'block', acceptDownloads: true, timezoneId: 'America/Chicago', locale: 'en-US' });
+async function newContext(browser, h, vp, extra = {}) {
+  const context = await browser.newContext({ ...VIEWPORTS[vp], serviceWorkers: 'block', acceptDownloads: true, timezoneId: 'America/Chicago', locale: 'en-US', ...extra });
   // nothing leaves this machine: fonts get an empty stylesheet, every other outside request is refused
   await context.route('**/*', route => {
     const u = route.request().url();

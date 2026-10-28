@@ -139,6 +139,7 @@ The flags that change behaviour most:
 | `ODDS_API_KEY` | The paid Odds API. Off on live. LINES, LINE SHOP and CLV hide themselves without it |
 | `ALERT_WEBHOOK_URL` | Where alerts go (ntfy, Slack, Discord, Telegram; comma list) |
 | `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord slash commands. Dormant until all three are set |
+| `DISCORD_INVITE_URL`, `DISCORD_ALERT_DELAY_MIN` | The owned Discord server: its public invite (/discord and the JOIN links) and how late its alert channels post (default 30 min). Channels come from topic-prefixed `DISCORD_WEBHOOK_URLS` entries |
 | `TELEGRAM_BOT_TOKEN` (+ `TELEGRAM_CHAT_IDS` for the feed) | Telegram commands and feed |
 | `RESULTS_BACKUP_KEY` | Pins the backup key. On Railway it derives from the project ids. Safe to set on a running deploy: the old snapshot is still read with the ids key and the next one is sealed with this. A snapshot no key opens pauses exports (never overwritten). |
 | `RESULTS_BACKUP_OLD_KEYS` | Comma-separated earlier secrets the backup may have been sealed with (an old `RESULTS_BACKUP_KEY`, or old ids as `project\|service\|environment`), for a new service or a key that was replaced. Read only. |
