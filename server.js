@@ -9,6 +9,7 @@ const path = require('path');
 // the one place the version lives: bump package.json (and its lock) only
 const VERSION = require('./package.json').version;
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 3001;
 // health, event-loop stalls, slow requests and the boot timeline (ops.js)
 const ops = require('./ops').createOps();
@@ -16,6 +17,14 @@ const fees = require('./fees');
 const { runSteps, runStepsAsync, createSlicer } = require('./ops');
 ops.start();
 app.use(ops.middleware);
+// headers, per-address write limits, JSON errors (security.js)
+const security = require('./security');
+// the app reads the API from its own origin or the production one (BACKEND_URL in public/app.js)
+const APP_API_ORIGIN = (() => { try { return (/const BACKEND_URL = '(https:\/\/[^'/]+)'/.exec(fs.readFileSync(path.join(__dirname, 'public', 'app.js'), 'utf8')) || [])[1] || null; } catch { return null; } })();
+app.use(security.headers({ connect: APP_API_ORIGIN ? [APP_API_ORIGIN] : [] }));
+// Stripe's webhook retries in bursts and is signed, so it is never limited
+const writeLimiter = security.writeLimit({ skip: req => !req.path.startsWith('/api/') || req.path === '/api/billing/webhook' });
+app.use(writeLimiter);
 // Answered before anything else is mounted, and from memory only: Railway's
 // health check and the uptime probe get an answer while feeds are still warming.
 app.get('/api/health', (req, res) => {
@@ -33,9 +42,18 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState } }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness() }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
+// The CPU and heap profilers name every function and slow the server while
+// they run: with TRACKER_ADMIN_TOKEN set they need it (x-admin-token, which
+// the diag workflows send from a GitHub secret); without it they stay open,
+// and /api/ops security.missing says so.
+app.use(['/api/ops/profile', '/api/ops/heap'], (req, res, next) => {
+  const want = process.env.TRACKER_ADMIN_TOKEN;
+  if (!want || security.safeEqual(req.get('x-admin-token'), want)) return next();
+  res.status(401).set('Cache-Control', 'no-store').json({ error: 'The profilers need the admin token (x-admin-token).' });
+});
 const profiler = require('./ops').createProfiler();
 app.get('/api/ops/profile', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await profiler.profile(parseFloat(req.query.s) || 20)); }
@@ -78,7 +96,7 @@ app.post('/api/billing/webhook', express.raw({ type: '*/*', limit: '1mb' }), asy
 // its interactions endpoint also sees the body before express.json.
 app.post(['/discord/interactions', '/discord/interactions/:appId'], express.raw({ type: '*/*', limit: '256kb' }), (req, res) => discordInteraction(req, res));
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use((req, res, next) => auth.attach()(req, res, next));
 
 // ─── CACHE ────────────────────────────────────────────────────────────────────
@@ -3391,8 +3409,7 @@ tracker.ready().then(
 // Paid features. With the paywall off, everyone is treated as a subscriber.
 // The admin token always counts, so the owner never needs a subscription.
 function isAdmin(req) {
-  const admin = process.env.TRACKER_ADMIN_TOKEN;
-  return !!admin && req.get('x-admin-token') === admin;
+  return security.safeEqual(req.get('x-admin-token'), process.env.TRACKER_ADMIN_TOKEN);
 }
 function hasPro(req) {
   if (!PAYWALL) return true;
@@ -3456,7 +3473,7 @@ function redactForFree(picks) {
 function requireAdmin(req, res, next) {
   const want = process.env.TRACKER_ADMIN_TOKEN;
   if (!want) return res.status(503).json({ error: 'Set TRACKER_ADMIN_TOKEN on the server to enable manual grading.' });
-  if (req.get('x-admin-token') !== want) return res.status(401).json({ error: 'Bad or missing admin token' });
+  if (!security.safeEqual(req.get('x-admin-token'), want)) return res.status(401).json({ error: 'Bad or missing admin token' });
   next();
 }
 
@@ -5244,7 +5261,14 @@ app.get('/', (req, res) => {
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
 const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
 
+// guessing passwords: per address, and per email whatever the address
+const loginByIp = security.createWindowLimiter({ limit: 20, windowMs: 15 * 60e3 });
+const loginFailsByEmail = security.createWindowLimiter({ limit: 10, windowMs: 60 * 60e3 });
+const signupByIp = security.createWindowLimiter({ limit: 5, windowMs: 60 * 60e3 });
+const emailKey = e => (typeof e === 'string' ? e.trim().toLowerCase().slice(0, 254) : '');
 app.post('/api/auth/signup', async (req, res) => {
+  const lim = security.isLocal(req) ? { ok: true } : signupByIp.take(security.callerIp(req));
+  if (!lim.ok) return security.tooMany(res, lim, `Too many new accounts from this address. Try again in ${Math.ceil(lim.retryAfter / 60)} min.`);
   try {
     const consent = { terms: req.body?.acceptTerms === true, age: req.body?.confirmAge === true, version: req.body?.termsVersion, ip: (req.get('x-forwarded-for') || '').split(',')[0].trim() || req.ip };
     res.status(201).json(await auth.signup(req.body?.email, req.body?.password, consent));
@@ -5252,8 +5276,13 @@ app.post('/api/auth/signup', async (req, res) => {
   catch (e) { sendErr(res, e); }
 });
 app.post('/api/auth/login', async (req, res) => {
-  try { res.json(await auth.login(req.body?.email, req.body?.password)); }
-  catch (e) { sendErr(res, e); }
+  const email = emailKey(req.body?.email);
+  const local = security.isLocal(req);
+  const lim = local ? { ok: true } : loginByIp.take(security.callerIp(req));
+  const fails = email && !local ? loginFailsByEmail.peek(email) : 0;
+  if (!lim.ok || fails >= 10) return security.tooMany(res, lim.ok ? { retryAfter: 900 } : lim, 'Too many sign-in attempts. Wait a few minutes and try again.');
+  try { const out = await auth.login(req.body?.email, req.body?.password); if (email) loginFailsByEmail.reset(email); res.json(out); }
+  catch (e) { if (e.status === 401 && email) loginFailsByEmail.take(email); sendErr(res, e); }
 });
 // Delete your own account (privacy rights). Needs the password, and a paid
 // subscription has to be cancelled first so nobody is billed for a deleted account.
@@ -5295,9 +5324,10 @@ app.get('/pricing', async (req, res) => {
   } catch (e) { console.warn('Pricing page:', e.message); res.status(500).type('text/plain').send('The pricing page could not be built just now. Try again in a minute.'); }
 });
 // where Stripe should send people back to: the page they came from
+// (this site only: Stripe must not be told to send a paying customer elsewhere)
 function returnUrl(req, fallback = '/') {
   const u = req.body?.returnUrl || req.get('referer') || fallback;
-  return /^https?:\/\//.test(u) ? u : fallback;
+  try { return typeof u === 'string' && new URL(u).host === req.get('host') && /^https?:$/.test(new URL(u).protocol) ? u : fallback; } catch { return fallback; }
 }
 app.post('/api/billing/checkout', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Log in first' });
@@ -6235,8 +6265,7 @@ app.get('/api/esports/picks', async (req, res) => {
 let lastManualRefresh = 0;
 app.post('/api/esports/refresh', async (req, res) => {
   // anyone can ask, but only the admin can force more than one rebuild a minute
-  const admin = process.env.TRACKER_ADMIN_TOKEN && req.get('x-admin-token') === process.env.TRACKER_ADMIN_TOKEN;
-  if (!admin && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
+  if (!isAdmin(req) && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
   lastManualRefresh = Date.now();
   await esPicksOnce();
   res.json({ ok: true, count: esportsCache.picks.length });
@@ -9007,7 +9036,7 @@ app.get('/api/owls-odds/:sport', async (req, res) => {
 app.get('/api/sharp-moves', (req, res) => {
   res.json({ moves: cache.sharpMoves.slice(0, parseInt(req.query.limit)||100), count: cache.sharpMoves.length, updated: new Date().toISOString() });
 });
-app.delete('/api/sharp-moves', (req, res) => { cache.sharpMoves = []; res.json({ ok: true }); });
+app.delete('/api/sharp-moves', requireAdmin, (req, res) => { cache.sharpMoves = []; res.json({ ok: true }); });
 
 app.get('/api/splits/:sport', async (req, res) => res.json(await fetchOwlsSplits(req.params.sport) || {}));
 app.get('/api/odds/:sport', async (req, res) => res.json(await fetchOddsForSport(req.params.sport)));
@@ -9196,16 +9225,18 @@ function legsFromBoard(input) {
 }
 
 app.post('/api/esports/slip', requirePro, (req, res) => {
-  const legs = legsFromBoard(req.body?.legs);
-  const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
+  const specs = Array.isArray(req.body?.legs) ? req.body.legs.slice(0, 12) : null;
+  if (!specs || specs.some(l => !l || typeof l !== 'object' || Array.isArray(l))) return res.status(400).json({ error: 'legs: a list of { player, market, side }' });
+  const legs = legsFromBoard(specs);
+  const missing = specs.filter((_, i) => !legs[i]);
   if (missing.length) return res.status(400).json({ error: 'Not on the board or not priced yet', missing: missing.map(m => m.player) });
   if (legs.length < 2) return res.status(400).json({ error: 'A slip needs at least 2 legs' });
   // the same slip on each book's own lines and payouts (slipbuild.js)
   const board = esportsCache.picks || [];
-  const picks = (req.body?.legs || []).map(spec => board.find(p =>
+  const picks = specs.map(spec => board.find(p =>
     normalizeName(p.player) === normalizeName(spec.player) &&
     (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market))) || null);
-  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks, (req.body?.legs || []).map(l => (l?.side === 'OVER' || l?.side === 'UNDER' ? l.side : null))) });
+  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks, specs.map(l => (l?.side === 'OVER' || l?.side === 'UNDER' ? l.side : null))) });
 });
 
 app.get('/api/esports/best-slips', requirePro, (req, res) => {
@@ -11088,6 +11119,10 @@ schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
 schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => { await tailTracker.check(); await freshTracker.check(); }));
 // New leaderboard wallets to score, every 6 hours (and once at startup)
 schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
+
+// bad JSON, a body over the limit, or an error a route let through: short JSON, no stack
+app.use(security.jsonErrors());
+{ const r = security.readiness(); if (r.paywall && !r.ready) for (const m of r.missing) console.warn(`Security: PAYWALL is on but ${m}`); }
 
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
