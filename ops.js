@@ -341,3 +341,62 @@ function keptAnswer(fn, max = 100000) {
   return a => (typeof a === 'string' ? two(a, '') : fn(a));
 }
 module.exports.keptAnswer = keptAnswer;
+
+// ─── memory on demand ─────────────────────────────────────────────────────────
+// GET /api/ops/heap?s=30 runs V8's sampling heap profiler for s seconds (5 to
+// 120, one at a time, shared with nothing else) and returns where the memory
+// still alive at the end was allocated: per function (self) and per function
+// of ours on the stack (inclusive), in MB. Run it twice a few minutes apart:
+// whatever keeps growing is what holds the heap. Function names and files
+// only, never the objects themselves. Plus V8's heap spaces right now.
+function createHeapSampler({ inspector = require('inspector'), v8 = require('v8') } = {}) {
+  let busy = false;
+  async function sample(seconds = 30, top = 40) {
+    if (busy) { throw Object.assign(new Error('a heap sample is already running'), { status: 409 }); }
+    busy = true;
+    const session = new inspector.Session();
+    session.connect();
+    const post = (m, p) => new Promise((res, rej) => session.post(m, p || {}, (e, r) => (e ? rej(e) : res(r))));
+    try {
+      await post('HeapProfiler.enable');
+      await post('HeapProfiler.startSampling', { samplingInterval: 128 * 1024 });
+      await new Promise(r => setTimeout(r, Math.min(120, Math.max(5, seconds)) * 1000));
+      const { profile: p } = await post('HeapProfiler.stopSampling');
+      return { ...summarizeHeap(p, top), spaces: heapSpaces(v8) };
+    } finally {
+      await post('HeapProfiler.disable').catch(() => {});
+      session.disconnect();
+      busy = false;
+    }
+  }
+  return { sample, busy: () => busy };
+}
+const MB = b => Math.round(b / 1048576 * 10) / 10;
+function heapSpaces(v8 = require('v8')) {
+  return v8.getHeapSpaceStatistics().map(s => ({ space: s.space_name, usedMb: MB(s.space_used_size), sizeMb: MB(s.space_size) }));
+}
+// a sampling heap profile (a tree of call frames, each with the bytes still
+// alive that it allocated itself) → MB by function, self and inclusive
+function summarizeHeap(p, top = 40) {
+  const self = new Map(), incl = new Map();
+  let total = 0;
+  const keyOf = f => `${f.functionName || '(anonymous)'} ${String(f.url || '').split('/').pop()}:${(f.lineNumber ?? -1) + 1}`;
+  // iterative walk: the tree can be deeper than the call stack likes
+  const todo = p?.head ? [{ n: p.head, ours: [] }] : [];
+  while (todo.length) {
+    const { n, ours } = todo.pop();
+    const f = n.callFrame || {}, key = keyOf(f);
+    const mine = ownFile(f.url) && !ours.includes(key) ? [...ours, key] : ours;
+    const size = n.selfSize || 0;
+    if (size) {
+      total += size;
+      self.set(key, (self.get(key) || 0) + size);
+      for (const k of mine) incl.set(k, (incl.get(k) || 0) + size);
+    }
+    for (const c of n.children || []) todo.push({ n: c, ours: mine });
+  }
+  const rank = m => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, top).map(([fn, b]) => ({ fn, mb: MB(b) }));
+  return { sampledMb: MB(total), self: rank(self), inclusive: rank(incl) };
+}
+module.exports.createHeapSampler = createHeapSampler;
+module.exports.summarizeHeap = summarizeHeap;
