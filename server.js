@@ -45,6 +45,15 @@ const liveCheck = require('./livecheck').createLiveCheck(axios, {
 app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness() }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
+// The CPU and heap profilers name every function and slow the server while
+// they run: with TRACKER_ADMIN_TOKEN set they need it (x-admin-token, which
+// the diag workflows send from a GitHub secret); without it they stay open,
+// and /api/ops security.missing says so.
+app.use(['/api/ops/profile', '/api/ops/heap'], (req, res, next) => {
+  const want = process.env.TRACKER_ADMIN_TOKEN;
+  if (!want || security.safeEqual(req.get('x-admin-token'), want)) return next();
+  res.status(401).set('Cache-Control', 'no-store').json({ error: 'The profilers need the admin token (x-admin-token).' });
+});
 const profiler = require('./ops').createProfiler();
 app.get('/api/ops/profile', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await profiler.profile(parseFloat(req.query.s) || 20)); }

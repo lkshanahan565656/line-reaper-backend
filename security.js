@@ -130,7 +130,7 @@ function readiness(env = process.env) {
   if (paywall && !on('AUTH_SECRET')) missing.push('AUTH_SECRET (logins end at every restart)');
   if (paywall && !on('DATABASE_URL')) missing.push('DATABASE_URL (accounts live in a file on one container)');
   if (on('STRIPE_SECRET_KEY') && !on('STRIPE_WEBHOOK_SECRET')) missing.push('STRIPE_WEBHOOK_SECRET (paid plans never switch on)');
-  if (!on('TRACKER_ADMIN_TOKEN')) missing.push('TRACKER_ADMIN_TOKEN (admin routes are off)');
+  if (!on('TRACKER_ADMIN_TOKEN')) missing.push('TRACKER_ADMIN_TOKEN (admin routes are off, and /api/ops/profile and /api/ops/heap are open to anyone)');
   else if (String(env.TRACKER_ADMIN_TOKEN).length < 24) missing.push('TRACKER_ADMIN_TOKEN is short: use 24+ random characters');
   if (!on('RESULTS_BACKUP_KEY')) missing.push('RESULTS_BACKUP_KEY (backup and saved webhooks are sealed with a key made from Railway ids)');
   if (!on('FEED_SECRET')) missing.push('FEED_SECRET (connected Discord webhooks and bot tokens use the backup key)');

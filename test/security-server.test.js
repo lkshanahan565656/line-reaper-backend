@@ -204,3 +204,11 @@ test('auth: async hashes check against the sync ones; a missing account does the
   assert.equal(await auth.verifyPasswordAsync('pass-word-1', auth.hashPassword('pass-word-1')), true);
   assert.equal(await auth.verifyPasswordAsync('nope', h), false);
 });
+
+test('profilers: with the admin token set, /api/ops/profile and /api/ops/heap need it', async () => {
+  for (const p of ['/api/ops/profile?s=5', '/api/ops/heap?s=5']) {
+    assert.equal((await fetch(base + p)).status, 401, p);
+    assert.equal((await fetch(base + p, { headers: { 'x-admin-token': 'b'.repeat(32) } })).status, 401, p);
+  }
+  assert.ok(security.readiness({}).missing.some(m => /profile.*open/.test(m)));
+});
