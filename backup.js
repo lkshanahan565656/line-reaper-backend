@@ -250,6 +250,8 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
     refused = null;
     const body = { v: 1, at: new Date(now()).toISOString(), keyId: keyIdOf(key), counts, other, ...(await sealAsync(key, payload)) };
     cached = { t: now(), body };
+    // the body is tens of MB: kept only for the minute it can be served again
+    setTimeout(() => { if (cached?.body === body) cached = null; }, 60e3).unref?.();
     lastExportAt = body.at;
     return body;
   }
