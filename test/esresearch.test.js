@@ -242,3 +242,17 @@ test('lolChain: the next source when the first has nothing, the error only when 
   const bad = R.lolChain(['A', async () => ({ maps: [] })], ['B', async () => { throw new Error('rate limit'); }]);
   await assert.rejects(bad('p', 't'), /rate limit/);
 });
+
+test('fetchDotaMaps: his own match list when the explorer has none of his games, and the page says so', async () => {
+  const http = { get: async url => {
+    if (url.endsWith('/explorer')) return { data: { rows: [] } };
+    if (url.endsWith('/players/42/matches')) return { data: [{ match_id: 9, start_time: 5000, player_slot: 1, radiant_win: true, kills: 11, deaths: 2, assists: 9 }, { match_id: 8, start_time: 1000, player_slot: 1, radiant_win: false, kills: 4, deaths: 6, assists: 3 }] };
+    throw new Error(url);
+  } };
+  const r = await R.fetchDotaMaps(http, 42);
+  assert.deepEqual(r.maps.map(m => [m.mid, m.n, m.k]), [['m8', 2, 11], ['m8', 1, 4]]);
+  assert.match(r.note, /names no teams/);
+  const d = R.research({ game: 'DOTA', player: 'Yatoro', board: { player: 'Yatoro', markets: [{ mkey: 'k|1-2', label: 'Kills, Maps 1-2', lines: [{ app: 'UD', line: 14.5 }] }] }, log: { status: 'ok', source: 'OpenDota', at: Date.now(), ...r } });
+  assert.deepEqual(d.series.map(s => s.value), [15]);
+  assert.match(R.playerPage(d), /names no teams/);
+});

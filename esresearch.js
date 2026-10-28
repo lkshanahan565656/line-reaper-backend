@@ -440,7 +440,11 @@ async function fetchDotaMaps(http, accountId) {
   if (!sql) return { maps: [] };
   const res = await http.get('https://api.opendota.com/api/explorer', { params: { sql }, timeout: 30000 });
   if (res.data?.err) throw new Error(`OpenDota: ${String(res.data.err).slice(0, 120)}`);
-  return dotaMaps(res.data?.rows || []);
+  if (res.data?.rows?.length) return dotaMaps(res.data.rows);
+  // the explorer misses some players' games: his own tournament match list, which names no teams
+  const own = await http.get(`https://api.opendota.com/api/players/${Number(accountId)}/matches`, { params: { lobby_type: 1, limit: 60 }, timeout: 30000 });
+  const rows = (Array.isArray(own.data) ? own.data : []).map(m => ({ match_id: m.match_id, start_time: m.start_time, series_id: 0, radiant_win: m.radiant_win, player_slot: m.player_slot, kills: m.kills, deaths: m.deaths, assists: m.assists }));
+  return rows.length ? { ...dotaMaps(rows), note: 'OpenDota\'s explorer had none of his games, so these come from his tournament match list, which names no teams: no opponent splits, and a series is games less than 2.5 hours apart.' } : { maps: [] };
 }
 
 // ── the map-log cache: one polite queue per source ──
@@ -654,7 +658,7 @@ function playerPage(d, { origin = '' } = {}) {
   const chips = d.markets.map(m => `<a class="chip${m.mkey === d.market ? ' on' : ''}" href="${esc(playerHref(d.game, d.player, m.mkey))}"${m.mkey === d.market ? ' aria-current="page"' : ''}>${esc(m.label)}${m.recordOnly ? ' · records' : ''}</a>`).join('');
   const src = d.source;
   const srcLine = src.maps
-    ? (src.status === 'ok' ? `Past maps: ${esc(src.maps)}${src.link ? ` (${esc(src.link)})` : ''}, read ${esc(whenUtc(src.at))}.${src.links.length > 1 ? ` ${esc(src.maps)} lists ${src.links.length} players by this name (${esc(src.links.join(', '))}); this is the one on ${esc(d.team || 'his team')} or, failing that, the one who played last.` : ''}`
+    ? (src.status === 'ok' ? `Past maps: ${esc(src.maps)}${src.link ? ` (${esc(src.link)})` : ''}, read ${esc(whenUtc(src.at))}.${src.links.length > 1 ? ` ${esc(src.maps)} lists ${src.links.length} players by this name (${esc(src.links.join(', '))}); this is the one on ${esc(d.team || 'his team')} or, failing that, the one who played last.` : ''}${src.note2 ? ` ${esc(src.note2)}` : ''}`
       : src.status === 'none' ? `${esc(src.maps)} has no pro maps under this name${src.note2 ? `: ${esc(src.note2)}` : ''}. The tables below use our records only.`
         : src.status === 'error' ? `${esc(src.maps)} didn't answer (${esc(src.error)}). The tables below use our records only; this page reads it again in about 20 minutes.`
           : src.status === 'busy' ? `${esc(src.maps)} is being read for other players right now. The tables below use our records only; reload in a minute.`
