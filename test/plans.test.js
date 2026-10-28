@@ -81,7 +81,7 @@ test('pricing page: each switch position has a working button and honest words',
   for (const p of [off, sale, notYet]) {
     assert.doesNotMatch(p, /guaranteed|risk[- ]free|sure thing|undefined|NaN|\{\{/);
     assert.match(p, /Paying buys the tool, not an edge/);
-    assert.match(p, /<td>Public API calls<span class="where">\/developers<\/span><\/td><td>10 a minute, 500 a day<\/td><td>60 a minute, 5,000 a day<\/td>/);
+    assert.match(p, /<td>Public API calls<span class="where">\/developers<\/span><\/td><td>10 a minute, 500 a day<\/td><td>10 a minute, 500 a day<\/td><td>60 a minute, 5,000 a day<\/td>/);
     assert.ok(!/href="#"/.test(p), 'no dead links');
   }
 });
@@ -90,7 +90,7 @@ test('plan lists for the sales page come from the same table', () => {
   const free = plans.planListHtml('free'), pro = plans.planListHtml('pro');
   assert.match(free, /Sharp Tail \(research\).*: 30 minute delay/);
   assert.doesNotMatch(free, /Live alerts in the app/);
-  assert.match(pro, /Live alerts in the app, and phone push: Same text for every member/);
+  assert.match(pro, /Live alerts in the app, and phone push: Live, and phone push; the same text for every member/);
   assert.doesNotMatch(free + pro, /Fair prices and EV in the API/, 'a rule for everyone is not a plan bullet');
 });
 
