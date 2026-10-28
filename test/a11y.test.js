@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const a11y = require('../a11y');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const html = require('./app-source').both;
 
 test('server pages get a focus ring, reduced motion and a skip link to <main>', () => {
   const out = a11y.decorate('<!doctype html><html><head><title>x</title></head><body class="b"><header>h</header><main><h1>Hi</h1></main></body></html>');
@@ -61,7 +61,7 @@ test('the app: clickable spans, cells and rows are reachable by keyboard', () =>
 });
 
 test('no muted text colour under 4.5:1 on the darkest cards (old #64748b and #475569 greys)', () => {
-  for (const f of ['public/index.html', 'public/landing.html', 'learn.js', 'status.js', 'digest.js', 'linehist.js', 'alertlog.js', 'embeds.js']) {
+  for (const f of ['public/index.html', 'public/app.js', 'public/landing.html', 'learn.js', 'status.js', 'digest.js', 'linehist.js', 'alertlog.js', 'embeds.js']) {
     const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.doesNotMatch(src, /#64748b|#475569/i, f);
   }

@@ -3,12 +3,10 @@
 // routes, sitemap and robots on a booted server in leagues-server.test.js.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
 const vm = require('vm');
 const L = require('../leagues');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const html = require('./app-source').both;
 const block = html.match(/^\/\/ LR_SHARE_BEGIN\n([\s\S]*?)^\/\/ LR_SHARE_END$/m)[1];
 const S = vm.runInNewContext(`${block}\nLRShare`, { URLSearchParams });
 const TABS = ['odds', 'props', 'esports', 'results'];

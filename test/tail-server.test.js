@@ -986,7 +986,7 @@ test('US mode strips polymarket.com links however deep, and nothing else', () =>
 });
 
 test('the bundled app: opens on SHARP TAIL, venue line, no bankroll or dollar sizing, the footer, the ARBS tab, and its scripts parse', () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const html = require('./app-source').both;
   assert.match(html, /<button class="tab active" onclick="showTab\('tail',this\)">SHARP TAIL</, 'the first tab, open by default');
   assert.match(html, /<div class="page active" id="page-tail">/);
   for (const v of ['signals', 'board', 'traders', 'whales', 'record']) assert.ok(html.includes(`['${v}', `), v);
