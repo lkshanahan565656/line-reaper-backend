@@ -84,7 +84,7 @@ test('RESULTS_BACKUP_KEY set later: read with the Railway-id key, seal the next 
   assert.equal(after.length, 2);
   assert.ok(after[1].equals(before[0]), 'the ids key is still made, second');
   const remote = { file: snap };
-  const b = createBackup({ keys: after, sources: ['mem://x'], fetchJson: async () => remote.file, log: quiet });
+  const b = createBackup({ keys: after, sources: ['mem://x'], fetchJson: async () => remote.file, log: quiet, bootRetryMs: 5 });
   const s = b.wrap('tail', createMemoryStore());
   await s.init();
   assert.equal(b.status().state, 'ready');
@@ -99,10 +99,10 @@ test('new Railway ids: RESULTS_BACKUP_OLD_KEYS opens the old snapshot', async ()
   const old = { RAILWAY_PROJECT_ID: 'p', RAILWAY_SERVICE_ID: 's', RAILWAY_ENVIRONMENT_ID: 'e' };
   const snap = await snapshotWith(keysFromEnv(old)[0]);
   const moved = { RAILWAY_PROJECT_ID: 'p2', RAILWAY_SERVICE_ID: 's2', RAILWAY_ENVIRONMENT_ID: 'e2' };
-  const lost = createBackup({ keys: keysFromEnv(moved), sources: ['mem://x'], fetchJson: async () => snap, log: quiet });
+  const lost = createBackup({ keys: keysFromEnv(moved), sources: ['mem://x'], fetchJson: async () => snap, log: quiet, bootRetryMs: 5 });
   await lost.wrap('tail', createMemoryStore()).init();
   assert.equal(lost.status().state, 'retrying', 'without the old secret: paused, not empty');
-  const found = createBackup({ keys: keysFromEnv({ ...moved, RESULTS_BACKUP_OLD_KEYS: ' other , p|s|e ' }), sources: ['mem://x'], fetchJson: async () => snap, log: quiet });
+  const found = createBackup({ keys: keysFromEnv({ ...moved, RESULTS_BACKUP_OLD_KEYS: ' other , p|s|e ' }), sources: ['mem://x'], fetchJson: async () => snap, log: quiet, bootRetryMs: 5 });
   const s = found.wrap('tail', createMemoryStore());
   await s.init();
   assert.equal(found.status().state, 'ready');
