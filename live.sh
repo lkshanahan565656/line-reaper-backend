@@ -40,7 +40,7 @@ os.makedirs('out/p', exist_ok=True)
 pick=[]
 for g,n in want.items():
     gp=[x for x in ps if x['game']==g]
-    pick+=sorted(gp,key=lambda x:-x['records'])[:n-1]+[x for x in gp if x['player'] in ('Quid','Batyuk','Yatoro')][:1]
+    pick+=sorted(gp,key=lambda x:-x['records'])[:n-1]+[x for x in gp if x['player'] in ('Caliste','Batyuk','not me')][:1]
 for p in pick:
         g=p['game']; url=p['url']
         for kind,path in (('json','/api'+url),('html',url)):
