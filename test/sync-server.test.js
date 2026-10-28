@@ -115,7 +115,7 @@ test('wrong passwords slow down after 10 for one email', async () => {
   for (let i = 0; i < 10; i++) assert.equal((await call('POST', '/api/auth/login', { email: 'guess@example.com', password: `wrong${i}xxx` }, null, `10.0.0.${i}`)).status, 401);
   const blocked = await call('POST', '/api/auth/login', { email: 'guess@example.com', password: 'longenough1' }, null, '10.0.1.1');
   assert.equal(blocked.status, 429);
-  assert.match(blocked.body.error, /15 minutes/);
+  assert.match(blocked.body.error, /Too many sign-in attempts/);
 });
 
 test('the merge rules are served to the page', async () => {

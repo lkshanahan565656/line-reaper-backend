@@ -61,7 +61,9 @@ test('fuzz: every write route answers malformed, wrong-typed and oversized bodie
   assert.ok(routes.length >= 40, `found ${routes.length} write routes`);
   const fails = [];
   for (const r of routes) {
-    for (const [name, body] of [...BODIES, ['over the size limit', JSON.stringify({ pad: 'x'.repeat(150 * 1024) })]]) {
+    // account sync takes a whole bet list (9 MB limit on /api/sync), every other route 100 KB
+    const over = /^\/api\/sync(\/|$)/.test(r.path) ? 9 * 1024 * 1024 + 1024 : 150 * 1024;
+    for (const [name, body] of [...BODIES, ['over the size limit', JSON.stringify({ pad: 'x'.repeat(over) })]]) {
       let res, text;
       try { res = await send(r.path, { method: r.method, body }); text = await res.text(); } catch (e) { fails.push(`${r.method} ${r.path} [${name}]: no answer ${e.message}`); continue; }
       // 503 is "off on this server" and 502 a probe whose upstream is offline, both said in JSON
@@ -70,7 +72,7 @@ test('fuzz: every write route answers malformed, wrong-typed and oversized bodie
       if (LEAK.test(text)) fails.push(`${r.method} ${r.path} [${name}]: leaks internals: ${text.slice(0, 160)}`);
       if (text && !/json/.test(res.headers.get('content-type') || '') && res.status !== 204) fails.push(`${r.method} ${r.path} [${name}]: not JSON (${res.headers.get('content-type')})`);
       // /api/ops/smoke is mounted before the body parser and never reads a body
-      if (name === 'over the size limit' && !/webhook|interactions|^\/api\/ops\/smoke$/.test(r.path) && res.status !== 413 && res.status !== 404) fails.push(`${r.method} ${r.path}: a 150 KB body answered ${res.status}, not 413`);
+      if (name === 'over the size limit' && !/webhook|interactions|^\/api\/ops\/smoke$/.test(r.path) && res.status !== 413 && res.status !== 404) fails.push(`${r.method} ${r.path}: a ${Math.round(over / 1024)} KB body answered ${res.status}, not 413`);
     }
   }
   assert.deepEqual(fails, []);
