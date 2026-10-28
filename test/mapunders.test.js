@@ -106,3 +106,37 @@ test('mapRecord: a lead only at 50+ graded over 10+ matches with z by match at 2
   const spans = M.mapRecord([...rows.map(r => ({ ...r, span: '1' })), ...rows.slice(0, 5).map(r => ({ ...r, span: '1-2' }))]);
   assert.deepEqual(spans.cells.map(x => x.spanLabel), ['Map 1', 'Maps 1-2']);
 });
+
+// 10-27: Underdog listed Astralis vs fnatic twice (its own title at 16:30, a
+// PrizePicks-style "fnatic MAPS 1-2" at 16:00), so each leg was recorded twice
+test('duplicates: one app leg listed twice is voided after the first signal; one match counts once', () => {
+  const base = { status: 'graded', game: 'CS', appKey: 'UD', span: '1-2', be: 0.5618, outcome: 'win' };
+  const rows = [
+    { ...base, id: 'a1', player: 'ryu', team: 'Astralis', matchTitle: 'Astralis vs Fnatic', startTime: '2026-10-27T16:30:00Z', signalAt: '2026-10-27T11:00:00Z', anchor: 288.93 },
+    { ...base, id: 'a2', player: 'Jambo', team: 'Fnatic', matchTitle: 'Astralis vs Fnatic', startTime: '2026-10-27T16:30:00Z', signalAt: '2026-10-27T11:00:00Z', anchor: 288.93 },
+    { ...base, id: 'b1', player: 'ryu', team: 'Astralis', matchTitle: 'fnatic MAPS 1-2', startTime: '2026-10-27T16:00:00Z', signalAt: '2026-10-27T11:05:00Z', anchor: 289.95 },
+    { ...base, id: 'b2', player: 'jambo', team: 'fnatic', matchTitle: 'Astralis MAPS 1-2', startTime: '2026-10-27T16:00:00Z', signalAt: '2026-10-27T11:05:00Z', anchor: 289.95 },
+    // another app's leg is not a duplicate; the same player next day is not either
+    { ...base, id: 'c1', appKey: 'SL', player: 'ryu', team: 'Astralis', startTime: '2026-10-27T16:30:00Z', signalAt: '2026-10-27T12:00:00Z', anchor: 288.93 },
+    { ...base, id: 'd1', player: 'ryu', team: 'Astralis', matchTitle: 'Astralis vs MOUZ', startTime: '2026-10-28T16:30:00Z', signalAt: '2026-10-28T11:00:00Z', anchor: 290 },
+  ];
+  assert.deepEqual(M.duplicateRows(rows).map(r => r.id).sort(), ['b1', 'b2']);
+  const ids = M.matchIds(rows);
+  assert.equal(new Set(rows.slice(0, 5).map(r => ids.get(r))).size, 1, 'both listings and both teams are one match');
+  assert.notEqual(ids.get(rows[5]), ids.get(rows[0]));
+  const kept = rows.filter(r => !['b1', 'b2'].includes(r.id));
+  assert.equal(M.mapRecord(kept).cells.find(c => c.app === 'UD').matches, 2);
+});
+
+test('dedupeLegs: one leg per app and player within 3 hours, the app\'s own listing kept', () => {
+  const t = '2026-10-27T16:00:00Z', t2 = '2026-10-27T16:30:00Z';
+  const legs = [
+    { app: 'UD', game: 'CS', map: '1-2', player: 'ryu', line: 32.5, p: { lineSource: 'pp', startTime: t } },
+    { app: 'UD', game: 'CS', map: '1-2', player: 'Ryu', line: 32.5, p: { lineSource: 'ud', startTime: t2 } },
+    { app: 'PP', game: 'CS', map: '1-2', player: 'ryu', line: 32.5, p: { lineSource: 'pp', startTime: t } },
+    { app: 'UD', game: 'CS', map: '1-2', player: 'ryu', line: 30.5, p: { lineSource: 'ud', startTime: '2026-10-28T16:00:00Z' } },
+  ];
+  const out = M.dedupeLegs(legs);
+  assert.equal(out.length, 3);
+  assert.ok(!out.includes(legs[0]), 'the UD line read off the PrizePicks listing is dropped');
+});
