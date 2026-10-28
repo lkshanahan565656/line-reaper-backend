@@ -1,0 +1,22 @@
+name: diag-kalshiws
+on: { push: { branches: [diag-kalshiws] } }
+permissions: { contents: write }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: claude/project-thread-n1asys, path: app }
+      - uses: actions/checkout@v4
+        with: { ref: diag-kalshiws, path: diag }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd app && npm ci --omit=dev --no-audit --no-fund
+      - run: |
+          mkdir out
+          timeout 150 node diag/diag/ws.js app out || echo "script exit $?" >> out/err.txt
+          date -u > out/when.txt
+          cd out; git init -q; git checkout -q -b diag-kalshiws-out; git add -A
+          git -c user.email=d@lr -c user.name=diag commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-kalshiws-out
