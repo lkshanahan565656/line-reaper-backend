@@ -12,7 +12,7 @@
 // and unlike win/loss it needs no results feed.
 
 const path = require('path');
-const { createJsonFileStore } = require('./jsonstore');
+const { createJsonFileStore, USER_DELAY_MS } = require('./jsonstore');
 
 function createMemoryStore() {
   const rows = new Map();
@@ -52,9 +52,11 @@ function createPgStore(connectionString, table = 'ev_bets') {
   };
 }
 
-function createStoreFromEnv(env = process.env, { table = 'ev_bets', fileVar = 'EV_TRACK_FILE', file = 'ev-bets.json' } = {}) {
+// user: rows people write (published records, logged bets, keys), written
+// within seconds instead of on the bulk stores' 5-minute timer (jsonstore.js)
+function createStoreFromEnv(env = process.env, { table = 'ev_bets', fileVar = 'EV_TRACK_FILE', file = 'ev-bets.json', user = false } = {}) {
   if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL, table);
-  return createFileStore(env[fileVar] || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), file));
+  return createFileStore(env[fileVar] || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), file), user ? { delayMs: USER_DELAY_MS } : {});
 }
 
 // One bet per market side and book per game: a book dipping below the
