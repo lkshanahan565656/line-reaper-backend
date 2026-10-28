@@ -5096,7 +5096,7 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /pricing\nAllow: /leagues\nAllow: /lines\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /developers\nAllow: /pricing\nAllow: /leagues\nAllow: /lines\nAllow: /esports/research\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nDisallow: /embed/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 // ── LEAGUE PAGES (leagues.js) ──
 // /nfl ... /esports/dota2 and /leagues: public, server-rendered from the live
 // board and the strict public record, the same for everyone (the webhook's
@@ -5194,7 +5194,7 @@ app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async 
 });
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/pricing', '/learn', '/status', '/developers', '/leagues', '/lines', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/pricing', '/learn', '/status', '/developers', '/leagues', '/lines', '/esports/research', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -7712,6 +7712,112 @@ app.get('/lines/game/:id', (req, res) => {
 app.get('/lines/prop', (req, res) => {
   const days = lineHistDays(planOfReq(req));
   sendLinePage(req, res, lineProp(String(req.query.key || '').slice(0, 300), { pro: hasPro(req), kalshi: !!licenceOf(req).kalshi, days }), days);
+});
+// ─── ESPORTS PROP RESEARCH (esresearch.js) ────────────────────────────────────
+// /esports/research: every esports player prop on the pick'em apps with how
+// often the player beat that line before (LoL from Leaguepedia, Dota from
+// OpenDota, the other games from our own records only), splits by opponent
+// and map, and each app's past lines from our records. Research, not a bet:
+// no projections, no alerts, identical for everyone. ES_RESEARCH=off hides it.
+const esResearch = require('./esresearch');
+const ES_RESEARCH_ON = !/^(off|0|false|no)$/i.test(String(process.env.ES_RESEARCH || '').trim());
+const esResearchMaps = esResearch.createMapLogs({ fetchers: {
+  LOL: (player, team) => esResearch.fetchLolMaps(axios, player, team),
+  DOTA: async player => {
+    const id = await dotaAccountId(player);
+    return id ? esResearch.fetchDotaMaps(axios, id) : { maps: [], note: 'OpenDota lists no pro player by this name' };
+  },
+} });
+// every esports record, read into one index of past matches at most every 10 minutes
+const esResearchRecords = { at: 0, builtAt: null, index: { players: new Map(), entries: 0 }, building: null, error: null };
+const esResearchTrackers = () => [tracker, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, mapUndersTracker, mapUndersModelTracker, esSlipTracker];
+function esResearchIndex() {
+  const st = esResearchRecords;
+  if (st.building) return st.builtAt ? Promise.resolve(st.index) : st.building;
+  if (st.builtAt && Date.now() - st.at < 10 * 60e3) return Promise.resolve(st.index);
+  st.at = Date.now();
+  st.building = (async () => {
+    try {
+      const rows = [];
+      for (const t of esResearchTrackers()) {
+        try { for (const r of await t.list({ limit: 1e7 })) if (r.status !== 'open' && r.status !== 'void') rows.push(r); }
+        catch (e) { console.warn('Esports research: a record could not be read:', e.message); }
+        await new Promise(r => setImmediate(r));
+      }
+      st.index = esResearch.buildRecordIndex(rows);
+      st.builtAt = new Date().toISOString();
+      st.error = null;
+    } catch (e) { st.error = e.message; console.warn('Esports research:', e.message); }
+    finally { st.building = null; }
+    return st.index;
+  })();
+  return st.builtAt ? Promise.resolve(st.index) : st.building;
+}
+let esResearchBoardMemo = { at: -1, players: [] };
+function esResearchBoard() {
+  const c = propsBoardRows();
+  if (esResearchBoardMemo.at !== c.at) esResearchBoardMemo = { at: c.at, players: esResearch.boardPlayers((c.rows || []).filter(r => r.esports)) };
+  return { players: esResearchBoardMemo.players, builtAt: c.at ? new Date(c.at).toISOString() : null };
+}
+async function esResearchList(req) {
+  const index = await esResearchIndex();
+  const { players, builtAt } = esResearchBoard();
+  const counts = {};
+  for (const p of players) counts[p.key] = (index.players.get(p.key) || []).length;
+  const game = esResearch.gameOf(req.query.game) || '';
+  const q = String(req.query.q || '').slice(0, 40);
+  return { players, counts, game, q, builtAt, recordsBuiltAt: esResearchRecords.builtAt };
+}
+// one player's research; null when no app lists him and our records hold none of his lines
+async function esResearchPlayer(req) {
+  const game = esResearch.gameOf(req.params.game);
+  const name = String(req.params.player || '').trim().slice(0, 40);
+  if (!game || !name) return null;
+  const key = esResearch.playerKey(game, name);
+  const index = await esResearchIndex();
+  const board = esResearchBoard().players.find(p => p.key === key) || null;
+  const records = index.players.get(key) || [];
+  if (!board && !records.length) return null;
+  const player = board?.player || records[0].player, team = board?.team || records[0].team || '';
+  let log = null;
+  if (esResearch.GAMES[game].maps) {
+    // a slow source doesn't hold the page: past 12 s it renders from our records and says so
+    log = await Promise.race([esResearchMaps.get(game, player, team), new Promise(r => setTimeout(() => r({ status: 'busy' }), 12000).unref())]);
+  }
+  return esResearch.research({ game, player, board, records, log, mkey: req.query.m ? String(req.query.m).slice(0, 40) : null });
+}
+const esResearchOff = res => res.status(404).type('text/plain').send('Esports research is turned off on this server.');
+app.get('/esports/research', async (req, res) => {
+  if (!ES_RESEARCH_ON) return esResearchOff(res);
+  try { res.set('Cache-Control', 'private, max-age=60').type('html').send(esResearch.indexPage({ ...await esResearchList(req), origin: siteOrigin(req) })); }
+  catch (e) { console.warn('Esports research page:', e.message); res.status(500).type('text/plain').send('The research list could not be built just now. Try again in a minute.'); }
+});
+app.get('/esports/research/:game/:player', async (req, res) => {
+  if (!ES_RESEARCH_ON) return esResearchOff(res);
+  try {
+    const d = await esResearchPlayer(req);
+    if (!d) return res.status(404).type('text/plain').send('No app lists this player right now and our records hold none of his lines.');
+    res.set('Cache-Control', 'private, max-age=60').type('html').send(esResearch.playerPage(d, { origin: siteOrigin(req) }));
+  } catch (e) { console.warn('Esports research page:', e.message); res.status(500).type('text/plain').send('This page could not be built just now. Try again in a minute.'); }
+});
+app.get('/api/esports/research', async (req, res) => {
+  if (!ES_RESEARCH_ON) return res.status(404).json({ error: 'Esports research is turned off on this server.' });
+  try {
+    const d = await esResearchList(req);
+    const words = d.q.toLowerCase().split(/\s+/).filter(Boolean);
+    const players = d.players.filter(p => (!d.game || p.game === d.game) && words.every(w => `${p.player} ${p.team} ${p.opponent || ''}`.toLowerCase().includes(w)));
+    res.set('Cache-Control', 'private, max-age=60').json({ players: players.map(p => ({ ...p, records: d.counts[p.key] || 0, url: esResearch.playerHref(p.game, p.player) })), boardBuiltAt: d.builtAt, recordsBuiltAt: d.recordsBuiltAt,
+      sources: Object.fromEntries(Object.entries(esResearch.GAMES).map(([g, x]) => [g, x.maps ? x.source : 'our records only'])), mapLogs: esResearchMaps.stats(),
+      note: 'Research, not a bet. Hit rates are past results, not projections or picks.' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/esports/research/:game/:player', async (req, res) => {
+  if (!ES_RESEARCH_ON) return res.status(404).json({ error: 'Esports research is turned off on this server.' });
+  try {
+    const d = await esResearchPlayer(req);
+    if (!d) return res.status(404).json({ error: 'No app lists this player right now and our records hold none of his lines.' });
+    res.set('Cache-Control', 'private, max-age=60').json(d);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ──────────────────────────────
 // Today's largest moves since we first saw each market, in the last 3 hours
