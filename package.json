@@ -1,6 +1,6 @@
 {
   "name": "line-reaper-backend",
-  "version": "3.221.9",
+  "version": "3.223.8",
   "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
   "main": "server.js",
   "scripts": {
@@ -15,7 +15,8 @@
     "e2e:serve": "node e2e/harness.js",
     "e2e:record": "node e2e/record.js",
     "live-check": "node e2e/live-check.js",
-    "a11y": "node e2e/a11y.js"
+    "a11y": "node e2e/a11y.js",
+    "cold": "node e2e/cold.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

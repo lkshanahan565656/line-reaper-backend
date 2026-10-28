@@ -27,6 +27,26 @@ function verifyPassword(password, stored) {
   const got = crypto.scryptSync(password, Buffer.from(saltHex, 'hex'), want.length);
   return crypto.timingSafeEqual(want, got);
 }
+// the same two off the event loop (scrypt takes ~50 ms of CPU; a burst of
+// sign-ins must not stall every other request)
+const scryptAsync = (pw, salt, len) => new Promise((ok, no) => crypto.scrypt(pw, salt, len, (e, k) => (e ? no(e) : ok(k))));
+async function hashPasswordAsync(password) {
+  const salt = crypto.randomBytes(16);
+  return `scrypt$${salt.toString('hex')}$${(await scryptAsync(password, salt, 64)).toString('hex')}`;
+}
+// a stored hash to check against when there is no account, so a wrong email
+// costs the same time as a wrong password
+const DUMMY_HASH = hashPassword('line-reaper-no-such-account');
+async function verifyPasswordAsync(password, stored) {
+  const [kind, saltHex, hashHex] = String(stored || '').split('$');
+  if (kind !== 'scrypt' || !saltHex || !hashHex) return false;
+  const want = Buffer.from(hashHex, 'hex');
+  const got = await scryptAsync(password, Buffer.from(saltHex, 'hex'), want.length);
+  return crypto.timingSafeEqual(want, got);
+}
+// passwords and emails arrive as JSON: anything but a string is not one
+const PASSWORD_MAX = 256;
+const str = v => (typeof v === 'string' ? v : '');
 
 // ── tokens ──
 const b64u = buf => Buffer.from(buf).toString('base64url');
@@ -172,16 +192,17 @@ function createAuth({ store, secret, now = () => Date.now(), termsVersion = null
 
   async function signup(email, password, consent = {}) {
     await ready;
-    const e = String(email || '').trim().toLowerCase();
-    if (!EMAIL_RE.test(e)) throw httpError(400, 'Enter a valid email');
-    if (String(password || '').length < 8) throw httpError(400, 'Password must be at least 8 characters');
+    const e = str(email).trim().toLowerCase();
+    if (!EMAIL_RE.test(e) || e.length > 254) throw httpError(400, 'Enter a valid email');
+    if (str(password).length < 8) throw httpError(400, 'Password must be at least 8 characters');
+    if (str(password).length > PASSWORD_MAX) throw httpError(400, `Password must be at most ${PASSWORD_MAX} characters`);
     if (termsVersion) {
       if (consent.age !== true) throw httpError(400, `Confirm you are ${minAge} or older`);
       if (consent.terms !== true) throw httpError(400, 'Agree to the Terms of Service and Privacy Policy to continue');
     }
     if (await store.byEmail(e)) throw httpError(409, 'An account with that email already exists');
     const at = new Date(now()).toISOString();
-    const user = { id: crypto.randomUUID(), email: e, passwordHash: hashPassword(password), createdAt: at, plan: 'free' };
+    const user = { id: crypto.randomUUID(), email: e, passwordHash: await hashPasswordAsync(password), createdAt: at, plan: 'free' };
     if (termsVersion) user.consent = { termsVersion, acceptedAt: at, ageConfirmed: minAge, ip: consent.ip ? String(consent.ip).slice(0, 64) : null };
     await store.put(user);
     return { user: publicUser(user), token: signToken({ sub: user.id }, secret, now()) };
@@ -189,9 +210,11 @@ function createAuth({ store, secret, now = () => Date.now(), termsVersion = null
 
   async function login(email, password) {
     await ready;
-    const user = await store.byEmail(String(email || '').trim().toLowerCase());
-    // same message either way, so the endpoint can't be used to find accounts
-    if (!user || !verifyPassword(String(password || ''), user.passwordHash)) throw httpError(401, 'Wrong email or password');
+    const pw = str(password).slice(0, PASSWORD_MAX + 1);
+    const user = await store.byEmail(str(email).trim().toLowerCase());
+    // same message and the same work either way, so the endpoint can't be used to find accounts
+    const ok = await verifyPasswordAsync(pw, user ? user.passwordHash : DUMMY_HASH);
+    if (!user || !ok || pw.length > PASSWORD_MAX) throw httpError(401, 'Wrong email or password');
     return { user: publicUser(user), token: signToken({ sub: user.id }, secret, now()) };
   }
 
@@ -202,7 +225,7 @@ function createAuth({ store, secret, now = () => Date.now(), termsVersion = null
     if (!user) throw httpError(401, 'Log in first');
     const fresh = await store.get(user.id);
     if (!fresh) throw httpError(404, 'Account not found');
-    if (!verifyPassword(String(password || ''), fresh.passwordHash)) throw httpError(401, 'Wrong password');
+    if (!(await verifyPasswordAsync(str(password).slice(0, PASSWORD_MAX + 1), fresh.passwordHash))) throw httpError(401, 'Wrong password');
     if (!fresh.comp && PAID_STATUSES.has(fresh.planStatus) && !fresh.cancelAtPeriodEnd) {
       throw httpError(409, 'Cancel your subscription in Billing first, then delete the account');
     }
@@ -237,6 +260,6 @@ function httpError(status, message) {
 }
 
 module.exports = {
-  hashPassword, verifyPassword, signToken, verifyToken, createAuth, publicUser, isPro, httpError,
+  hashPassword, verifyPassword, hashPasswordAsync, verifyPasswordAsync, PASSWORD_MAX, signToken, verifyToken, createAuth, publicUser, isPro, httpError,
   createMemoryUserStore, createFileUserStore, createPgUserStore, createUserStoreFromEnv, TOKEN_TTL_MS,
 };

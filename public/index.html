@@ -1105,6 +1105,7 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
 .xa-empty { font-size:13px; color:#94a3b8; background:var(--card); border:1px dashed var(--border2); border-radius:10px; padding:14px; line-height:1.5; }
 .xa-card { background:var(--card); border:1px solid rgba(16,185,129,.35); border-radius:12px; margin-bottom:10px; overflow:hidden; }
 .xa-card.check { border-color:rgba(245,158,11,.4); }
+.xa-card.xa-ref { border-style:dashed; }
 .xa-head { display:flex; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border); }
 .xa-pct { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; color:var(--green); white-space:nowrap; }
 .xa-title { font-size:14px; font-weight:700; color:#f1f5f9; min-width:0; }
@@ -1767,7 +1768,7 @@ body::before { display:none !important; }
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center"><button class="help-btn" id="gsBtn" onclick="gsOpen()" title="Search every game, series, player, market and league (S or Ctrl+K)" aria-label="Search everything">SEARCH</button><button class="help-btn" id="linkBtn" onclick="lrShareScreen()" title="Copy a link to this screen (L)">LINK</button><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel" role="status">CONNECTING...</span></div></div>
       <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#8391a7;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
-      <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
+      <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PROPS LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
       <div id="acctBar" style="display:none;gap:6px;align-items:center;margin-top:2px"></div>
     </div>
@@ -1796,8 +1797,8 @@ body::before { display:none !important; }
 
 <div id="netBanner" style="display:none;margin:10px 16px 0;padding:12px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:10px;font-size:12px;line-height:1.7;color:#fca5a5;position:relative;z-index:5">
   <strong style="color:#f87171">NO NETWORK — every request from this page is failing.</strong><br>
-  <span style="color:#cbd5e1">If you opened this file inside the Claude app's preview, that sandbox blocks all internet access — <strong>download the file and open it in Chrome, or deploy it to Netlify</strong> like your live version.</span><br>
-  <span style="color:#94a3b8;font-size:11px">Backend check: open <span style="font-family:'JetBrains Mono',monospace;color:#e2e8f0">line-reaper-backend-production.up.railway.app/api/status</span> in a normal browser tab — if JSON comes back, the backend is alive. The esports tab only needs that backend — it never touches the paid Odds API.</span>
+  <span style="color:#cbd5e1">Check your connection, then reload. If other sites load fine, the server may be restarting after an update: give it a few minutes.</span><br>
+  <span style="color:#94a3b8;font-size:11px">Server status: <a href="/status" style="color:#e2e8f0">/status</a>.</span>
   <button type="button" aria-label="Hide this notice" onclick="this.parentElement.style.display='none'" style="position:absolute;top:8px;right:12px;cursor:pointer;color:#8391a7;font-weight:800;background:none;border:0;font-size:inherit">✕</button>
 </div>
 
@@ -1940,10 +1941,9 @@ body::before { display:none !important; }
     <button class="sport-chip" data-best="arb" onclick="bestKind('arb')">ARBS</button>
     <button class="sport-chip" data-best="middle" onclick="bestKind('middle')">MIDDLES</button>
   </div>
-  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center">
+  <div class="os-ctrl" style="margin:0 0 12px">
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sportsbook</span><select id="bestBookSel" onchange="bestSet('book',this.value)"><option value="all">All books</option></select></label>
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sort by</span><select id="bestSortSel" onchange="bestSet('sort',this.value)"><option value="rank">Best ranked</option><option value="edge">Biggest edge</option><option value="start">Starting soonest</option><option value="book">Sportsbook</option></select></label>
-    <label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label>
     <button class="sport-chip" onclick="myBooksToggle('bestMyBooks')">MY BOOKS</button>
   </div>
   <div class="lr-state-note" data-state-note="best"></div>
@@ -2012,6 +2012,11 @@ body::before { display:none !important; }
 </div>
 
 <div class="page" id="page-arb">
+  <div data-state-bar></div>
+  <div class="clv-info" style="border-left:3px solid var(--purple)">
+    <strong style="color:#e8e8e8">ARBS</strong> — sets of bets at different venues that pay back more than they cost whichever way the game ends, fees included. EXCHANGES checks Kalshi and Polymarket US against each other, and its sportsbook sections add FanDuel and BetRivers. PRICES shows each game line's price on both exchanges side by side. SPORTSBOOKS is the stake splitter for any set of prices.
+    <span style="color:#94a3b8;font-size:11px">A set is only placeable if every bet is at a venue open where you bet (CUSTOMIZE &gt; My state). Sets with a bet at a closed venue stay listed as <b>reference</b> and sort last. Prices move within minutes: check each one is still there before you place the next.</span>
+  </div>
   <div class="arb-modes">
     <button class="sport-chip active" id="arbModeEx" onclick="arbMode('exchanges')">EXCHANGES</button>
     <button class="sport-chip" id="arbModePrices" onclick="arbMode('prices')">PRICES</button>
@@ -2122,10 +2127,10 @@ body::before { display:none !important; }
 <div class="page" id="page-sharp">
   <div class="clv-info">
     <strong style="color:#c8c8c8">SHARP MONEY</strong> — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book.<br>
-    <span style="color:#444;font-size:10px">First moves appear ~60s after load (need 2 polls to detect change). Reloading resets history.</span>
+    <span style="color:var(--muted2);font-size:10px">First moves appear ~60s after load (need 2 polls to detect change). Reloading resets history.</span>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted2)">PIN · DK · FD · MGM · CZR · B365 · BOL · LVG</div>
+    <div id="sharpBooks" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted2)">PIN · DK · FD · MGM · CZR · B365 · BOL · LVG</div>
     <button class="refresh-chip" onclick="sharpMoves=[];sharpOddsSnapshot={};renderSharpFeed()">CLEAR</button>
   </div>
   <div id="sharpSignals" style="margin-bottom:14px"></div>
@@ -2158,7 +2163,6 @@ body::before { display:none !important; }
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center" title="Two sharp prices (Pinnacle and Kalshi) within 5 points of each other"><input type="checkbox" id="evAgreeOnly" onchange="evSet('agreeOnly', this.checked)"> two sharp sources agree</label>
     <input id="evSearch" placeholder="Search team, player or book" style="flex:1;min-width:160px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('search', this.value.trim().toLowerCase())">
   </div>
-  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center"><label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label></div>
   <div class="lr-state-note" data-state-note="ev"></div>
   <div id="evBookRow" class="row" style="margin:0 0 12px;flex-wrap:wrap;gap:6px"></div>
   <div id="evContent"></div>

@@ -588,9 +588,9 @@ function renderOdds() {
   else if (osUi.sort === 'hold') { const lo = g => Math.min(...g.markets.map(m => m.bestHold ?? 9)); games.sort((a, b) => lo(a) - lo(b)); }
   const c = d.counts || {};
   const upd = d.updated ? new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
-  document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> games</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
+  document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> game${games.length === 1 ? '' : 's'}</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
     (d.pro ? `<span><b>${c.plusEv ?? 0}</b> sides priced above the fair</span>` : `<span>Fair and EV: <a href="#" onclick="acctUpgrade();return false" style="color:#34d399">Pro</a></span>`) +
-    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '') + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
+    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '');
   const box = document.getElementById('osContent');
   if (!games.length) {
     box.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">${d.stale ? 'The price feeds have not answered in the last few minutes.' : lrState ? `No game in the next two days has a venue legal in ${escAttr(lrStateName())} priced yet.` : 'No game in the next two days is priced yet.'}</div></div>`;
@@ -3388,6 +3388,8 @@ const featuresReady = readFeatures().then(f => {
   if (f.oddsApi !== false) { apiKey = 'backend'; return; }
   layNoOddsApi = true;
   apiKey = '';
+  // no sportsbook feed: SHARP FEED reads the exchanges, so its book legend says so
+  const sb = document.getElementById('sharpBooks'); if (sb) sb.textContent = 'KALSHI · POLYMARKET · POLYMARKET US';
   // the line shop and best-line views read the same paid feed: say so instead of "load lines first"
   for (const id of ['shopContent', 'bestLineContent']) { const el = document.getElementById(id); if (el && /Load lines first/.test(el.textContent)) el.innerHTML = ODDS_API_OFF_HTML; }
   if (!Object.keys(layTabs).length) return;
@@ -4172,11 +4174,16 @@ function updateBackendStatus(online, pp = null, ud = null) {
   // DFS feeds switched off for the paid product: say nothing about them
   if (acct.paused?.includes('prizepicks') && acct.paused?.includes('underdog')) { el.textContent = ''; return; }
   if (online && pp != null) {
-    el.innerHTML = `PP <span style="color:${pp === 0 ? 'var(--red)' : 'var(--green)'}">${pp === 0 ? '✗ 0' : k(pp)}</span> · UD <span style="color:${ud > 0 ? 'var(--green)' : 'var(--red)'}">${ud > 0 ? k(ud) : '✗ 0'}</span>`;
+    // one total a buyer can read; the per-app split (and which app is down) in the tooltip
+    const down = [pp === 0 && 'PrizePicks', !(ud > 0) && 'Underdog'].filter(Boolean);
+    const all = (pp || 0) + (ud || 0);
+    el.title = `Player lines on the pick'em apps right now: PrizePicks ${(pp || 0).toLocaleString()} · Underdog ${(ud || 0).toLocaleString()}${down.length ? `. ${down.join(' and ')} not answering.` : ''}`;
+    el.innerHTML = `Props live: <span style="color:${down.length ? 'var(--red)' : 'var(--green)'}">${all ? k(all) : '✗ 0'}</span>`;
     el.style.color = 'var(--muted2)';
   } else {
-    el.textContent = online ? 'PP/UD LIVE' : 'PP/UD OFFLINE';
-    el.style.color = online ? 'var(--green)' : '#444';
+    el.title = '';
+    el.textContent = online ? 'PROPS LIVE' : 'PROPS OFFLINE';
+    el.style.color = online ? 'var(--green)' : 'var(--red)';
   }
 }
 
@@ -6839,22 +6846,20 @@ function lrSetState(v, { save = true } = {}) {
     if (on('page-best')) loadBest();
     if (on('page-odds')) oddsModeShow();
     if (on('page-results')) loadResults();
+    if (on('page-arb') && typeof renderXarbs === 'function') renderXarbs();
     if (on('page-props') && typeof renderPropsBoard === 'function') renderPropsBoard();
     if (on('page-esports') && typeof renderEsports === 'function') renderEsports();
   });
 }
-// the line under the picker: what the state allows and what we can't read there
+// the one thing the state bar on top does not say: venues legal there that this tab can't price
 function lrStateNotes(info, which) {
   document.querySelectorAll('[data-state-note]').forEach(el => {
     if (which && el.dataset.stateNote !== which) return;
-    if (!lrState || !info) { el.innerHTML = ''; return; }
-    const read = info.venues.filter(v => v.read).map(v => v.name), unread = info.venues.filter(v => !v.read);
-    el.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.2)">
-      <b style="color:#e2e8f0">Betting from ${escAttr(info.name)}.</b> ${escAttr(info.note)} Shown here: ${escAttr(read.join(', '))}.
-      ${unread.length ? `<span title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal there, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</span>` : ''} <span style="color:#8391a7">As of ${escAttr(info.asOf)}.</span></div>`;
+    const unread = lrState && info ? info.venues.filter(v => !v.read) : [];
+    el.innerHTML = unread.length ? `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px" title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal in ${escAttr(info.name)}, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</div>` : '';
   });
 }
-document.addEventListener('DOMContentLoaded', () => { lrStateSyncPickers(); lrStateLoad(); });
+document.addEventListener('DOMContentLoaded', () => { lrStateSyncPickers(); lrStateLoad().then(() => { if (typeof xarbUi !== 'undefined' && xarbUi.data) renderXarbs(); }); });
 
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
@@ -7859,7 +7864,7 @@ const XARB_WARNINGS = {
   'check both rules: resolution wording can differ': 'Matched by title: check both markets settle on the same thing.',
 };
 const xarbWarning = w => XARB_WARNINGS[w] || w;
-const xarbUsd = x => `$${(Math.round(x * 100) / 100).toFixed(2)}`;
+const xarbUsd = x => `$${(Math.round(x * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const xarbUi = { data: null, value: null, error: null, category: 'all', venues: 'all', timer: null, allNear: false, allBookMid: false };
 const XARB_NEAR_SHOWN = 8;
 let arbModeNow = 'exchanges';
@@ -8002,7 +8007,7 @@ function renderBig() {
       ${tile('BETTORS VS MARKET MAKERS', '', `${fr('bettor', 'Bettors')}<br>${fr('market maker', 'Market makers')}`, null)}
     </div>`;
   const bt = d.backtest;
-  const note = `<div class="xa-sub" style="margin:0 0 10px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line. PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</div>`;
+  const note = `<div class="xa-sub" style="margin:0 0 6px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line.</div><details class="xa-how" style="margin:0 0 10px"><summary>How each venue is priced</summary><p>PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</p></details>`;
   let body;
   if (d.off) body = tailEmpty('BIG MONEY IS OFF', 'BIG_MONEY=off is set on the server.');
   else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Pro shows each one, the money behind it and every venue's price.</span>`, 'Big money');
@@ -8066,7 +8071,7 @@ function renderGas() {
       <div style="font-size:20px;font-weight:800;margin-top:2px;color:${good == null ? '#e8e8e8' : good ? 'var(--green)' : '#f87171'}">${val}</div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div></div>`;
   const tiles = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">
-      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${r.graded} of 50 graded · not proven, no units shown${r.open ? ` · ${r.open} open` : ''}` : `${r.open || 0} open, graded the morning after`, null)}
+      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${r.graded < 50 ? `${r.graded} of 50 graded` : `${r.graded.toLocaleString()} graded`} · not proven, no units shown${r.open ? ` · ${r.open} open` : ''}` : `${r.open || 0} open, graded the morning after`, null)}
       ${tile('CLOSE OUR WAY', r.clvN ? pct(r.avgClv) : '—', r.clvN ? `average CLV over ${r.clvN}` : 'our side\'s last mid before trading stops', r.clvN ? r.avgClv > 0 : null)}
       ${oos.bets ? tile(oos.method === 'walk-forward' ? 'BACKTEST (WALK-FORWARD)' : 'BACKTEST (HELD OUT)', pct(oos.roi), `${oos.bets.toLocaleString()} bets, ${oos.losses ?? 0} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}; a backtest, not the live record`, null) : tile('BACKTEST', '—', 'No backtest on file on this server', null)}
     </div>`;
@@ -8447,6 +8452,17 @@ function xarbRestake(v) {
 const xarbVenue = l => escAttr(l.venueTitle || TAIL_VENUES[l.venue] || l.venue);
 const xarbPrice = l => (l.price != null ? tailC(l.price) : fmtAm(l.american));
 const xarbWhen = t => { const x = new Date(t); return Number.isFinite(x.getTime()) ? x.toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''; };
+// ARBS: a set can be placed only when every bet is at a venue open where the viewer bets
+// (CUSTOMIZE > My state). Any other set stays on screen, labelled reference.
+function xarbStateTag(legs) {
+  if (!lrState || !lrStateInfo) return { cls: '', tag: '', ref: false };
+  const st = (legs || []).map(l => ({ name: xarbVenue(l), s: lrVStatus(l.venue) }));
+  const no = st.filter(x => x.s === 'no'), unk = st.filter(x => x.s === 'unknown');
+  const nm = escAttr(lrStateName()), names = xs => [...new Set(xs.map(x => x.name))].join(' and ');
+  if (no.length) return { cls: ' xa-ref', ref: true, tag: `<div class="xa-warn">Reference only: ${names(no)} ${no.length === 1 ? 'is' : 'are'} not open to ${nm} residents, so this set can't be placed from ${nm}.</div>` };
+  if (unk.length) return { cls: '', ref: false, tag: `<div class="xa-warn">Not sure in ${nm}: check ${names(unk)} takes ${nm} residents before you bet.</div>` };
+  return { cls: '', tag: '', ref: false };
+}
 function xarbCard(a) {
   const S = arbState.stake, st = a.stakes || {};
   const legs = (a.legs || []).map((l, i) => {
@@ -8459,8 +8475,9 @@ function xarbCard(a) {
   }).join('');
   const warn = (a.warnings || []).map(w => `<div class="xa-warn">${escAttr(xarbWarning(w))}</div>`).join('');
   const meta = [XARB_KINDS[a.type] || escAttr(a.type), escAttr(a.category || 'other'), a.closeTime ? `closes ${escAttr(xarbWhen(a.closeTime))}` : ''].filter(Boolean).join(' · ');
-  return `<div class="xa-card${warn ? ' check' : ''}">
-    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${warn ? ' check' : ''}${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${warn}${legs}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>, split as above. Whichever way it ends you get back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b>, a profit of <b class="xa-pos" data-gain="${a.profitPct}">${xarbUsd(S * a.profitPct / 100)}</b>.${a.maxContracts != null ? ` At most ${a.maxContracts.toLocaleString()} contracts are on offer at these prices.` : ''}</div>
   </div>`;
@@ -8473,8 +8490,9 @@ function xarbBidCard(a) {
   const amt = i => { const pct = st.legs?.[i]?.pct; return `<span class="xa-amt"${pct != null ? ` data-pct="${pct}"` : ''}>${pct != null ? xarbUsd(S * pct / 100) : '—'}</span>`; };
   const where = `ask ${tailC(bid.ask)}${bid.bid != null ? `, best bid ${tailC(bid.bid)}` : ''}${bid.front ? ': your bid goes first in line' : ': your bid joins the best bid'}`;
   const meta = ['Bid, then hedge', escAttr(a.category || 'other'), a.closeTime ? `closes ${escAttr(xarbWhen(a.closeTime))}` : ''].filter(Boolean).join(' · ');
-  return `<div class="xa-card">
-    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     <div class="xa-leg"><span class="xa-step">1</span><span class="xa-venue">${xarbVenue(bid)}</span>
       <span class="xa-what">${tailLink(bid.url, `Place a limit bid: buy <b>${escAttr(bid.pick || '')}</b> at ${tailC(bid.price)}`)}<span class="xa-sub">${where}</span></span>${amt(0)}</div>
     <div class="xa-leg"><span class="xa-step">2</span><span class="xa-venue">${xarbVenue(take)}</span>
@@ -8494,8 +8512,9 @@ function xarbMiddleCard(a) {
   const meta = [`Middle · ${escAttr((a.league || '').toUpperCase())}`, `hits if ${what} is ${win}`, `about ${Math.round(a.hitProb * 1000) / 10}% of the time`].filter(Boolean).join(' · ');
   const legRow = (l, i) => `<div class="xa-leg"><span class="xa-step">${i + 1}</span><span class="xa-venue">${xarbVenue(l)}</span>
       <span class="xa-what">${tailLink(l.url, `Buy <b>${escAttr(l.pick || '')}</b> at ${xarbPrice(l)}`)}</span>${amt(i)}</div>`;
-  return `<div class="xa-card">
-    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${legRow(lo, 0)}${legRow(hi, 1)}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>. If ${what} lands ${win}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>. Otherwise one pays: <b data-ret="${a.missPct}">${xarbUsd(S * (1 + a.missPct / 100))}</b>. The +${a.evPct}% is the average over many of these, from an estimate of how often the game lands there.</div>
   </div>`;
@@ -8506,7 +8525,7 @@ function bookArbLeg(a, l, i) {
   const S = arbState.stake, pct = l.pct;
   const exch = l.venue === 'kalshi' || l.venue === 'polymarketus';
   const what = `${exch ? 'Buy' : 'Bet'} <b>${escAttr(l.pick || '')}</b> at ${exch ? `${tailC(l.price)} <span style="color:#8391a7">(${tailC(l.cost)} with fee)</span>` : fmtAm(l.american)}`;
-  const sub = exch ? (l.fill ? `${l.fill.atPrice.toLocaleString()} contracts on offer at this price` : 'size not read yet') : 'limit not in the feed';
+  const sub = exch ? (l.fill ? `${l.fill.atPrice.toLocaleString()} contract${l.fill.atPrice === 1 ? '' : 's'} on offer at this price` : 'size not read yet') : 'limit not in the feed';
   return `<div class="xa-leg"><span class="xa-step">${i + 1}</span><span class="xa-venue">${xarbVenue(l)}</span>
     <span class="xa-what">${tailLink(l.url, what)}<span class="xa-sub">${escAttr(sub)}</span></span>
     <span class="xa-amt" data-pct="${pct}">${xarbUsd(S * pct / 100)}</span></div>`;
@@ -8517,8 +8536,9 @@ function bookArbCard(a) {
   const meta = [escAttr((a.league || a.sport || '').toUpperCase()), a.subject ? escAttr(a.subject) : a.kind === 'ml' ? 'moneyline' : '', a.start ? `starts ${escAttr(xarbWhen(a.start))}` : ''].filter(Boolean).join(' · ');
   const bonus = a.window ? ` And if ${escAttr(a.windowText)}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>${a.hitProb != null ? ` (about ${Math.round(a.hitProb * 1000) / 10}% of the time)` : ''}.` : '';
   const size = a.maxStake != null ? ` The exchange holds enough for about ${xarbUsd(a.maxStake)} across both bets at these prices.` : '';
-  return `<div class="xa-card${warn ? ' check' : ''}">
-    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${warn ? ' check' : ''}${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${warn}${a.legs.map((l, i) => bookArbLeg(a, l, i)).join('')}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>, split as above. Whichever way it ends you get back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b>, a profit of <b class="xa-pos" data-gain="${a.profitPct}">${xarbUsd(S * a.profitPct / 100)}</b>.${bonus}${size}</div>
   </div>`;
@@ -8527,8 +8547,9 @@ function bookMiddleCard(a) {
   const S = arbState.stake;
   const warn = (a.warnings || []).map(w => `<div class="xa-warn">${escAttr(BOOK_ARB_WARN[w] || w)}</div>`).join('');
   const meta = [`Middle · ${escAttr((a.league || a.sport || '').toUpperCase())}`, `hits if ${escAttr(a.windowText || '')}`, `about ${Math.round(a.hitProb * 1000) / 10}% of the time`].join(' · ');
-  return `<div class="xa-card${warn ? ' check' : ''}">
-    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${warn ? ' check' : ''}${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${warn}${a.legs.map((l, i) => bookArbLeg(a, l, i)).join('')}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>. If ${escAttr(a.windowText || '')}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>. Otherwise one pays: <b data-ret="${a.missPct}">${xarbUsd(S * (1 + a.missPct / 100))}</b>, your worst case. The +${a.evPct}% is the average over many of these, from Pinnacle's odds of landing there.</div>
   </div>`;
@@ -8639,10 +8660,13 @@ function renderXarbs() {
   // bid plans lead only once they've shown they fill: live, 0 of 271 had by 10-13 17:49 (the hedge ran first)
   const bidsProven = br && br.filled >= 5 && br.fillRate >= 0.2;
   const bidFold = bids.length || br?.cancelled ? `<details class="xa-how"><summary>Bid, then hedge (${bids.length} open)${br && (br.filled || br.cancelled) ? ` · ${br.filled} of ${br.filled + br.unfilled + br.cancelled} filled so far` : ''}</summary>${bidSec}</details>` : '';
-  const bk = d.books || null, bkArbs = bk?.arbs || [], bkMids = bk?.middles || [];
-  const bookSecs = !bk ? '' : sec('SPORTSBOOK ARBS', bkArbs.length ? `${bkArbs.length} · FanDuel, BetRivers, Kalshi and Polymarket US, main and alternate lines and props` : 'none right now',
+  // placeable sets first; ones with a bet at a venue closed where the viewer bets go last, labelled reference
+  const byPlace = xs => xs.map((a, i) => [a, i, xarbStateTag(a.legs).ref ? 1 : 0]).sort((x, y) => x[2] - y[2] || x[1] - y[1]).map(x => x[0]);
+  const refNote = xs => (lrState && lrStateInfo && xs.length && xs.every(a => xarbStateTag(a.legs).ref) ? ` · none placeable from ${escAttr(lrStateName())}` : '');
+  const bk = d.books || null, bkArbs = byPlace(bk?.arbs || []), bkMids = byPlace(bk?.middles || []);
+  const bookSecs = !bk ? '' : sec('SPORTSBOOK ARBS', bkArbs.length ? `${bkArbs.length} · FanDuel, BetRivers, Kalshi and Polymarket US, main and alternate lines and props${refNote(bkArbs)}` : 'none right now',
       bookArbRecord(bk.record, 'arb') + (bkArbs.length ? bkArbs.slice(0, 20).map(bookArbCard).join('') : '<div class="xa-empty">No sportsbook pair locks a profit right now. Every main and alternate spread, total, moneyline and player prop at FanDuel and BetRivers is checked against the other book, Kalshi and Polymarket US once a minute.</div>'))
-    + sec('SPORTSBOOK MIDDLES', bkMids.length ? `${bkMids.length} · one bet always pays, both pay if it lands between the lines` : 'none right now',
+    + sec('SPORTSBOOK MIDDLES', bkMids.length ? `${bkMids.length} · one bet always pays, both pay if it lands between the lines${refNote(bkMids)}` : 'none right now',
       bookArbRecord(bk.record, 'middle') + (bkMids.length ? bkMids.slice(0, xarbUi.allBookMid ? bkMids.length : 8).map(bookMiddleCard).join('')
         + (bkMids.length > 8 ? `<button class="xa-more" onclick="xarbSet('allBookMid',${!xarbUi.allBookMid})">${xarbUi.allBookMid ? 'Top 8 only' : `Show all ${bkMids.length}`}</button>` : '')
         : '<div class="xa-empty">No middle worth it right now on Pinnacle\'s odds of the game landing between the lines.</div>'));
