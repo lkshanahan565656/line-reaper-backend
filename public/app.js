@@ -3276,7 +3276,10 @@ const BACKEND_URL = 'https://line-reaper-backend-production.up.railway.app';
 // paywall is off, none of this shows.
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-const acct = { token: lsGet('lr_token'), user: null, paywall: false, billing: false, mode: 'login' };
+// minutes after Pro that Plus sees an alert (plans.js ALERT_DELAY_MIN; a test keeps them equal)
+const ALERT_DELAY_MIN = 10;
+// want: the plan and period picked on /pricing ({ plan, interval }); choose: send a new account to /pricing to pick one
+const acct = { token: lsGet('lr_token'), user: null, paywall: false, billing: false, mode: 'login', want: null, choose: false };
 const _rawFetch = window.fetch.bind(window);
 window.fetch = (url, opts = {}) => {
   if (acct.token && typeof url === 'string' && url.startsWith(BACKEND_URL)) {
@@ -3306,7 +3309,8 @@ async function acctInit() {
     history.replaceState(null, '', location.pathname + location.hash);
     // the webhook can land a moment after Stripe redirects back
     for (let i = 0; i < 5 && acct.user && !acct.user.isPro; i++) { await new Promise(r => setTimeout(r, 2000)); await acctRefresh(); }
-    showToast(acct.user?.isPro ? 'Welcome to Line Reaper Pro' : 'Payment received. Pro unlocks as soon as Stripe confirms.', acct.user?.isPro ? '' : 'danger');
+    const name = acctPlanName(acct.user);
+    showToast(acct.user?.isPro ? `Welcome to Line Reaper ${name}` : 'Payment received. Your plan unlocks as soon as Stripe confirms.', acct.user?.isPro ? '' : 'danger');
     acctChanged();
   }
 }
@@ -3332,7 +3336,7 @@ function acctRender() {
     // no paywall: an account is for sync, so the bar opens its settings
     bar.innerHTML = `<button class="acct-btn" onclick="layOpen()" title="${escAttr(acct.user.email)}">ACCOUNT</button><button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else if (acct.user.isPro) {
-    bar.innerHTML = `<span class="acct-btn pro" title="${escAttr(acct.user.email)}">PRO</span>${acct.billing ? `<button class="acct-btn" onclick="acctPortal()">BILLING</button>` : ''}<button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
+    bar.innerHTML = `<span class="acct-btn pro" title="${escAttr(acct.user.email)}">${acctPlanName(acct.user).toUpperCase()}</span>${acct.billing ? `<button class="acct-btn" onclick="acctPortal()">BILLING</button>` : ''}<button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else {
     bar.innerHTML = `<button class="acct-btn pro" onclick="acctUpgrade()">UPGRADE</button><button class="acct-btn" onclick="acctLogout()" title="${escAttr(acct.user.email)}">LOG OUT</button>`;
   }
@@ -3354,14 +3358,14 @@ function acctOpen(mode, pitch) {
   email.required = !del;
   document.getElementById('acctPass').autocomplete = signup ? 'new-password' : 'current-password';
   document.getElementById('acctPass').placeholder = del ? 'Your password, to confirm' : 'Password (8+ characters)';
-  document.getElementById('acctPitch').textContent = pitch || (signup ? 'Pro shows the side and EV on every +EV esports pick, live alerts, and correlated slip pricing.'
+  document.getElementById('acctPitch').textContent = pitch || (signup ? 'Plus shows the side and EV on every +EV pick and every research tab in full. Pro adds live alerts, phone push and the full API.'
     : del ? `This permanently deletes ${acct.user?.email || 'your account'} and its settings. A paid plan has to be cancelled in Billing first. This cannot be undone.` : '');
   document.getElementById('acctConsent').style.display = signup ? '' : 'none';
   // ticked on the welcome screen this session: carry it over
   document.getElementById('acctAge').checked = document.getElementById('acctTerms').checked = signup && !!document.getElementById('wlAgree')?.checked;
   for (const id of ['acctAge', 'acctTerms']) acctTick(document.getElementById(id));
   document.getElementById('acctLegal').innerHTML = signup
-    ? (acct.billing ? 'Pro is a subscription that renews automatically until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
+    ? (acct.billing ? 'Plus and Pro are subscriptions that renew automatically, monthly or yearly, until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
     : del ? '' : 'By logging in you agree to the current <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.';
   document.getElementById('acctSwap').innerHTML = del ? '' : signup
     ? `Have an account? <a href="#" onclick="acctOpen('login');return false" style="color:#a78bfa">Log in</a>`
@@ -3401,14 +3405,23 @@ async function acctSubmit(e) {
     acctChanged();
     syncAfterSignIn();
     // a new account came here to buy, so send them straight to checkout
-    if (acct.mode === 'signup' && !acct.fromSync && !d.user.isPro && acct.billing) acctUpgrade();
+    if (acct.mode === 'signup' && !acct.fromSync && !d.user.isPro && acct.billing && (acct.want || acct.choose)) acctUpgrade();
   } catch { err.textContent = 'Could not reach the server'; }
 }
 
-async function acctUpgrade() {
+// 'Free', 'Plus' or 'Pro' for an account (publicUser.tier; an older server sends isPro only)
+const acctPlanName = u => ({ plus: 'Plus', pro: 'Pro' }[u?.tier || (u?.isPro ? 'pro' : 'free')] || 'Free');
+// Checkout for the plan and period picked on /pricing (?start=plus|pro&interval=year,
+// kept in acct.want). With none picked yet, /pricing is where they pick. A paid
+// account switches plan or period in Billing (Stripe's portal), never a second checkout.
+async function acctUpgrade(plan, interval) {
+  const want = plan ? { plan, interval: interval || 'month' } : acct.want;
   if (!acct.user) return acctOpen('signup');
   if (!acct.billing) { showToast('Checkout is not switched on yet', 'danger'); return; }
-  const r = await fetch(`${BACKEND_URL}/api/billing/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnUrl: location.href.split('?')[0] }) }).catch(() => null);
+  if (acct.user.isPro) { showToast('Change your plan in Billing'); return acctPortal(); }
+  if (!want) { location.href = '/pricing'; return; }
+  acct.want = null;
+  const r = await fetch(`${BACKEND_URL}/api/billing/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnUrl: location.href.split('?')[0], plan: want.plan, interval: want.interval }) }).catch(() => null);
   const d = await r?.json().catch(() => ({}));
   if (d?.url) location.href = d.url; else showToast(d?.error || 'Checkout failed', 'danger');
 }
@@ -3436,15 +3449,17 @@ async function acctDelete() {
 // what to do when someone locks into or out of Pro: reload what Pro changes
 function acctChanged() {
   if (alertState.source) { alertState.source.close(); alertState.source = null; }
+  if (alertState.poll) { clearTimeout(alertState.poll); alertState.poll = null; }
   alertState.locked = false;
   if (document.getElementById('esportsContent')?.offsetParent !== null || esportsState.picks?.length) loadEsports();
   if (evSource) { evSource.close(); evSource = null; evLive = false; }
   if (evActive) loadEv();
   if (tailActive) loadTail();
 }
-// a free user hitting a Pro feature
-function acctNeedPro(what) {
-  if (!acct.user) acctOpen('signup', `${what} is part of Line Reaper Pro. Create an account to start.`);
+// a free user hitting a paid feature (Plus and Pro), or a Plus member hitting
+// a Pro one (plan 'pro': live alerts and push): pick a plan on /pricing
+function acctNeedPro(what, plan = 'plus') {
+  if (!acct.user) { acct.choose = true; acctOpen('signup', `${what} ${plan === 'pro' ? 'is part of Line Reaper Pro' : 'comes with Line Reaper Plus and Pro'}. Create an account to start.`); }
   else acctUpgrade();
 }
 document.addEventListener('DOMContentLoaded', () => acctInit().finally(syncBoot));
@@ -4217,20 +4232,24 @@ function welcomeInit() {
   // and signup/login open the account form when accounts are on
   // a slip shared from PrizePicks, Underdog or Sleeper to the installed app
   if (/[?&]share_(text|title|url)=/.test(location.search)) { try { sessionStorage.setItem('lr_welcomed', '1'); } catch {} msShareIn(); return; }
-  const start = new URLSearchParams(location.search).get('start');
+  let start = new URLSearchParams(location.search).get('start');
   if (start) {
-    const qs = new URLSearchParams(location.search); qs.delete('start');
+    const interval = new URLSearchParams(location.search).get('interval');
+    const qs = new URLSearchParams(location.search); qs.delete('start'); qs.delete('interval');
     history.replaceState(null, '', location.pathname + (qs.toString() ? `?${qs}` : '') + location.hash);
     try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
     if (!acct.token && (start === 'signup' || start === 'login')) {
       lrStatus().then(s => { if (s.accounts?.authSecretSet) acctOpen(start); }).catch(() => {});
     }
-    // "Get Pro": signed in goes to checkout; signed out signs up first, and a
-    // new account goes on to checkout from acctSubmit
-    if (start === 'pro') {
+    // "Get Plus" / "Get Pro" (&interval=year for annual): signed in goes to
+    // checkout; signed out signs up first, and a new account goes on to
+    // checkout from acctSubmit
+    if (start === 'plus' || start === 'pro') {
+      acct.want = { plan: start, interval: interval === 'year' ? 'year' : 'month' };
+      start = 'pro';
       lrStatus().then(async s => {
         if (!s.accounts?.authSecretSet) return;
-        if (!acct.token) return acctOpen('signup', s.accounts.billing ? 'Create your account, then checkout opens for Pro.' : '');
+        if (!acct.token) return acctOpen('signup', s.accounts.billing ? `Create your account, then checkout opens for ${acct.want.plan === 'plus' ? 'Plus' : 'Pro'}${acct.want.interval === 'year' ? ' annual' : ''}.` : '');
         if (!s.accounts.billing) return;
         acct.billing = true;
         await acctRefresh();
@@ -5671,7 +5690,7 @@ async function loadSharpSignals() {
   let html = '';
   if (leads.length) html += card(`BET NOW · SOFT BOOKS STILL STALE (${leads.length})`, '#10b981', leads.map(e => line(e.text, `${escAttr((e.sport || '').toUpperCase())} · ${ago(e.ts)} ago`)).join(''));
   else if (d.lockedLeads) html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:10px;border:1px solid #f59e0b55;background:rgba(245,158,11,.06);border-radius:10px">
-      <div style="font-size:13px;color:#fcd34d"><b>${d.lockedLeads} soft books are behind a sharp move right now.</b> <span style="color:#cbd5e1">Pro shows which ones.</span></div>
+      <div style="font-size:13px;color:#fcd34d"><b>${d.lockedLeads} soft books are behind a sharp move right now.</b> <span style="color:#cbd5e1">Plus and Pro show which ones.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('Sharp leads')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
   if (steam.length) html += card('STEAM', '#fbbf24', steam.map(e => line(e.text, `${escAttr((e.sport || '').toUpperCase())} · ${ago(e.ts)} ago`)).join(''));
   if (rlm.length) html += card('REVERSE LINE MOVES · MONEY VS TICKETS', '#a78bfa', rlm.slice(0, 15).map(e => line(e.text, `${e.betsPct ?? '—'}% bets · ${e.moneyPct ?? '—'}% money`)).join(''));
@@ -6969,7 +6988,7 @@ function esStatEdge(p) {
 }
 
 function esRowButtons(p) {
-  if (p.locked) return `<button class="es-add" title="Pro shows which side to play" onclick="acctNeedPro('Seeing the picks')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>`;
+  if (p.locked) return `<button class="es-add" title="Plus and Pro show which side to play" onclick="acctNeedPro('Seeing the picks')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>`;
   const inSlip = esInSlip(p);
   return `<div style="display:flex;align-items:center;gap:4px">
     <button class="es-add ${inSlip ? 'in' : ''}" title="${inSlip ? 'Remove from slip' : 'Add to slip'}" onclick="esAdd(${p.__i})">${inSlip ? '✓' : '+'}</button>
@@ -7072,7 +7091,7 @@ function renderEsports() {
     return;
   }
   const lockBanner = esportsState.lockedCount ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid #f59e0b55;background:rgba(245,158,11,.06);border-radius:10px">
-      <div style="font-size:13px;color:#fcd34d"><b>${esportsState.lockedCount} +EV picks are locked.</b> <span style="color:#cbd5e1">Pro shows the side, the edge, and live alerts.</span></div>
+      <div style="font-size:13px;color:#fcd34d"><b>${esportsState.lockedCount} +EV picks are locked.</b> <span style="color:#cbd5e1">Plus shows the side and the edge; Pro adds live alerts.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('Seeing the picks')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>` : '';
   el.innerHTML = lockBanner + esStatsStrip(shown) + (esportsState.view === 'entry' ? esEntryHTML(shown)
     : esportsState.view === 'plays' ? esAutoSlipsHTML() + esPlaysHTML(picks)
@@ -7143,7 +7162,7 @@ async function loadEv() {
     if (!r.ok) { const err = new Error(String(r.status)); err.status = r.status; throw err; }
     const d = await r.json();
     evState.error = null;
-    Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
+    Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, live: d.live !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
     lrStateNotes(d.state, 'ev');
     renderEv();
   } catch (e) {
@@ -7151,7 +7170,8 @@ async function loadEv() {
     if (!evState.rows.length) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(evState.error)}</div></div>`;
     else renderEv();
   }
-  if (evActive && evState.pro) evConnect();
+  // the live stream is Pro's; Plus refreshes by polling below
+  if (evActive && evState.pro && evState.live) evConnect();
   // the stream drives refreshes; polling is the fallback when it's down
   if (evActive) evTimer = setTimeout(loadEv, evLive ? 120000 : 30000);
 }
@@ -7261,7 +7281,7 @@ function renderEv() {
   const rows = evFiltered();
   const locked = rows.filter(r => r.locked).length;
   const banner = locked ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid #f59e0b55;background:rgba(245,158,11,.06);border-radius:10px">
-      <div style="font-size:13px;color:#fcd34d"><b>${locked} +EV bets found.</b> <span style="color:#cbd5e1">Pro shows the book, the price and the edge.</span></div>
+      <div style="font-size:13px;color:#fcd34d"><b>${locked} +EV bets found.</b> <span style="color:#cbd5e1">Plus and Pro show the book, the price and the edge.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('The +EV screener')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>` : '';
   const age = evState.updated ? Math.round((Date.now() - Date.parse(evState.updated)) / 1000) : null;
   const strip = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:12px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
@@ -7898,7 +7918,7 @@ function tailPassRow(s) {
 function tailSignalsHTML() {
   const all = tailState.signals;
   const bets = all.filter(tailActionable), passed = all.filter(s => !tailActionable(s));
-  const banner = !tailState.pro ? tailLockBanner(`<b>${tailState.locked ? `${tailState.locked} signal${tailState.locked === 1 ? '' : 's'} from the last ${tailState.delay} minutes ${tailState.locked === 1 ? 'is' : 'are'} locked.` : 'Live signals are a Pro feature.'}</b> <span style="color:#cbd5e1">Free shows signals ${tailState.delay || 30}+ minutes late with wallets hidden. Pro gets them the moment the sharp bets.</span>`, 'Live tail signals') : '';
+  const banner = !tailState.pro ? tailLockBanner(`<b>${tailState.locked ? `${tailState.locked} signal${tailState.locked === 1 ? '' : 's'} from the last ${tailState.delay} minutes ${tailState.locked === 1 ? 'is' : 'are'} locked.` : 'Live signals come with Plus and Pro.'}</b> <span style="color:#cbd5e1">Free shows signals ${tailState.delay || 30}+ minutes late with wallets hidden. Pro gets them the moment the sharp bets.</span>`, 'Live tail signals') : '';
   const sizedNow = bets.filter(s => s.type !== 'exit').length;
   const strip = tailStrip([
     `<span style="color:${sizedNow ? '#10b981' : '#f1f5f9'};font-weight:700">${sizedNow} TO BET</span>`,
@@ -7972,7 +7992,7 @@ function tailBoardHTML() {
   const rows = [...(d.rows || [])].sort((a, b) => canTake(b) - canTake(a));
   const takeable = rows.filter(canTake).length;
   const locked = d.locked || 0;
-  const banner = !tailState.pro && locked ? tailLockBanner(`<b>${locked} more market${locked === 1 ? '' : 's'} with sharp money ${locked === 1 ? 'is' : 'are'} locked.</b> <span style="color:#cbd5e1">Pro shows every market, the wallets and where to take the same side.</span>`, 'The Sharp Board') : '';
+  const banner = !tailState.pro && locked ? tailLockBanner(`<b>${locked} more market${locked === 1 ? '' : 's'} with sharp money ${locked === 1 ? 'is' : 'are'} locked.</b> <span style="color:#cbd5e1">Plus and Pro show every market, the wallets and where to take the same side.</span>`, 'The Sharp Board') : '';
   const strip = tailStrip([
     `<span style="color:#f1f5f9;font-weight:700">${rows.length + locked} MARKETS</span>`,
     rows.length ? `<span style="color:${takeable ? '#10b981' : '#94a3b8'}">${takeable} YOU CAN TAKE${tailUS() ? ' IN THE US' : ''}</span>` : '',
@@ -8011,7 +8031,7 @@ function tailBoardHTML() {
 function tailTradersHTML() {
   const st = tailState.traderState;
   const cat = tailState.category !== 'all' ? tailState.category : null;
-  const banner = !tailState.pro ? tailLockBanner('<b>Wallets are hidden.</b> <span style="color:#cbd5e1">Pro shows who they are, their full record and every signal live.</span>', 'The sharp leaderboard') : '';
+  const banner = !tailState.pro ? tailLockBanner('<b>Wallets are hidden.</b> <span style="color:#cbd5e1">Plus and Pro show who they are, their full record and every signal live.</span>', 'The sharp leaderboard') : '';
   const strip = tailStrip([
     `<span style="color:#f1f5f9;font-weight:700">${tailState.traders.length} WALLETS</span>`,
     st ? `<span>${st.graded?.A || 0} A · ${st.graded?.B || 0} B</span><span>${st.scored} SCORED OF ${st.candidates}</span>${st.pending ? `<span>${st.pending} WAITING</span>` : ''}` : '',
@@ -8064,7 +8084,7 @@ function tailWhalesHTML() {
     d.freshRecord?.texas ? `<span style="color:#93c5fd" title="The same games graded at the cheapest price you could get from Texas when the buy went out (Kalshi or Polymarket US). Buys with no Texas market are left out.">FROM TEXAS ${freshLine(d.freshRecord.texas)}</span>` : '',
     d.freshRecord?.firstBet ? `<span style="color:#fbbf24" title="Wallets on their first bet: first trade within a day and this is their only market. Ahead on Sep 24 to Oct 24 (147 games, +20.5u), but it lost on six months it was not fitted on (Apr to Sep: 760 games, -12.2u, t -0.5). Not a bet; kept as a check. Counted from v3.153.0.">FIRST BET (NO EDGE) ${freshLine(d.freshRecord.firstBet)}</span>` : '',
   ]);
-  const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Pro shows them live.</span>', 'Whale flow') : '';
+  const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Plus and Pro show them live.</span>', 'Whale flow') : '';
   const note = tailWithheld('whales');
   if (!flow.length && !events.length) return note + banner + strip + tailEmpty('NO WHALES THIS HOUR', `Prints of ${tailUsd(d.minUsd || 5000)} or more on Kalshi and Polymarket show up here. The backend checks both every 30 seconds.`);
   const flowRows = flow.map(f => {
@@ -8180,7 +8200,7 @@ function renderXscreen() {
   const d = xscreenUi.data;
   if (xscreenUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(xscreenUi.error)); return; }
   if (!d) return;
-  if (!d.pro) { el.innerHTML = tailLockBanner(`<b>${d.count || 0} game lines priced on both exchanges right now.</b> <span style="color:#cbd5e1">Pro shows each side's price on Kalshi and Polymarket US, and which is cheaper.</span>`, 'The exchange price screen'); return; }
+  if (!d.pro) { el.innerHTML = tailLockBanner(`<b>${d.count || 0} game lines priced on both exchanges right now.</b> <span style="color:#cbd5e1">Plus and Pro show each side's price on Kalshi and Polymarket US, and which is cheaper.</span>`, 'The exchange price screen'); return; }
   const rows = (d.rows || []).filter(r => (xscreenUi.kind === 'all' || r.kind === xscreenUi.kind) && (xscreenUi.league === 'all' || r.league === xscreenUi.league));
   if (xscreenUi.sort === 'ev') rows.sort((a, b) => (b.maxEv ?? -9) - (a.maxEv ?? -9));
   const hasFair = (d.rows || []).some(r => r.sides.some(x => x.fair != null));
@@ -8263,7 +8283,7 @@ function renderBig() {
   const note = `<div class="xa-sub" style="margin:0 0 6px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line.</div><details class="xa-how" style="margin:0 0 10px"><summary>How each venue is priced</summary><p>PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</p></details>`;
   let body;
   if (d.off) body = tailEmpty('BIG MONEY IS OFF', 'BIG_MONEY=off is set on the server.');
-  else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Pro shows each one, the money behind it and every venue's price.</span>`, 'Big money');
+  else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Plus and Pro show each one, the money behind it and every venue's price.</span>`, 'Big money');
   else if (d.withheld?.length === 2) body = tailEmpty('EXCHANGE DATA WITHHELD', escAttr(d.note || ''));
   else if (!(d.plays || []).length) body = tailEmpty('NO BIG MONEY RIGHT NOW', `Bets show up here when ${usd(bigUi.minUsd)}+ hits a game or player line before it starts.${d.hiddenMarketMakers ? ` ${d.hiddenMarketMakers} market-maker bet${d.hiddenMarketMakers === 1 ? ' is' : 's are'} hidden.` : ''}`);
   else {
@@ -8332,7 +8352,7 @@ function renderGas() {
   const note = `<div class="xa-sub" style="margin:0 0 10px">The rule: ${escAttr((rule.states || []).join(', '))}; the side asked ${c(rule.minPrice || 0.9)} to ${c(rule.maxPrice || 0.98)}, ${rule.fromHours || 12} to ${rule.toHours || 19} hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $${rule.minDepthUsd || 100}+ resting at the price and the book no wider than ${c(rule.maxSpread || 0.05)} (a 95¢ ask over a 30¢ bid isn't a real favourite; those lost about 13% a bet in the backtest).${bt.allNights ? ` Backtest on every market ${escAttr(bt.from || '')} to ${escAttr(bt.to || '')}: picking the states each week from the weeks before went ${pct(oos.roi)} a bet, about one loss in 50, and only about two standard errors over zero, so the live record decides. Losses bunch: on ${escAttr(bt.worstNight?.day || '')} ${bt.worstNight?.losses} bets lost together (${pct(bt.worstNight?.roi)} on the night). The other states went ${pct(bt.otherStates?.roi)} and Kalshi's national gas market ${pct(bt.national?.roi)}, so neither is listed. Book depth isn't in the history; tonight's depth is shown live.` : ''} Price includes Kalshi's fee on a 100-contract order.</div>`;
   let plays;
   if (d.off) plays = tailEmpty('GAS LOCKS ARE OFF', 'GAS_LOCKS=off is set on the server.');
-  else if (!d.pro) plays = tailLockBanner(`<b>${d.count || 0} gas lock${d.count === 1 ? '' : 's'} open right now.</b> <span style="color:#cbd5e1">Pro shows each one with its price and the dollars resting there.</span>`, 'Gas locks');
+  else if (!d.pro) plays = tailLockBanner(`<b>${d.count || 0} gas lock${d.count === 1 ? '' : 's'} open right now.</b> <span style="color:#cbd5e1">Plus and Pro show each one with its price and the dollars resting there.</span>`, 'Gas locks');
   else if (d.withheld?.length) plays = tailEmpty('KALSHI DATA WITHHELD', escAttr(d.note || ''));
   else if (!(d.plays || []).length) plays = tailEmpty('NO PLAYS RIGHT NOW', 'They show up the evening before each day\'s markets settle, about 3pm to 10pm Eastern.');
   else {
@@ -8664,7 +8684,7 @@ function renderBest() {
       <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th><th></th></tr></thead>
       <tbody>${body}</tbody></table></div>` : !d.total && d.outOfState && lrState ? `${tailEmpty(`NOTHING AT A ${escAttr(String(d.state?.name || lrStateName()).toUpperCase())} VENUE RIGHT NOW`, `${d.outOfState} play${d.outOfState === 1 ? ' is' : 's are'} at venues not legal in ${escAttr(d.state?.name || lrStateName())} (CUSTOMIZE &gt; My state). Nothing is better than a bad bet.`)}<div style="text-align:center;margin:-8px 0 12px"><button class="lr-sbar-b" onclick="lrSetState('')">SHOW ALL STATES</button></div>`
       : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
-    ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Pro unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">GET PRO</button></div>` : ''}
+    ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Plus unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">UPGRADE</button></div>` : ''}
     <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
 }
 
@@ -8877,7 +8897,7 @@ function renderXarbs() {
   const note = tailWithheld('arbs');
   if (!d.pro) {
     const pcts = (d.arbs || []).slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
-    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}${d.books?.arbCount ? `, ${d.books.arbCount} sportsbook arb${d.books.arbCount === 1 ? '' : 's'}` : ''}${d.books?.middleCount ? `, ${d.books.middleCount} sportsbook middle${d.books.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
+    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}${d.books?.arbCount ? `, ${d.books.arbCount} sportsbook arb${d.books.arbCount === 1 ? '' : 's'}` : ''}${d.books?.middleCount ? `, ${d.books.middleCount} sportsbook middle${d.books.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Plus and Pro show each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
     return;
   }
   const all = [...(d.arbs || []), ...(d.near || []), ...(d.bids || [])];
@@ -8996,7 +9016,8 @@ function tailRecordHTML() {
 // The backend diffs every board refresh and streams events. The page shows a
 // toast, keeps a feed, and (if the user allows it) raises a desktop
 // notification so the tab can sit in the background.
-const alertState = { list: [], unread: 0, open: false, source: null, live: false };
+// delayMinutes: Plus sees the same alerts this late, polled (no stream); 0 for Pro
+const alertState = { list: [], unread: 0, open: false, source: null, live: false, delayMinutes: 0, poll: null };
 
 function alertText(e) {
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
@@ -9034,14 +9055,16 @@ function esRenderAlerts() {
   const color = k => k === 'edge' || k === 'gap' ? '#10b981' : k === 'move' ? '#fbbf24' : '#8391a7';
   if (alertState.locked) {
     el.innerHTML = `<div style="background:var(--card);border:1px solid #f59e0b55;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Live alerts are a Pro feature.</b> New price gaps and line moves, pushed the moment the board refreshes.</span>
-      <button class="acct-btn pro" onclick="acctNeedPro('Live alerts')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
+      <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Alerts come with Plus and Pro.</b> New price gaps and line moves: live on Pro, the same alerts ${ALERT_DELAY_MIN} minutes later on Plus.</span>
+      <button class="acct-btn pro" onclick="acctNeedPro('Alerts')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
     return;
   }
   el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
       <span style="font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700">ALERTS</span>
-      <span style="font-size:10px;color:${alertState.live ? '#10b981' : '#8391a7'}">${alertState.live ? '● LIVE' : '○ connecting'}</span>
+      ${alertState.delayMinutes > 0
+        ? `<span style="font-size:10px;color:#93c5fd">${alertState.delayMinutes} MIN DELAY (PLUS)</span><button class="sport-chip" style="font-size:10px;padding:3px 10px" onclick="acctNeedPro('Live alerts','pro')">LIVE WITH PRO</button>`
+        : `<span style="font-size:10px;color:${alertState.live ? '#10b981' : '#8391a7'}">${alertState.live ? '● LIVE' : '○ connecting'}</span>`}
       <button class="sport-chip" style="margin-left:auto;font-size:10px;padding:3px 10px" onclick="esToggleNotify()">${notifyOn ? 'DESKTOP OFF' : 'DESKTOP ON'}</button>
     </div>
     ${alertState.list.length ? alertState.list.slice(0, 30).map(e => `
@@ -9082,11 +9105,18 @@ function esOnAlert(e) {
 }
 
 async function esStartAlerts() {
-  if (alertState.source || typeof EventSource === 'undefined') return;
+  if (alertState.source || alertState.poll || typeof EventSource === 'undefined') return;
   try {
     const r = await fetch(`${BACKEND_URL}/api/esports/alerts?limit=30`);
-    if (r.status === 401 || r.status === 402) { alertState.locked = true; esRenderAlerts(); return; }   // Pro feature
-    if (r.ok) { alertState.list = (await r.json()).alerts || []; esRenderAlerts(); }
+    if (r.status === 401 || r.status === 402) { alertState.locked = true; esRenderAlerts(); return; }   // Plus and Pro
+    if (r.ok) {
+      const d = await r.json();
+      alertState.list = d.alerts || [];
+      alertState.delayMinutes = d.live === false ? d.delayMinutes || 0 : 0;
+      esRenderAlerts();
+      // Plus: no stream; the delayed list is read again every minute
+      if (d.live === false) { alertState.poll = setTimeout(() => { alertState.poll = null; esStartAlerts(); }, 60e3); return; }
+    }
   } catch { /* the stream below still works */ }
   // EventSource can't send headers, so the token rides in the query string
   const src = new EventSource(`${BACKEND_URL}/api/esports/stream${acct.token ? '?token=' + encodeURIComponent(acct.token) : ''}`);
@@ -9371,7 +9401,7 @@ function esLineRow(p, key) {
   const bookRow = B ? '' : `<div class="es-bookevs">${books || (p.locked ? '<span style="color:#f59e0b">Pro pick</span>' : '<span style="color:#7b8a9f">no book EVs: needs model input</span>')}</div>`;
   const sideWord = p.side ? (key ? esSideWord(p.side, key) : p.side === 'OVER' ? 'Over' : 'Under') : '—';
   const side = p.locked ? '' : `<div style="text-align:center"><span class="es-side ${p.side === 'OVER' ? 'over' : 'under'}">${escEs(sideWord)}<em>${p.prob != null ? Math.round(p.prob) + '%' : ''}</em></span>${p.predSource ? `<div class="es-src" style="color:${p.predSource === 'manual' ? '#a78bfa' : '#7b8a9f'}" title="${p.predSource === 'manual' ? 'Your model number' : 'Auto-predicted from HLTV/VLR stats'}">${p.predSource === 'manual' ? 'MANUAL' : 'AUTO'}</div>` : ''}</div>`;
-  const evTxt = p.locked && !B ? `<span class="es-lock" role="button" tabindex="0" onclick="acctNeedPro('Seeing the picks')" title="A +EV pick. Pro shows the side and the edge."><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>`
+  const evTxt = p.locked && !B ? `<span class="es-lock" role="button" tabindex="0" onclick="acctNeedPro('Seeing the picks')" title="A +EV pick. Plus and Pro show the side and the edge."><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>`
     : ev == null ? '—' : `${ev > 0 ? '+' : ''}${ev.toFixed(1)}%`;
   return `<div class="es-line${ev != null && ev >= 5 ? ' hot' : ''}">
     <div>${esRowButtons(p)}</div>
@@ -9466,7 +9496,7 @@ async function loadEsAutoSlips() {
 const ES_AS_FAIR = { h2h: 'H2H model', share: 'kill share', rounds: 'round model' };
 const esAsSide = (l, book) => book === 'PP' ? (l.side === 'OVER' ? 'More' : 'Less') : (l.side === 'OVER' ? 'Higher' : 'Lower');
 function esAutoSlipsHTML() {
-  if (esAsState.locked) return `<div class="es-as-note" role="button" tabindex="0" style="margin-bottom:12px;cursor:pointer;color:#f59e0b" onclick="acctNeedPro('Best slips')">BEST SLIPS: the best entry on each book is a Pro feature</div>`;
+  if (esAsState.locked) return `<div class="es-as-note" role="button" tabindex="0" style="margin-bottom:12px;cursor:pointer;color:#f59e0b" onclick="acctNeedPro('Best slips')">BEST SLIPS: the best entry on each book comes with Plus and Pro</div>`;
   const d = esAsState.data;
   if (!d) return '';
   if (!d.slips?.length) {
@@ -9961,7 +9991,7 @@ async function esCheckCorrelation(legs) {
     });
     if (seq !== esCorrSeq) return;                 // a newer slip replaced this one
     if (r.status === 404) { el.innerHTML = ''; return; }   // backend older than v3.12
-    if (r.status === 401 || r.status === 402) { el.innerHTML = `<span style="color:#f59e0b;cursor:pointer" role="button" tabindex="0" onclick="acctNeedPro('Correlated slip pricing')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> SERIES CHECK: same-series correlation pricing is a Pro feature</span>`; return; }
+    if (r.status === 401 || r.status === 402) { el.innerHTML = `<span style="color:#f59e0b;cursor:pointer" role="button" tabindex="0" onclick="acctNeedPro('Correlated slip pricing')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> SERIES CHECK: same-series correlation pricing comes with Plus and Pro</span>`; return; }
     const data = await r.json();
     if (!r.ok) { el.innerHTML = `<span style="color:#8391a7">Series check unavailable: ${escEs(data.error || r.status)}</span>`; return; }
     if (data.books) {
