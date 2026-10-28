@@ -8,7 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - run: |
+      - env:
+          # sent to /api/ops/heap and /api/ops/profile, which need it once TRACKER_ADMIN_TOKEN is set on Railway
+          ADMIN: ${{ secrets.TRACKER_ADMIN_TOKEN }}
+        run: |
+          H=(); [ -n "$ADMIN" ] && H=(-H "x-admin-token: $ADMIN")
           U=https://line-reaper-backend-production.up.railway.app
           echo "health:"; curl -s -m 20 $U/api/health | head -c 300; echo
           curl -s -m 30 $U/api/ops > ops.json
