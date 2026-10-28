@@ -1811,7 +1811,7 @@ body::before { display:none !important; }
   <div id="offBanner" class="off-banner" role="status" aria-live="polite" hidden>
     <strong id="offHead">OFFLINE.</strong>
     <span id="offText"></span>
-    <button type="button" class="off-retry" onclick="lrOffRetry()">TRY AGAIN</button>
+    <button type="button" class="off-retry" onclick="location.reload()">TRY AGAIN</button>
   </div>
 </header>
 
@@ -2351,7 +2351,6 @@ body::before { display:none !important; }
       <p><b>Computer (Chrome or Edge).</b> Click the install icon at the right end of the address bar, or INSTALL above when it shows.</p>
       <p><b>Offline.</b> The installed app keeps the last answer of each screen you open. When the network drops, those screens show again with every row marked with how old it is. They are never shown as live prices.</p>
     </details>
-    <div class="lay-row"><span class="lay-name">Push alerts</span><button class="lay-b" id="pushBtn" onclick="pushToggle()">TURN ON</button></div>
     <div class="lay-row"><span class="lay-name">Push alerts</span><button class="lay-b" id="pushBtn" onclick="pushToggle()">TURN ON</button></div>
     <div id="pushMore" style="display:none">
       <p style="margin:10px 0 2px">Alerts to get on this device. Everyone gets the same text for each alert.</p>

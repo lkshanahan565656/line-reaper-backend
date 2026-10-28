@@ -156,7 +156,7 @@ test('the server writes its version into the worker and never lets it be cached'
 test('the page: install steps, the offline banner, stamps and the Discord row are in place', () => {
   // the page and its script (public/app.js, served as /assets/app.<hash>.js)
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8') + fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
-  for (const t of ['id="offBanner"', 'role="status"', 'x-lr-cached', "s.className = 'lr-stamp'", 'may be stale', 'Add to Home Screen', 'Install app', 'id="pwaBar"', 'pwaBarHide(true)', 'onclick="lrOffRetry()"',
+  for (const t of ['id="offBanner"', 'role="status"', 'x-lr-cached', "s.className = 'lr-stamp'", 'may be stale', 'Add to Home Screen', 'Install app', 'id="pwaBar"', 'pwaBarHide(true)', 'class="off-retry" onclick="location.reload()"',
     "start === 'install'", 'id="pwaSteps"', 'id="layDiscordRow" hidden', 's.community?.discord']) {
     assert.ok(html.includes(t), t);
   }
