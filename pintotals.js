@@ -44,8 +44,7 @@ const DEFAULTS = {
   windowMs: 6 * 3600e3, // a source's start this close to Pinnacle's
 };
 
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2, r4 } = require('./mathutil');
 const mean = xs => xs.reduce((a, x) => a + x, 0) / xs.length;
 const sdOf = xs => { if (xs.length < 2) return null; const m = mean(xs); return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1)); };
 

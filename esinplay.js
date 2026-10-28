@@ -21,7 +21,7 @@ const { sameTeam } = require('./esmatch');
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
 const logit = p => Math.log(p / (1 - p));
 const sigmoid = z => 1 / (1 + Math.exp(-z));
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 
 // ── round-based maps (CS2 MR12 with MR3 overtime; Valorant first to 13, win by two) ──
 // P(team A wins the map from a:b) when A wins each round with probability q.

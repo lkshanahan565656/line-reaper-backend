@@ -37,7 +37,7 @@ const DEFAULTS = {
 const BACKTEST = { from: '2026-08-26', to: '2026-10-14', outOfSample: { method: 'walk-forward', bets: 1278, losses: 27, roi: 0.014, from: '2026-09-07' }, allNights: { bets: 2482, losses: 45, roi: 0.0185 }, otherStates: { bets: 1313, losses: 44, roi: 0.0029 }, national: { bets: 969, losses: 41, roi: 0.0052 }, worstNight: { day: '2026-09-02', losses: 8, roi: -0.127 } };
 
 const num = v => (v == null || v === '' ? null : Number(v));
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 const seriesOf = st => `KXAAAGASD${st}`;
 const stateOf = ticker => (String(ticker).match(/^KXAAAGASD([A-Z]{2})-/) || [])[1] || null;
 // all-in cost of one contract at `price` on an order of n contracts

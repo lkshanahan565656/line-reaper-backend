@@ -42,7 +42,7 @@ const MIN_N = 50;
 const CLOSE_MAX_AGE_MS = 20 * 60e3;
 const WINDOW_MIN = [2, 1440];
 const API = 'https://api.elections.kalshi.com/trade-api/v2';
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 const cents = x => Math.round(x * 100) / 100;
 
 // the series' fee schedule → the maker rate. Kalshi lists fee_type

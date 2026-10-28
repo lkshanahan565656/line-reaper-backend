@@ -39,7 +39,7 @@ function effectiveAmerican(askDollars, feePerContract = 0) {
   return decimalToAmerican(1 / cost);
 }
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { num } = require('./mathutil');
 
 // ── Kalshi ──
 // Newer responses carry `yes_ask_dollars: "0.5600"`; older ones integer cents.

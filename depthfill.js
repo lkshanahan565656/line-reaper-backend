@@ -29,7 +29,7 @@ const VENUES = {
   polymarketus: { rate: fees.SCHEDULES.polymarketus.taker.rate, roundCent: false },
 };
 const GEMINI_BOOK_URL = sym => `https://api.gemini.com/v1/book/${encodeURIComponent(sym)}`;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 
 // fee on n contracts at p
 function feeOf(n, p, { rate = 0.07, roundCent = true } = {}) {

@@ -26,7 +26,7 @@ const APPS = ['prizepicks', 'underdog', 'sleeper', 'pick6'];
 const BOOKS = ['pinnacle', 'fanduel', 'betrivers'];
 const UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35;
 const BET_LEAD_MS = 60 * 60e3;          // "bet time": the last read an hour before kickoff
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+const { toProb } = require('./mathutil');
 const num = v => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
 
 // ── reads → entries ──

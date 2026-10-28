@@ -27,7 +27,7 @@ const { consensusFor, CONSENSUS } = require('./sportprops');
 const CLOSE_FRESH_MS = 60 * 60e3;
 const KEEP_DAYS = 14;
 const SAVE_MS = 5 * 60e3;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 // a game's day in US Eastern, so a 9pm ET game sits on its own date
 const dayOf = t => new Date(t - 4 * 3600e3).toISOString().slice(0, 10);
 const keyOf = (sport, player, mkey, start) => `${sport}|${canonName(player)}|${mkey}|${start}`;

@@ -34,8 +34,7 @@ const evtrack = require('./evtrack');
 const closeboard = require('./closeboard');
 const venues = require('./venues');
 
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r2OrNull: r2, r4OrNull: r4 } = require('./mathutil');
 const american = d => (!(d > 1) ? null : d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)));
 
 // links never go on the public page (in US mode no polymarket.com, and a link

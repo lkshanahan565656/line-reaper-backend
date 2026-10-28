@@ -104,7 +104,7 @@ function optsFromEnv(env = process.env) {
 }
 
 // ── small helpers ──
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { num } = require('./mathutil');
 const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
 const r2 = x => round(x, 2);
 const sum = xs => xs.reduce((a, b) => a + b, 0);

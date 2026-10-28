@@ -75,7 +75,7 @@ const EXCHANGE_LEAGUES = {
 const PIN_SOCCER_LEAGUES = [...new Set(Object.values(EXCHANGE_LEAGUES).map(l => l.pinLeague).filter(Boolean))];
 const TITLES = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers', ...require('./xbooks').TITLES };
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { num } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const american = v => { const a = num(v); return a != null && Math.abs(a) >= 100 ? a : null; };
 
