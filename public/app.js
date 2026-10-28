@@ -6846,6 +6846,7 @@ function lrSetState(v, { save = true } = {}) {
     if (on('page-best')) loadBest();
     if (on('page-odds')) oddsModeShow();
     if (on('page-results')) loadResults();
+    if (on('page-arb') && typeof renderXarbs === 'function') renderXarbs();
     if (on('page-props') && typeof renderPropsBoard === 'function') renderPropsBoard();
     if (on('page-esports') && typeof renderEsports === 'function') renderEsports();
   });
@@ -6858,7 +6859,7 @@ function lrStateNotes(info, which) {
     el.innerHTML = unread.length ? `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px" title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal in ${escAttr(info.name)}, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</div>` : '';
   });
 }
-document.addEventListener('DOMContentLoaded', () => { lrStateSyncPickers(); lrStateLoad(); });
+document.addEventListener('DOMContentLoaded', () => { lrStateSyncPickers(); lrStateLoad().then(() => { if (typeof xarbUi !== 'undefined' && xarbUi.data) renderXarbs(); }); });
 
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
@@ -8451,6 +8452,17 @@ function xarbRestake(v) {
 const xarbVenue = l => escAttr(l.venueTitle || TAIL_VENUES[l.venue] || l.venue);
 const xarbPrice = l => (l.price != null ? tailC(l.price) : fmtAm(l.american));
 const xarbWhen = t => { const x = new Date(t); return Number.isFinite(x.getTime()) ? x.toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''; };
+// ARBS: a set can be placed only when every bet is at a venue open where the viewer bets
+// (CUSTOMIZE > My state). Any other set stays on screen, labelled reference.
+function xarbStateTag(legs) {
+  if (!lrState || !lrStateInfo) return { cls: '', tag: '', ref: false };
+  const st = (legs || []).map(l => ({ name: xarbVenue(l), s: lrVStatus(l.venue) }));
+  const no = st.filter(x => x.s === 'no'), unk = st.filter(x => x.s === 'unknown');
+  const nm = escAttr(lrStateName()), names = xs => [...new Set(xs.map(x => x.name))].join(' and ');
+  if (no.length) return { cls: ' xa-ref', ref: true, tag: `<div class="xa-warn">Reference only: ${names(no)} ${no.length === 1 ? 'is' : 'are'} not open to ${nm} residents, so this set can't be placed from ${nm}.</div>` };
+  if (unk.length) return { cls: '', ref: false, tag: `<div class="xa-warn">Not sure in ${nm}: check ${names(unk)} takes ${nm} residents before you bet.</div>` };
+  return { cls: '', tag: '', ref: false };
+}
 function xarbCard(a) {
   const S = arbState.stake, st = a.stakes || {};
   const legs = (a.legs || []).map((l, i) => {
@@ -8463,8 +8475,9 @@ function xarbCard(a) {
   }).join('');
   const warn = (a.warnings || []).map(w => `<div class="xa-warn">${escAttr(xarbWarning(w))}</div>`).join('');
   const meta = [XARB_KINDS[a.type] || escAttr(a.type), escAttr(a.category || 'other'), a.closeTime ? `closes ${escAttr(xarbWhen(a.closeTime))}` : ''].filter(Boolean).join(' · ');
-  return `<div class="xa-card${warn ? ' check' : ''}">
-    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${warn ? ' check' : ''}${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${warn}${legs}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>, split as above. Whichever way it ends you get back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b>, a profit of <b class="xa-pos" data-gain="${a.profitPct}">${xarbUsd(S * a.profitPct / 100)}</b>.${a.maxContracts != null ? ` At most ${a.maxContracts.toLocaleString()} contracts are on offer at these prices.` : ''}</div>
   </div>`;
@@ -8477,8 +8490,9 @@ function xarbBidCard(a) {
   const amt = i => { const pct = st.legs?.[i]?.pct; return `<span class="xa-amt"${pct != null ? ` data-pct="${pct}"` : ''}>${pct != null ? xarbUsd(S * pct / 100) : '—'}</span>`; };
   const where = `ask ${tailC(bid.ask)}${bid.bid != null ? `, best bid ${tailC(bid.bid)}` : ''}${bid.front ? ': your bid goes first in line' : ': your bid joins the best bid'}`;
   const meta = ['Bid, then hedge', escAttr(a.category || 'other'), a.closeTime ? `closes ${escAttr(xarbWhen(a.closeTime))}` : ''].filter(Boolean).join(' · ');
-  return `<div class="xa-card">
-    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     <div class="xa-leg"><span class="xa-step">1</span><span class="xa-venue">${xarbVenue(bid)}</span>
       <span class="xa-what">${tailLink(bid.url, `Place a limit bid: buy <b>${escAttr(bid.pick || '')}</b> at ${tailC(bid.price)}`)}<span class="xa-sub">${where}</span></span>${amt(0)}</div>
     <div class="xa-leg"><span class="xa-step">2</span><span class="xa-venue">${xarbVenue(take)}</span>
@@ -8498,8 +8512,9 @@ function xarbMiddleCard(a) {
   const meta = [`Middle · ${escAttr((a.league || '').toUpperCase())}`, `hits if ${what} is ${win}`, `about ${Math.round(a.hitProb * 1000) / 10}% of the time`].filter(Boolean).join(' · ');
   const legRow = (l, i) => `<div class="xa-leg"><span class="xa-step">${i + 1}</span><span class="xa-venue">${xarbVenue(l)}</span>
       <span class="xa-what">${tailLink(l.url, `Buy <b>${escAttr(l.pick || '')}</b> at ${xarbPrice(l)}`)}</span>${amt(i)}</div>`;
-  return `<div class="xa-card">
-    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${legRow(lo, 0)}${legRow(hi, 1)}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>. If ${what} lands ${win}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>. Otherwise one pays: <b data-ret="${a.missPct}">${xarbUsd(S * (1 + a.missPct / 100))}</b>. The +${a.evPct}% is the average over many of these, from an estimate of how often the game lands there.</div>
   </div>`;
@@ -8521,8 +8536,9 @@ function bookArbCard(a) {
   const meta = [escAttr((a.league || a.sport || '').toUpperCase()), a.subject ? escAttr(a.subject) : a.kind === 'ml' ? 'moneyline' : '', a.start ? `starts ${escAttr(xarbWhen(a.start))}` : ''].filter(Boolean).join(' · ');
   const bonus = a.window ? ` And if ${escAttr(a.windowText)}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>${a.hitProb != null ? ` (about ${Math.round(a.hitProb * 1000) / 10}% of the time)` : ''}.` : '';
   const size = a.maxStake != null ? ` The exchange holds enough for about ${xarbUsd(a.maxStake)} across both bets at these prices.` : '';
-  return `<div class="xa-card${warn ? ' check' : ''}">
-    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${warn ? ' check' : ''}${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${warn}${a.legs.map((l, i) => bookArbLeg(a, l, i)).join('')}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>, split as above. Whichever way it ends you get back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b>, a profit of <b class="xa-pos" data-gain="${a.profitPct}">${xarbUsd(S * a.profitPct / 100)}</b>.${bonus}${size}</div>
   </div>`;
@@ -8531,8 +8547,9 @@ function bookMiddleCard(a) {
   const S = arbState.stake;
   const warn = (a.warnings || []).map(w => `<div class="xa-warn">${escAttr(BOOK_ARB_WARN[w] || w)}</div>`).join('');
   const meta = [`Middle · ${escAttr((a.league || a.sport || '').toUpperCase())}`, `hits if ${escAttr(a.windowText || '')}`, `about ${Math.round(a.hitProb * 1000) / 10}% of the time`].join(' · ');
-  return `<div class="xa-card${warn ? ' check' : ''}">
-    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+  const sx = xarbStateTag(a.legs);
+  return `<div class="xa-card${warn ? ' check' : ''}${sx.cls}">
+    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>${sx.tag}
     ${warn}${a.legs.map((l, i) => bookArbLeg(a, l, i)).join('')}
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>. If ${escAttr(a.windowText || '')}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>. Otherwise one pays: <b data-ret="${a.missPct}">${xarbUsd(S * (1 + a.missPct / 100))}</b>, your worst case. The +${a.evPct}% is the average over many of these, from Pinnacle's odds of landing there.</div>
   </div>`;
@@ -8643,10 +8660,13 @@ function renderXarbs() {
   // bid plans lead only once they've shown they fill: live, 0 of 271 had by 10-13 17:49 (the hedge ran first)
   const bidsProven = br && br.filled >= 5 && br.fillRate >= 0.2;
   const bidFold = bids.length || br?.cancelled ? `<details class="xa-how"><summary>Bid, then hedge (${bids.length} open)${br && (br.filled || br.cancelled) ? ` · ${br.filled} of ${br.filled + br.unfilled + br.cancelled} filled so far` : ''}</summary>${bidSec}</details>` : '';
-  const bk = d.books || null, bkArbs = bk?.arbs || [], bkMids = bk?.middles || [];
-  const bookSecs = !bk ? '' : sec('SPORTSBOOK ARBS', bkArbs.length ? `${bkArbs.length} · FanDuel, BetRivers, Kalshi and Polymarket US, main and alternate lines and props` : 'none right now',
+  // placeable sets first; ones with a bet at a venue closed where the viewer bets go last, labelled reference
+  const byPlace = xs => xs.map((a, i) => [a, i, xarbStateTag(a.legs).ref ? 1 : 0]).sort((x, y) => x[2] - y[2] || x[1] - y[1]).map(x => x[0]);
+  const refNote = xs => (lrState && lrStateInfo && xs.length && xs.every(a => xarbStateTag(a.legs).ref) ? ` · none placeable from ${escAttr(lrStateName())}` : '');
+  const bk = d.books || null, bkArbs = byPlace(bk?.arbs || []), bkMids = byPlace(bk?.middles || []);
+  const bookSecs = !bk ? '' : sec('SPORTSBOOK ARBS', bkArbs.length ? `${bkArbs.length} · FanDuel, BetRivers, Kalshi and Polymarket US, main and alternate lines and props${refNote(bkArbs)}` : 'none right now',
       bookArbRecord(bk.record, 'arb') + (bkArbs.length ? bkArbs.slice(0, 20).map(bookArbCard).join('') : '<div class="xa-empty">No sportsbook pair locks a profit right now. Every main and alternate spread, total, moneyline and player prop at FanDuel and BetRivers is checked against the other book, Kalshi and Polymarket US once a minute.</div>'))
-    + sec('SPORTSBOOK MIDDLES', bkMids.length ? `${bkMids.length} · one bet always pays, both pay if it lands between the lines` : 'none right now',
+    + sec('SPORTSBOOK MIDDLES', bkMids.length ? `${bkMids.length} · one bet always pays, both pay if it lands between the lines${refNote(bkMids)}` : 'none right now',
       bookArbRecord(bk.record, 'middle') + (bkMids.length ? bkMids.slice(0, xarbUi.allBookMid ? bkMids.length : 8).map(bookMiddleCard).join('')
         + (bkMids.length > 8 ? `<button class="xa-more" onclick="xarbSet('allBookMid',${!xarbUi.allBookMid})">${xarbUi.allBookMid ? 'Top 8 only' : `Show all ${bkMids.length}`}</button>` : '')
         : '<div class="xa-empty">No middle worth it right now on Pinnacle\'s odds of the game landing between the lines.</div>'));
