@@ -666,6 +666,21 @@ const FLOWS = {
       const api = await p3.request.get(`${opts.base}/api/leaderboard?window=7d`);
       expect(api.ok() && Array.isArray((await api.json()).ranked), '/api/leaderboard did not answer');
     } finally { await p3.close(); }
+    // Kalshi fills: says plainly when this server can't connect Kalshi; when it can, a
+    // junk key gets a plain reason and nothing is saved (TEST DATA: a made-up key)
+    await page.locator('#msKalshi').waitFor({ timeout: 4000 });
+    await page.waitForFunction(() => !/Checking whether/.test(document.getElementById('msKalshi')?.innerText || ''), null, { timeout: 6000 });
+    const kal = await text(page, '#msKalshi');
+    expect(/Kalshi fills/.test(kal) && (/not switched on/.test(kal) || /CONNECT KALSHI/.test(kal)), `the Kalshi section says neither: "${kal.slice(0, 160)}"`);
+    if (await page.locator('#msKalshi button', { hasText: 'CONNECT KALSHI' }).count()) {
+      await page.locator('#msKalshi button', { hasText: 'CONNECT KALSHI' }).click();
+      await page.fill('#msKalKeyId', 'e2e-made-up-key-id');
+      await page.fill('#msKalPem', 'not a key');
+      await page.locator('#msKalshi button', { hasText: /^CONNECT$/ }).click();
+      await settle(page, w, opts, 300);
+      expect(/private key/i.test(await text(page, '#msKalshi')), 'a junk Kalshi key got no plain reason');
+      await page.locator('#msKalshi button', { hasText: 'CANCEL' }).click();
+    }
     // unpublish: the first tap asks, the second removes the page
     await page.locator('#msPub button', { hasText: 'UNPUBLISH' }).click();
     await settle(page, w, opts, 80);

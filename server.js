@@ -31,7 +31,7 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState } }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, kalshiLink: kalshiLinks ? kalshiLinks.stats() : { enabled: false, why: kalshiLinkWhyOff() } }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
 const profiler = require('./ops').createProfiler();
@@ -5206,7 +5206,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.221.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.222.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -9398,7 +9398,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.221.1',
+  version: '3.222.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -10248,7 +10248,13 @@ app.get('/r', widgetGate, async (req, res) => {
   catch (e) { res.status(500).set('Cache-Control', 'no-store').type('html').send('<!doctype html><meta charset="utf-8"><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">The list of records could not be read just now. Try again in a minute.</body>'); console.warn('Records index:', e.message); }
 });
 app.delete('/api/records/:handle', async (req, res) => {
-  try { const out = await pubRecords.unpublish(req.params.handle, recordKey(req)); pubForget(out.handle); res.set('Cache-Control', 'no-store').json(out); } catch (e) { sendErr(res, e); }
+  try {
+    const out = await pubRecords.unpublish(req.params.handle, recordKey(req));
+    pubForget(out.handle);
+    // an unpublished record stops reading its Kalshi account, and the key is dropped
+    if (kalshiLinks) await kalshiLinks.disconnect(out.handle).catch(e => console.warn('Kalshi link: disconnect:', e.message));
+    res.set('Cache-Control', 'no-store').json(out);
+  } catch (e) { sendErr(res, e); }
 });
 // whether a key manages a handle (the app checks its saved key on open)
 app.post('/api/records/:handle/check', async (req, res) => {
@@ -10256,6 +10262,73 @@ app.post('/api/records/:handle/check', async (req, res) => {
   const h = pubRecord.cleanHandle(req.params.handle).handle;
   const r = h && pubRecords.get(h);
   res.set('Cache-Control', 'no-store').json({ handle: h || null, exists: !!r, status: r?.status || null, owner: !!(h && pubRecords.owns(h, recordKey(req))), slips: r ? pubRecords.slipsOf(h).length : 0, bets: r ? pubRecords.betsOf(h).length : 0, listed: r ? !r.unlisted : null });
+});
+// ─── KALSHI LINK (kalshilink.js) ─────────────────────────────────────────────
+// A record's owner connects their Kalshi account with a READ-ONLY key; every
+// five minutes each account's new fills on a game line we follow go to the
+// record as "Kalshi (connected)" bets, graded like MY BETS (Pinnacle's close,
+// the final). On only with AUTH_SECRET (the key is sealed with it) and, on
+// Railway, DATABASE_URL (a file there is lost at every deploy). KALSHI_LINK=off
+// turns it off. The keys are never in the results backup.
+const kalshiLinkMod = require('./kalshilink');
+const KALSHI_LINK_ON = !!process.env.AUTH_SECRET && !/^(off|0|false|no)$/i.test(String(process.env.KALSHI_LINK || '').trim())
+  && (!!process.env.DATABASE_URL || !(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID));
+const kalshiLinkWhyOff = () => (KALSHI_LINK_ON ? null : !process.env.AUTH_SECRET ? 'AUTH_SECRET is not set on this server.'
+  : /^(off|0|false|no)$/i.test(String(process.env.KALSHI_LINK || '').trim()) ? 'KALSHI_LINK is off.' : 'DATABASE_URL is not set, so a saved key would be lost at the next deploy.');
+const kalshiLinks = KALSHI_LINK_ON ? kalshiLinkMod.createKalshiLinks({
+  store: createEvStoreFromEnv(process.env, { table: 'kalshi_links', fileVar: 'KALSHI_LINKS_FILE', file: 'kalshi-links.json' }),
+  secret: process.env.AUTH_SECRET, base: process.env.KALSHI_API_BASE || kalshiLinkMod.API_BASE,
+  // axios.get looked up per call (tests stub it); never the shared polite queue, which shares answers by URL
+  http: { get: (url, cfg) => axios.get(url, cfg) },
+}) : null;
+if (kalshiLinks) kalshiLinks.init().catch(e => console.warn('Kalshi link: store failed to initialise:', e.message));
+// a Kalshi ticker → the record bets its YES and NO are, from the line shop's game index
+function kalshiFillLookup() {
+  let big = null;
+  try { big = bigGames(); } catch { return () => null; }
+  const raw = new Map();
+  for (const [league, list] of Object.entries(freeBooksState.games || {})) for (const g of list || []) raw.set(String(g.id).replace(/^pin-/, ''), { g, league });
+  const toBet = (key, game) => {
+    const hit = key && raw.get(String(game.id).replace(/^pin-/, ''));
+    return hit ? kalshiLinkMod.betForKey(key, hit.g, hit.league) : null;
+  };
+  return ticker => {
+    const m = big?.rows?.get(`kalshi:${ticker}`);
+    if (!m) return null;
+    const yes = toBet(m.yes, m.game), no = toBet(m.no, m.game);
+    return yes || no ? { yes, no } : null;
+  };
+}
+async function pollKalshiLinks() {
+  if (!kalshiLinks) return null;
+  return kalshiLinks.pollAll({ lookup: kalshiFillLookup(), addBets: (h, list) => pubRecords.addVerifiedBets(h, list),
+    onAdded: h => { pubForget(h); gradePubRecords({ only: h, maxLegs: 600 }).then(() => pubForget(h)).catch(() => {}); } });
+}
+if (kalshiLinks) schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => pollKalshiLinks().catch(e => console.warn('Kalshi link: poll:', e.message)));
+async function kalshiOwner(req) {
+  await pubRecords.init();
+  const h = pubRecord.cleanHandle(req.params.handle).handle;
+  const r = h && pubRecords.get(h);
+  if (!r || r.status !== 'live') throw Object.assign(new Error('No published record with that handle.'), { status: 404 });
+  if (!pubRecords.owns(h, recordKey(req))) throw Object.assign(new Error('That key does not manage this record.'), { status: 403 });
+  if (!kalshiLinks) throw Object.assign(new Error(`Connecting Kalshi is not switched on here: ${kalshiLinkWhyOff()}`), { status: 503 });
+  return h;
+}
+app.get('/api/kalshi-link', (req, res) => res.set('Cache-Control', 'no-store').json({ enabled: !!kalshiLinks, why: kalshiLinkWhyOff(), scopes: ['read'],
+  note: 'Read-only keys only: a key that can trade or move money is refused and never saved.' }));
+app.get('/api/records/:handle/kalshi', async (req, res) => {
+  try { const h = await kalshiOwner(req); res.set('Cache-Control', 'no-store').json(await kalshiLinks.status(h)); } catch (e) { sendErr(res, e); }
+});
+// body: { keyId, privateKey }; checked with Kalshi (read-only) before anything is saved
+app.post('/api/records/:handle/kalshi', async (req, res) => {
+  try {
+    const h = await kalshiOwner(req);
+    const out = await kalshiLinks.connect(h, req.body?.keyId, req.body?.privateKey);
+    res.set('Cache-Control', 'no-store').status(201).json(out);
+  } catch (e) { sendErr(res, e); }
+});
+app.delete('/api/records/:handle/kalshi', async (req, res) => {
+  try { const h = await kalshiOwner(req); res.set('Cache-Control', 'no-store').json(await kalshiLinks.disconnect(h)); } catch (e) { sendErr(res, e); }
 });
 app.get('/api/records/:handle', widgetGate, async (req, res) => {
   try {
@@ -10945,7 +11018,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  alertLog, tgConnectOwner, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
+  alertLog, kalshiLinks, pollKalshiLinks, kalshiFillLookup, pubRecords, tgConnectOwner, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
   app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,

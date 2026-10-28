@@ -155,8 +155,9 @@ PAGES.privacy = {
 <tr><td>Subscription details (Stripe customer ID, plan, status, renewal date)</td><td>When you subscribe</td><td>To give you the features you pay for</td></tr>
 <tr><td>Technical data (IP address, browser type, pages and API addresses requested, times, errors)</td><td>Whenever you use the Service</td><td>To run, secure and fix the Service and to stop abuse</td></tr>
 <tr><td>Messages you send us</td><td>When you contact us</td><td>To answer you</td></tr>
+<tr><td>A read-only Kalshi API key (kept encrypted, never shown again) and the fills it reads: market, side, price, fee and time</td><td>Only if you connect Kalshi to a public record you published</td><td>To add your Kalshi fills to that record. Only the pick, price and time are shown on it, never contract counts or money. Disconnecting, or unpublishing the record, deletes the key</td></tr>
 </table>
-<p>We do <strong>not</strong> collect your card details (Stripe handles payment), your sportsbook or exchange logins, your bets on other platforms, your location beyond what an IP address shows, or any government ID.</p>
+<p>We do <strong>not</strong> collect your card details (Stripe handles payment), your sportsbook or exchange logins or passwords, your bets on other platforms (except Kalshi fills, if you connect a read-only key as above), your location beyond what an IP address shows, or any government ID. We never accept a Kalshi key that can trade or move money, and we never place a bet.</p>
 <p><strong>Stored on your device only.</strong> The app saves some settings in your browser's local storage: your login token, your layout, tool inputs, your unit size, and any bets you log in the bet tracker. These stay on your device and are not sent to us, except the login token, which proves who you are when the app talks to our server. Clearing your browser data removes them.</p>
 
 <h2 id="cookies">3. Cookies and tracking</h2>
