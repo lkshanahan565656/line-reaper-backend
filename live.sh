@@ -40,13 +40,13 @@ os.makedirs('out/p', exist_ok=True)
 pick=[]
 for g,n in want.items():
     gp=[x for x in ps if x['game']==g]
-    pick+=sorted(gp,key=lambda x:-x['records'])[:n-1]+[x for x in gp if x['player'] in ('Faker','Batyuk')][:1]
+    pick+=sorted(gp,key=lambda x:-x['records'])[:n-1]+[x for x in gp if x['player'] in ('Quid','Batyuk','Yatoro')][:1]
 for p in pick:
         g=p['game']; url=p['url']
         for kind,path in (('json','/api'+url),('html',url)):
             t=time.time()
             try:
-                r=urllib.request.urlopen(B+urllib.parse.quote(path), timeout=60); body=r.read(); code=r.status
+                r=urllib.request.urlopen(B+path, timeout=60); body=r.read(); code=r.status
             except Exception as e:
                 body=str(e).encode(); code='err'
             fn=f"out/p/{g}-{''.join(c for c in p['player'] if c.isalnum())}.{kind}"
