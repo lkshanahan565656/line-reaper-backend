@@ -1,0 +1,29 @@
+name: diag-rehearsal-soak
+on:
+  push:
+    branches: [diag-rehearsal-soak]
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          git clone -q --filter=blob:none https://github.com/${{ github.repository }} base && (cd base && git checkout -q fed147ce && npm ci --no-audit --no-fund --ignore-scripts >/dev/null)
+          git clone -q --filter=blob:none -b diag-rehearsal-head https://github.com/${{ github.repository }} head && (cd head && npm ci --no-audit --no-fund --ignore-scripts >/dev/null)
+          python3 grab.py && python3 seed.py data-base && python3 seed.py data-head
+      - name: soak 22 min, v3.220.0 and the merged head side by side
+        run: |
+          start() { (cd $1 && PORT=$2 LR_DATA_DIR=$GITHUB_WORKSPACE/data-$1 RAILWAY_ENVIRONMENT=production NODE_OPTIONS=--max-old-space-size=4096 node server.js > ../$1.log 2>&1 &) ; }
+          start base 4101; start head 4102
+          sample() { curl -s -m 30 localhost:$2/api/ops | python3 -c "import json,sys;j=json.load(sys.stdin);s=j.get('stores',{});print(json.dumps({'v':'$1','min':$3,'heapMb':j['memory']['heapMb'],'rssMb':j['memory']['rssMb'],'writes':s.get('writes'),'mbWritten':round((s.get('bytes') or 0)/1e6,1),'rows':s.get('rows'),'stalls':j.get('stalls',{}).get('count'),'worstStallMs':j.get('stalls',{}).get('worstMs'),'faults':(j.get('faults') or {}).get('unhandled')}))" || echo "{\"v\":\"$1\",\"min\":$3,\"error\":\"no answer\"}"; }
+          for i in $(seq 1 22); do sleep 60; sample base 4101 $i; sample head 4102 $i;
+            if [ $i = 10 ] || [ $i = 21 ]; then curl -s -m 60 "localhost:4102/api/ops/heap?s=20" | python3 -c "import json,sys;j=json.load(sys.stdin);print('heap profile min $i:', json.dumps({'sampledMb':j.get('sampledMb'),'top':j.get('self',[])[:8]}))" || true; fi
+          done
+          for v in base head; do echo "== $v status"; curl -s -m 30 localhost:$([ $v = base ] && echo 4101 || echo 4102)/api/status | python3 -c "
+          import json,sys; j=json.load(sys.stdin); u=j.get('upstream',{})
+          print('upstream requests',u.get('requests'),'failed',u.get('failed'),'429s',u.get('retried429'))
+          print('feeds: prizepicks',j['prizepicks']['count'],'underdog',j['underdog']['count'],'sleeper',j['sleeper']['count'],'freeBooks',json.dumps(j.get('freeBooks',{}).get('counts'))[:200])"; done
+          for v in base head; do echo "== $v log (counts by line)"; sed -E 's/[0-9]+/N/g' $v.log | sort | uniq -c | sort -rn | head -25; done
