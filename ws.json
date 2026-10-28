@@ -1,0 +1,81 @@
+{
+  "at": "2026-10-28T14:44:00.326Z",
+  "probes": [
+    {
+      "label": "no key",
+      "url": "wss://external-api-ws.kalshi.com/trade-api/ws/v2",
+      "result": "refused",
+      "status": 401,
+      "body": "{\"code\":\"token_authentication_failure\",\"message\":\"token authentication failure\"}",
+      "ms": 183
+    },
+    {
+      "label": "a key Kalshi never issued",
+      "url": "wss://external-api-ws.kalshi.com/trade-api/ws/v2",
+      "result": "refused",
+      "status": 401,
+      "body": "{\"code\":\"authentication_error\",\"message\":\"authentication_error\",\"details\":\"NOT_FOUND\"}",
+      "ms": 61
+    },
+    {
+      "label": "no key",
+      "url": "wss://api.elections.kalshi.com/trade-api/ws/v2",
+      "result": "refused",
+      "status": 401,
+      "body": "{\"code\":\"token_authentication_failure\",\"message\":\"token authentication failure\"}",
+      "ms": 112
+    },
+    {
+      "label": "a key Kalshi never issued",
+      "url": "wss://api.elections.kalshi.com/trade-api/ws/v2",
+      "result": "refused",
+      "status": 401,
+      "body": "{\"code\":\"authentication_error\",\"message\":\"authentication_error\",\"details\":\"NOT_FOUND\"}",
+      "ms": 92
+    }
+  ],
+  "log": [
+    "Kalshi stream: refused: handshake HTTP 401; trying again in 30 min"
+  ],
+  "module": {
+    "state": "refused",
+    "url": "external-api-ws.kalshi.com",
+    "asked": 1,
+    "tracked": 1,
+    "subscribed": 0,
+    "quotes": 0,
+    "cap": 1500,
+    "commandGapMs": 250,
+    "openedAt": null,
+    "heardAt": null,
+    "refusedUntil": "2026-10-28T15:14:00.886Z",
+    "lastError": "refused: handshake HTTP 401",
+    "messages": 0,
+    "tickers": 0,
+    "connects": 0,
+    "reconnects": 0,
+    "errors": 0
+  },
+  "sampleMarkets": [
+    {
+      "ticker": "KXNFLGAME-26NOV09BUFMIN-MIN",
+      "yes_bid_dollars": "0.4200",
+      "yes_ask_dollars": "0.4500"
+    },
+    {
+      "ticker": "KXNFLGAME-26NOV09BUFMIN-BUF",
+      "yes_bid_dollars": "0.5600",
+      "yes_ask_dollars": "0.5800"
+    },
+    {
+      "ticker": "KXNFLGAME-26NOV08TBCHI-TB",
+      "yes_bid_dollars": "0.2800",
+      "yes_ask_dollars": "0.3200"
+    },
+    {
+      "ticker": "KXNFLGAME-26NOV08TBCHI-CHI",
+      "yes_bid_dollars": "0.7000",
+      "yes_ask_dollars": "0.7100"
+    }
+  ]
+}
