@@ -7729,10 +7729,16 @@ const esResearchMaps = esResearch.createMapLogs({ fetchers: {
   },
 } });
 // every esports record, read into one index of past matches at most every 10 minutes
-const esResearchRecords = { at: 0, builtAt: null, index: { players: new Map(), entries: 0 }, building: null, error: null };
+const esResearchRecords = { at: 0, builtAt: null, usedAt: 0, index: { players: new Map(), entries: 0 }, building: null, error: null };
+// the heap is tight on Railway: the index is let go after 30 minutes with no visitor
+setInterval(() => {
+  const st = esResearchRecords;
+  if (st.builtAt && !st.building && Date.now() - st.usedAt > 30 * 60e3) Object.assign(st, { at: 0, builtAt: null, index: { players: new Map(), entries: 0 } });
+}, 10 * 60e3).unref();
 const esResearchTrackers = () => [tracker, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, mapUndersTracker, mapUndersModelTracker, esSlipTracker];
 function esResearchIndex() {
   const st = esResearchRecords;
+  st.usedAt = Date.now();
   if (st.building) return st.builtAt ? Promise.resolve(st.index) : st.building;
   if (st.builtAt && Date.now() - st.at < 10 * 60e3) return Promise.resolve(st.index);
   st.at = Date.now();
