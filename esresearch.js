@@ -340,7 +340,7 @@ function loleTeamMatches(events, team, n = 6) {
   return (events || []).filter(e => e?.type === 'match' && e.state === 'completed' && e.match?.id && (e.match.teams || []).some(t => loleTeamIs(t, team)))
     .sort((a, b) => Date.parse(b.startTime) - Date.parse(a.startTime)).slice(0, n);
 }
-function createLolesportsLog(http, { LOLE_API, LOLE_FEED, LOLE_HEADERS }, { schedTtlMs = 3 * 3600e3, pages = 10, matches = 6, pause = 350, now = () => Date.now(), sleep = t => new Promise(r => setTimeout(r, t)) } = {}) {
+function createLolesportsLog(http, { LOLE_API, LOLE_FEED, LOLE_HEADERS }, { schedTtlMs = 3 * 3600e3, pages = 25, matches = 10, pause = 350, now = () => Date.now(), sleep = t => new Promise(r => setTimeout(r, t)) } = {}) {
   let sched = { at: 0, events: [] };
   const games = new Map();   // game id → lines (finished games only; compact)
   const get = async (url, params, headers = LOLE_HEADERS) => { await sleep(pause); return http.get(url, { params, headers, timeout: 20000 }); };
