@@ -7657,7 +7657,7 @@ app.get('/api/odds-screen', (req, res) => {
   const league = /^[a-z0-9]+$/.test(String(req.query.league || '')) ? String(req.query.league) : null;
   const state = venues.stateOf(req.query.state);
   const screen = oddsScreenFor({ league, state, q: String(req.query.q || '').slice(0, 60), kalshiOk: !!lic.kalshi });
-  const body = { ...(pro ? screen : oddsScreen.stripPro(screen)), pro, state, stateInfo: state ? venues.stateInfo(state) : null };
+  const body = { ...(pro ? screen : oddsScreen.stripPro(screen)), pro, state, stateInfo: state ? venues.stateInfo(state) : null, priceAge: priceAgeNow() };
   res.json(regionSafe(body));
 });
 // ─── GLOBAL SEARCH (the app's SEARCH box, search.js) ─────────────────────────
@@ -7811,7 +7811,7 @@ app.get('/lines', (req, res) => {
 function sendLinePage(req, res, d, days) {
   try {
     const v = lineView(req);
-    const html = lineHist.marketPage({ ...d, market: lineMarketOf(req.query), side: String(req.query.side || ''), pro: hasPro(req), keepDays: lineHist.KEEP_DAYS, windowDays: days }, v);
+    const html = lineHist.marketPage({ ...d, market: lineMarketOf(req.query), side: String(req.query.side || ''), pro: hasPro(req), keepDays: lineHist.KEEP_DAYS, windowDays: days, ages: priceAgeNow() }, v);
     // an id or key with no saved prices is a 404 (the page says so in words)
     res.status(d.series.some(x => x.pts.length) ? 200 : 404).set('Cache-Control', 'private, max-age=60').type('html').send(html);
   } catch (e) { console.warn('Line history page:', e.message); res.status(500).type('text/plain').send('This chart could not be built just now. Try again in a minute.'); }
@@ -7905,8 +7905,83 @@ function shopReadAt() {
   const at = freeBooksState.gamesAt || null;
   const xb = xbooksState.at ? iso(xbooksState.at) : at;
   return { default: at, pinnacle: at, fanduel: at, betrivers: at, matchbook: xb, draftkings: xb, betmgm: xb, caesars: xb, bet365: xb, fanatics: xb, hardrock: xb, thescore: xb,
-    gemini: geminiState.at ? iso(geminiState.at) : at, polymarketus: pmusBooksState.at ? iso(pmusBooksState.at) : at, kalshi: xarbState.rows?.at ? iso(xarbState.rows.at) : null };
+    gemini: geminiState.at ? iso(geminiState.at) : at, polymarketus: pmusBooksState.at ? iso(pmusBooksState.at) : at, kalshi: kalshiStream?.covers() ? iso(Date.now()) : xarbState.rows?.at ? iso(xarbState.rows.at) : null };
 }
+// ─── KALSHI LIVE PRICES (kalshiws.js) ────────────────────────────────────────
+// KALSHI_WS=on with a Kalshi API key (KALSHI_WS_KEY_ID, KALSHI_WS_PRIVATE_KEY:
+// a read-only key is enough) keeps one socket on Kalshi's ticker channel for
+// the markets the polls already track: the arb scan's game contracts that
+// match an odds-screen game, then the +EV books' game winners. Streamed
+// prices are written onto those polled rows in place every 2 s, so the odds
+// screen, the shopper, the +EV books and BEST PLAYS read them with no new
+// copies. The polls never stop: with the socket down they are the price.
+const kalshiWs = require('./kalshiws');
+const KALSHI_WS_ON = envOn('KALSHI_WS');
+const kalshiWsId = String(process.env.KALSHI_WS_KEY_ID || '').trim();
+const kalshiWsPem = KALSHI_WS_ON ? kalshiWs.pemFromEnv(process.env.KALSHI_WS_PRIVATE_KEY) : null;
+const kalshiStreamNote = !KALSHI_WS_ON ? 'off (KALSHI_WS)' : !kalshiWsId ? 'off: KALSHI_WS_KEY_ID is not set' : !kalshiWsPem ? 'off: KALSHI_WS_PRIVATE_KEY is missing or not a private key' : null;
+const kalshiStream = kalshiStreamNote ? null : kalshiWs.createKalshiStream({
+  keyId: kalshiWsId, pem: kalshiWsPem, url: process.env.KALSHI_WS_URL || kalshiWs.WS_URL, WebSocket: require('ws'),
+  maxMarkets: parseInt(process.env.KALSHI_WS_MAX_MARKETS, 10) || kalshiWs.DEFAULTS.maxMarkets, log: m => console.log(m),
+});
+let kalshiStreamRows = new Map(), kalshiStreamKey = '';
+// what the stream follows: re-read when either poll brings new rows
+function kalshiStreamTrack() {
+  if (!kalshiStream) return;
+  const key = `${xarbState.rows?.at || 0}|${exchangeState.updated || ''}|${freeBooksState.gamesAt || ''}`;
+  if (key === kalshiStreamKey) return;
+  kalshiStreamKey = key;
+  let matched = [];
+  try { matched = [...bigGames().rows.values()].filter(x => x.row?.exchange === 'kalshi' && x.row.tradable).map(x => x.row); } catch (e) { console.warn('Kalshi stream: games:', e.message); }
+  const books = (exchangeState.rows || []).filter(r => r.exchange === 'kalshi');
+  kalshiStreamRows = kalshiWs.rowsByTicker(matched, books);
+  kalshiStream.track([...matched, ...books].map(r => r.id));
+}
+function kalshiStreamApply() {
+  if (!kalshiStream) return;
+  const changed = kalshiStream.takeDirty();
+  if (!changed.length) return;
+  kalshiWs.patchRows(kalshiStreamRows, changed, kalshiStream);
+  if (bigState.games) kalshiWs.patchBets(bigState.games, changed, bigMoney.exchangeVenue);
+}
+if (kalshiStream) {
+  kalshiStream.start();
+  setInterval(() => { try { kalshiStreamTrack(); kalshiStreamApply(); } catch (e) { console.warn('Kalshi stream:', e.message); } }, 2000).unref();
+}
+const kalshiStreamStatus = () => (kalshiStream ? { on: true, ...kalshiStream.status() } : { on: false, state: 'off', note: kalshiStreamNote });
+
+// ─── PRICE AGE (priceage.js) ─────────────────────────────────────────────────
+// Each venue's last good read, for the age shown beside its prices on ODDS
+// SCREEN, SHOP, BEST PLAYS and /lines. Kalshi's is the stream's while it is
+// live and holds every tracked market, else the minute poll's.
+const priceAge = require('./priceage');
+let priceAgeMemo = { at: 0, body: null };
+function priceAgeNow() {
+  const t = Date.now();
+  if (priceAgeMemo.body && t - priceAgeMemo.at < 2000) return priceAgeMemo.body;
+  const pin = freeBooksState.gamesAt || null, xb = xbooksState.at || null;
+  const streamed = !!kalshiStream?.covers();
+  const p6 = Math.max(0, ...Object.values(pick6.readTimes() || {}).map(x => Date.parse(x) || 0)) || null;
+  const nm = k => venues.NAMES?.[k] || k;
+  const list = [
+    { key: 'pinnacle', at: pin, staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'fanduel', at: pin, staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'betrivers', at: pin, staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'kalshi', at: streamed ? kalshiStream.heardAt() : xarbState.rows?.at || null, staleMs: streamed ? 30e3 : 3 * 60e3, via: streamed ? 'stream' : 'poll' },
+    { key: 'polymarketus', at: pmusBooksState.at || null, staleMs: 6 * 60e3 },
+    { key: 'gemini', at: geminiState.at || null, staleMs: GEMINI_MAX_AGE_MS },
+    { key: 'matchbook', at: xb, staleMs: XBOOKS_MAX_AGE_MS },
+    ...['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore'].map(key => ({ key, at: xb, staleMs: XBOOKS_MAX_AGE_MS })),
+    ...(TAIL_REGION === 'us' ? [] : [{ key: 'polymarket', at: xarbState.rows?.at || null, staleMs: 3 * 60e3 }]),
+    { key: 'prizepicks', at: ppState.fullOkAt || null, staleMs: 45 * 60e3 },
+    { key: 'underdog', at: cache.underdog.updated || null, staleMs: 10 * 60e3 },
+    { key: 'sleeper', at: cache.sleeperSports.updated || cache.sleeper.updated || null, staleMs: 10 * 60e3 },
+    { key: 'pick6', at: p6, staleMs: 30 * 60e3 },
+  ].map(v => ({ ...v, name: nm(v.key) }));
+  priceAgeMemo = { at: t, body: priceAge.build(list, t) };
+  return priceAgeMemo.body;
+}
+app.get('/api/price-age', (req, res) => res.set('Cache-Control', 'no-store').json(priceAgeNow()));
 const shopKey = () => `${Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS ? freeBooksState.gamesAt : ''}|${xarbState.rows?.at || 0}`;
 // After each free-books read (the 40-second chain): the quotes are rebuilt one
 // league at a time with a yield between, so no request waits on a long block.
@@ -8692,7 +8767,7 @@ app.get('/api/props/shop', (req, res) => {
   // the fair, EV and middles are Pro, and a Kalshi-backed fair needs its licence
   if (!pro || !kalshiOk) page = page.map(appShop.redactShop);
   res.json({ rows: page, total: rows.length, offset, limit, pro, counts: { sports, rows: shopBoard().length, books: {} },
-    middles: rows.filter(r => r.middles.length).length, minGap, updated: new Date(shopCache.at).toISOString(),
+    middles: rows.filter(r => r.middles.length).length, minGap, updated: new Date(shopCache.at).toISOString(), priceAge: priceAgeNow(),
     note: 'Research: on the recorded boards the softest number won 52.6% at PrizePicks (589 legs) vs its 55.0% break-even. Not a play until its own record clears 50 graded live.' });
 });
 
@@ -9412,8 +9487,16 @@ app.get('/api/best', async (req, res) => {
       plays,
     // ?state=TX: only plays at venues a resident there can use (venues.js)
     }, { limit: Math.min(parseInt(req.query.limit) || 300, 500), venueOk: venues.stateOf(req.query.state) ? venues.legalIn(req.query.state) : null });
+    // when each play's price was read: its own time where the play carries
+    // one, else the read its list was built from (the age shown on the row)
+    const builtAt = { esportsEdge: esportsBoard.state?.updated, exchangeValue: xvalueState.updated, arb: xarbState.updated, middle: xarbState.updated,
+      sportsProp: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null };
+    for (const r of out.rows) {
+      r.priceAt = r.at || builtAt[r.kind] || null;
+      r.venueKeys = String(r.venue || '').split(' + ').map(venues.keyOf).filter(Boolean);
+    }
     const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION,
-      state: venues.stateInfo(req.query.state), outOfState: out.outOfState };
+      state: venues.stateInfo(req.query.state), outOfState: out.outOfState, priceAge: priceAgeNow() };
     // free preview: everyone sees the same top plays (the alert is the same for all), Pro sees the whole list
     const preview = out.rows.slice(0, BEST_FREE_PREVIEW);
     res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: preview, locked: out.total - preview.length }));
@@ -9534,6 +9617,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   propHistory: { series: propHistory.size(), points: propHistory.points(), observedAt: propHistoryState.observedAt, markets: propHistoryState.markets, ms: propHistoryState.ms, error: propHistoryState.error },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
+  kalshiStream: kalshiStreamStatus(),
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
   // Gemini Predictions (geminibooks.js): events read, games per sport, how many sit on Pinnacle's games after the main-line cut
   gemini: { enabled: geminiState.enabled, events: geminiState.events, errors: geminiState.errors, updated: geminiState.updated, ms: geminiState.ms,

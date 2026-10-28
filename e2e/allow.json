@@ -87,6 +87,10 @@
     {
       "key": "^/api/lines(/|\\?|$)",
       "why": "new in v3.215.0 (line history, linehist.js): the recording predates it, so the offline server answers from its own 30-day archive, seeded with the recording's own game histories; the line history flow downloads the CSV and JSON, and linehist tests check the rows"
+    },
+    {
+      "key": "^/api/price-age$",
+      "why": "new in v3.225.0 (price age beside every venue, priceage.js): the recording predates it, so the offline server answers from its own read times (none offline, so every chip reads — and greys)"
     }
   ],
   "mustHaveData": [
