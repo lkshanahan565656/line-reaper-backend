@@ -539,7 +539,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.223.19');
+  assert.equal(body.version, '3.223.20');
   assert.equal(body.tail.scored, 1);
   // the Kalshi-leads lead-lag record: on by default, nothing seen yet in this test
   assert.equal(body.leadLag.on, true);

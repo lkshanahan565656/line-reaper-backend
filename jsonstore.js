@@ -125,6 +125,14 @@ function createJsonFileStore(file, { label = 'Store', delayMs = DEFAULT_DELAY_MS
       hookExit();
       arm();
     },
+    // drop one row; on disk with the next coalesced write
+    async remove(id) {
+      if (!rows.delete(id)) return;
+      dirty = true;
+      live.add(store);
+      hookExit();
+      arm();
+    },
     // resolves once every change made before the call is on disk
     async flush() {
       if (running) await running;
