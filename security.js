@@ -132,10 +132,11 @@ function readiness(env = process.env) {
   if (on('STRIPE_SECRET_KEY') && !on('STRIPE_WEBHOOK_SECRET')) missing.push('STRIPE_WEBHOOK_SECRET (paid plans never switch on)');
   if (!on('TRACKER_ADMIN_TOKEN')) missing.push('TRACKER_ADMIN_TOKEN (admin routes are off, and /api/ops/profile and /api/ops/heap are open to anyone)');
   else if (String(env.TRACKER_ADMIN_TOKEN).length < 24) missing.push('TRACKER_ADMIN_TOKEN is short: use 24+ random characters');
-  // RESULTS_BACKUP_KEY is not asked for: setting it today changes the key the
-  // results backup is sealed with, and a boot that can't open the old
-  // snapshot starts empty. It waits until the backup can read with the old key.
-  if (!on('FEED_SECRET')) missing.push('FEED_SECRET (connected Discord webhooks and bot tokens are sealed with the backup key; set it before anyone connects one)');
+  // safe to set on a running deploy: the backup still reads the snapshot with
+  // the Railway-id key and seals the next one with the new key, and connected
+  // feeds still open with the old key
+  if (!on('RESULTS_BACKUP_KEY')) missing.push('RESULTS_BACKUP_KEY (the backup and saved webhooks are sealed with a key made from Railway ids; a new service would not open them)');
+  if (!on('FEED_SECRET')) missing.push('FEED_SECRET (connected Discord webhooks and bot tokens are sealed with the backup key)');
   return { paywall, ready: missing.length === 0, missing };
 }
 
