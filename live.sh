@@ -35,11 +35,14 @@ d=json.load(open('out/list.json'))
 ps=d['players']
 from collections import Counter
 print('players', len(ps), Counter(p['game'] for p in ps), 'sources', d.get('sources'))
-want={'LOL':4,'DOTA':3,'CS':2,'VAL':1,'COD':1}
+want={'LOL':4,'DOTA':3,'CS':3,'VAL':2,'COD':1}
 os.makedirs('out/p', exist_ok=True)
+pick=[]
 for g,n in want.items():
-    for p in [x for x in ps if x['game']==g][:n]:
-        url=p['url']
+    gp=[x for x in ps if x['game']==g]
+    pick+=sorted(gp,key=lambda x:-x['records'])[:n-1]+[x for x in gp if x['player'] in ('Faker','Batyuk')][:1]
+for p in pick:
+        g=p['game']; url=p['url']
         for kind,path in (('json','/api'+url),('html',url)):
             t=time.time()
             try:
