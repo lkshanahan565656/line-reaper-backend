@@ -588,7 +588,7 @@ function renderOdds() {
   else if (osUi.sort === 'hold') { const lo = g => Math.min(...g.markets.map(m => m.bestHold ?? 9)); games.sort((a, b) => lo(a) - lo(b)); }
   const c = d.counts || {};
   const upd = d.updated ? new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
-  document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> games</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
+  document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> game${games.length === 1 ? '' : 's'}</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
     (d.pro ? `<span><b>${c.plusEv ?? 0}</b> sides priced above the fair</span>` : `<span>Fair and EV: <a href="#" onclick="acctUpgrade();return false" style="color:#34d399">Pro</a></span>`) +
     `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '') + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
   const box = document.getElementById('osContent');
@@ -3388,6 +3388,8 @@ const featuresReady = readFeatures().then(f => {
   if (f.oddsApi !== false) { apiKey = 'backend'; return; }
   layNoOddsApi = true;
   apiKey = '';
+  // no sportsbook feed: SHARP FEED reads the exchanges, so its book legend says so
+  const sb = document.getElementById('sharpBooks'); if (sb) sb.textContent = 'KALSHI · POLYMARKET · POLYMARKET US';
   // the line shop and best-line views read the same paid feed: say so instead of "load lines first"
   for (const id of ['shopContent', 'bestLineContent']) { const el = document.getElementById(id); if (el && /Load lines first/.test(el.textContent)) el.innerHTML = ODDS_API_OFF_HTML; }
   if (!Object.keys(layTabs).length) return;
@@ -7859,7 +7861,7 @@ const XARB_WARNINGS = {
   'check both rules: resolution wording can differ': 'Matched by title: check both markets settle on the same thing.',
 };
 const xarbWarning = w => XARB_WARNINGS[w] || w;
-const xarbUsd = x => `$${(Math.round(x * 100) / 100).toFixed(2)}`;
+const xarbUsd = x => `$${(Math.round(x * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const xarbUi = { data: null, value: null, error: null, category: 'all', venues: 'all', timer: null, allNear: false, allBookMid: false };
 const XARB_NEAR_SHOWN = 8;
 let arbModeNow = 'exchanges';
@@ -8066,7 +8068,7 @@ function renderGas() {
       <div style="font-size:20px;font-weight:800;margin-top:2px;color:${good == null ? '#e8e8e8' : good ? 'var(--green)' : '#f87171'}">${val}</div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div></div>`;
   const tiles = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">
-      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${r.graded} of 50 graded · not proven, no units shown${r.open ? ` · ${r.open} open` : ''}` : `${r.open || 0} open, graded the morning after`, null)}
+      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${r.graded < 50 ? `${r.graded} of 50 graded` : `${r.graded.toLocaleString()} graded`} · not proven, no units shown${r.open ? ` · ${r.open} open` : ''}` : `${r.open || 0} open, graded the morning after`, null)}
       ${tile('CLOSE OUR WAY', r.clvN ? pct(r.avgClv) : '—', r.clvN ? `average CLV over ${r.clvN}` : 'our side\'s last mid before trading stops', r.clvN ? r.avgClv > 0 : null)}
       ${oos.bets ? tile(oos.method === 'walk-forward' ? 'BACKTEST (WALK-FORWARD)' : 'BACKTEST (HELD OUT)', pct(oos.roi), `${oos.bets.toLocaleString()} bets, ${oos.losses ?? 0} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}; a backtest, not the live record`, null) : tile('BACKTEST', '—', 'No backtest on file on this server', null)}
     </div>`;
@@ -8506,7 +8508,7 @@ function bookArbLeg(a, l, i) {
   const S = arbState.stake, pct = l.pct;
   const exch = l.venue === 'kalshi' || l.venue === 'polymarketus';
   const what = `${exch ? 'Buy' : 'Bet'} <b>${escAttr(l.pick || '')}</b> at ${exch ? `${tailC(l.price)} <span style="color:#8391a7">(${tailC(l.cost)} with fee)</span>` : fmtAm(l.american)}`;
-  const sub = exch ? (l.fill ? `${l.fill.atPrice.toLocaleString()} contracts on offer at this price` : 'size not read yet') : 'limit not in the feed';
+  const sub = exch ? (l.fill ? `${l.fill.atPrice.toLocaleString()} contract${l.fill.atPrice === 1 ? '' : 's'} on offer at this price` : 'size not read yet') : 'limit not in the feed';
   return `<div class="xa-leg"><span class="xa-step">${i + 1}</span><span class="xa-venue">${xarbVenue(l)}</span>
     <span class="xa-what">${tailLink(l.url, what)}<span class="xa-sub">${escAttr(sub)}</span></span>
     <span class="xa-amt" data-pct="${pct}">${xarbUsd(S * pct / 100)}</span></div>`;
