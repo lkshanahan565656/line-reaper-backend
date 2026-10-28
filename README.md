@@ -138,7 +138,7 @@ The flags that change behaviour most:
 | `ALERT_WEBHOOK_URL` | Where alerts go (ntfy, Slack, Discord, Telegram; comma list) |
 | `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord slash commands. Dormant until all three are set |
 | `TELEGRAM_BOT_TOKEN` (+ `TELEGRAM_CHAT_IDS` for the feed) | Telegram commands and feed |
-| `RESULTS_BACKUP_KEY` | Pins the backup key. On Railway it derives from the project ids |
+| `RESULTS_BACKUP_KEY` | Pins the backup key. On Railway it derives from the project ids. **Do not set it on a running deploy yet:** a boot that can't open the old snapshot starts the record empty and then overwrites the snapshot. |
 | Scraped or unofficial sources | Each sits behind its own flag that defaults to off |
 
 ## 5. Running it
