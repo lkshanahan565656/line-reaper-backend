@@ -1,14 +1,12 @@
-// Odds format (public/index.html, LROddsFmt): CUSTOMIZE > Odds format turns
+// Odds format (public/app.js, LROddsFmt): CUSTOMIZE > Odds format turns
 // every price into the viewer's format at the last step. The block is pure,
 // so it runs here on its own and is checked against oddsschema.js.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
 const vm = require('vm');
 const schema = require('../oddsschema');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const html = require('./app-source').both;
 const block = html.match(/^\/\/ LR_ODDSFMT_BEGIN\n([\s\S]*?)^\/\/ LR_ODDSFMT_END$/m)[1];
 const F = vm.runInNewContext(`${block}\nLROddsFmt`, {});
 

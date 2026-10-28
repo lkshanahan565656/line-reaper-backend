@@ -27,6 +27,17 @@ module.exports = [
     languageOptions: { sourceType: 'script', globals: { ...globals.browser, ...globals.serviceworker } },
   },
   {
+    // the app's script (served as /assets/app.<hash>.js). A classic script:
+    // its top-level functions are called from onclick attributes in the page
+    // and in the HTML it builds, so only unused locals are reported.
+    files: ['public/app.js'],
+    languageOptions: {
+      ecmaVersion: 2024,
+      globals: { ...globals.browser, LRCalc: 'readonly', LRFees: 'readonly', LRGlossary: 'readonly', LRSlips: 'readonly', LRBets: 'readonly', LRVenue: 'readonly' },
+    },
+    rules: { 'no-unused-vars': ['error', { vars: 'local', args: 'none', caughtErrors: 'none', ignoreRestSiblings: true, varsIgnorePattern: '^_' }] },
+  },
+  {
     // browser tests: Node scripts whose page.evaluate callbacks run in the app
     files: ['e2e/**/*.js'],
     languageOptions: { globals: { ...globals.browser, ...globals.node, showTab: 'readonly', shpUi: 'readonly' } },
