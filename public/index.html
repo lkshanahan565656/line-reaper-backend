@@ -1531,9 +1531,11 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .pa.live::before { content:''; display:inline-block; width:5px; height:5px; margin-right:3px; border-radius:50%; background:#34d399; vertical-align:middle; }
 .pa.stale { color:var(--muted2); }
 .pa.stale::before { background:var(--muted2); }
-.pa-dim, .pa-dim a, .pa-dim .ev { color:var(--muted2) !important; }
+/* stale: a flat light grey (no opacity, so it keeps AA contrast even under the tour's dimmer), italic, dashed */
+.pa-dim, .pa-dim a, .pa-dim .ev { color:#a3adbd !important; font-style:italic; }
 .pa-dim .ev { opacity:1; }
-.os-tbl td.best.pa-dim, .os-tbl td.top.pa-dim { background:transparent; outline:1px dashed var(--muted2); font-weight:400; }
+.os-tbl td.pa-dim { box-shadow:inset 0 0 0 1px rgba(163,173,189,.35); }
+.os-tbl td.best.pa-dim, .os-tbl td.top.pa-dim { background:transparent; outline:1px dashed #7b8a9f; font-weight:400; }
 .shp-dim { color:var(--text2); font-size:11px; }
 .mv-t td { vertical-align:top; }
 .mv-t .mv-what { white-space:normal; min-width:170px; max-width:280px; }
