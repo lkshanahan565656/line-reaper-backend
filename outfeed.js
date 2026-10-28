@@ -30,7 +30,7 @@ const DISCORD_RE = /^https:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/api\/(
 const TG_TOKEN_RE = /^\d{5,15}:[\w-]{30,60}$/;
 const TG_CHAT_RE = /^(?:-?\d{3,20}|@[A-Za-z][\w]{3,31})$/;
 const LIMITS = { discordDesc: 4000, discordTitle: 250, tgCaption: 1024, tgText: 4000 };
-const COLORS = { digest: 0x60a5fa, record: 0x34d399, moves: 0xfbbf24, welcome: 0x94a3b8 };
+const COLORS = { digest: 0x60a5fa, record: 0x34d399, moves: 0xfbbf24, alerts: 0xf87171, welcome: 0x94a3b8 };
 const FOOTER = 'Line Reaper is an information service, not a sportsbook. It takes no bets. 21+. Gambling problem? 1-800-GAMBLER.';
 
 // ── destinations ──
@@ -42,12 +42,46 @@ function parseDiscord(url) {
 }
 const list = v => String(v || '').split(',').map(s => s.trim()).filter(Boolean);
 // the owner's channels from env → { dests, problems }
+// An entry may start with the topics its channel carries, so one owned server
+// gets one channel per kind of post (DEPLOY.md, "Owned Discord server"):
+//   record=https://discord.com/api/webhooks/…     one topic
+//   digest+moves=https://…                        several, joined with +
+//   alerts=https://…                              every alert kind
+//   ev+sharp=https://…                            some alert kinds (push.js KINDS)
+// An entry with no prefix gets the feed posts (digest, record, moves) as before.
+const FEED_TOPICS = ['digest', 'record', 'moves'];
+const ALERT_TOPICS = ['ev', 'sharp', 'exchange', 'tail', 'esports', 'gas', 'other'];   // push.js KIND_KEYS
+const TOPICS = new Set([...FEED_TOPICS, ...ALERT_TOPICS]);
+function parseTopics(prefix) {
+  const out = new Set(), bad = [];
+  for (const t of String(prefix).toLowerCase().split('+').map(x => x.trim()).filter(Boolean)) {
+    if (t === 'alerts') ALERT_TOPICS.forEach(k => out.add(k));
+    else if (t === 'feed') FEED_TOPICS.forEach(k => out.add(k));
+    else if (TOPICS.has(t)) out.add(t);
+    else bad.push(t);
+  }
+  return { topics: [...TOPICS].filter(t => out.has(t)), bad };
+}
+// what a destination carries: its own topics, or the feed posts when it named none
+const topicsOf = d => d.topics || FEED_TOPICS;
+const wants = (d, kind) => kind === 'welcome' || topicsOf(d).includes(kind);
 function ownerDestinations(env = process.env) {
   const dests = [], problems = [];
-  for (const u of list(env.DISCORD_WEBHOOK_URLS)) {
-    const d = parseDiscord(u);
-    if (d) dests.push({ kind: 'discord', id: `owner-discord-${d.id}`, url: d.url, owner: true });
-    else problems.push('a DISCORD_WEBHOOK_URLS entry is not a Discord webhook URL');
+  const seen = new Set();
+  for (const raw of list(env.DISCORD_WEBHOOK_URLS)) {
+    const m = /^([a-z+ ]{2,80})=(https:\/\/.+)$/i.exec(raw);
+    const d = parseDiscord(m ? m[2] : raw);
+    if (!d) { problems.push('a DISCORD_WEBHOOK_URLS entry is not a Discord webhook URL'); continue; }
+    if (seen.has(d.id)) { problems.push('the same Discord webhook is in DISCORD_WEBHOOK_URLS twice: only the first counts'); continue; }
+    seen.add(d.id);
+    let topics = null;
+    if (m) {
+      const t = parseTopics(m[1]);
+      if (t.bad.length) problems.push(`DISCORD_WEBHOOK_URLS: unknown topic${t.bad.length === 1 ? '' : 's'} ${t.bad.map(x => `"${x.slice(0, 20)}"`).join(', ')} (use ${['alerts', 'feed', ...TOPICS].join(', ')})`);
+      if (!t.topics.length) continue;
+      topics = t.topics;
+    }
+    dests.push({ kind: 'discord', id: `owner-discord-${d.id}`, url: d.url, owner: true, ...(topics ? { topics } : {}) });
   }
   const token = String(env.TELEGRAM_BOT_TOKEN || '').trim();
   const chats = list(env.TELEGRAM_CHAT_IDS);
@@ -61,6 +95,15 @@ function ownerDestinations(env = process.env) {
     }
   }
   return { dests, problems };
+}
+
+// The owned server's public invite (DISCORD_INVITE_URL): discord.gg/<code> or
+// discord.com/invite/<code> → the normalised URL, or null. Pages show a JOIN
+// link only when this is set, and /discord redirects to it.
+const INVITE_RE = /^https:\/\/(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/([A-Za-z0-9-]{2,32})\/?$/;
+function parseInvite(url) {
+  const m = INVITE_RE.exec(String(url || '').trim());
+  return m ? `https://discord.gg/${m[1]}` : null;
 }
 
 // ── text safety ──
@@ -157,12 +200,97 @@ function movesPost(rows, { origin = '', now = Date.now(), n = 5 } = {}) {
     image: o && t.gameId ? `${o}/card/move.png?${qs({ game: t.gameId, market: t.market, side: t.side, v: bucket(now) })}` : null };
 }
 
-function welcomePost({ origin = '' } = {}) {
+const TOPIC_LINES = {
+  digest: '• the weekly record digest, Mondays 13:00 UTC',
+  record: '• record changes on RESULTS (newly proven, no longer proven, losing to the close, reached 50 graded), checked hourly',
+  moves: '• today\'s biggest line moves, daily at 21:00 UTC',
+};
+const ALERT_LABELS = { ev: '+EV plays at proven books', sharp: 'Pinnacle steam and sharp leads', exchange: 'exchange value, steam, movers, arbs and middles',
+  tail: 'Sharp Tail, second chances and fresh wallets', esports: 'esports edges and pick\'em board moves', gas: 'gas price locks', other: 'anything else the tracker sends' };
+// topics: what this channel carries (an owner channel); none = a customer's feed
+function welcomePost({ origin = '', topics = null, alertDelayMin = 0 } = {}) {
   const o = origin0(origin);
-  return { kind: 'welcome', title: 'Line Reaper feed connected',
-    text: ['This channel now gets the same public posts as everyone else:', '• the weekly record digest, Mondays 13:00 UTC', '• record changes on RESULTS (newly proven, no longer proven, losing to the close, reached 50 graded), checked hourly', '• today\'s biggest line moves, daily at 21:00 UTC',
-      'No picks sized for you and no bets placed. To stop, delete the webhook in Discord or disconnect it on the developers page.'].join('\n'),
-    link: o ? `${o}/developers#feed` : null, image: o ? `${o}/card/record.png` : null };
+  const t = topics || FEED_TOPICS;
+  const alerts = ALERT_TOPICS.filter(k => t.includes(k));
+  const lines = ['This channel now gets the same public posts as everyone else:', ...FEED_TOPICS.filter(k => t.includes(k)).map(k => TOPIC_LINES[k])];
+  if (alerts.length) {
+    lines.push(`• alerts: ${alerts.length === ALERT_TOPICS.length ? 'every kind the tracker sends' : alerts.map(k => ALERT_LABELS[k]).join('; ')}, ${alertDelayMin > 0 ? `${alertDelayMin} minutes after members get them, so prices have likely moved` : 'as they go out'}`);
+  }
+  lines.push(topics ? 'No picks sized for you and no bets placed. Every alert is graded against the close at /alerts.' : 'No picks sized for you and no bets placed. To stop, delete the webhook in Discord or disconnect it on the developers page.');
+  return { kind: 'welcome', title: topics ? 'Line Reaper channel connected' : 'Line Reaper feed connected', text: lines.join('\n'),
+    link: o ? (topics ? `${o}/alerts` : `${o}/developers#feed`) : null, image: o ? `${o}/card/record.png` : null };
+}
+
+// ── alerts in the owner's channels ──
+// The tracker's alerts (the same text the alert webhook and phone push send)
+// posted to the owner channels that carry their kind, `delayMs` after they
+// went out, grouped into one post per channel per minute so a burst stays
+// inside Discord's 30 posts a minute per webhook. Everyone in the channel
+// reads the same post; nothing is sized or picked per person.
+// items: [{ at, kind, title, text }]
+function alertPost(items, { origin = '', delayMs = 0, now = Date.now() } = {}) {
+  const o = origin0(origin);
+  if (!items?.length) return null;
+  const hhmm = t => new Date(t).toISOString().slice(11, 16);
+  const head = delayMs > 0 ? `Sent to members ${Math.round(delayMs / 60e3)} min before this post. Prices have likely moved: check the venue before you bet.` : null;
+  const body = items.map(i => `**${clean(i.title || 'Alert')} · ${hhmm(i.at)} UTC**\n${clean(i.text)}`).join('\n\n');
+  const kinds = [...new Set(items.map(i => i.kind))];
+  return { kind: 'alerts', title: kinds.length === 1 && ALERT_LABELS[kinds[0]] ? `Alerts: ${ALERT_LABELS[kinds[0]]}` : 'Alerts',
+    text: [head, body, 'Every alert is graded against the close at /alerts.'].filter(Boolean).join('\n\n'),
+    link: o ? `${o}/alerts` : null, image: null, at: now };
+}
+// split items into posts that fit one embed
+function alertPosts(items, opts = {}) {
+  const posts = [];
+  let cur = [], len = 0;
+  for (const it of items) {
+    const n = String(it.text || '').length + 60;
+    if (cur.length && len + n > LIMITS.discordDesc - 400) { posts.push(alertPost(cur, opts)); cur = []; len = 0; }
+    cur.push(it); len += n;
+  }
+  if (cur.length) posts.push(alertPost(cur, opts));
+  return posts;
+}
+// add({ text, title, kind }) queues an alert; flush() posts what is due.
+// The queue lives in memory, so a restart drops alerts still waiting (they
+// stay graded at /alerts); max caps it, oldest dropped first.
+function createAlertRelay({ owner = [], sendTo, delayMs = 30 * 60e3, origin = '', now = () => Date.now(), max = 400, log = console } = {}) {
+  const dests = owner.filter(d => d.kind === 'discord' && ALERT_TOPICS.some(k => topicsOf(d).includes(k)));
+  const queue = [];
+  const stats = { queued: 0, posted: 0, posts: 0, failed: 0, dropped: 0, skipped: 0, lastAt: null, lastError: null };
+  let busy = false;
+  function add({ text, title, kind } = {}) {
+    if (!dests.length || !String(text || '').trim() || title === 'Startup') return false;
+    const k = ALERT_TOPICS.includes(kind) ? kind : 'other';
+    if (!dests.some(d => topicsOf(d).includes(k))) { stats.skipped++; return false; }
+    queue.push({ at: now(), due: now() + delayMs, kind: k, title: String(title || 'Alerts'), text: String(text) });
+    stats.queued++;
+    while (queue.length > max) { queue.shift(); stats.dropped++; }
+    return true;
+  }
+  async function flush() {
+    if (busy || !queue.length) return { posts: 0 };
+    busy = true;
+    try {
+      const t = now();
+      const due = [];
+      while (queue.length && queue[0].due <= t) due.push(queue.shift());
+      if (!due.length) return { posts: 0 };
+      let posts = 0;
+      for (const d of dests) {
+        const mine = due.filter(i => topicsOf(d).includes(i.kind));
+        for (const p of alertPosts(mine, { origin: typeof origin === 'function' ? origin() : origin, delayMs, now: t })) {
+          const r = await sendTo(d, p);
+          if (r.ok) { posts++; stats.posts++; } else { stats.failed++; stats.lastError = r.why || 'failed'; log.warn?.(`Owner alerts: ${stats.lastError}`); }
+        }
+      }
+      stats.posted += due.length;
+      stats.lastAt = new Date(t).toISOString();
+      return { posts };
+    } finally { busy = false; }
+  }
+  return { add, flush, on: dests.length > 0, channels: dests.length,
+    stats: () => ({ ...stats, pending: queue.length, delayMin: Math.round(delayMs / 60e3), channels: dests.length }) };
 }
 
 // ── requests: a post → [{ url, data }] for one destination ──
@@ -241,7 +369,8 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
     }
   }
   async function send(p) {
-    const dests = [...owner, ...(await subscribers())];
+    // an owner channel gets only the topics it carries; a customer's feed gets the feed posts
+    const dests = [...owner.filter(d => wants(d, p?.kind)), ...(await subscribers())];
     if (!p || !dests.length) return { sent: 0, failed: 0, to: 0 };
     stats.posts++;
     let sent = 0, failed = 0;
@@ -267,5 +396,5 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
   return { send, sendTo, stats: () => ({ ...stats, recent: recent.slice(0, 20) }), ownerCount: owner.length };
 }
 
-module.exports = { parseDiscord, ownerDestinations, digestPost, recordChanges, recordPost, movesPost, welcomePost, changeOf,
+module.exports = { parseDiscord, parseInvite, ownerDestinations, parseTopics, topicsOf, FEED_TOPICS, ALERT_TOPICS, alertPost, alertPosts, createAlertRelay, digestPost, recordChanges, recordPost, movesPost, welcomePost, changeOf,
   discordRequest, telegramRequests, requestsFor, createFeed, sealer, clean, scrub, FOOTER, DISCORD_RE };
