@@ -156,7 +156,7 @@ function viewMarket(m, { filter, stake, now, method, depth = null, minSize = nul
     cells.sort((a, b) => (b.ref - a.ref) || b.effective - a.effective);
     return {
       side: s, name: selectionName(m, s), fair: f, fairAmerican: f ? schema.fromDecimal(1 / f, 'american') : null,
-      best: best ? { provider: best.provider, name: best.name, american: best.american, effective: best.effective, ev: best.ev, evAmount: best.evAmount, freshness: best.freshness, secondHand: best.secondHand, oneWay: best.oneWay, liquidity: best.liquidity, size: best.size ?? null, listed: best.listed ?? null, sizedAt: best.sizedAt ?? null } : null,
+      best: best ? { provider: best.provider, name: best.name, american: best.american, effective: best.effective, ev: best.ev, evAmount: best.evAmount, freshness: best.freshness, ageSec: best.ageSec ?? null, secondHand: best.secondHand, oneWay: best.oneWay, liquidity: best.liquidity, size: best.size ?? null, listed: best.listed ?? null, sizedAt: best.sizedAt ?? null } : null,
       second: second ? { provider: second.provider, name: second.name, american: second.american, effective: second.effective } : null,
       edgePts: f != null && best ? r2((f - best.implied) * 100) : null,
       discrepancy: best && second ? engine.discrepancy(best.effective, second.effective) : null,
@@ -231,7 +231,7 @@ function build(quotes, opts = {}) {
     cands.push({ key: `${m.key}|${s.side}`, market: m.key, event: m.event, sport: m.sport, league: m.league, start: m.start, marketType: m.marketType, marketName: m.marketName,
       line: m.line, player: m.player, selection: s.name, provider: s.best.provider, providerName: s.best.name, american: s.best.american, effective: s.best.effective,
       fairAmerican: s.fairAmerican, fair: s.fair, ev: s.best.ev, evAmount: s.best.evAmount, edgePts: s.edgePts, kelly: s.kelly, second: s.second,
-      fairSource: m.fair?.source, spreadPts: m.fair?.spreadPts ?? null, freshness: s.best.freshness, fairFreshness: m.fair?.freshness, access: s.best.secondHand ? 'second_hand' : 'direct',
+      fairSource: m.fair?.source, spreadPts: m.fair?.spreadPts ?? null, freshness: s.best.freshness, ageSec: s.best.ageSec ?? null, fairFreshness: m.fair?.freshness, access: s.best.secondHand ? 'second_hand' : 'direct',
       oneWay: s.best.oneWay, liquidity: s.best.liquidity, size: s.best.size, listed: s.best.listed, sizedAt: s.best.sizedAt, view: m });
   }
   const minEv = Number.isFinite(opts.minEv) ? opts.minEv : 0;

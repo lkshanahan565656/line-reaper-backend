@@ -1540,6 +1540,16 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .shp-num { font-family:'JetBrains Mono',monospace; white-space:nowrap; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
+/* PRICE AGE: how long ago the venue answered; grey once stale */
+.pa { display:inline-block; margin-left:4px; font:600 9px 'JetBrains Mono',monospace; color:#34d399; letter-spacing:0; text-transform:none; vertical-align:middle; font-variant-numeric:tabular-nums; }
+.pa.live::before { content:''; display:inline-block; width:5px; height:5px; margin-right:3px; border-radius:50%; background:#34d399; vertical-align:middle; }
+.pa.stale { color:var(--muted2); }
+.pa.stale::before { background:var(--muted2); }
+/* stale: a flat light grey (no opacity, so it keeps AA contrast even under the tour's dimmer), italic, dashed */
+.pa-dim, .pa-dim a, .pa-dim .ev { color:#a3adbd !important; font-style:italic; }
+.pa-dim .ev { opacity:1; }
+.os-tbl td.pa-dim { box-shadow:inset 0 0 0 1px rgba(163,173,189,.35); }
+.os-tbl td.best.pa-dim, .os-tbl td.top.pa-dim { background:transparent; outline:1px dashed #7b8a9f; font-weight:400; }
 .shp-dim { color:var(--text2); font-size:11px; }
 .mv-t td { vertical-align:top; }
 .mv-t .mv-what { white-space:normal; min-width:170px; max-width:280px; }
@@ -1820,7 +1830,7 @@ body::before { display:none !important; }
 <div class="page" id="page-odds">
   <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair. <a href="/learn/no-vig-fair-odds" target="_blank" rel="noopener" style="color:var(--green)">How the fair works</a>.
+    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair. The timer by each venue's name is how long ago it last answered; it and that venue's prices turn grey once the read is stale. <a href="/learn/no-vig-fair-odds" target="_blank" rel="noopener" style="color:var(--green)">How the fair works</a>.
     <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. The strip on top shows the venues legal in your state (CUSTOMIZE &gt; My state). A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
   </div>
   <div class="sport-row" id="oddsModes"></div>
