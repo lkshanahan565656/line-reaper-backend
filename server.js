@@ -6357,7 +6357,7 @@ app.get('/api/esports/probe/:sport/:name', async (req, res) => {
     if (!found?.slug) return res.json({ source: 'bo3', error: 'no search hit for that name' });
     const raw = await bo3RawStats(found.slug);
     res.json({ source: 'bo3', found, raw, parsed: bo3ExtractProfile(name, raw.gen, raw.map, raw.acc) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(502).json({ error: `The stats source did not answer: ${String(e.message || e).slice(0, 120)}` }); }
 });
 
 app.get('/api/prizepicks', (req, res) => {
