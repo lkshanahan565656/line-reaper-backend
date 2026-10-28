@@ -85,7 +85,7 @@ the map.
 | **User features** | `bets.js` (MY BETS), `slips.js`, `slip.js`, `slipbuild.js`, `slipgrade.js`, `sliplog.js`, `slipstamp.js` (MY SLIPS), `linebets.js`, `pubrecord.js` (`/r/<handle>`), `leaderboard.js` (`/r`), `auth.js` (accounts, sync), `billing.js` (Stripe), `plans.js` (Free and Pro), `licences.js` |
 | **Outbound** | `alerts.js`, `push.js` (Web Push), `webhook.js`, `outfeed.js` (Discord and Telegram feed), `discordbot.js`, `telegrambot.js`, `publicapi.js` (`/api/v1`), `embeds.js` (widgets, `/developers`), `sharecards.js` |
 | **Public pages** | `landing.html` (sales page), `learn.js`, `glossary.js`, `leagues.js`, `linehist.js` (`/lines`), `legal.js`, `status.js`, `a11y.js` (skip link, focus ring on every server page) |
-| **Platform** | `jsonstore.js` (file stores), `backup.js` (results snapshot), `ops.js` (`/api/ops`), `livecheck.js`, `quota.js` (Odds API credits), `appbundle.js` (hashed, pre-compressed app script) |
+| **Platform** | `jsonstore.js` (file stores), `backup.js` (results snapshot), `ops.js` (`/api/ops`), `security.js` (headers, per-address write and sign-in limits, JSON errors, the `security` block in `/api/ops`), `livecheck.js`, `quota.js` (Odds API credits), `appbundle.js` (hashed, pre-compressed app script) |
 
 ### The app (`public/`)
 
@@ -138,7 +138,7 @@ The flags that change behaviour most:
 | `ALERT_WEBHOOK_URL` | Where alerts go (ntfy, Slack, Discord, Telegram; comma list) |
 | `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord slash commands. Dormant until all three are set |
 | `TELEGRAM_BOT_TOKEN` (+ `TELEGRAM_CHAT_IDS` for the feed) | Telegram commands and feed |
-| `RESULTS_BACKUP_KEY` | Pins the backup key. On Railway it derives from the project ids |
+| `RESULTS_BACKUP_KEY` | Pins the backup key. On Railway it derives from the project ids. **Do not set it on a running deploy yet:** a boot that can't open the old snapshot starts the record empty and then overwrites the snapshot. |
 | Scraped or unofficial sources | Each sits behind its own flag that defaults to off |
 
 ## 5. Running it
