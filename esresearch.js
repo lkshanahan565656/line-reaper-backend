@@ -53,6 +53,7 @@ const STAT_LABEL = { k: 'Kills', ast: 'Assists', hs: 'Headshots', death: 'Deaths
 // the stat a map log carries for a market's stat key
 const MAP_STAT = { k: 'k', ast: 'a', death: 'd' };
 const WINDOWS = [5, 10, 20, null];
+const MAX_AGE_DAYS = 120;
 
 const canon = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
@@ -521,7 +522,9 @@ function research({ game, player, board = null, records = [], log = null, mkey =
   const { stat } = parseMkey(mk);
   const opponent = market?.opponent || board?.opponent || null;
   const lines = currentLines(market);
-  const maps = log?.maps || [];
+  // only maps from the last MAX_AGE_DAYS: an old account's 2019 games aren't his form
+  const allMaps = log?.maps || [];
+  const maps = allMaps.filter(m => m.t >= now - MAX_AGE_DAYS * 86400e3);
   const fromMaps = g?.maps && MAP_STAT[stat];
   const series = fromMaps ? seriesTotals(maps, mk) : [];
   // this market's past matches in our records, newest first
@@ -542,7 +545,7 @@ function research({ game, player, board = null, records = [], log = null, mkey =
     game, label: g?.label || game, player: board?.player || records[0]?.player || player, team: board?.team || records[0]?.team || '', opponent,
     startTime: market?.startTime || board?.startTime || null, matchTitle: board?.matchTitle || '',
     markets, market: mk, marketLabel: mk ? marketLabel(mk) : null, lines,
-    source: { maps: g?.maps ? (log?.source || g.source) : null, note: g?.maps ? null : NO_SOURCE_NOTE[game] || null, statOnMaps: !!fromMaps, status: log?.status || (g?.maps ? 'not-read' : 'unsupported'), error: log?.error || null, at: log?.at ? new Date(log.at).toISOString() : null, link: log?.link || null, links: log?.links || [], note2: log?.note || null },
+    source: { maps: g?.maps ? (log?.source || g.source) : null, note: g?.maps ? null : NO_SOURCE_NOTE[game] || null, statOnMaps: !!fromMaps, status: log?.status || (g?.maps ? 'not-read' : 'unsupported'), error: log?.error || null, at: log?.at ? new Date(log.at).toISOString() : null, link: log?.link || null, links: log?.links || [], note2: log?.note || null, dropped: allMaps.length - maps.length },
     hitFrom, hit, series: series.slice(0, 40), byMap: fromMaps ? byMapNumber(maps, stat) : [], maps: maps.slice(0, 40),
     records: rec.slice(0, 40).map(e => ({ t: new Date(e.t).toISOString(), opponent: e.opponent, first: e.first, last: e.last, result: e.result, short: e.short })),
     vsPosted: Object.values(vsPosted),
@@ -566,6 +569,7 @@ const PAGE_CSS = `
 .st-pick select, .st-pick button, .st-pick input { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
 td.n, th.n { text-align:right; white-space:nowrap; }
+.scroll td { white-space:nowrap; }
 td.o { color:var(--green2); } td.u { color:#f87171; }
 .ln { display:inline-block; font:600 11px var(--mono); border:1px solid var(--border2); border-radius:4px; padding:1px 6px; margin:0 4px 2px 0; color:var(--text); white-space:nowrap; }
 .ln i { font-style:normal; color:var(--muted); margin-right:4px; }
@@ -666,7 +670,8 @@ function playerPage(d, { origin = '' } = {}) {
   const chips = d.markets.map(m => `<a class="chip${m.mkey === d.market ? ' on' : ''}" href="${esc(playerHref(d.game, d.player, m.mkey))}"${m.mkey === d.market ? ' aria-current="page"' : ''}>${esc(m.label)}${m.recordOnly ? ' · records' : ''}</a>`).join('');
   const src = d.source;
   const srcLine = src.maps
-    ? (src.status === 'ok' ? `Past maps: ${esc(src.maps)}${src.link ? ` (${esc(src.link)})` : ''}, read ${esc(whenUtc(src.at))}.${src.links.length > 1 ? ` ${esc(src.maps)} lists ${src.links.length} players by this name (${esc(src.links.join(', '))}); this is the one on ${esc(d.team || 'his team')} or, failing that, the one who played last.` : ''}${src.note2 ? ` ${esc(src.note2)}` : ''}`
+    ? (src.status === 'ok' && !d.maps.length && src.dropped ? `${esc(src.maps)} has only maps older than ${MAX_AGE_DAYS} days under this name (${src.dropped}), so they're left out. The tables below use our records only.`
+      : src.status === 'ok' ? `Past maps (the last ${MAX_AGE_DAYS} days): ${esc(src.maps)}${src.link ? ` (${esc(src.link)})` : ''}, read ${esc(whenUtc(src.at))}.${src.links.length > 1 ? ` ${esc(src.maps)} lists ${src.links.length} players by this name (${esc(src.links.join(', '))}); this is the one on ${esc(d.team || 'his team')} or, failing that, the one who played last.` : ''}${src.note2 ? ` ${esc(src.note2)}` : ''}`
       : src.status === 'none' ? `${esc(src.maps)} has no pro maps under this name${src.note2 ? `: ${esc(src.note2)}` : ''}. The tables below use our records only.`
         : src.status === 'error' ? `${esc(src.maps)} didn't answer (${esc(src.error)}). The tables below use our records only; this page reads it again in about 20 minutes.`
           : src.status === 'busy' ? `${esc(src.maps)} is being read for other players right now. The tables below use our records only; reload in a minute.`

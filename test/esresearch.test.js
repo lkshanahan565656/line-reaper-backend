@@ -253,7 +253,7 @@ test('fetchDotaMaps: his own match list when the explorer has none of his games,
   const r = await R.fetchDotaMaps(http, 42);
   assert.deepEqual(r.maps.map(m => [m.mid, m.n, m.k]), [['m8', 2, 11], ['m8', 1, 4]]);
   assert.match(r.note, /names no teams/);
-  const d = R.research({ game: 'DOTA', player: 'Yatoro', board: { player: 'Yatoro', markets: [{ mkey: 'k|1-2', label: 'Kills, Maps 1-2', lines: [{ app: 'UD', line: 14.5 }] }] }, log: { status: 'ok', source: 'OpenDota', at: Date.now(), ...r } });
+  const d = R.research({ game: 'DOTA', player: 'Yatoro', board: { player: 'Yatoro', markets: [{ mkey: 'k|1-2', label: 'Kills, Maps 1-2', lines: [{ app: 'UD', line: 14.5 }] }] }, log: { status: 'ok', source: 'OpenDota', at: 6e6, ...r }, now: 6e6 });
   assert.deepEqual(d.series.map(s => s.value), [15]);
   assert.match(R.playerPage(d), /names no teams/);
 });
@@ -266,4 +266,13 @@ test('buildRecordIndex: a code and a full name on the same day are one match', (
   const f = R.buildRecordIndex(rows).players.get('LOL|quid');
   assert.equal(f.length, 1);
   assert.deepEqual(f[0].last, { UD: 6.5, PP: 6 });
+});
+
+test('research: maps older than 120 days are left out, and the page says why', () => {
+  const now = Date.parse('2026-10-28T12:00:00Z');
+  const old = [{ mid: 'x', n: 1, t: Date.parse('2019-01-01T00:00:00Z'), k: 9, a: 1, d: 1, opp: '' }, { mid: 'x', n: 2, t: Date.parse('2019-01-01T01:00:00Z'), k: 9, a: 1, d: 1, opp: '' }];
+  const d = R.research({ game: 'DOTA', player: 'p', board: { player: 'p', markets: [{ mkey: 'k|1-2', label: 'Kills, Maps 1-2', lines: [{ app: 'PP', line: 8.5 }] }] }, log: { status: 'ok', source: 'OpenDota', at: now, maps: old }, now });
+  assert.equal(d.maps.length, 0);
+  assert.equal(d.hitFrom, null);
+  assert.match(R.playerPage(d), /only maps older than 120 days/);
 });
