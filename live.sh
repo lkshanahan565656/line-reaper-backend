@@ -2,7 +2,22 @@
 # boot the PR branch against live feeds, wait for the esports props board, then read the research pages
 mkdir -p out
 cd app && npm ci --silent >/dev/null 2>&1
-PORT=4999 LR_DATA_DIR=$PWD/data node server.js > ../out/server.log 2>&1 &
+# our real graded esports records, read from the live site's public record API, so the line-history sections show real rows
+mkdir -p data
+python3 - <<'PY'
+import json, urllib.request
+S='https://line-reaper-backend-production.up.railway.app'
+rows={}
+for sp in ['LOL','DOTA','CS','VAL','COD']:
+    for st in ['graded','review','locked']:
+        try:
+            d=json.load(urllib.request.urlopen(f'{S}/api/tracker/picks?status={st}&sport={sp}&limit=1000', timeout=60))
+            for r in d.get('picks',[]): rows[r['id']]=r
+        except Exception as e: print('seed', sp, st, e)
+json.dump(list(rows.values()), open('data/esports-picks.json','w'))
+print('seeded', len(rows), 'record rows')
+PY
+PORT=4999 LR_DATA_DIR=$PWD/data TRACKER_FILE=$PWD/data/esports-picks.json node server.js > ../out/server.log 2>&1 &
 cd ..
 B=http://127.0.0.1:4999
 for i in $(seq 1 30); do
