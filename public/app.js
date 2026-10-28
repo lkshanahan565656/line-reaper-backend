@@ -590,7 +590,7 @@ function renderOdds() {
   const upd = d.updated ? new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
   document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> game${games.length === 1 ? '' : 's'}</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
     (d.pro ? `<span><b>${c.plusEv ?? 0}</b> sides priced above the fair</span>` : `<span>Fair and EV: <a href="#" onclick="acctUpgrade();return false" style="color:#34d399">Pro</a></span>`) +
-    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '') + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
+    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '');
   const box = document.getElementById('osContent');
   if (!games.length) {
     box.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">${d.stale ? 'The price feeds have not answered in the last few minutes.' : lrState ? `No game in the next two days has a venue legal in ${escAttr(lrStateName())} priced yet.` : 'No game in the next two days is priced yet.'}</div></div>`;
@@ -4174,11 +4174,16 @@ function updateBackendStatus(online, pp = null, ud = null) {
   // DFS feeds switched off for the paid product: say nothing about them
   if (acct.paused?.includes('prizepicks') && acct.paused?.includes('underdog')) { el.textContent = ''; return; }
   if (online && pp != null) {
-    el.innerHTML = `PP <span style="color:${pp === 0 ? 'var(--red)' : 'var(--green)'}">${pp === 0 ? '✗ 0' : k(pp)}</span> · UD <span style="color:${ud > 0 ? 'var(--green)' : 'var(--red)'}">${ud > 0 ? k(ud) : '✗ 0'}</span>`;
+    // one total a buyer can read; the per-app split (and which app is down) in the tooltip
+    const down = [pp === 0 && 'PrizePicks', !(ud > 0) && 'Underdog'].filter(Boolean);
+    const all = (pp || 0) + (ud || 0);
+    el.title = `Player lines on the pick'em apps right now: PrizePicks ${(pp || 0).toLocaleString()} · Underdog ${(ud || 0).toLocaleString()}${down.length ? `. ${down.join(' and ')} not answering.` : ''}`;
+    el.innerHTML = `Props live: <span style="color:${down.length ? 'var(--red)' : 'var(--green)'}">${all ? k(all) : '✗ 0'}</span>`;
     el.style.color = 'var(--muted2)';
   } else {
-    el.textContent = online ? 'PP/UD LIVE' : 'PP/UD OFFLINE';
-    el.style.color = online ? 'var(--green)' : '#444';
+    el.title = '';
+    el.textContent = online ? 'PROPS LIVE' : 'PROPS OFFLINE';
+    el.style.color = online ? 'var(--green)' : 'var(--red)';
   }
 }
 
@@ -6845,15 +6850,12 @@ function lrSetState(v, { save = true } = {}) {
     if (on('page-esports') && typeof renderEsports === 'function') renderEsports();
   });
 }
-// the line under the picker: what the state allows and what we can't read there
+// the one thing the state bar on top does not say: venues legal there that this tab can't price
 function lrStateNotes(info, which) {
   document.querySelectorAll('[data-state-note]').forEach(el => {
     if (which && el.dataset.stateNote !== which) return;
-    if (!lrState || !info) { el.innerHTML = ''; return; }
-    const read = info.venues.filter(v => v.read).map(v => v.name), unread = info.venues.filter(v => !v.read);
-    el.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.2)">
-      <b style="color:#e2e8f0">Betting from ${escAttr(info.name)}.</b> ${escAttr(info.note)} Shown here: ${escAttr(read.join(', '))}.
-      ${unread.length ? `<span title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal there, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</span>` : ''} <span style="color:#8391a7">As of ${escAttr(info.asOf)}.</span></div>`;
+    const unread = lrState && info ? info.venues.filter(v => !v.read) : [];
+    el.innerHTML = unread.length ? `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px" title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal in ${escAttr(info.name)}, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</div>` : '';
   });
 }
 document.addEventListener('DOMContentLoaded', () => { lrStateSyncPickers(); lrStateLoad(); });
@@ -8004,7 +8006,7 @@ function renderBig() {
       ${tile('BETTORS VS MARKET MAKERS', '', `${fr('bettor', 'Bettors')}<br>${fr('market maker', 'Market makers')}`, null)}
     </div>`;
   const bt = d.backtest;
-  const note = `<div class="xa-sub" style="margin:0 0 10px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line. PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</div>`;
+  const note = `<div class="xa-sub" style="margin:0 0 6px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line.</div><details class="xa-how" style="margin:0 0 10px"><summary>How each venue is priced</summary><p>PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</p></details>`;
   let body;
   if (d.off) body = tailEmpty('BIG MONEY IS OFF', 'BIG_MONEY=off is set on the server.');
   else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Pro shows each one, the money behind it and every venue's price.</span>`, 'Big money');
