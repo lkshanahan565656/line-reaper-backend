@@ -14,6 +14,8 @@ jobs:
         run: |
           H=(); [ -n "$ADMIN" ] && H=(-H "x-admin-token: $ADMIN")
           U=https://line-reaper-backend-production.up.railway.app
+          echo "railway status:"; curl -s -m 20 https://status.railway.com/api/v2/summary.json | python3 -c "import json,sys; j=json.load(sys.stdin); print(j['status']); [print('incident:', i['name'], i['status'], i.get('updated_at')) for i in j.get('incidents',[])]; [print('component:', c['name'], c['status']) for c in j.get('components',[]) if c['status']!='operational']" || echo "status page unreadable"
+          echo "root:"; curl -s -m 20 -o /dev/null -w '%{http_code} %{time_total}s\n' $U/
           echo "health:"; curl -s -m 20 $U/api/health | head -c 300; echo
           curl -s -m 30 $U/api/ops > ops.json
           python3 -c "
