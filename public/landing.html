@@ -499,7 +499,8 @@ fetch('/api/claims').then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP 
   const where = p => `${esc(p.kindLabel)} at ${esc(p.bookName)}`;
   // the one-line claim under the hero, in plain words
   let claim;
-  if (!proven.length) claim = `Today the record proves nothing yet. ${(d.building || 0).toLocaleString()} kinds of bet are still building their samples.`;
+  const bN = d.building || 0, building = !bN ? 'No kind of bet has a graded sample yet' : bN === 1 ? '1 kind of bet is still building its sample' : `${bN.toLocaleString()} kinds of bet are still building their samples`;
+  if (!proven.length) claim = `Today the record proves nothing yet. ${building}.`;
   else {
     const p = proven[0];
     claim = `Today the record proves ${proven.length === 1 ? 'one kind of bet' : proven.length + ' kinds of bet'}: ${proven.map(where).join(', ')}`
@@ -515,7 +516,7 @@ fetch('/api/claims').then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP 
     + `<td class="n hide-sm ${p.clv2min > 0 ? 'up' : ''}">${p.clv2min != null ? pct(p.clv2min) : '<span class="muted">not graded yet</span>'}</td>`
     + `<td class="n">${p.profitShown ? `<span class="up">${units(p.units)}</span>` : `<span class="muted">not shown yet</span><small class="wl">${p.wins}-${p.losses}, ${units(p.units)}</small>`}</td></tr>`);
   document.querySelector('#trackTable tbody').innerHTML = rows.join('')
-    || `<tr><td colspan="6" class="muted">Nothing is proven yet. ${(d.building || 0).toLocaleString()} kinds of bet are still building their samples; a kind shows here once its record proves it. <a class="textlink" href="/app?start=results">See them all in the app</a>.</td></tr>`;
+    || `<tr><td colspan="6" class="muted">Nothing is proven yet. ${building}; a kind shows here once its record proves it. <a class="textlink" href="/app?start=results">See them all in the app</a>.</td></tr>`;
   const stats = [[String(proven.length), 'Kinds of bet proven'], [String(txProven.length), 'Proven at a Texas venue'], [(d.overall?.graded || 0).toLocaleString(), 'Games graded against the close']];
   if (d.overall?.beatPct != null) stats.push([Math.round(d.overall.beatPct) + '%', 'Beat the close, every kind pooled (not proof)']);
   $('recStats').style.gridTemplateColumns = `repeat(${stats.length},1fr)`;
