@@ -177,3 +177,12 @@ test('/api/status shows the Telegram bot without any secret, and the feed has no
   assert.doesNotMatch(JSON.stringify(s), /OOOOOOOOOO|CCCCCCCCCC/);
   assert.deepEqual(s.outFeed.owner.problems, []);
 });
+
+test('a malformed webhook body is answered without a 500 and sends nothing', async () => {
+  const before = tgCalls.length;
+  for (const raw of ['not json', 'null', '[]', '{"update_id":1,"message":null}']) {
+    const r = await fetch(base + '/telegram/webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Telegram-Bot-Api-Secret-Token': tg.secretOf(OWNER_TOKEN) }, body: raw });
+    assert.ok(r.status < 500, `${raw}: ${r.status}`);
+  }
+  assert.equal(tgCalls.slice(before).filter(c => c.method === 'sendMessage').length, 0);
+});
