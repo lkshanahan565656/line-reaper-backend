@@ -38,13 +38,14 @@ test.before(async () => { server = srv.app.listen(0); await new Promise(r => ser
 test.after(() => { server?.close(); for (const t of cron.getTasks().values()) t.stop(); fs.rmSync(DIR, { recursive: true, force: true }); setTimeout(() => process.exit(0), 50).unref(); });
 
 let n = 1000;
-async function update(text, { token = OWNER_TOKEN, p = '/telegram/webhook', chat = { id: -100777, type: 'supergroup', title: 'Picks' }, secret = null, extra = {} } = {}) {
+async function update(text, { token = OWNER_TOKEN, p = '/telegram/webhook', chat = { id: -100777, type: 'supergroup', title: 'Picks' }, secret = null, extra = {}, wait = 2000 } = {}) {
   const before = tgCalls.length;
   const body = { update_id: ++n, message: { message_id: n, date: Math.floor(Date.now() / 1000), chat, from: { id: 42, is_bot: false, first_name: 'L' }, text, ...extra } };
   const r = await fetch(base + p, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Telegram-Bot-Api-Secret-Token': secret ?? tg.secretOf(token) }, body: JSON.stringify(body) });
   const out = { status: r.status, body: await r.json() };
-  // the reply goes out after Telegram has its 200
-  for (let i = 0; i < 100 && !tgCalls.slice(before).some(c => c.method === 'sendMessage'); i++) await new Promise(res => setTimeout(res, 20));
+  // the reply goes out after Telegram has its 200 (a refused update sends nothing;
+  // one that should stay silent waits `wait` ms for a reply that mustn't come)
+  for (let i = 0; r.status === 200 && i < wait / 20 && !tgCalls.slice(before).some(c => c.method === 'sendMessage'); i++) await new Promise(res => setTimeout(res, 20));
   out.sent = tgCalls.slice(before).filter(c => c.method === 'sendMessage').map(c => c.data);
   out.calls = tgCalls.slice(before);
   return out;
@@ -53,7 +54,7 @@ async function update(text, { token = OWNER_TOKEN, p = '/telegram/webhook', chat
 test('the owner\'s webhook: wrong secret refused, chatter ignored, the menu and webhook set on connect', async () => {
   assert.equal((await update('/odds owls', { secret: 'nope' })).status, 401);
   assert.equal((await update('/odds owls', { token: CUSTOMER_TOKEN })).status, 401, 'a secret from another token');
-  const chatter = await update('good morning');
+  const chatter = await update('good morning', { wait: 300 });
   assert.equal(chatter.status, 200);
   assert.equal(chatter.sent.length, 0);
   const c = await srv.tgConnectOwner();
@@ -91,7 +92,7 @@ test('/odds in a group: the same best prices as the Discord bot, then /settings 
   assert.doesNotMatch(m.text, /\*\*|<t:/, 'no Discord markdown left');
   assert.ok(m.reply_markup.inline_keyboard.flat().every(b => b.url.startsWith('https://')), 'URL buttons only');
   // a command for another bot in the group is not ours
-  assert.equal((await update('/odds@SomeOtherBot owls')).sent.length, 0);
+  assert.equal((await update('/odds@SomeOtherBot owls', { wait: 300 })).sent.length, 0);
   // a member can read the settings, not change them
   r = await update('/settings TX');
   assert.match(r.sent[0].text, /Only a group admin/);
