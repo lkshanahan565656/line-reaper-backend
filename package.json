@@ -1,10 +1,10 @@
 {
   "name": "line-reaper-backend",
-  "version": "3.223.11",
+  "version": "3.223.12",
   "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --max-old-space-size=1536 server.js",
     "dev": "node --watch server.js",
     "test": "node --test test/*.test.js",
     "lint": "eslint .",
