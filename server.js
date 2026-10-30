@@ -27,13 +27,19 @@ const writeLimiter = security.writeLimit({ skip: req => !req.path.startsWith('/a
 app.use(writeLimiter);
 // Answered before anything else is mounted, and from memory only: Railway's
 // health check and the uptime probe get an answer while feeds are still warming.
+// Memory guard (memguard.js): a planned restart, right after a results backup,
+// when memory stays high, instead of a crash at V8's limit
+const memGuard = require('./memguard').createMemGuard({
+  lastBackupAt: () => (typeof resultsBackup !== 'undefined' ? resultsBackup.status().lastExportAt : null),
+  flush: () => require('./jsonstore').flushAll(),
+});
 app.get('/api/health', (req, res) => {
   const o = ops.state();
   res.set('Cache-Control', 'no-store').json({
     ok: true, version: VERSION, uptimeS: o.uptimeS,
     listening: o.boot.some(b => b.mark === 'listening'), boot: o.boot,
     stalls: { count: o.stalls.count, worstMs: o.stalls.worstMs, last: o.stalls.recent[0] || null },
-    inFlight: o.requests.inFlight, memory: o.memory,
+    inFlight: o.requests.inFlight, memory: { ...o.memory, guard: memGuard.status() },
     backup: typeof resultsBackup !== 'undefined' ? resultsBackup.status().state : 'loading',
     stores: require('./jsonstore').storeStats(),
   });
@@ -42,7 +48,7 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness(),
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), memGuard: memGuard.status(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness(),
   resultsBackup: (({ state, snapshotAt, note, readWith, keys, refused, lastExportAt }) => ({ state, snapshotAt, note, readWith, keys, refused, lastExportAt }))(resultsBackup.status()) }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
@@ -10974,6 +10980,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
   resultsBackup.load().then(() => ops.mark('backup read'), () => {});
   const server = app.listen(PORT, async () => {
     ops.mark('listening');
+    memGuard.start();
     // read the app and start compressing its script now, so the first visitor gets brotli
     if (loadApp()) appBundle.packed.ready.then(() => ops.mark('app compressed'));
     console.log(`Line Reaper v${VERSION} on port ${PORT} (${ops.state().boot.map(b => `${b.mark} ${b.ms} ms`).join(', ')})`);
