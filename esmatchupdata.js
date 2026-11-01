@@ -53,8 +53,7 @@ const DEFAULTS = {
   minN: 50,
 };
 
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r1 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
+const { r4OrNull: r4, r1OrNull: r1 } = require('./mathutil');
 const num = v => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
 
 // lolesports events → finished series and upcoming ones

@@ -24,8 +24,7 @@ const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
 // Pinnacle sport ids (esports, 12, is feeds.js's)
 const SPORTS = { baseball: 3, basketball: 4, football: 15, hockey: 19, soccer: 29, tennis: 33, mma: 22 };
 
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { toProb, r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const halfLine = x => Number.isFinite(x) && Math.abs(((Math.abs(x) * 2) % 2) - 1) < 1e-9;
 

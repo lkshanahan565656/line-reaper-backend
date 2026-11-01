@@ -14,7 +14,7 @@ const EFFECTIVE = 'October 12, 2026';
 const REFUND_HOURS = 72;
 const MIN_AGE = 21;
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const { escHtml: esc } = require('./mathutil');
 
 function configFromEnv(env = process.env) {
   return {
