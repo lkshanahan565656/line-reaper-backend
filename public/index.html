@@ -1796,8 +1796,8 @@ body::before { display:none !important; }
 
 <div id="netBanner" style="display:none;margin:10px 16px 0;padding:12px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:10px;font-size:12px;line-height:1.7;color:#fca5a5;position:relative;z-index:5">
   <strong style="color:#f87171">NO NETWORK — every request from this page is failing.</strong><br>
-  <span style="color:#cbd5e1">If you opened this file inside the Claude app's preview, that sandbox blocks all internet access — <strong>download the file and open it in Chrome, or deploy it to Netlify</strong> like your live version.</span><br>
-  <span style="color:#94a3b8;font-size:11px">Backend check: open <span style="font-family:'JetBrains Mono',monospace;color:#e2e8f0">line-reaper-backend-production.up.railway.app/api/status</span> in a normal browser tab — if JSON comes back, the backend is alive. The esports tab only needs that backend — it never touches the paid Odds API.</span>
+  <span style="color:#cbd5e1">Check your connection, then reload. If other sites load fine, the server may be restarting after an update: give it a few minutes.</span><br>
+  <span style="color:#94a3b8;font-size:11px">Server status: <a href="/status" style="color:#e2e8f0">/status</a>.</span>
   <button type="button" aria-label="Hide this notice" onclick="this.parentElement.style.display='none'" style="position:absolute;top:8px;right:12px;cursor:pointer;color:#8391a7;font-weight:800;background:none;border:0;font-size:inherit">✕</button>
 </div>
 
@@ -2122,10 +2122,10 @@ body::before { display:none !important; }
 <div class="page" id="page-sharp">
   <div class="clv-info">
     <strong style="color:#c8c8c8">SHARP MONEY</strong> — the backend compares every book on each 30-second poll. Sharp leads, steam and reverse line moves are at the top; every individual line move is below. ★ = sharp book.<br>
-    <span style="color:#444;font-size:10px">First moves appear ~60s after load (need 2 polls to detect change). Reloading resets history.</span>
+    <span style="color:var(--muted2);font-size:10px">First moves appear ~60s after load (need 2 polls to detect change). Reloading resets history.</span>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted2)">PIN · DK · FD · MGM · CZR · B365 · BOL · LVG</div>
+    <div id="sharpBooks" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted2)">PIN · DK · FD · MGM · CZR · B365 · BOL · LVG</div>
     <button class="refresh-chip" onclick="sharpMoves=[];sharpOddsSnapshot={};renderSharpFeed()">CLEAR</button>
   </div>
   <div id="sharpSignals" style="margin-bottom:14px"></div>
