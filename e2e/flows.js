@@ -636,6 +636,35 @@ const FLOWS = {
       const rows = csv.ok() ? (await csv.text()).split('\n').filter(Boolean) : [];
       expect(/^slip_id,/.test(rows[0] || '') && rows.filter(x => /Josh Allen|Stefon Diggs/.test(x)).length >= 2, 'the CSV should hold the pasted legs');
     } finally { await p2.close(); }
+    // WIDGET: the code to copy and a preview of this record's widget
+    await page.locator('#msPub button', { hasText: /^WIDGET$/ }).click();
+    await settle(page, w, opts, 150);
+    const snip = await text(page, '#msPubWidget .ms-pub-snip');
+    expect(snip.includes(`data-handle="${handle}"`) && /embed\.js/.test(snip), `the widget code is wrong: "${snip.slice(0, 160)}"`);
+    expect(await page.locator('#msPubWidget iframe').count() === 1, 'no widget preview');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the record panel scrolls sideways with the widget open');
+    // FEED: a wrong webhook is refused on the page, with words
+    await page.locator('#msPub button', { hasText: /^FEED$/ }).click();
+    await settle(page, w, opts, 300);
+    await page.fill('#msFeedHook', 'https://example.com/not-a-hook');
+    await page.locator('#msPub button', { hasText: 'CONNECT DISCORD' }).click();
+    await settle(page, w, opts, 100);
+    expect(/not a Discord webhook URL/.test(await text(page, '#msFeedHint')), `CONNECT DISCORD with a wrong URL said "${await text(page, '#msFeedHint')}"`);
+    expect(/Picks logged late never post/.test(await text(page, '#msPubFeed')), 'the feed panel does not say late picks never post');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the record panel scrolls sideways with the feed open');
+    await page.locator('#msPub button', { hasText: /^FEED$/ }).click();
+    // the widget on its own
+    const p4 = await page.context().newPage();
+    try {
+      await p4.setViewportSize(page.viewportSize());
+      const r = await p4.goto(`${opts.base}/embed/record?handle=${handle}`, { waitUntil: 'domcontentloaded' });
+      expect(r.status() === 200, `the record widget answered ${r.status()}`);
+      const t = await p4.locator('body').innerText();
+      expect(t.toLowerCase().includes(`@${handle}`) && /FULL RECORD/.test(t), `the record widget lacks the handle or its link: "${t.slice(0, 120)}"`);
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(t), 'the record widget shows broken text or a claim');
+      expect(!/PROVEN/.test(t) || /Proven means/.test(t), 'the record widget says PROVEN without the rule');
+      expect(await p4.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the record widget scrolls sideways');
+    } finally { await p4.close(); }
     // the list of records: take this one off it and back on, then read /r
     const off = page.locator('#msPub button', { hasText: 'TAKE OFF THE LIST' });
     await off.waitFor({ timeout: 4000 });
@@ -1571,7 +1600,8 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
       const body = await page.evaluate(() => document.body.innerText);
       expect(!claimy.test(body), 'the developers page shows a claim or broken text');
       expect(/GET \/api\/v1\/best-prices/.test(body) && /GET \/api\/v1\/record/.test(body), 'an endpoint is missing from the docs');
-      expect(await page.locator('iframe[data-lr-id]').count() === 3, 'the three widget previews are missing');
+      expect(await page.locator('iframe[data-lr-id]').count() >= 3, 'the widget previews are missing');
+      expect(await page.locator('#widget-bettor pre').count() === 2 && await page.locator('#feed-records').count() === 1, 'the bettor record widget or the records-on-your-feed form is missing');
       if (!opts.live) {
         // TRY IT before a key says to make one, rather than doing nothing
         const tryBtn = page.locator('[data-try]').first();
@@ -1606,6 +1636,11 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
         await page.locator('#fd button[type=submit]').click();
         await page.waitForFunction(() => !/Checking the webhook/.test(document.getElementById('fdOut').textContent), null, { timeout: 15000 });
         expect(/Discord|Connected/.test(await text(page, '#fdOut')), `CONNECT said "${await text(page, '#fdOut')}"`);
+        // bettor records on the feed need a connected webhook first, and say so
+        await page.locator('#frHandles').fill('nobody_here');
+        await page.locator('#fr button[type=submit]').click();
+        await page.waitForFunction(() => !/Saving/.test(document.getElementById('frOut').textContent), null, { timeout: 6000 });
+        expect(/Discord webhook first|No published record|Saved/.test(await text(page, '#frOut')), `SAVE records said "${await text(page, '#frOut')}"`);
         await page.locator('#fdOff').click();
         await page.waitForFunction(() => /Disconnected/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
         expect(await fits(), 'the developers page scrolls sideways after the feed steps');

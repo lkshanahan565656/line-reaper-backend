@@ -22,6 +22,7 @@ const VERSION = 'v1';
 const LIMITS = { perMinute: 60, perDay: 5000 };
 const WIDGET_PER_MINUTE = 120;
 const KEY_CREATE = { perHour: 5, max: 20000 };
+const FEED_HANDLES = 10;
 const sha256 = s => crypto.createHash('sha256').update(String(s)).digest('hex');
 const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
@@ -88,6 +89,19 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await store.put(out);
     return out;
   }
+  // the bettor records a key's feed also gets (pubrecord.js handles, at most
+  // FEED_HANDLES) and whether it keeps the RESULTS posts too
+  async function setFeedRecords(key, { handles = [], results = true } = {}) {
+    await init();
+    const d = check(key);
+    if (!d || !d.feed) return null;
+    const out = { ...d, feed: { ...d.feed, handles: [...new Set(handles)].slice(0, FEED_HANDLES), results: results !== false } };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  // every live key's feed subscribed to one handle: [{ keyId, feed }]
+  const feedsFor = handle => feeds().filter(x => (x.feed.handles || []).includes(handle));
   // every live key's feed: [{ keyId, feed }]
   const feeds = () => [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).map(d => ({ keyId: d.id, feed: d.feed, userId: d.userId || null }));
   // after a send: ok resets the failure count; dead (or 5 fails in a row) retires the feed
@@ -148,7 +162,7 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await store.put(out);
     return out.tgBot;
   }
-  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed, setBot, botFor, bots, markBot, setTgBot, tgBotFor, tgBots, markTgBot };
+  return { init, create, check, revoke, listFor, stats, setFeed, setFeedRecords, feeds, feedsFor, markFeed, setBot, botFor, bots, markBot, setTgBot, tgBotFor, tgBots, markTgBot };
 }
 const publicKey = d => ({ id: d.id, name: d.name, createdAt: d.createdAt, revokedAt: d.revokedAt || null, signedIn: !!d.userId });
 
@@ -295,8 +309,10 @@ const ENDPOINTS = [
   { path: '/api/v1/search', title: 'Search', params: [['q', 'a team, player, league, market or esports series (2+ letters)'], ['kind', 'game, series, player, market or league (comma list)'], ['state', 'two-letter US state code, e.g. TX: best prices only at venues a source says a resident can use'], ['limit', '1 to 60, default 30']],
     about: "What the app's SEARCH box finds, from what the site holds now: games with each side's best bettable price, esports series with the cost to buy each side, players and their props, markets and leagues. No fair or EV." },
   { path: '/api/v1/status', title: 'Feed status', params: [], about: "Every venue's last good read, staleness and uptime, the same as /status." },
+  { path: '/api/v1/records/{handle}', title: "A bettor's public record", params: [],
+    about: "One published bettor record (/r/<handle>) as the record widget shows it: picks logged before their start, each app and venue against Pinnacle's close with its label (proven only on the strict rule, never pooled), picks logged late counted apart. No units or profit." },
   { path: '/api/v1/key', title: 'This key', params: [], about: "Your key's name, when it was made and what it has used this minute and today." },
 ];
 
-module.exports = { VERSION, LIMITS, WIDGET_PER_MINUTE, KEY_CREATE, ENDPOINTS, EXCHANGES, sha256, createKeyStore, createLimiter, limitHeaders, callerOf, etagOf, sendCached,
+module.exports = { FEED_HANDLES, VERSION, LIMITS, WIDGET_PER_MINUTE, KEY_CREATE, ENDPOINTS, EXCHANGES, sha256, createKeyStore, createLimiter, limitHeaders, callerOf, etagOf, sendCached,
   fillOf, priceLabel, bestPrices, boardGame, moveRow, historySeries, recordCard, publicKey, cleanName };
