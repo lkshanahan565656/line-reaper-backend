@@ -167,7 +167,9 @@ function kambiEventIds(payload, { now = Date.now(), withinMs = 8 * 86400e3 } = {
 const STAT_FIX = { 'pts_+_ast': 'pts_asts', 'pts_+_reb_+_ast': 'pra', 'pts_+_reb': 'pts_rebs', 'reb_+_ast': 'rebs_asts', touchdown_passes: 'pass_tds',
   touchdown_passes_thrown: 'pass_tds', made_threes: 'threes', 'rushing_+_receiving_yards': 'rush_rec_yds', outs_recorded: 'pitcher_outs',
   bases: 'total_bases', total_receptions: 'receptions', interceptions_thrown: 'pass_ints', pitcher_strikeouts: 'strikeouts', 'rushing_&_receiving_yards': 'rush_rec_yds',
-  'passing_&_rushing_yards': 'pass_rush_yds', touchdowns: 'anytime_td', shots: 'shots_on_goal' };
+  'passing_&_rushing_yards': 'pass_rush_yds', touchdowns: 'anytime_td', shots: 'shots_on_goal',
+  // FanDuel's NHL "Total Goals" / "Total Saves" ...: the apps say goals, saves
+  total_goals: 'goals', total_saves: 'saves', total_assists: 'assists', total_shots_on_goal: 'shots_on_goal' };
 const statKey = words => { const k = canonMarket(words); return STAT_FIX[k] || k; };
 const PART_GAME = /\b(1st|2nd|3rd|4th|first|second|third|half|quarter|period|inning|innings|alt|alternate)\b/i;
 

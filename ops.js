@@ -7,6 +7,8 @@
 //   requests   per route: count, slowest, total; plus the slowest recent ones
 //   boot       named marks from process start (module loaded, listening,
 //              backup read, ...)
+//   faults     promise rejections nothing handled (logged and counted, the
+//              server keeps running) and the uncaught error that stopped it
 
 const STALL_MS = 500;
 
@@ -27,6 +29,17 @@ function createOps({ now = () => Date.now(), sampleMs = 100, stallMs = STALL_MS,
   // with none of our code on the stack): counts since start, recent long ones
   const gc = { count: 0, totalMs: 0, over100: 0, over250: 0, over500: 0, maxMs: 0, recent: [] };
   let gcObs = null;
+  // rejections nobody caught: counted and kept, newest last (message and the
+  // first lines of the stack, never request data)
+  const faults = { unhandled: 0, recent: [] };
+  function fault(kind, err) {
+    const e = err instanceof Error ? err : new Error(String(err));
+    if (kind === 'unhandledRejection') faults.unhandled++;
+    const stack = String(e.stack || '').split('\n').slice(1, 4).map(l => l.trim()).join(' | ');
+    faults.recent.push({ at: new Date(now()).toISOString(), kind, message: String(e.message).slice(0, 300), stack: stack.slice(0, 500) });
+    if (faults.recent.length > 20) faults.recent.shift();
+    log.error(`${kind}: ${e.message}${stack ? ` (${stack})` : ''}`);
+  }
   const GC_KINDS = { 1: 'minor', 2: 'major', 4: 'incremental', 8: 'weakcb' };
   function onGc(list) {
     for (const e of list.getEntries()) {
@@ -138,12 +151,13 @@ function createOps({ now = () => Date.now(), sampleMs = 100, stallMs = STALL_MS,
       requests: { inFlight: activeReqs.size, routes: top, slowest: slow.slice(0, 20) },
       jobs: { running: [...activeJobs.values()].map(j => ({ name: j.name, forMs: now() - j.at })), byMaxMs: jobList },
       memory: (() => { const m = process.memoryUsage(); return { rssMb: Math.round(m.rss / 1048576), heapMb: Math.round(m.heapUsed / 1048576) }; })(),
+      faults: { unhandled: faults.unhandled, recent: faults.recent.slice().reverse() },
     };
   }
 
   function stop() { clearInterval(timer); timer = null; gcObs?.disconnect(); gcObs = null; }
 
-  return { mark, start, stop, job, middleware, state, t0 };
+  return { mark, start, stop, job, middleware, state, fault, t0 };
 }
 
 // A short-lived memo for expensive read-only answers (the results scoreboard):
