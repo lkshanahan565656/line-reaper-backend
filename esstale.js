@@ -41,7 +41,7 @@ const BOOK_APP = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' };
 
 const { probToAmerican } = require('./ev');
 
-const r1 = x => Math.round(x * 10) / 10;
+const { r1 } = require('./mathutil');
 
 function createEsStale(opts = {}) {
   const o = { ...DEFAULTS, ...opts };

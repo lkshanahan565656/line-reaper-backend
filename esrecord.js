@@ -51,7 +51,7 @@ const STAT = { k: 'kills', hs: 'headshots', ast: 'assists' };
 const statOf = mkey => STAT[String(mkey || '').split('|')[0]] || null;
 const iso = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? new Date(x).toISOString() : ''; };
 const num = v => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4, toProb } = require('./mathutil');
 
 // ── reads → entries ──
 // the app's own match id for a line: its game id, else start and title
@@ -184,7 +184,6 @@ function pinAt(ladders, i, sport) {
     map1: tot ? { unit, line: -tot[0], pOver: tot[1] } : null,
   };
 }
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 function kambiAt(v, i) {
   const ml = v?.['series|0|ml']?.[0];
   if (!ml) return null;
