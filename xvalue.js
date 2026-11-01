@@ -45,7 +45,7 @@ const DEFAULTS = {
 const VENUE = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
 const REF_NAME = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
 
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 // a league label for the record when the parsers only know the big US ones:
 // Kalshi's series ("KXEPLGAME-…" → epl, "KXATPMATCH-…" → atp), Polymarket's
 // game slug ("ucl-ars-bay-2026-10-21" → ucl). Only labels Results and Best
