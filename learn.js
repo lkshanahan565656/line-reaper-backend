@@ -227,7 +227,7 @@ fetch('/api/claims').then(function (r) { return r.ok ? r.json() : Promise.reject
   var pr = d.proven || [], tx = d.texas || {};
   var body = pr.length
     ? 'Proven: ' + pr.map(function (r) { return '<b>' + e(r.kindLabel) + ' at ' + e(r.bookName) + '</b> (' + r.graded + ' graded games, ' + p(r.clv) + ' CLV' + (r.profitShown ? '' : ', profit not shown yet') + (r.texas ? '' : ', not a Texas venue') + ')'; }).join('; ') + '. Everything else is a lead, a model or research.'
-    : 'Nothing is proven yet. ' + (d.building || 0) + ' kinds of bet are still building their samples.';
+    : 'Nothing is proven yet. ' + (!d.building ? 'No kind of bet has a graded sample yet.' : d.building === 1 ? '1 kind of bet is still building its sample.' : d.building + ' kinds of bet are still building their samples.');
   document.getElementById('lrClaimsBody').innerHTML = body + ' <a href="/app?start=results">Full record</a>.';
   var names = function (l) { return (l || []).filter(function (v) { return v.read; }).map(function (v) { return e(v.name); }).join(', '); };
   document.getElementById('lrClaimsTx').innerHTML = e(tx.note || '') + ' We price ' + names(tx.pickem) + ' and ' + names(tx.exchanges) + '. '
