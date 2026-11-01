@@ -1,0 +1,14 @@
+name: diag-siteup
+on: { push: { branches: [diag-siteup] } }
+permissions: { contents: read }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          for p in / /api/health /api/status /app; do
+            echo "=== $p"; curl -sS -i -m 30 "$U$p" | head -c 1500; echo
+          done
+          echo "=== dns"; getent hosts line-reaper-backend-production.up.railway.app || true
