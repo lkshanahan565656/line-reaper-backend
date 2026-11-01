@@ -41,8 +41,7 @@ const DEFAULTS = {
   minShare: 0.03, maxShare: 0.5,
 };
 
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2, r4 } = require('./mathutil');
 
 // One team's players → each one's share of the team's kills.
 // players: [{ key, rate (kills a game), games }]
