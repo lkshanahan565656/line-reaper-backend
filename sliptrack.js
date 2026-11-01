@@ -16,8 +16,7 @@ const { sportKey, statKind, spanToMaps, outcomeFor } = require('./tracker');
 
 const HOUR = 3600e3;
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-const r1 = x => Math.round(x * 10) / 10;
-const r2 = x => Math.round(x * 100) / 100;
+const { r1, r2 } = require('./mathutil');
 const avg = xs => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 function legKey(l) {
