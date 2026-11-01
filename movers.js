@@ -13,7 +13,7 @@
 // be minMove or more in a day or minHourMove in the hour.
 
 const DEFAULTS = { minMove: 0.03, minHourMove: 0.02, maxSpread: 0.03, maxRows: 40 };
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 const VENUE = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
 
 // quotes: xvalue's Map side id → { fair, cost, price, spread, refId, dir, venue, pick, ... }
