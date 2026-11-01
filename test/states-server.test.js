@@ -76,7 +76,7 @@ test('the public API filters by ?state, refuses a bad code, and lists the states
 });
 
 test('the app has CUSTOMIZE > My state on Texas by default, and the sales page a state lookup', () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const html = require('./app-source').both;
   assert.match(html, /id="layState"/);
   assert.match(html, /let lrState = 'TX';/);
   for (const pg of ['odds', 'props', 'esports', 'results', 'best', 'ev']) assert.match(html, new RegExp(`id="page-${pg}">\\n(  <div id="pkTray" style="display:none"></div>\\n)?  <div data-state-bar></div>`), pg);
