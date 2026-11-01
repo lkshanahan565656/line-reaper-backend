@@ -21,15 +21,26 @@ const path = require('path');
 
 // On Railway the disk is wiped at every deploy (the results backup is the
 // copy that lasts), so the file only matters across a crash: write at most
-// every 30 s there. Live, a 2 s timer wrote 1 GB in the first 5 minutes.
+// every 5 minutes there. A 2 s timer wrote 1 GB in the first 5 minutes; at
+// 30 s the stores still rewrote 5.9 GB of JSON an hour (10-27, v3.220.0), and
+// the garbage it left was most of the 20% of CPU spent collecting it. A
+// deploy's SIGTERM and a crash both flush what is pending first.
 // Elsewhere (desktop, local) 2 s. LR_STORE_WRITE_MS overrides both.
 const envDelay = process.env.LR_STORE_WRITE_MS;
 const DEFAULT_DELAY_MS = envDelay !== undefined && envDelay !== '' && Number.isFinite(+envDelay) ? +envDelay
-  : (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID ? 30000 : 2000);
+  : (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID ? 5 * 60e3 : 2000);
+// Stores people write to (published records, logged bets, API keys, push
+// subscriptions, alert history) can't wait 5 minutes: an out-of-memory kill
+// is SIGKILL, nothing flushes, and a slip logged before tip that vanished
+// would look like a doctored record. They are small and change only when
+// someone acts, so 2 s costs next to nothing. LR_USER_STORE_WRITE_MS overrides.
+const envUser = process.env.LR_USER_STORE_WRITE_MS;
+const USER_DELAY_MS = envUser !== undefined && envUser !== '' && Number.isFinite(+envUser) ? +envUser : 2000;
 const CHUNK_ROWS = 400;
 
 const live = new Set();   // stores with unwritten changes, for the exit hook
 const stats = { writes: 0, rows: 0, bytes: 0, ms: 0, maxMs: 0, errors: 0, lastError: null };
+const perFile = new Map();   // file name → { writes, rows, mb, ms } (for /api/ops: which store writes most)
 
 let exitHooked = false;
 function hookExit() {
@@ -64,6 +75,9 @@ function createJsonFileStore(file, { label = 'Store', delayMs = DEFAULT_DELAY_MS
     const ms = Date.now() - t0;
     stats.writes++; stats.rows += list.length; stats.bytes += bytes + 2; stats.ms += ms;
     if (ms > stats.maxMs) stats.maxMs = ms;
+    const f = perFile.get(path.basename(file)) || { writes: 0, rows: 0, bytes: 0, ms: 0 };
+    f.writes++; f.rows = list.length; f.bytes += bytes + 2; f.ms += ms;
+    perFile.set(path.basename(file), f);
   }
 
   async function run() {
@@ -92,6 +106,7 @@ function createJsonFileStore(file, { label = 'Store', delayMs = DEFAULT_DELAY_MS
   const store = {
     kind: 'file',
     file,
+    delayMs,
     async init() {
       try {
         const arr = JSON.parse(await fsp.readFile(file, 'utf8'));
@@ -135,6 +150,11 @@ function createJsonFileStore(file, { label = 'Store', delayMs = DEFAULT_DELAY_MS
 }
 
 const flushAll = () => Promise.all([...live].map(s => s.flush()));
-const storeStats = () => ({ ...stats, pending: live.size });
+// files: the heaviest writers first (rows is the last write's count)
+const storeStats = () => ({
+  ...stats, pending: live.size, delayMs: DEFAULT_DELAY_MS, userDelayMs: USER_DELAY_MS,
+  files: [...perFile.entries()].sort((a, b) => b[1].bytes - a[1].bytes).slice(0, 15)
+    .map(([file, f]) => ({ file, writes: f.writes, rows: f.rows, mb: Math.round(f.bytes / 1048576), ms: f.ms })),
+});
 
-module.exports = { createJsonFileStore, flushAll, storeStats, DEFAULT_DELAY_MS };
+module.exports = { createJsonFileStore, flushAll, storeStats, DEFAULT_DELAY_MS, USER_DELAY_MS };
