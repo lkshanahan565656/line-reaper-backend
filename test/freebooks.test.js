@@ -147,3 +147,15 @@ test('mergeGames says which books\' events came back, even with every market sus
   assert.deepEqual(g.read.betrivers, { props: true });
   assert.deepEqual(g.read.fanduel, { props: false });
 });
+
+test('FanDuel NHL "Total Goals/Saves/Assists/Shots On Goal" read as the apps\' goals, saves, assists, shots_on_goal', () => {
+  const fb = require('../freebooks');
+  const mk = (name, player, line) => ({ bettingType: 'MOVING_HANDICAP', marketStatus: 'OPEN', marketName: `${player} - ${name}`, runners: [
+    { runnerName: `${player} Over`, runnerStatus: 'ACTIVE', handicap: line, result: { type: 'OVER' }, winRunnerOdds: { americanDisplayOdds: { americanOdds: -110 } } },
+    { runnerName: `${player} Under`, runnerStatus: 'ACTIVE', handicap: line, result: { type: 'UNDER' }, winRunnerOdds: { americanDisplayOdds: { americanOdds: -110 } } }] });
+  const fd = { attachments: { markets: {
+    a: mk('Total Saves', 'Igor Shesterkin', 27.5), b: mk('Total Goals', 'Auston Matthews', 0.5),
+    c: mk('Total Assists', 'Connor McDavid', 0.5), d: mk('Total Shots On Goal', 'Nathan MacKinnon', 3.5) } } };
+  const keys = Object.fromEntries(fb.parseFanDuelProps(fd).map(r => [r.player, r.mkey]));
+  assert.deepEqual(keys, { 'Igor Shesterkin': 'saves', 'Auston Matthews': 'goals', 'Connor McDavid': 'assists', 'Nathan MacKinnon': 'shots_on_goal' });
+});

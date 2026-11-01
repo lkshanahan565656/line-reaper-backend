@@ -4,15 +4,13 @@
 // showed American odds and a league card counted every state's venues.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
 const vm = require('vm');
 const oddsFmt = require('../oddsfmt');
 const L = require('../leagues');
 const sc = require('../sharecards');
 const embeds = require('../embeds');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const html = require('./app-source').both;
 const share = vm.runInNewContext(`${html.match(/^\/\/ LR_SHARE_BEGIN\n([\s\S]*?)^\/\/ LR_SHARE_END$/m)[1]}\nLRShare`, { URLSearchParams });
 const noTags = s => s.replace(/<[^>]+>/g, ' ');
 const NOW = Date.parse('2026-10-26T12:00:00Z');
