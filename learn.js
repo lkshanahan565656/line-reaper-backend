@@ -16,7 +16,7 @@ const results = require('./results');
 const pmus = require('./pmus');
 const glossary = require('./glossary');
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const { escHtml: esc } = require('./mathutil');
 const am = d => { const a = calc.decimalToAmerican(d); return a == null ? '—' : (a > 0 ? `+${Math.round(a)}` : `${Math.round(a)}`); };
 const dec = a => calc.americanToDecimal(a);
 const pct = (x, n = 1) => (x == null ? '—' : `${(x * 100).toFixed(n)}%`);

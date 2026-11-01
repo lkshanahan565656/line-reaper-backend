@@ -30,7 +30,7 @@ const { LEAGUES, parseBox, ymd } = require('./sportgrade');
 const { fairAt: closeFairAt, dayOf } = require('./propclose');
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports';
-const r2 = x => Math.round(x * 100) / 100;
+const { r2 } = require('./mathutil');
 const VOID_AFTER_MS = 3 * 86400e3;
 const READY_AFTER_MS = 3 * 3600e3;    // a game is looked for 3 hours after its start
 
