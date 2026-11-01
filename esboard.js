@@ -92,7 +92,7 @@ function bidPlan(q, ref, venue, o) {
   return { price: p, cost: r4(cost(p)), ev: r4(evAt(p)) };
 }
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { num } = require('./mathutil');
 const price = v => { const x = num(v); return x != null && x > 0 && x < 1 ? Math.round(x * 1e4) / 1e4 : null; };
 const r4 = x => (x == null ? null : Math.round(x * 1e4) / 1e4);
 const toMs = v => {

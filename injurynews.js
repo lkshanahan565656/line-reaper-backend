@@ -42,7 +42,7 @@ const KINDS = new Set(Object.values(KIND));
 const BE = { prizepicks: 0.5503, pick6: 0.567, underdog: 0.5623, sleeper: null };
 const appOfKind = k => Object.keys(KIND).find(a => KIND[a] === k) || null;
 const isOut = s => /^(out|doubtful)\b/i.test(String(s || '').trim());
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 const EPS = 1e-9;
 
 // ESPN's abbreviations are the keys; the apps' map onto them (as nbadata.js)

@@ -30,7 +30,7 @@ const DISCORD_RE = /^https:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/api\/(
 const TG_TOKEN_RE = /^\d{5,15}:[\w-]{30,60}$/;
 const TG_CHAT_RE = /^(?:-?\d{3,20}|@[A-Za-z][\w]{3,31})$/;
 const LIMITS = { discordDesc: 4000, discordTitle: 250, tgCaption: 1024, tgText: 4000 };
-const COLORS = { digest: 0x60a5fa, record: 0x34d399, moves: 0xfbbf24, welcome: 0x94a3b8 };
+const COLORS = { digest: 0x60a5fa, record: 0x34d399, moves: 0xfbbf24, welcome: 0x94a3b8, pick: 0x22d3ee, result: 0xa78bfa };
 const FOOTER = 'Line Reaper is an information service, not a sportsbook. It takes no bets. 21+. Gambling problem? 1-800-GAMBLER.';
 
 // ── destinations ──
@@ -165,6 +165,114 @@ function welcomePost({ origin = '' } = {}) {
     link: o ? `${o}/developers#feed` : null, image: o ? `${o}/card/record.png` : null };
 }
 
+// ── a bettor's own record (pubrecord.js): each pick logged before its start,
+// then its graded result ──
+// The same words for every channel that gets a handle's feed: the owner's own
+// Discord or Telegram, and any customer channel subscribed to the handle on
+// /developers. A pick posts once the server has matched it to its game and
+// seen that it was logged before the start, with the server's stamp and the
+// price; a pick logged late never posts. No stake, no units, no profit, no
+// sizing, nothing that places a bet: the record's page has the rest.
+const PICK_MAX_AGE = 12 * 3600e3;    // a pick first seen on time this long after it was logged is not posted as new
+const KEEP_MS = 21 * 86400e3;        // posted marks kept this long
+const SHOW = 8;                      // items written out in one post
+// prev: the handle's saved state or null; items: pubrecord.feedItems(view)
+// → { state, picks, results, baseline }. The first plan (or the first after
+// the handle had no channel) is a baseline: everything there now is marked
+// and nothing posts, so connecting a channel never floods it with history.
+function planBettorFeed(prev, items, { now = Date.now(), maxAge = PICK_MAX_AGE } = {}) {
+  const t = new Date(now).toISOString();
+  const keep = m => Object.fromEntries(Object.entries(m || {}).filter(([, at]) => now - Date.parse(at) < KEEP_MS));
+  const picks = keep(prev?.picks), results = keep(prev?.results);
+  const onTime = items.filter(i => i.timing === 'on time');
+  if (!prev || !prev.active) {
+    for (const i of onTime) { picks[i.key] = picks[i.key] || t; if (i.final) results[i.key] = results[i.key] || t; }
+    return { state: { active: true, picks, results, at: t }, picks: [], results: [], baseline: true };
+  }
+  const newPicks = onTime.filter(i => !picks[i.key] && now - Date.parse(i.receivedAt) <= maxAge).sort((a, b) => Date.parse(a.receivedAt) - Date.parse(b.receivedAt));
+  // a pick seen on time too long after it was logged (the games were never matched in time) is marked, never posted
+  for (const i of onTime) if (!picks[i.key] && now - Date.parse(i.receivedAt) > maxAge) picks[i.key] = t;
+  for (const i of newPicks) picks[i.key] = t;
+  const newResults = onTime.filter(i => i.final && picks[i.key] && !results[i.key] && !newPicks.includes(i));
+  for (const i of newResults) results[i.key] = t;
+  return { state: { active: true, picks, results, at: t }, picks: newPicks, results: newResults, baseline: false };
+}
+// a handle with no channel left: the next channel starts from a fresh baseline
+const idleBettorFeed = prev => (prev ? { ...prev, active: false } : null);
+
+const utcAt = (x, secs = false) => { const ms = Date.parse(x || ''); return Number.isFinite(ms) ? `${new Date(ms).toISOString().slice(5, 10).replace('-', '/')} ${new Date(ms).toISOString().slice(11, secs ? 19 : 16)} UTC` : '—'; };
+const amOf = dec => (!(dec > 1) ? null : dec >= 2 ? Math.round((dec - 1) * 100) : Math.round(-100 / (dec - 1)));
+const minsBefore = (got, start) => { const a = Date.parse(got || ''), b = Date.parse(start || ''); if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return null; const m = Math.round((b - a) / 60e3); return m >= 120 ? `${Math.round(m / 60)} h` : `${m} min`; };
+const legText = l => `${l.player} ${l.side} ${l.line} ${l.market}`;
+function pickLines(i) {
+  if (i.type === 'bet') {
+    const b = i.bet, a = amOf(b.decimal);
+    const before = minsBefore(b.receivedAt, b.start);
+    return [`• ${b.venueName}: ${b.pick} @ ${Number(b.decimal).toFixed(2)}${a != null ? ` (${a > 0 ? '+' : ''}${a})` : ''} · ${b.event}${b.start ? ` · starts ${utcAt(b.start)}` : ''}`,
+      `  logged ${utcAt(b.receivedAt, true)} by the server${before ? `, ${before} before the start` : ''}`];
+  }
+  const s = i.slip;
+  const before = minsBefore(s.receivedAt, s.firstStart);
+  return [`• ${s.appName} ${s.legsN}-pick${s.flex ? ' flex' : ''}${s.be ? ` (needs ${(s.be * 100).toFixed(1)}% a leg at the app's standard table)` : ''}`,
+    ...s.legs.map(l => `  – ${legText(l)}${l.game || l.start ? ` · ${[l.sport, l.game, l.start ? utcAt(l.start) : null].filter(Boolean).join(' · ')}` : ''}`),
+    `  logged ${utcAt(s.receivedAt, true)} by the server${before ? `, ${before} before the first game` : ''}`];
+}
+function resultLines(i) {
+  if (i.type === 'bet') {
+    const b = i.bet;
+    return [`• ${b.venueName}: ${b.pick} @ ${Number(b.decimal).toFixed(2)}: ${String(b.outcome).toUpperCase()}. ${b.clv != null ? `CLV ${pc(b.clv)} against Pinnacle's close` : b.note || 'no Pinnacle close at its number'}.`];
+  }
+  const s = i.slip;
+  const hit = s.legs.filter(l => l.outcome === 'win').length, settled = s.legs.filter(l => l.outcome === 'win' || l.outcome === 'loss').length;
+  const res = s.result === 'paid' ? `PAID (flex, ${hit} of ${settled} hit)` : String(s.result).toUpperCase();
+  return [`• ${s.appName} ${s.legsN}-pick${s.flex ? ' flex' : ''}: ${res}`,
+    ...s.legs.map(l => `  – ${legText(l)}: ${l.outcome ? String(l.outcome).toUpperCase() : '—'}${l.stat != null ? ` (${l.stat})` : ''}${l.pinClv != null ? `, CLV ${pc(l.pinClv)} vs Pinnacle's close` : l.pinNote ? `, ${l.pinNote}` : ''}`)];
+}
+// where each kind of the record stands, on the strict rule (pubrecord.bettorCard kinds)
+function kindLine(k) {
+  if (k.label === 'proven') return `${k.name}: PROVEN on the strict rule (${k.n} ${k.unit} vs Pinnacle's close, CLV ${pc(k.clv)}${k.clvT != null ? `, t ${Number(k.clvT).toFixed(1)}` : ''}).`;
+  return `${k.name}: ${k.n} of ${k.target} ${k.unit} graded against Pinnacle's close${k.clv != null ? `, CLV ${pc(k.clv)}${k.clvT != null ? ` (t ${Number(k.clvT).toFixed(1)})` : ''}` : ''}: ${k.label}.`;
+}
+function writeOut(items, fn, more) {
+  const lines = items.slice(0, SHOW).flatMap(fn);
+  if (items.length > SHOW) lines.push(`…and ${items.length - SHOW} more ${more} on the record.`);
+  return lines;
+}
+const recordLink = (o, h) => (o ? `${o}/r/${h}` : null);
+const recordImage = (o, h, now) => (o ? `${o}/card/record-${h}.png?${qs({ v: bucket(now) })}` : null);
+function bettorPickPost(handle, items, { origin = '', now = Date.now() } = {}) {
+  if (!items?.length) return null;
+  const o = origin0(origin);
+  const lines = [...writeOut(items, pickLines, 'picks'),
+    'Logged before the start and stamped by Line Reaper\'s server; it will be graded against Pinnacle\'s close and settled from the box score or the result. The bettor\'s own pick, not ours: no stake, nothing sized, the same post in every channel.'];
+  return { kind: 'pick', title: `@${handle} logged ${items.length === 1 ? 'a pick' : `${items.length} picks`}`, text: lines.join('\n'), link: recordLink(o, handle), image: null };
+}
+function bettorResultPost(handle, items, card, { origin = '', now = Date.now() } = {}) {
+  if (!items?.length) return null;
+  const o = origin0(origin);
+  const groups = new Set(items.map(i => i.group));
+  const kinds = (card?.kinds || []).filter(k => groups.has(k.name));
+  const lines = [...writeOut(items, resultLines, 'results'), ...(kinds.length ? ['Where the record stands:', ...kinds.slice(0, 6).map(k => `• ${kindLine(k)}`)] : []),
+    `Proven means ${card?.kinds?.[0]?.target || 50} picks at one app or venue with a CLV t of 2 or more against Pinnacle's close, never pooled. No profit is shown here.`];
+  return { kind: 'result', title: `@${handle}: ${items.length === 1 ? 'a pick' : `${items.length} picks`} graded`, text: lines.join('\n'), link: recordLink(o, handle), image: recordImage(o, handle, now) };
+}
+function bettorWelcomePost(handle, { origin = '' } = {}) {
+  const o = origin0(origin);
+  return { kind: 'welcome', title: `@${handle}'s record feed connected`,
+    text: [`This channel now gets @${handle}'s public record as it happens:`, '• each pick logged before its start, the moment the server matches it to its game, with the server\'s time stamp and the price',
+      '• its graded result after the game: the outcome and CLV against Pinnacle\'s close, and where the record stands on the strict rule',
+      'A pick logged after its start never posts. Every channel gets the same words; no stake, nothing sized, nothing placed. To stop, disconnect it where you connected it or delete the webhook.'].join('\n'),
+    link: recordLink(o, handle), image: o ? `${o}/card/record-${handle}.png` : null };
+}
+
+// a Telegram bot and chat the owner of a record typed in → a destination, or { error }
+function parseTelegram(token, chat) {
+  const t = String(token || '').trim(), c = String(chat || '').trim();
+  if (!TG_TOKEN_RE.test(t)) return { error: 'That is not a bot token. @BotFather gives one like 123456789:AA… when you make a bot.' };
+  if (!TG_CHAT_RE.test(c)) return { error: 'The chat is a @channelname or a number like -1001234567890.' };
+  return { kind: 'telegram', token: t, chat: c, botId: t.split(':')[0] };
+}
+
 // ── requests: a post → [{ url, data }] for one destination ──
 function discordRequest(dest, post) {
   const embed = { title: cut(clean(post.title), LIMITS.discordTitle), description: cut(clean(post.text), LIMITS.discordDesc), color: COLORS[post.kind] ?? COLORS.welcome, footer: { text: FOOTER } };
@@ -233,8 +341,9 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
       }
     }
   }
-  async function send(p) {
-    const dests = [...owner, ...(await subscribers())];
+  // to: these destinations only (a record's feed), instead of the owner's and every subscriber's
+  async function send(p, { to = null } = {}) {
+    const dests = to || [...owner, ...(await subscribers())];
     if (!p || !dests.length) return { sent: 0, failed: 0, to: 0 };
     stats.posts++;
     let sent = 0, failed = 0;
@@ -249,7 +358,7 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
       }
     }));
     stats.lastAt = new Date(now()).toISOString();
-    recent.unshift({ at: stats.lastAt, kind: p.kind, title: cut(clean(p.title), 80), to: dests.length, owner: owner.length, sent, failed });
+    recent.unshift({ at: stats.lastAt, kind: p.kind, title: cut(clean(p.title), 80), to: dests.length, owner: to ? 0 : owner.length, sent, failed });
     recent.length = Math.min(recent.length, 50);
     return { sent, failed, to: dests.length };
   }
@@ -260,5 +369,6 @@ function createFeed({ owner = [], subscribers = () => [], post, onResult = () =>
   return { send, sendTo, stats: () => ({ ...stats, recent: recent.slice(0, 20) }), ownerCount: owner.length };
 }
 
-module.exports = { parseDiscord, ownerDestinations, digestPost, recordChanges, recordPost, movesPost, welcomePost, changeOf,
+module.exports = { parseDiscord, parseTelegram, ownerDestinations, digestPost, recordChanges, recordPost, movesPost, welcomePost, changeOf,
+  planBettorFeed, idleBettorFeed, bettorPickPost, bettorResultPost, bettorWelcomePost, kindLine, PICK_MAX_AGE,
   discordRequest, telegramRequests, requestsFor, createFeed, sealer, clean, scrub, FOOTER, DISCORD_RE };
