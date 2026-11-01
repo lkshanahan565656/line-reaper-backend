@@ -84,8 +84,7 @@ const Q = Math.LN10 / 400;
 const clampP = p => Math.min(1 - 1e-6, Math.max(1e-6, p));
 const logit = p => Math.log(clampP(p) / (1 - clampP(p)));
 const sigmoid = x => 1 / (1 + Math.exp(-x));
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r1 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
+const { r4OrNull: r4, r1OrNull: r1 } = require('./mathutil');
 
 // International events and cross-league qualifiers: they connect leagues but
 // never make a team's "home" league.
