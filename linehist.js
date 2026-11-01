@@ -30,7 +30,6 @@ const venues = require('./venues');
 
 const DAY = 86400e3;
 const KEEP_DAYS = 30;
-const LIVE_KEEP_HOURS = 6;
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const prob = a => (a == null || !Number.isFinite(a) ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
@@ -595,5 +594,5 @@ function filterIndex(rows, { q = '', league = '', kind = '', before = null, from
   return { rows: page, total, hidden, next: out.length > limit ? page[page.length - 1].start : null };
 }
 
-module.exports = { statLabel, KEEP_DAYS, LIVE_KEEP_HOURS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
+module.exports = { statLabel, KEEP_DAYS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
   CSV_COLUMNS, toCsv, toJson, chartSvg, marketPage, indexPage, filterIndex, venueRole, usableIn, nameOf, venuesPrefScript };
