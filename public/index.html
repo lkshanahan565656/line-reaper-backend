@@ -1767,7 +1767,7 @@ body::before { display:none !important; }
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center"><button class="help-btn" id="gsBtn" onclick="gsOpen()" title="Search every game, series, player, market and league (S or Ctrl+K)" aria-label="Search everything">SEARCH</button><button class="help-btn" id="linkBtn" onclick="lrShareScreen()" title="Copy a link to this screen (L)">LINK</button><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel" role="status">CONNECTING...</span></div></div>
       <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#8391a7;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
-      <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
+      <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PROPS LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
       <div id="acctBar" style="display:none;gap:6px;align-items:center;margin-top:2px"></div>
     </div>
@@ -1940,10 +1940,9 @@ body::before { display:none !important; }
     <button class="sport-chip" data-best="arb" onclick="bestKind('arb')">ARBS</button>
     <button class="sport-chip" data-best="middle" onclick="bestKind('middle')">MIDDLES</button>
   </div>
-  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center">
+  <div class="os-ctrl" style="margin:0 0 12px">
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sportsbook</span><select id="bestBookSel" onchange="bestSet('book',this.value)"><option value="all">All books</option></select></label>
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sort by</span><select id="bestSortSel" onchange="bestSet('sort',this.value)"><option value="rank">Best ranked</option><option value="edge">Biggest edge</option><option value="start">Starting soonest</option><option value="book">Sportsbook</option></select></label>
-    <label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label>
     <button class="sport-chip" onclick="myBooksToggle('bestMyBooks')">MY BOOKS</button>
   </div>
   <div class="lr-state-note" data-state-note="best"></div>
@@ -2158,7 +2157,6 @@ body::before { display:none !important; }
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center" title="Two sharp prices (Pinnacle and Kalshi) within 5 points of each other"><input type="checkbox" id="evAgreeOnly" onchange="evSet('agreeOnly', this.checked)"> two sharp sources agree</label>
     <input id="evSearch" placeholder="Search team, player or book" style="flex:1;min-width:160px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('search', this.value.trim().toLowerCase())">
   </div>
-  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center"><label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="CUSTOMIZE > My state: only the venues legal where you bet"><option value="TX">Texas</option></select></label></div>
   <div class="lr-state-note" data-state-note="ev"></div>
   <div id="evBookRow" class="row" style="margin:0 0 12px;flex-wrap:wrap;gap:6px"></div>
   <div id="evContent"></div>
