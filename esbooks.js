@@ -54,8 +54,7 @@ const DEFAULTS = {
 };
 const ROUND_GAMES = new Set(['CS2', 'VAL', 'R6']);
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
-const r2 = x => Math.round(x * 100) / 100;
+const { num, r2 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const GAME_RE = [[/^(cs2|cs:?go|counter-strike)/i, 'CS2'], [/^league of legends|^lol\b/i, 'LOL'], [/^valorant/i, 'VAL'], [/^dota/i, 'DOTA'], [/^call of duty/i, 'COD'], [/^rainbow six/i, 'R6']];
 const gameOf = s => (GAME_RE.find(([re]) => re.test(String(s || '').trim())) || [])[1] || null;

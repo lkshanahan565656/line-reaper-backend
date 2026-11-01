@@ -42,8 +42,7 @@ const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 const RESERVED = new Set(['admin', 'api', 'app', 'card', 'cards', 'share', 'results', 'record', 'records', 'lr', 'linereaper', 'line_reaper', 'line_reaper_', 'official', 'support',
   'help', 'status', 'learn', 'leagues', 'developers', 'digest', 'null', 'undefined', 'pinnacle', 'kalshi', 'polymarket', 'prizepicks', 'underdog', 'sleeper', 'pikkit', 'staff', 'mod', 'root']);
 const sha256 = s => crypto.createHash('sha256').update(String(s)).digest('hex');
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r2OrNull: r2, r4OrNull: r4, escHtml: esc } = require('./mathutil');
 const str = (v, n = 80) => String(v ?? '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const err = (status, message) => Object.assign(new Error(message), { status });
 
@@ -723,7 +722,6 @@ function csv(view) {
 }
 
 // ── the page ──
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pc = (x, d = 1) => (x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(d)}%`);
 const share = x => (x == null ? '—' : `${Math.round(x * 100)}%`);
 const utc = t => { const ms = Date.parse(t || ''); return Number.isFinite(ms) ? `${new Date(ms).toISOString().slice(0, 16).replace('T', ' ')} UTC` : '—'; };

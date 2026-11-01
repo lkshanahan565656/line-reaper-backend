@@ -33,8 +33,7 @@ const APPS = ['prizepicks', 'underdog', 'sleeper', 'pick6'];
 const LABEL = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6' };
 const PROVEN_N = 50, PROVEN_Z = 2;
 const KIND = 'app-card';
-const r4 = x => Math.round(x * 1e4) / 1e4;
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+const { r4, toProb } = require('./mathutil');
 
 // Pinnacle's main line: the rung whose P(over) is nearest 50%
 function pinMain(pin) {

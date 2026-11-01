@@ -29,8 +29,7 @@ const M = require('./esmatchup');
 const GAMES = new Set(['LOL', 'CS2', 'VAL']);
 const CLOSE_FRESH_MS = 60 * 60e3, SEEN_SAVE_MS = 10 * 60e3, PAIR_MS = 12 * 3600e3, PIN_MAX_AGE_MS = 10 * 60e3;
 const MIN_NAME = 0.75;
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r2 = x => Math.round(x * 100) / 100;
+const { r4OrNull: r4, r2 } = require('./mathutil');
 
 // a track reference from the browser → the clean key fields, or null
 function clean(t) {

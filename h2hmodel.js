@@ -55,8 +55,7 @@ const DEFAULTS = {
   minTeamGames: 3,   // a team with fewer has no pace
 };
 
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2, r4 } = require('./mathutil');
 
 // One team's kills a map (a game, or a round × rounds) against one opponent.
 // pace: the league's kills a team-game (a team-round); team: { kf, n } its kills
