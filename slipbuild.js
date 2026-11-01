@@ -239,7 +239,7 @@ const TABLE_NAMES = {
   prizepicks_power: 'Power', prizepicks_flex: 'Flex', underdog_standard: 'Standard', underdog_flex: 'Flex', sleeper: 'Picks', pick6: 'Picks',
 };
 
-const r1 = x => Math.round(x * 10) / 10;
+const { r1 } = require('./mathutil');
 
 function present(book, s, kind = 'best') {
   const n = s.picks.length;
