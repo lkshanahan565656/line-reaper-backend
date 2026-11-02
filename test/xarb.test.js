@@ -1527,3 +1527,20 @@ test('a long rule text is cut to 500 characters, copied out of the page', () => 
   const short = A.parseKalshiBinaries({ events: [kalshiGame()] })[0];
   assert.match(short.rules, /^If Boston wins the New York K/, 'a short text is kept whole');
 });
+
+test('title similarity reads the compact kept keys the same as fresh ones', () => {
+  const pairs = [
+    ['Will the Fed cut rates by 25 bps in December 2026?', 'Fed cuts 25 bps in December 2026'],
+    ['Lakers win the 2026 NBA Finals', 'Will the Lakers win the 2027 NBA Finals?'],
+    ['Bitcoin above $100,000 on Dec 31', 'Bitcoin above $100k on December 31'],
+    ['Who wins the election', ''],
+  ];
+  for (const [a, b] of pairs) {
+    const fresh = A.titleSimilarity(a, b);
+    const ka = A.titleKey(a), kb = A.titleKey(b);
+    const compact = k => ({ words: [...k.words].sort(), years: [...k.years].sort().join(), sig: k.sig });
+    assert.equal(A.titleSimilarity(compact(ka), compact(kb)), fresh, `${a} | ${b}`);
+    assert.equal(A.titleSimilarity(ka, kb), fresh, 'Set-shaped keys still work');
+  }
+  assert.equal(A.titleSimilarity('Lakers win the 2026 NBA Finals', 'Lakers win the 2027 NBA Finals'), null, 'different years never match');
+});

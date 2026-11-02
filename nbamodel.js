@@ -167,10 +167,14 @@ function buildHistory(games, P = PARAMS) {
       for (const s of BASE) posPer[ps][s] = them.reduce((a, p) => a + p[s], 0) / 2 / gp;
     }
     league.push({ t: g.t, rates, posPer, poss: gp, pts: g.homePts + g.awayPts, total: g.total });
+    // the game's own row, with its game context added, not a copy: the games
+    // stay held for the next rebuild, and a copy of every player-game row
+    // (~125,000 with the college seed) was tens of MB of heap twice over.
+    // Every rebuild writes the same values.
     for (const p of g.players) {
-      const opp = p.team === g.home ? g.away : g.home;
-      (players.get(p.key) || players.set(p.key, []).get(p.key)).push({ ...p, t: g.t, gid: g.id, opp, home: p.team === g.home,
-        teamPoss: gp, teamPts: p.team === g.home ? g.homePts : g.awayPts });
+      p.t = g.t; p.gid = g.id; p.opp = p.team === g.home ? g.away : g.home; p.home = p.team === g.home;
+      p.teamPoss = gp; p.teamPts = p.team === g.home ? g.homePts : g.awayPts;
+      (players.get(p.key) || players.set(p.key, []).get(p.key)).push(p);
     }
   }
   return { players, teams, league };
