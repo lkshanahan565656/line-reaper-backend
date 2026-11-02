@@ -29,9 +29,21 @@ app.use(writeLimiter);
 // health check and the uptime probe get an answer while feeds are still warming.
 // Memory guard (memguard.js): a planned restart, right after a results backup,
 // when memory stays high, instead of a crash at V8's limit
+// Why the last process left (memguard-exit.json, on the container's disk,
+// which a restart keeps and a deploy wipes): read once at boot for /api/ops
+const MEMGUARD_EXIT_FILE = path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'memguard-exit.json');
+const memGuardPrevious = (() => {
+  try { const x = JSON.parse(fs.readFileSync(MEMGUARD_EXIT_FILE, 'utf8')); fs.unlinkSync(MEMGUARD_EXIT_FILE); return x; }
+  catch { return null; }
+})();
 const memGuard = require('./memguard').createMemGuard({
   lastBackupAt: () => (typeof resultsBackup !== 'undefined' ? resultsBackup.status().lastExportAt : null),
   flush: () => require('./jsonstore').flushAll(),
+  record: x => {
+    fs.mkdirSync(path.dirname(MEMGUARD_EXIT_FILE), { recursive: true });
+    fs.writeFileSync(MEMGUARD_EXIT_FILE, JSON.stringify(x));
+  },
+  previousExit: memGuardPrevious,
 });
 app.get('/api/health', (req, res) => {
   const o = ops.state();
