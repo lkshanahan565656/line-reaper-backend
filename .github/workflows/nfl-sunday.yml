@@ -4,12 +4,12 @@
 # GitHub runs a job at most 6 hours, so each run records about 5.5 hours,
 # grades what has finished (nflsun-<WEEK>-report) and starts the next run.
 # After Monday night's kickoff one last run waits for that game to end and
-# grades the whole week. Starts itself every Saturday; a push to diag-nflsun
-# (or a manual run) starts it any other time. Free: public repo, built-in token.
+# grades the whole week. A push to diag-nflsun (or a manual run) starts it.
+# No Saturday schedule since 10-27: the NFL board graded losing on every app
+# (10-25, 1,700+ sides per app) and the lane is closed, so it no longer holds
+# Actions runners all weekend. Free: public repo, built-in token.
 name: nfl-sunday
 on:
-  schedule:
-    - cron: '0 15 * * 6'
   push:
     branches: [diag-nflsun]
   workflow_dispatch:

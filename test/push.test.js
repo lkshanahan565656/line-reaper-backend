@@ -80,7 +80,7 @@ test('the installable app files are in place', () => {
   const sw = fs.readFileSync(path.join(pub, 'sw.js'), 'utf8');
   assert.match(sw, /addEventListener\('push'/);
   assert.match(sw, /notificationclick/);
-  const html = fs.readFileSync(path.join(pub, 'index.html'), 'utf8');
+  const html = require('./app-source').both;
   for (const t of ['rel="manifest"', 'apple-touch-icon', 'theme-color', "register('/sw.js'", '/api/push/subscribe']) assert.ok(html.includes(t), t);
 });
 
@@ -213,7 +213,7 @@ test('server: push store rides the results backup; every push route is mounted',
   assert.match(server, /resultsBackup\.wrap\('push', pushStore, \{ appendOnly: false \}\)/);
   assert.ok(server.indexOf('const resultsBackup =') < server.indexOf('const push ='));
   for (const r of ["get('/api/push/kinds'", "post('/api/push/kinds'", "post('/api/push/device'", "post('/api/push/test'", "post('/api/push/ack'", "get('/api/push/test/:nonce'", "get('/api/push/selftest'", "get('/api/push/log'"]) assert.ok(server.includes(`app.${r}`), r);
-  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const html = require('./app-source').both;
   for (const t of ['onclick="pushTest()"', 'id="pushKinds"', '/api/push/test', '/api/push/device', 'function pushSync']) assert.ok(html.includes(t), t);
   const sw = fs.readFileSync(path.join(__dirname, '..', 'public', 'sw.js'), 'utf8');
   assert.match(sw, /\/api\/push\/ack/);

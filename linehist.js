@@ -27,11 +27,11 @@
 const { CSS, LOGO, FAVICON, esc } = require('./learn');
 const oddsFmt = require('./oddsfmt');
 const venues = require('./venues');
+const priceAge = require('./priceage');
 
 const DAY = 86400e3;
 const KEEP_DAYS = 30;
-const LIVE_KEEP_HOURS = 6;
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const prob = a => (a == null || !Number.isFinite(a) ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 
@@ -349,6 +349,8 @@ const PAGE_CSS = `
 .legend span { display:inline-flex; align-items:center; gap:6px; }
 .legend i { display:inline-block; width:12px; height:3px; border-radius:2px; }
 .legend em { font-style:normal; color:var(--muted); font-size:11px; }
+.legend .age { font-size:11px; color:#34d399; }
+.legend .age.old { color:var(--muted); }
 .sub { display:block; color:var(--muted); font-size:11px; font-family:var(--mono); }
 .note { color:var(--text2); font-size:14px; }
 .empty { background:var(--card); border:1px dashed var(--border2); border-radius:10px; padding:14px 16px; color:var(--text2); margin:0 0 18px; }
@@ -356,6 +358,7 @@ const PAGE_CSS = `
 .st-pick select, .st-pick button, .st-pick input { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
 .st-pick span { flex-basis:100%; font-size:11px; }
+@media (max-width:560px) { .st-pick { display:grid; grid-template-columns:max-content minmax(0,1fr); } .st-pick button, .st-pick span { grid-column:1 / -1; } .st-pick button { justify-self:start; } }
 .links { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
 .links .go { margin:0; }
 td.n, th.n { text-align:right; white-space:nowrap; }
@@ -474,7 +477,15 @@ ${foot()}
   }
   const start = ms(meta.start);
   const chartData = { title: esc(`Line history for ${side.label}`), start, lines };
-  const legend = `<div class="legend">${lines.map(l => `<span><i style="background:${l.color}"></i>${esc(l.name)}${l.key !== 'fair' ? ` <em>${esc(roles[l.key].tag)}</em>` : ''}</span>`).join('')}</div>`;
+  // a market still on the board: how long ago each venue last answered (priceage.js), counting up
+  const live = !side.archived && data.ages?.venues;
+  const ageOf = v => {
+    const a = live ? data.ages.venues[v] : null;
+    if (!a?.at) return '';
+    return ` <span class="age${a.stale ? ' old' : ''}" data-at="${esc(a.at)}" data-st="${a.staleSec}" title="${esc(priceAge.describe(a))}">read ${esc(priceAge.fmtAge(a.ageSec))} ago</span>`;
+  };
+  const legend = `<div class="legend">${lines.map(l => `<span><i style="background:${l.color}"></i>${esc(l.name)}${l.key !== 'fair' ? ` <em>${esc(roles[l.key].tag)}</em>${ageOf(l.key)}` : ''}</span>`).join('')}</div>`;
+  const ageScript = live ? `<script>(function(){var skew=0;function f(s){return s<60?s+'s':s<3600?Math.floor(s/60)+'m':s<86400?Math.floor(s/3600)+'h':Math.floor(s/86400)+'d'}function t(){document.querySelectorAll('.legend .age[data-at]').forEach(function(e){var s=Math.max(0,Math.round((Date.now()+skew-Date.parse(e.getAttribute('data-at')))/1000));e.textContent='read '+f(s)+' ago';e.className='age'+(s>+e.getAttribute('data-st')?' old':'')})}setInterval(t,1000)})();</script>` : '';
   const hiddenV = vin.filter(v => !shown.includes(v));
   const vToggle = hiddenV.length || allVenues
     ? `<p class="note">${allVenues ? `Showing every venue, ${esc(st)} or not. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, 'state') }))}">Only ${esc(st)} venues</a>.` : `Not shown, not open to a ${esc(st)} resident on our venue table: ${hiddenV.map(v => esc(nameOf(v))).join(', ')}. <a href="${esc(base + keepQs({ ...keyQ, market: kind === 'game' ? market : null, side: side.id, ...viewQs(st, fmt, true) }))}">Show every venue</a>.`}</p>` : '';
@@ -515,6 +526,7 @@ ${table}`}
 </main>
 ${foot()}
 <script>(function(){var draw=${chartSvg.toString()};var d=${JSON.stringify(chartData).replace(/</g, '\\u003c')};var el=document.getElementById('lhChart');if(!el)return;function go(){var w=Math.max(280,Math.round(el.clientWidth-20));el.innerHTML=draw(d,w)}go();var t;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(go,150)})})();</script>
+${ageScript}
 ${prefsScript()}
 ${venuesPrefScript()}
 </body>
@@ -595,5 +607,5 @@ function filterIndex(rows, { q = '', league = '', kind = '', before = null, from
   return { rows: page, total, hidden, next: out.length > limit ? page[page.length - 1].start : null };
 }
 
-module.exports = { statLabel, KEEP_DAYS, LIVE_KEEP_HOURS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
+module.exports = { statLabel, KEEP_DAYS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
   CSV_COLUMNS, toCsv, toJson, chartSvg, marketPage, indexPage, filterIndex, venueRole, usableIn, nameOf, venuesPrefScript };

@@ -1515,3 +1515,15 @@ test('middle tracker: logged once, graded from the settled Kalshi ladder when th
   assert.deepEqual([s.graded, s.hits, s.open], [1, 1, 0]);
   assert.ok(Math.abs(s.units - (2 - 1.006) / 1.006) < 0.01);
 });
+
+test('a long rule text is cut to 500 characters, copied out of the page', () => {
+  const long = `If Boston wins — résumé ${'x'.repeat(2000)}`;
+  const kRows = A.parseKalshiBinaries({ events: [kalshiGame({ rules_primary: long })] });
+  const pRows = A.parsePolymarketBinaries([pmGame({ description: long })], { now: NOW });
+  for (const r of [kRows[0], pRows[0]]) {
+    assert.equal(r.rules.length, 500);
+    assert.equal(r.rules, long.slice(0, 500));
+  }
+  const short = A.parseKalshiBinaries({ events: [kalshiGame()] })[0];
+  assert.match(short.rules, /^If Boston wins the New York K/, 'a short text is kept whole');
+});
