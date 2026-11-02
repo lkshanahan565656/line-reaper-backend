@@ -1,0 +1,27 @@
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@roberts_lando/vfs@0.3.3',
+npm warn EBADENGINE   required: { node: '>= 22' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@yao-pkg/pkg@6.23.0',
+npm warn EBADENGINE   required: { node: '>=22.0.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 340 packages, and audited 341 packages in 4s
+
+61 packages are looking for funding
+  run `npm fund` for details
+
+7 vulnerabilities (5 moderate, 2 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
