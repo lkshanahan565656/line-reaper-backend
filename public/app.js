@@ -3252,6 +3252,9 @@ function acctRender() {
   bar.style.display = 'flex';
   if (!acct.user) {
     bar.innerHTML = `<button class="acct-btn" onclick="acctOpen('login')">LOG IN</button><button class="acct-btn pro" onclick="acctOpen('signup')">GO PRO</button>`;
+  } else if (!acct.paywall) {
+    // no paywall: an account is for sync, so the bar opens its settings
+    bar.innerHTML = `<button class="acct-btn" onclick="layOpen()" title="${escAttr(acct.user.email)}">ACCOUNT</button><button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else if (acct.user.isPro) {
     bar.innerHTML = `<span class="acct-btn pro" title="${escAttr(acct.user.email)}">PRO</span>${acct.billing ? `<button class="acct-btn" onclick="acctPortal()">BILLING</button>` : ''}<button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else {
@@ -3264,6 +3267,7 @@ const closedLaneLine = c => (c?.final ? `<div class="closed-lane" role="note"><b
 
 function acctOpen(mode, pitch) {
   acct.mode = mode;
+  acct.fromSync = false;
   const signup = mode === 'signup', del = mode === 'delete';
   document.getElementById('acctTitle').textContent = signup ? 'CREATE ACCOUNT' : del ? 'DELETE ACCOUNT' : 'LOG IN';
   const go = document.getElementById('acctGo');
@@ -3279,6 +3283,7 @@ function acctOpen(mode, pitch) {
   document.getElementById('acctConsent').style.display = signup ? '' : 'none';
   // ticked on the welcome screen this session: carry it over
   document.getElementById('acctAge').checked = document.getElementById('acctTerms').checked = signup && !!document.getElementById('wlAgree')?.checked;
+  for (const id of ['acctAge', 'acctTerms']) acctTick(document.getElementById(id));
   document.getElementById('acctLegal').innerHTML = signup
     ? (acct.billing ? 'Pro is a subscription that renews automatically until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
     : del ? '' : 'By logging in you agree to the current <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.';
@@ -3290,6 +3295,8 @@ function acctOpen(mode, pitch) {
   document.getElementById(del ? 'acctPass' : 'acctEmail').focus();
 }
 function acctClose() { document.getElementById('acctModal').classList.remove('open'); }
+// a ticked consent box shows as ticked, and clears the reason it was asked for
+function acctTick(box) { box.closest('label')?.classList.toggle('on', box.checked); if (box.checked) document.getElementById('acctErr').textContent = ''; }
 
 async function acctSubmit(e) {
   e.preventDefault();
@@ -3297,6 +3304,10 @@ async function acctSubmit(e) {
   err.textContent = '';
   const signup = acct.mode === 'signup';
   if (acct.mode === 'delete') return acctDelete();
+  // the form is novalidate, so a phone shows the reason here rather than in a browser bubble
+  const em = document.getElementById('acctEmail').value.trim(), pw = document.getElementById('acctPass').value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = 'Enter your email address'; return; }
+  if (pw.length < 8) { err.textContent = 'Enter your password (8 or more characters)'; return; }
   if (signup && !document.getElementById('acctAge').checked) { err.textContent = 'Confirm you are 21 or older'; return; }
   if (signup && !document.getElementById('acctTerms').checked) { err.textContent = 'Agree to the Terms of Service and Privacy Policy to continue'; return; }
   const body = JSON.stringify({ email: document.getElementById('acctEmail').value, password: document.getElementById('acctPass').value,
@@ -3312,8 +3323,9 @@ async function acctSubmit(e) {
     acctClose();
     acctRender();
     acctChanged();
+    syncAfterSignIn();
     // a new account came here to buy, so send them straight to checkout
-    if (acct.mode === 'signup' && !d.user.isPro && acct.billing) acctUpgrade();
+    if (acct.mode === 'signup' && !acct.fromSync && !d.user.isPro && acct.billing) acctUpgrade();
   } catch { err.textContent = 'Could not reach the server'; }
 }
 
@@ -3329,7 +3341,11 @@ async function acctPortal() {
   const d = await r?.json().catch(() => ({}));
   if (d?.url) location.href = d.url; else showToast(d?.error || 'Billing portal failed', 'danger');
 }
-function acctLogout() { acctSetToken(null); acctRender(); acctChanged(); }
+function acctLogout() {
+  const was = !!acct.user;
+  acctSetToken(null); acctRender(); acctChanged(); syncSignedOut();
+  if (was && sync.status?.enabled) showToast('Signed out. This browser keeps its own copy of your bets and settings.');
+}
 async function acctDelete() {
   const err = document.getElementById('acctErr');
   const r = await fetch(`${BACKEND_URL}/api/auth/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: document.getElementById('acctPass').value }) }).catch(() => null);
@@ -3355,7 +3371,162 @@ function acctNeedPro(what) {
   if (!acct.user) acctOpen('signup', `${what} is part of Line Reaper Pro. Create an account to start.`);
   else acctUpgrade();
 }
-document.addEventListener('DOMContentLoaded', acctInit);
+document.addEventListener('DOMContentLoaded', () => acctInit().finally(syncBoot));
+
+// ── ACCOUNT SYNC ────────────────────────────────────────────────────────────
+// Signed in, this browser's bets, slips, favorites, saved views, layout and
+// alert kinds follow the account (the list and the merge rules are
+// acctsync.js, window.LRSync). localStorage stays the working copy, so
+// everything works offline and with sync off exactly as before; a change here
+// goes up a few seconds later, the account is read again when the app opens,
+// comes back to the front, and every 2 minutes. A setting changed on both
+// sides keeps this device's copy until the viewer picks in CUSTOMIZE.
+const SYNC_META = 'lr_sync_meta';
+const sync = { status: null, keys: new Set(), busy: false, again: false, err: null, timer: null, quiet: 0, devices: null };
+const syncMeta = () => { try { return JSON.parse(lsGet(SYNC_META) || 'null') || {}; } catch { return {}; } };
+const syncOn = () => !!(sync.status && sync.status.enabled && acct.user);
+const syncPageOn = id => !!document.getElementById(`page-${id}`)?.classList.contains('active');
+// every write to a synced key (whichever code made it) sends it up shortly
+try {
+  const setItem = Storage.prototype.setItem, removeItem = Storage.prototype.removeItem;
+  const touched = (store, k) => { try { if (!sync.quiet && store === window.localStorage && sync.keys.has(k) && syncOn()) syncSoon(4000); } catch {} };
+  Storage.prototype.setItem = function (k, v) { setItem.call(this, k, v); touched(this, k); };
+  Storage.prototype.removeItem = function (k) { removeItem.call(this, k); touched(this, k); };
+} catch {}
+function syncSoon(ms = 4000) { clearTimeout(sync.timer); sync.timer = setTimeout(() => { sync.timer = null; syncNow(); }, ms); }
+
+// what to redo on this page when the account brings a newer copy of a key
+const SYNC_HOOKS = {
+  lr_bets() {
+    if (!myb.ready) return;
+    try { const l = JSON.parse(lsGet(MYB_KEY) || '[]'); if (Array.isArray(l)) myb.list = LRBets.sortNewest(l.filter(b => b && b.id && b.odds > 1)); } catch {}
+    if (syncPageOn('betlog')) renderMyBets();
+  },
+  lr_slips() { if (ms.ready) { ms.ready = false; ms.loading = null; if (syncPageOn('myslips')) msOpen(); } },
+  lr_layout() { layLoad(); layApply(); document.body.classList.toggle('no-help', !layout.help); layFoldInit(); },
+  lr_shopper() { try { Object.assign(shpUi.opts, JSON.parse(lsGet('lr_shopper') || '{}')); } catch {} if (syncPageOn('odds') && shpUi.opts.mode !== 'lines') shpRender(); },
+  lr_os() { try { const o = JSON.parse(lsGet('lr_os') || '{}'); for (const k of ['league', 'state', 'market', 'sort', 'hidden']) if (k in o) osUi[k] = o[k]; } catch {} },
+  lr_mybooks() { try { const x = JSON.parse(lsGet('lr_mybooks') || '[]'); if (Array.isArray(x)) myBooks = x.filter(b => typeof b === 'string'); } catch {} },
+  lr_bankroll() { const n = parseFloat(lsGet('lr_bankroll')); if (isFinite(n)) esportsState.bankroll = n; },
+  lr_push_kinds() { pushState = null; },
+};
+SYNC_HOOKS.lr_slip_grades = SYNC_HOOKS.lr_pikkit = SYNC_HOOKS.lr_slip_imports = SYNC_HOOKS.lr_slips;
+SYNC_HOOKS.lr_state = () => lrSetState(lsGet('lr_state') || '', { save: false });
+SYNC_HOOKS.lr_odds_fmt = () => { const v = lsGet('lr_odds_fmt'); if (v) oddsFmtSet(v); };
+SYNC_HOOKS.lr_after_fees = () => { if ((lsGet('lr_after_fees') === '1') !== afUi.on) afToggle(); };
+
+async function syncBoot() {
+  try { const r = await fetch(`${BACKEND_URL}/api/sync/status`); sync.status = r.ok ? await r.json() : null; } catch { sync.status = null; }
+  sync.keys = new Set((sync.status?.keys || []).map(k => k.key));
+  syncRender();
+  if (syncOn()) { await syncNow(); syncDevices(); }
+}
+// resolved: { key: 'local' | 'account' } from the viewer's answer to a conflict
+async function syncNow(resolved) {
+  if (!syncOn()) return;
+  if (sync.busy) { sync.again = true; return; }
+  sync.busy = true; sync.err = null; syncRender();
+  try {
+    if (!window.LRSync) await mybLoadScript('/acctsync.js');
+    const uid = acct.user.id;
+    let meta = syncMeta();
+    if (meta.uid !== uid) meta = { uid, base: {}, conflicts: [] };   // first sign-in on this browser: a union
+    const answer = async r => { const j = await r.json().catch(() => ({})); if (r.status === 401) { acctSetToken(null); acctRender(); throw new Error('Signed out. Sign in again to sync.'); } return j; };
+    const r = await fetch(`${BACKEND_URL}/api/sync`, { cache: 'no-store' });
+    let doc = await answer(r);
+    if (!r.ok) throw new Error(doc.error || `The server answered ${r.status}`);
+    for (let i = 0; ; i++) {
+      const local = {};
+      for (const k of LRSync.KEY_LIST) local[k] = lsGet(k);
+      const m = LRSync.merge({ local, server: doc, base: meta.base, resolved });
+      if (Object.keys(m.push).length || Object.keys(m.tomb).length) {
+        const p = await fetch(`${BACKEND_URL}/api/sync`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: doc.rev, keys: m.push, tomb: m.tomb }) });
+        const j = await answer(p);
+        // another device wrote first: merge again on top of its copy
+        if (p.status === 409 && j.current && i < 3) { doc = j.current; continue; }
+        if (!p.ok) throw new Error(j.error || `The server answered ${p.status}`);
+        doc = j;
+      }
+      // a key changed here while we were away keeps its new value and goes up next time
+      const base = { ...m.base }, done = [];
+      sync.quiet++;
+      try {
+        for (const [k, v] of Object.entries(m.apply)) {
+          if (lsGet(k) !== local[k]) { if (meta.base[k]) base[k] = meta.base[k]; else delete base[k]; sync.again = true; continue; }
+          lsSet(k, v); done.push(k);
+        }
+      } finally { sync.quiet--; }
+      for (const k of done) { try { SYNC_HOOKS[k]?.(); } catch {} }
+      lsSet(SYNC_META, JSON.stringify({ uid, base, conflicts: m.conflicts, lastAt: new Date().toISOString(), rev: doc.rev }));
+      if (done.length && meta.lastAt) showToast(`Updated from your account: ${done.map(k => LRSync.KEYS[k].label).join(', ')}`);
+      break;
+    }
+  } catch (e) { sync.err = e.message || 'Sync failed'; }
+  finally {
+    sync.busy = false;
+    syncRender();
+    if (sync.again) { sync.again = false; syncSoon(1500); }
+  }
+}
+// this device's alerts join the account; the account's alert devices, by label
+async function syncDevices() {
+  if (!syncOn()) return;
+  try {
+    const sub = await pushSub();
+    const r = await fetch(`${BACKEND_URL}/api/sync/devices`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub?.endpoint || '' }) });
+    if (r.ok) sync.devices = (await r.json()).devices || [];
+  } catch {}
+  syncRender();
+}
+function syncResolve(key, pick) { syncNow({ [key]: pick === 'account' ? 'account' : 'local' }); }
+function syncSignIn(mode) { acctOpen(mode, 'Sign in to keep your bets, slips, favorites, saved views, layout and alert choices on every device. This browser keeps its own copy and merges it in.'); acct.fromSync = true; }
+async function syncAfterSignIn() {
+  if (!sync.status) await syncBoot();
+  else if (syncOn()) { await syncNow(); syncDevices(); }
+  if (syncOn()) showToast(sync.err ? `Signed in, but sync failed: ${sync.err}` : 'Signed in. Your bets and settings now sync to your account.', sync.err ? 'danger' : '');
+}
+function syncSignedOut() {
+  clearTimeout(sync.timer); sync.timer = null; sync.devices = null; sync.err = null;
+  lsSet(SYNC_META, null);
+  syncRender();
+}
+const syncAgo = t => { const s = Math.max(0, (Date.now() - Date.parse(t)) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
+function syncRender() {
+  const note = document.getElementById('syncNote'), rows = document.getElementById('syncRows'), mb = document.getElementById('mybSync');
+  const meta = syncMeta(), st = sync.status;
+  let n = '', h = '', m = '';
+  if (!st || !st.enabled) {
+    n = 'Your bets, slips and settings are saved in this browser only. Signing in to sync them between devices is not switched on for this server yet.';
+    m = 'Saved in this browser only. Export a CSV now and then to back it up.';
+  } else if (!acct.user) {
+    n = 'Sign in to keep your bets, slips, favorites, saved views, tab layout and alert choices on every device. This browser keeps its own copy and merges it into your account when you sign in.';
+    h = `<div class="lay-row"><span class="lay-name">Not signed in</span><button class="lay-b on" onclick="syncSignIn('login')">SIGN IN</button><button class="lay-b" onclick="syncSignIn('signup')">CREATE ACCOUNT</button></div>`;
+    m = `Saved in this browser only. <button class="mb-sync-b" onclick="syncSignIn('login')">SIGN IN</button> to keep them on every device.`;
+  } else {
+    const when = sync.busy ? 'Syncing…' : meta.lastAt ? `Last synced ${syncAgo(meta.lastAt)}` : 'Not synced yet';
+    n = 'Your bets, slips and settings sync to your account. This browser keeps a copy, so the app works offline too.';
+    h = `<div class="lay-row"><span class="lay-name" style="font-weight:500">Signed in as ${escAttr(acct.user.email)}</span><button class="lay-b" onclick="acctLogout()">SIGN OUT</button></div>
+      <div class="lay-row"><span class="lay-name" style="font-weight:500">${when}</span><button class="lay-b" onclick="syncNow()" ${sync.busy ? 'disabled' : ''}>SYNC NOW</button></div>`;
+    if (sync.err) h += `<p class="sync-err">${escAttr(sync.err)}</p>`;
+    for (const k of meta.conflicts || []) {
+      const label = sync.status.keys.find(x => x.key === k)?.label || k;
+      h += `<div class="lay-row sync-conflict"><span class="lay-name" style="font-weight:500">${escAttr(label)}: this device and your account differ. This device's copy is in use.</span><button class="lay-b on" onclick="syncResolve('${k}','local')">KEEP THIS DEVICE</button><button class="lay-b" onclick="syncResolve('${k}','account')">USE ACCOUNT</button></div>`;
+    }
+    if (sync.devices) h += `<p style="margin:8px 0 0">${sync.devices.length ? `Push alerts on this account: ${sync.devices.map(d => escAttr(d.label) + (d.thisDevice ? ' (this one)' : '')).join(', ')}. Alert kinds you pick apply to all of them.` : 'No device on this account has push alerts on yet. Turn them on below on each phone or computer you want them on.'}</p>`;
+    const c = (meta.conflicts || []).length;
+    m = sync.err ? `Not synced: ${escAttr(sync.err)}` : `${sync.busy ? 'Syncing to' : 'Synced to'} ${escAttr(acct.user.email)}${meta.lastAt && !sync.busy ? ` · ${syncAgo(meta.lastAt)}` : ''}.${c ? ` ${c} setting${c > 1 ? 's differ' : ' differs'} from your account: choose in CUSTOMIZE.` : ''}`;
+  }
+  if (note) note.textContent = n;
+  if (rows) rows.innerHTML = h;
+  if (mb) { mb.innerHTML = m; mb.classList.toggle('bad', !!(sync.err && acct.user)); }
+}
+setInterval(() => { if (syncOn() && document.visibilityState === 'visible') syncNow(); }, 120e3);
+setInterval(() => { if (document.getElementById('mybSync')?.offsetParent) syncRender(); }, 60e3);
+document.addEventListener('visibilitychange', () => {
+  if (!syncOn()) return;
+  if (document.visibilityState === 'visible') syncNow();
+  else if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; syncNow(); }
+});
 
 
 // ── LAYOUT ──────────────────────────────────────────────────────────────────
@@ -3467,6 +3638,8 @@ document.addEventListener('click', () => document.getElementById('moreMenu')?.cl
 function layOpen() {
   layRenderList();
   pushRefresh();
+  syncRender();
+  syncDevices();
   document.getElementById('layModal').classList.add('open');
 }
 

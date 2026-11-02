@@ -18,6 +18,6 @@
   },
   "files": [
     "calc.js", "ev.js", "dist.js", "slip.js", "exchanges.js", "oddsengine.js", "oddsschema.js", "oddsrank.js",
-    "venues.js", "bets.js", "slips.js", "xarb.js", "esmodels.js", "h2hmodel.js", "ratings.js", "roundmodel.js", "sharemodel.js", "esmatchup.js", "sharecards.js"
+    "venues.js", "bets.js", "slips.js", "acctsync.js", "syncstore.js", "xarb.js", "esmodels.js", "h2hmodel.js", "ratings.js", "roundmodel.js", "sharemodel.js", "esmatchup.js", "sharecards.js"
   ]
 }
