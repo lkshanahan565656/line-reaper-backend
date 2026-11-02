@@ -1599,6 +1599,11 @@ async function fetchMarketByToken(http, tokenId) {
 // ── engine ──
 const GRADE_RANK = { A: 0, B: 1 };
 // a Map used as a bounded cache: the oldest entry goes first
+// What a closing line needs from a market (clvWindow, the in-play check):
+// the CLV cache holds up to clvCacheMax of these, and a whole parsed Gamma
+// market (tags, tokens, slugs, fees) is several times the size
+const clvMarketOf = m => (m ? { question: m.question || '', sportsMarketType: m.sportsMarketType ?? null,
+  gameStartTime: m.gameStartTime ?? null, endDate: m.endDate ?? null, closedAt: m.closedAt ?? null } : null);
 const closeKey = (asset, enteredAt) => `${asset}|${toMs(enteredAt) ?? ''}`;
 function remember(map, key, value, max = Infinity) {
   map.delete(key);
@@ -1773,7 +1778,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   async function lookup(conditionId) {
     if (lookups.has(conditionId)) return lookups.get(conditionId);
     health.clvRequests++;
-    return remember(lookups, conditionId, await fetchMarket(http, conditionId, { closed: true }), o.clvCacheMax);
+    return remember(lookups, conditionId, clvMarketOf(await fetchMarket(http, conditionId, { closed: true })), o.clvCacheMax);
   }
 
   // One position's token's close (→ { price, at, cut, rule } | null), cached,
@@ -1844,13 +1849,14 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     }
     score = { ...score, truncated: settled.truncated || open.truncated, sources: [...c.sources] };
     const keep = nearGraded(score, o);
-    traders.set(c.wallet, keep ? score : summaryOf(score));
+    const kept = keep ? score : summaryOf(score);   // one object for memory and the store
+    traders.set(c.wallet, kept);
     c.scoredAt = t;
     c.failedAt = null;
     // in the store: full scores that matter, summaries of leaderboard wallets
     // (so a restart doesn't refetch them); trade-sourced also-rans stay in memory
     if (store && (keep || fromLeaderboard(c) || persisted.has(c.wallet))) {
-      await store.put(keep ? score : summaryOf(score));
+      await store.put(kept);
       persisted.add(c.wallet);
     }
     evict();
@@ -2250,7 +2256,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       candidates: candidates.size, scored: list.length, pending: pendingCount(),
       graded: { A: list.filter(t => t.grade === 'A').length, B: list.filter(t => t.grade === 'B').length, anyCategory: list.filter(isGraded).length },
       marketMakers: list.filter(t => t.marketMaker).length, signals: feed.length,
-      seenTrades: seen.size, clvCached: closes.size, ...health, errors: health.errors.slice(-5),
+      seenTrades: seen.size, clvCached: closes.size, marketsCached: lookups.size, ...health, errors: health.errors.slice(-5),
     };
   }
 
@@ -2266,7 +2272,7 @@ module.exports = {
   parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
   parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,
-  clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
+  clvWindow, clvMarketOf, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, limitPlan, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
   fetchPriceHistory, fetchMarket, fetchMarketByToken,
