@@ -90,6 +90,20 @@ async function openCold(opts, link, check) {
 }
 
 const FLOWS = {
+  async 'a first visit asks for the ODDS SCREEN board once, before the app script runs'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    // a fresh browser: ODDS SCREEN is the first screen, so the page head asks for its board and the app takes that answer
+    const ctx = await opts.coldContext();
+    const p2 = await newAppPage(ctx, opts);
+    const asked = [];
+    p2.on('request', r => { if (/\/api\/odds-screen(\?|$)/.test(r.url())) asked.push(r.url()); });
+    try {
+      await p2.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await p2.waitForFunction(() => typeof osUi !== 'undefined' && !!osUi.data, null, { timeout: 15000 });
+      expect(asked.length === 1, `the first ODDS SCREEN load asked for the board ${asked.length} times: ${asked.join(', ')}`);
+    } finally { await ctx.close(); }
+    void page; void w;
+  },
   async 'log a bet by hand, edit it, settle it'(page, w, opts) {
     await openTab(page, 'betlog', w, opts);
     const before = (await ls(page, 'lr_bets'))?.length || 0;
