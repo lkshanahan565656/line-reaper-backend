@@ -29,8 +29,9 @@ app.use(writeLimiter);
 // health check and the uptime probe get an answer while feeds are still warming.
 // Memory guard (memguard.js): a planned restart, right after a results backup,
 // when memory stays high, instead of a crash at V8's limit
-// Why the last process left (memguard-exit.json, on the container's disk,
-// which a restart keeps and a deploy wipes): read once at boot for /api/ops
+// Why the last process left (memguard-exit.json, on the container's disk):
+// read once at boot for /api/ops. Railway's restarts wipe that disk too (seen
+// 06:22Z 11-02), so resultsBackup.previousRun below is the record that lasts
 const MEMGUARD_EXIT_FILE = path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'memguard-exit.json');
 const memGuardPrevious = (() => {
   try { const x = JSON.parse(fs.readFileSync(MEMGUARD_EXIT_FILE, 'utf8')); fs.unlinkSync(MEMGUARD_EXIT_FILE); return x; }
@@ -847,7 +848,14 @@ const webhookOnly = require('./webhook').createWebhook({ urls: process.env.ALERT
 // Every track record is backed up to the repo's results-data branch and
 // restored on boot, so deploys don't wipe them (backup.js).
 const { createBackup, axiosFetchJson } = require('./backup');
-const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
+// each snapshot also carries this process's version, uptime and memory guard
+// state, so after a restart /api/ops resultsBackup.previousRun shows how the
+// last process was doing 20 minutes or less before it went (exiting set: the
+// guard restarted it; null: something else did)
+const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios), meta: () => {
+  const { previousExit, ...guard } = memGuard.status();
+  return { version: VERSION, uptimeS: Math.round(process.uptime()), memGuard: guard };
+} });
 // Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on.
 // The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
 const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json', user: true });

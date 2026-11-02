@@ -120,7 +120,7 @@ async function openAsync(key, env) {
 }
 
 // fetchJson(url) → parsed body, or null for "no such file"; throws otherwise.
-function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = console, retryMs = 5 * 60e3, bootRetryMs = 2000, now = () => Date.now() } = {}) {
+function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, meta = () => null, log = console, retryMs = 5 * 60e3, bootRetryMs = 2000, now = () => Date.now() } = {}) {
   // bootRetryMs: the first boot retry waits this long, the second twice it
   keys = (keys || (key !== undefined ? [key] : keysFromEnv())).filter(Boolean);
   key = keys[0] || null;   // new snapshots are sealed with this one
@@ -131,6 +131,10 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
   const restored = {};        // name → records added from the snapshot
   let state = key ? 'pending' : 'off';   // pending → ready | retrying; off without a key
   let snapshotAt = null, note = null, cached = null, loading = null, building = null, lastExportAt = null;
+  // what the last process said about itself in its last snapshot (meta()):
+  // a container restart wipes local files, so this is how a boot learns how
+  // the one before it was doing when it was last read
+  let previousRun = null;
 
   async function fetchSnapshot() {
     let lastErr = null;
@@ -158,6 +162,7 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
         const payload = await openAsync(k, body);
         snapshotAt = body.at || null;
         readWith = k === key ? 'current' : 'older';
+        previousRun = payload?.meta ? { snapshotAt, ...payload.meta } : null;
         readCounts = Object.fromEntries(Object.entries(payload?.stores || {}).map(([n, d]) => [n, Array.isArray(d) ? d.length : 0]));
         note = readWith === 'older' ? 'read with an older key; the next snapshot is sealed with the current one' : null;
         return payload;
@@ -235,6 +240,7 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
   }
   async function build() {
     const payload = { stores: {} }, counts = {}, other = {};
+    try { const m = meta(); if (m) payload.meta = m; } catch { /* never blocks a snapshot */ }
     for (const [name, { store, appendOnly }] of stores) {
       const docs = await store.all();
       payload.stores[name] = docs;
@@ -262,7 +268,7 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
   }
 
   function status() {
-    return { state, snapshotAt, note, readWith, keys: keys.length, refused, restored: { ...restored }, stores: [...stores.keys()], lastExportAt };
+    return { state, snapshotAt, note, readWith, keys: keys.length, refused, restored: { ...restored }, stores: [...stores.keys()], lastExportAt, previousRun };
   }
 
   return { wrap, load, exportSnapshot, status };
