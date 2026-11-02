@@ -1,0 +1,11 @@
+== /api/kalshi-link
+{"enabled":false,"why":"AUTH_SECRET is not set on this server.","scopes":["read"],"note":"Read-only keys only: a key that can trade or move money is refused and never saved."}
+HTTP 200
+== /api/health
+{"ok":true,"version":"3.226.10","uptimeS":86,"listening":true,"boot":[{"mark":"modules loaded","ms":1963,"at":"2026-11-02T03:33:02.544Z"},{"mark":"listening","ms":1966,"at":"2026-11-02T03:33:02.547Z"},{"mark":"app compressed","ms":3397,"at":"2026-11-02T03:33:03.978Z"},{"mark":"backup read","ms":5481,"at":"2026-11-02T03:33:06.062Z"}],"stalls":{"count":2,"worstMs":2963,"last":{"at":"2026-11-02T03:33:08.135Z","ms":2963,"uptimeS":8,"jobs":[],"requests":["GET /card/record.png","GET /api/ev/stream","GET /api/ev/stream","GET /api/record","GET /api/results"]}},"inFlight":1,"memory":{"rssMb":1805,"heapMb":1131,"guard":{"on":true,"capMb":1728,"softMb":1469,"hardMb":1659,"rssSoftMb":2240,"heapMb":968,"rssMb":1701,"peakHeapMb":968,"peakRssMb":1701,"overSince":null,"restartPendingSince":null,"exiting":null}},"backup":"ready","stores":{"writes":0,"rows":0,"bytes":0,"ms":0,"maxMs":0,"errors":0,"lastError":null,"pending":13,"delayMs":300000,"userDelayMs":2000,"files":[]}}
+HTTP 200
+== /api/records/nobody_here_x/kalshi
+{"error":"No published record with that handle."}
+HTTP 404
+0
+0
