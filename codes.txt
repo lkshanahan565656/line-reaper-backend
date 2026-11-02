@@ -1,0 +1,8 @@
+api/price-age 200
+api/status 200
+api/odds-screen?state=TX 200
+api/best?limit=50 200
+api/props/shop?limit=20 200
+price-age-2 200
+lines/game/pin-1639766737 200
+Mon Nov  2 03:29:03 UTC 2026
