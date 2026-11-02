@@ -13,17 +13,19 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: |
+          set +e
           mkdir o
           for p in api/health manifest.webmanifest sw.js discord api/push/key api/push/kinds icons/icon-192.png icons/maskable-512.png icons/apple-touch-icon.png api/status; do
             curl -s -m 30 -D "o/h_$(echo $p | tr / _)" "$SITE/$p" -o "o/$(echo $p | tr / _)" -w "$p %{http_code} %{content_type}\n" >> o/codes.txt || true
           done
           head -c 400 o/sw.js > o/sw-head.txt; grep -o "const VERSION = '[^']*'" o/sw.js >> o/codes.txt || true
-          node -e "const s=require('./o/api_status');console.log(JSON.stringify({version:s.version,community:s.community,owner:s.outFeed&&s.outFeed.owner}))" >> o/codes.txt 2>&1 || true
+          node -e "const s=JSON.parse(require('fs').readFileSync('o/api_status','utf8'));console.log(JSON.stringify({version:s.version,community:s.community,owner:s.outFeed&&s.outFeed.owner}))" >> o/codes.txt 2>&1 || true
           rm -f o/api_status o/icons_* o/sw.js
           cd repo && npm ci --silent && npx playwright install --with-deps chromium >/dev/null 2>&1
           cp ../pwa.js ./pwa-diag.js && SITE=$SITE node pwa-diag.js > ../o/pwa.txt 2>&1 || true
           V=$(node -p "require('./package.json').version")
           npm run live-check -- "$V" > ../o/live-check.txt 2>&1; echo "exit $?" >> ../o/live-check.txt
+          cat ../o/codes.txt ../o/pwa.txt; tail -20 ../o/live-check.txt
           cd ../o && git init -q && git checkout -q -b diag-pwa-out && git add -A
           git -c user.email=d@lr -c user.name=diag commit -qm out
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-pwa-out
