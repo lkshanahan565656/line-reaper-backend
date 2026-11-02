@@ -208,3 +208,26 @@ test('a snapshot carries the process meta sealed, and the next boot reads it as 
   await three.wrap('tail', createMemoryStore()).init();
   assert.ok((await three.exportSnapshot()).at);
 });
+
+test('a snapshot goes out streamed, and reads back exactly as the body', async () => {
+  const { sendSnapshot } = require('../backup');
+  const one = setup();
+  const tail = one.b.wrap('tail', createMemoryStore());
+  await tail.init();
+  for (let i = 0; i < 50; i++) await tail.put({ id: `r${i}`, status: 'settled', note: 'quote " and \\ backslash' });
+  const body = await one.b.exportSnapshot();
+  const fake = () => { const parts = []; return { parts, type() { return this; }, write(x) { parts.push(String(x)); }, end(x) { if (x != null) parts.push(String(x)); }, send(x) { parts.push(String(x)); } }; };
+  const r = fake();
+  sendSnapshot(r, body);
+  assert.deepEqual(JSON.parse(r.parts.join('')), body);
+  assert.ok(r.parts.length >= 3, 'the base64 goes out on its own');
+  // and the copy that went out opens to the same records
+  const two = setup({ file: JSON.parse(r.parts.join('')) });
+  const back = two.b.wrap('tail', createMemoryStore());
+  await back.init();
+  assert.equal((await back.all()).length, 50);
+  // anything unexpected falls back to plain JSON
+  const r2 = fake();
+  sendSnapshot(r2, { v: 1, data: 'not "base64"' });
+  assert.deepEqual(JSON.parse(r2.parts.join('')), { v: 1, data: 'not "base64"' });
+});

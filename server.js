@@ -3073,7 +3073,7 @@ const upstream = createPoliteHttp((url, cfg) => axios.get(url, cfg), { gapMs: up
 // polite requests): Postgres table tail_traders with DATABASE_URL, otherwise
 // the TAIL_TRADERS_FILE JSON file.
 function createTraderStoreFromEnv(env = process.env) {
-  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'tail-traders.json'));
+  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'tail-traders.json'), { delayMs: require('./jsonstore').CACHE_DELAY_MS });
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
@@ -6641,7 +6641,7 @@ app.post('/api/bets/stamp', async (req, res) => {
 });
 // The encrypted snapshot the results-backup Action keeps (backup.js).
 app.get('/api/results/backup', async (req, res) => {
-  try { res.set('Cache-Control', 'no-store').json(await resultsBackup.exportSnapshot()); }
+  try { const body = await resultsBackup.exportSnapshot(); require('./backup').sendSnapshot(res.set('Cache-Control', 'no-store'), body); }
   catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 

@@ -85,3 +85,11 @@ test('stores people write to keep a short write delay; bulk stores take the defa
     assert.match(src, new RegExp(`file: '${file.replace('.', '\\.')}', user: true`), file);
   }
 });
+
+test('the tail engine\'s score cache writes on the slow cache delay, never faster than the bulk stores', () => {
+  const { DEFAULT_DELAY_MS, CACHE_DELAY_MS } = require('../jsonstore');
+  assert.ok(CACHE_DELAY_MS >= DEFAULT_DELAY_MS);
+  if (DEFAULT_DELAY_MS >= 60e3) assert.ok(CACHE_DELAY_MS >= 30 * 60e3, 'on Railway: half an hour');
+  const src = require('./server-source');
+  assert.match(src, /'tail-traders\.json'\), \{ delayMs: require\('\.\/jsonstore'\)\.CACHE_DELAY_MS \}/);
+});
