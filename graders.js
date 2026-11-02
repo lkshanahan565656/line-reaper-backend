@@ -563,4 +563,4 @@ function createValGrader(http, { ttlMs = 10 * 60e3, windowMs = 6 * 3600e3, maxPa
   };
 }
 
-module.exports = { createValGrader, vlrMatchPage, vlrResultsList, vlrTeamIs, vlrPickSide, vlrGradeFromPage, vlrMapDone, pickTeams, createLoLGrader, createLoLesportsGrader, createLoLGraderChain, loleMatchFor, loleStatFromWindow, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
+module.exports = { LOLE_API, LOLE_FEED, LOLE_HEADERS, createValGrader, vlrMatchPage, vlrResultsList, vlrTeamIs, vlrPickSide, vlrGradeFromPage, vlrMapDone, pickTeams, createLoLGrader, createLoLesportsGrader, createLoLGraderChain, loleMatchFor, loleStatFromWindow, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
