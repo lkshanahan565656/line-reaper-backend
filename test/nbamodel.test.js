@@ -251,3 +251,15 @@ test('v2: each app priced at its real payout, Underdog legs logged on value', ()
   assert.equal(D.MODEL_VERSION, 'v2');
   assert.ok(D.VERSION_NOTE.includes('never reset'));
 });
+
+test('history holds the games\' own player rows (no second copy), and a rebuild gives the same projection', () => {
+  const games = season(30);
+  const H = M.buildHistory(games);
+  const key = 'bosplayer0';
+  const row = H.players.get(key)[0];
+  assert.ok(games.some(g => g.players.includes(row)), 'the history entry is the game row itself');
+  assert.equal(row.opp, 'NY');
+  const at = { t: T0 + 61 * DAY, team: 'BOS', opp: 'NY', home: true, total: 224.5, spread: -4.5, out: [] };
+  const again = M.buildHistory(games);
+  assert.deepEqual(M.project(again, key, at), M.project(H, key, at), 'rebuilding over annotated rows changes nothing');
+});

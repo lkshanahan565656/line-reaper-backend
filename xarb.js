@@ -285,6 +285,10 @@ function parseKalshiBinaries(payload) {
     const when = kalshiTickerTime(ev.event_ticker || live[0]?.event_ticker);
     const gameKey = category === 'sports' ? kalshiGameKey(ev.series_ticker, ev.event_ticker || live[0]?.event_ticker) : null;
     const lineSeries = gameKey && LINE_SERIES_RE.exec(String(ev.series_ticker || ''))?.[1]?.toUpperCase();
+    // one key and link string per event, shared by its markets (a catalogue
+    // pass holds ~90,000 Kalshi rows, ~15 to an event)
+    const evKey = ev.event_ticker ? `kalshi:${ev.event_ticker}` : null;
+    const evUrl = ev.event_ticker ? `https://kalshi.com/markets/${String(ev.event_ticker).toLowerCase()}` : null;
     for (const m of live) {
       const tradable = KALSHI_LIVE.has(String(m.status || '').toLowerCase());
       const label = String(m.yes_sub_title || m.subtitle || '').trim();
@@ -298,14 +302,14 @@ function parseKalshiBinaries(payload) {
       if (line) kind = line.kind;
       const game = kind === 'teams' || game3 != null;
       out.push({
-        exchange: 'kalshi', id: m.ticker, eventKey: `kalshi:${ev.event_ticker || m.event_ticker}`, eventTitle: ev.title || '',
+        exchange: 'kalshi', id: m.ticker, eventKey: evKey || `kalshi:${m.event_ticker}`, eventTitle: ev.title || '',
         title: m.title || ev.title || '', outcomeLabel: label, noLabel, kind, ...(game3 ? { game3 } : {}),
         ...(gameKey ? { gameKey } : {}), ...(line ? { line: line.line, ...(line.team ? { lineTeam: line.team } : {}) } : {}),
         yesAsk: tradable ? kalshiPrice(m, 'yes_ask') : null, noAsk: tradable ? kalshiPrice(m, 'no_ask') : null,
         closeTime: m.expected_expiration_time || m.close_time || null,
         startTime: game && when?.start != null ? new Date(when.start).toISOString() : null, gameDay: game && when ? when.day : null,
         expectedExpiration: m.expected_expiration_time || null, gameNo: kind === 'teams' ? gameNumber(ev.event_ticker, ev.title, m.title) : null,
-        url: `https://kalshi.com/markets/${String(ev.event_ticker || m.event_ticker || '').toLowerCase()}`,
+        url: evUrl || `https://kalshi.com/markets/${String(m.event_ticker || '').toLowerCase()}`,
         category, league, liquidity: kalshiLiquidity(m), volume: num(m.volume),
         mutuallyExclusive: ev.mutually_exclusive === true, hasDraw, tradable, eventDecided: decided, eventComplete: true,
         rules: clip(m.rules_primary),
@@ -531,7 +535,10 @@ function titleKey(text) {
 // minutes the current one becomes the old one, and a title nobody looked up
 // for 10 to 20 minutes is dropped. (Not per scan: the server matches twice a
 // scan, against Polymarket and against Polymarket US, with different titles.)
-// Keys are read, never changed, so one object can serve every scan.
+// Keys are read, never changed, so one object can serve every scan. A kept
+// key is compact: its words a sorted array and its years one string. About
+// 90,000 titles are held, and as two Sets each they were the server's
+// largest group of objects (heap snapshot 11-02: ~45 MB of Sets).
 const TITLE_GEN_MS = 10 * 60e3;
 let titleKeysNow = new Map(), titleKeysLast = new Map(), titleGenAt = Date.now();
 function startTitleScan() {
@@ -543,8 +550,7 @@ function cachedTitleKey(text) {
   if (v === undefined) {
     if ((v = titleKeysLast.get(text)) === undefined) {
       // only what the matcher reads (titleSimilarity): the words, years and signature
-      const k = titleKey(text);
-      v = { words: k.words, years: k.years, sig: k.sig };
+      v = compactKey(titleKey(text));
     }
     titleKeysNow.set(text, v);
   }
@@ -554,14 +560,20 @@ function cachedTitleKey(text) {
 // Jaccard of the content words, or null when a number, month, direction or
 // year differs. A year only counts when both titles state one (the close-date
 // check already pins the year).
+// a title key as the matcher keeps it: { words: sorted array, years: 'y1,y2' or '', sig }
+const compactKey = k => (Array.isArray(k.words) ? k : { words: [...k.words].sort(), years: [...k.years].sort().join(), sig: k.sig });
 function titleSimilarity(a, b) {
-  const x = typeof a === 'string' ? titleKey(a) : a, y = typeof b === 'string' ? titleKey(b) : b;
+  const x = compactKey(typeof a === 'string' ? titleKey(a) : a), y = compactKey(typeof b === 'string' ? titleKey(b) : b);
   if (x.sig !== y.sig) return null;
-  if (x.years.size && y.years.size && [...x.years].sort().join() !== [...y.years].sort().join()) return null;
-  if (!x.words.size || !y.words.size) return null;
+  if (x.years && y.years && x.years !== y.years) return null;
+  const xw = x.words, yw = y.words;
+  if (!xw.length || !yw.length) return null;
+  // both sorted: count the shared words in one pass
   let inter = 0;
-  for (const w of x.words) if (y.words.has(w)) inter++;
-  return inter / (x.words.size + y.words.size - inter);
+  for (let i = 0, j = 0; i < xw.length && j < yw.length;) {
+    if (xw[i] === yw[j]) { inter++; i++; j++; } else if (xw[i] < yw[j]) i++; else j++;
+  }
+  return inter / (xw.length + yw.length - inter);
 }
 
 // The question a row asks: its title, plus the outcome label when the title
@@ -1029,7 +1041,7 @@ function* matchSteps(kalshiRows, polyRows, opts = {}) {
     const t = ms(p.closeTime);
     if (p.kind !== 'yesno' || p.game3 || t == null || raced.has(p.id)) continue;
     const key = cachedTitleKey(proposition(p));
-    if (key.words.size) push(index, `${key.sig}|${Math.floor(t / DAY)}`, { r: p, key, t, subject: null });
+    if (key.words.length) push(index, `${key.sig}|${Math.floor(t / DAY)}`, { r: p, key, t, subject: null });
   }
   const span = Math.ceil(o.titleWindowMs / DAY);
   const titled = [];
@@ -1040,7 +1052,7 @@ function* matchSteps(kalshiRows, polyRows, opts = {}) {
     const t = ms(k.closeTime);
     if (k.kind !== 'yesno' || k.game3 || t == null || raced.has(k.id)) continue;
     const key = cachedTitleKey(proposition(k));
-    if (!key.words.size) continue;
+    if (!key.words.length) continue;
     let subject = null;
     const day = Math.floor(t / DAY);
     for (let d = day - span; d <= day + span; d++) {
