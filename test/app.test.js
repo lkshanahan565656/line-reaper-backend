@@ -35,7 +35,7 @@ test('layout customizer: MORE menu, tab reorder/hide, foldable help panels', () 
 test('TOOLS tab ships the calculators and loads calc.js from the server', () => {
   assert.ok(html.includes("showTab('tools',this)") && html.includes('id="page-tools"'));
   assert.ok(html.includes("'/calc.js'"));
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   assert.match(server, /app\.get\('\/calc\.js'/);
 });
 
@@ -57,7 +57,7 @@ test('MY BETS tab: on the main bar, loads bets.js after calc.js, LOG buttons on 
   assert.ok(html.indexOf("'/calc.js'") < html.indexOf("'/bets.js'"));
   for (const fn of ['mybLogBest', 'mybLogTail', 'mybAutoSettle', 'mybExport', 'mybImport']) assert.ok(html.includes(`function ${fn}`), fn);
   assert.ok(html.includes("const MYB_KEY = 'lr_bets'") && html.includes("lsGet('ww_bets')"), 'old BET LOG migrates');
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   assert.match(server, /app\.get\('\/bets\.js'/);
   assert.match(server, /app\.post\('\/api\/bets\/settle'/);
 });
@@ -79,6 +79,6 @@ test('GAS LOCKS reads as research: no units, no profit, no alerts unless switche
   const fn = html.slice(html.indexOf('function renderGas()'), html.indexOf('// ─── RESULTS'));
   assert.ok(fn.length > 500);
   assert.doesNotMatch(fn, /r\.units|x\.profit|if it wins|buy \$\{/);
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   assert.match(server, /GAS_LOCK_ALERTS === 'on'\) postAlert/);
 });

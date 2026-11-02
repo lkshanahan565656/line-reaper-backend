@@ -147,7 +147,7 @@ test('a new version drops the old version\'s saved copies; the app can clear sav
 });
 
 test('the server writes its version into the worker and never lets it be cached', () => {
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   assert.match(server, /replace\(\/__LR_VERSION__\/g, require\('\.\/package\.json'\)\.version\)/);
   assert.match(server, /'Cache-Control': 'no-cache, no-store', 'Service-Worker-Allowed': '\/'/);
   assert.match(SRC, /const VERSION = '__LR_VERSION__'/);

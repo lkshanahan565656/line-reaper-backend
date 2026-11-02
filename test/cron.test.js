@@ -1,12 +1,10 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
 const cron = require('node-cron');
 const toFields = require('node-cron/src/convert-expression');
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+const src = require('./server-source');
 const exprs = [...src.matchAll(/^\s*schedule\('([^']+)'/gm)].map(m => m[1]);
 
 test('every server job goes through the catch-up wrapper', () => {

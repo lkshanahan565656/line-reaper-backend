@@ -50,7 +50,8 @@ These hold everywhere. Tests and the browser suite enforce most of them.
 ## 2. Layout
 
 ```
-server.js            wiring: Express app, every route, every scheduled job (about 11k lines)
+server.js            wiring: Express app, most routes, every scheduled job (about 10.6k lines)
+routes/              route sections moved out of server.js, each mounted in place with mount(ctx)
 *.js (top level)     one module per feature or data source, mostly pure functions + a small state object
 public/              the app (index.html + app.js), sales page (landing.html), service worker, icons
 test/                node:test unit tests, one file per module (npm test)
@@ -63,8 +64,13 @@ desktop/             launcher for the packaged desktop build (npm run build_desk
 .github/workflows/   CI, results backup, Pick6 relay, desktop build
 ```
 
-`server.js` is long because it holds every route and job. It is a split
-candidate once the open PR queue drains. Modules don't import `server.js`.
+`server.js` is long because it holds most routes and every job. The split
+into `routes/` is under way: a section moves as it was into
+`routes/<name>.js`, whose `mount(ctx)` runs at the section's old spot (so
+route order holds), takes what it reads from `server.js` in `ctx` and returns
+what `server.js` reads back. A value `server.js` reassigns later (a `let`)
+goes in as a getter, never by value. Tests that read the source use
+`test/server-source.js`, which covers both. Modules don't import `server.js`.
 They take what they need (`axios`, stores, other modules' state) as
 arguments, which is what makes them testable without a server.
 
