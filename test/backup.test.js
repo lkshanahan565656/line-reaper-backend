@@ -186,3 +186,25 @@ test('a restored store lets go of its copy of the snapshot; a failed one keeps i
   assert.equal(payload.stores.tailTraders.length, 1, 'not restored: kept');
   assert.deepEqual((await ok.all()).map(r => r.id), ['a']);
 });
+
+test('a snapshot carries the process meta sealed, and the next boot reads it as previousRun', async () => {
+  const remote = { file: null };
+  const one = createBackup({ key, sources: ['mem://x'], fetchJson: async () => remote.file, log: quiet, bootRetryMs: 5,
+    meta: () => ({ version: '9.9.9', uptimeS: 900, memGuard: { heapMb: 1400, exiting: null } }) });
+  const tail = one.wrap('tail', createMemoryStore());
+  await tail.init();
+  await tail.put({ id: 'a' });
+  const snap = await one.exportSnapshot();
+  assert.ok(!JSON.stringify(snap).includes('9.9.9'), 'meta is inside the seal');
+
+  remote.file = JSON.parse(JSON.stringify(snap));
+  const two = createBackup({ key, sources: ['mem://x'], fetchJson: async () => remote.file, log: quiet, bootRetryMs: 5 });
+  await two.wrap('tail', createMemoryStore()).init();
+  assert.deepEqual(two.status().previousRun, { snapshotAt: snap.at, version: '9.9.9', uptimeS: 900, memGuard: { heapMb: 1400, exiting: null } });
+  assert.equal(one.status().previousRun, null, 'the first boot had nothing before it');
+
+  // a meta() that throws never stops a snapshot
+  const three = createBackup({ key, sources: ['mem://x'], fetchJson: async () => null, log: quiet, bootRetryMs: 5, meta: () => { throw new Error('x'); } });
+  await three.wrap('tail', createMemoryStore()).init();
+  assert.ok((await three.exportSnapshot()).at);
+});

@@ -15,7 +15,8 @@
 //          while the boot restore peaks.
 // Heap and RSS are timed apart: each clears once back under 90% of its own
 // line, and with both clear a pending soft restart is cancelled. Why a
-// process left is kept for the next boot (status().previousExit).
+// process left is kept for the next boot (status().previousExit) when the disk
+// survives; the results backup carries status() too (backup.js meta).
 //
 // On by default on Railway only (a laptop or the desktop app has nothing to
 // restart it). Settings (all optional): MEM_GUARD=off|on; MEM_SOFT_MB,
