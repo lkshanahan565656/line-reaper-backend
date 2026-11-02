@@ -1,6 +1,6 @@
 {
   "name": "line-reaper-backend",
-  "version": "3.223.12",
+  "version": "3.223.13",
   "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
   "main": "server.js",
   "scripts": {

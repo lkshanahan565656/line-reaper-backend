@@ -1,0 +1,50 @@
+{
+  "_source": "Shapes from Discord's developer docs (Interactions > Receiving and Responding, Interaction Object, Application Commands), API v10. Ids, tokens and names are made up.",
+  "ping": { "id": "1300000000000000001", "application_id": "111111111111111111", "type": 1, "token": "aW50ZXJhY3Rpb246MTMwMDAwMDAwMDAwMDAwMDAwMTpwaW5n", "version": 1 },
+  "guildCommand": {
+    "app_permissions": "442368",
+    "application_id": "111111111111111111",
+    "authorizing_integration_owners": { "0": "999999999999999999" },
+    "channel": { "flags": 0, "guild_id": "999999999999999999", "id": "888888888888888888", "last_message_id": "1299999999999999999", "name": "picks", "nsfw": false, "parent_id": null, "permissions": "2251799813685247", "position": 0, "rate_limit_per_user": 0, "topic": null, "type": 0 },
+    "channel_id": "888888888888888888",
+    "context": 0,
+    "data": { "guild_id": "999999999999999999", "id": "777777777777777777", "name": "odds", "options": [ { "name": "game", "type": 3, "value": "Lakers" } ], "type": 1 },
+    "entitlement_sku_ids": [],
+    "entitlements": [],
+    "guild": { "features": [], "id": "999999999999999999", "locale": "en-US" },
+    "guild_id": "999999999999999999",
+    "guild_locale": "en-US",
+    "id": "1300000000000000002",
+    "locale": "en-US",
+    "member": {
+      "avatar": null, "banner": null, "communication_disabled_until": null, "deaf": false, "flags": 0, "joined_at": "2024-01-02T03:04:05.000000+00:00", "mute": false, "nick": null, "pending": false,
+      "permissions": "2251799813685247", "premium_since": null, "roles": [ "666666666666666666" ], "unusual_dm_activity_until": null,
+      "user": { "avatar": null, "avatar_decoration_data": null, "clan": null, "discriminator": "0", "global_name": "Sharp", "id": "555555555555555555", "public_flags": 0, "username": "sharp" }
+    },
+    "token": "aW50ZXJhY3Rpb246MTMwMDAwMDAwMDAwMDAwMDAwMjpndWlsZA",
+    "type": 2,
+    "version": 1
+  },
+  "dmCommand": {
+    "app_permissions": "442368",
+    "application_id": "111111111111111111",
+    "authorizing_integration_owners": { "1": "555555555555555555" },
+    "channel": { "flags": 0, "id": "444444444444444444", "last_message_id": null, "recipients": [ { "id": "555555555555555555", "username": "sharp", "discriminator": "0" } ], "type": 1 },
+    "channel_id": "444444444444444444",
+    "context": 1,
+    "data": { "id": "777777777777777778", "name": "settings", "options": [ { "name": "state", "type": 3, "value": "TX" } ], "type": 1 },
+    "entitlements": [],
+    "id": "1300000000000000003",
+    "locale": "en-US",
+    "token": "aW50ZXJhY3Rpb246MTMwMDAwMDAwMDAwMDAwMDAwMzpkbQ",
+    "type": 2,
+    "user": { "avatar": null, "discriminator": "0", "global_name": "Sharp", "id": "555555555555555555", "public_flags": 0, "username": "sharp" },
+    "version": 1
+  },
+  "autocomplete": {
+    "application_id": "111111111111111111", "channel_id": "888888888888888888", "guild_id": "999999999999999999", "id": "1300000000000000004",
+    "data": { "id": "777777777777777777", "name": "odds", "options": [ { "focused": true, "name": "game", "type": 3, "value": "Lak" } ], "type": 1 },
+    "member": { "permissions": "0", "user": { "id": "555555555555555555", "username": "sharp" } },
+    "token": "aW50ZXJhY3Rpb246MTMwMDAwMDAwMDAwMDAwMDAwNDphdXRv", "type": 4, "version": 1
+  }
+}
