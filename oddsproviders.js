@@ -15,7 +15,7 @@
 const schema = require('./oddsschema');
 const { canonMarket, canonName } = require('./ev');
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { num } = require('./mathutil');
 const decOfAmerican = a => schema.toDecimal(num(a), 'american');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 

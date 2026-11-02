@@ -53,7 +53,7 @@ const SD = { nfl: [13.5, 13.5], ncaaf: [16, 16.5], nba: [12.5, 18], wnba: [10, 1
 const FREE = ['fanduel', 'betrivers'];
 const SHARP = new Set(['pinnacle', 'kalshi']);
 
-const r2 = x => Math.round(x * 100) / 100;
+const { r2 } = require('./mathutil');
 const half = x => Number.isFinite(x) && Math.abs(Math.abs(x % 1) - 0.5) < 1e-9;
 // inverse normal (Acklam), for interpolating a ladder in z
 function probit(p) {

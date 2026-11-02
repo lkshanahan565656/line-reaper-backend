@@ -30,8 +30,7 @@
 // of the event and needs a few dozen bets where ROI needs hundreds. ROI is
 // profit / staked in units. Both are fractions (0.05 = 5%).
 
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
+const { r4OrNull: r4, r2OrNull: r2 } = require('./mathutil');
 
 const mean = a => a.reduce((x, v) => x + v, 0) / a.length;
 // one-sample t against 0 (null under 3 values or with no spread)

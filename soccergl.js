@@ -46,7 +46,7 @@ const PIN_LEAGUES = [
   [/^Brazil - Serie A$/i, 'BRA', 'bra.1', 'new/BRA.csv'],
 ];
 const leagueOf = name => { const hit = PIN_LEAGUES.find(([re]) => re.test(String(name || ''))); return hit ? hit[1] : null; };
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const isSoccer = b => /soccer/i.test(String(b?.game?.sport || '')) || String(b?.key || '').split('|')[1] === 'ml3';
 const PICK = { home: 'h', draw: 'd', away: 'a' };

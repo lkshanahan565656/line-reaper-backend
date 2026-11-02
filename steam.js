@@ -29,7 +29,7 @@ const DEFAULTS = {
   minEv: 0.01,          // a steaming side is worth a bet from 1% EV (a standing gap needs 2%)
 };
 
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 
 function optsFromEnv(env = process.env) {
   const o = {};
