@@ -167,3 +167,22 @@ test('the async envelope matches the sync one both ways', async () => {
   assert.deepEqual(open(key, await sealAsync(key, payload)), payload);
   assert.deepEqual(await openAsync(key, seal(key, payload)), payload);
 });
+
+test('a restored store lets go of its copy of the snapshot; a failed one keeps it', async () => {
+  const one = setup();
+  const src = one.b.wrap('tail', createMemoryStore());
+  const src2 = one.b.wrap('tailTraders', createMemoryStore(), { appendOnly: false });
+  await src.init(); await src2.init();
+  await src.put({ id: 'a', status: 'open' });
+  await src2.put({ id: '0xw', wallet: '0xw', grade: 'A' });
+  const snap = await one.b.exportSnapshot();
+
+  const two = setup({ file: JSON.parse(JSON.stringify(snap)) });
+  const ok = two.b.wrap('tail', createMemoryStore());
+  const bad = two.b.wrap('tailTraders', { ...createMemoryStore(), init: async () => {}, all: async () => { throw new Error('store down'); } });
+  await ok.init(); await bad.init();
+  const payload = await two.b.load();   // the boot promise every init shares, kept for the process's life
+  assert.equal(payload.stores.tail, undefined, 'restored: its rows live in the store only');
+  assert.equal(payload.stores.tailTraders.length, 1, 'not restored: kept');
+  assert.deepEqual((await ok.all()).map(r => r.id), ['a']);
+});
