@@ -213,7 +213,12 @@ function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = 
     w.init = async () => {
       await store.init();
       const p = await load();
-      const n = await addMissing(name, store, p?.stores?.[name]).catch(e => { log.warn?.(`Results backup: restoring ${name}: ${e.message}`); return 0; });
+      const n = await addMissing(name, store, p?.stores?.[name]).catch(e => { log.warn?.(`Results backup: restoring ${name}: ${e.message}`); return null; });
+      // The snapshot stays referenced by the boot promise for the life of the
+      // process: once this store has its rows, drop its copy (several stores
+      // load rows into their own structures, so that copy was all duplicate:
+      // hundreds of MB of heap on 11-02). Kept on a failed restore.
+      if (n !== null && p?.stores) delete p.stores[name];
       if (n) log.log?.(`Results backup: restored ${n} ${name} records`);
     };
     return w;
