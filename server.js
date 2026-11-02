@@ -4586,13 +4586,22 @@ async function scanXarbs() {
       try { screen = xvalue.screenFairs(screen, { usRows: us.rowList, polymarket, books: xvalueState.books, usMatches: us.matchList }); } catch (e) { console.warn('Exchange price screen fairs:', e.message); }
     }
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
-    // every row this scan read, for BIG MONEY's line shop (pingames.matchRows)
-    xarbState.rows = { kalshi: kalshi.length ? kalshi : xarbState.rows?.kalshi || [], polymarket: polymarket.length ? polymarket : xarbState.rows?.polymarket || [], us: us.rowList?.length ? us.rowList : xarbState.rows?.us || [], at: now };
+    // the rows BIG MONEY's line shop reads (bigGames: Kalshi's game contracts,
+    // Polymarket's sports, Polymarket US), not every row: the rest of a
+    // 100k-row catalogue would sit in memory until the next scan for nothing
+    const shopRows = {
+      kalshi: kalshi.filter(r => r.gameKey), polymarket: polymarket.filter(r => r.category === 'sports'), us: us.rowList || [],
+    };
+    xarbState.rows = { kalshi: kalshi.length ? shopRows.kalshi : xarbState.rows?.kalshi || [], polymarket: polymarket.length ? shopRows.polymarket : xarbState.rows?.polymarket || [], us: shopRows.us.length ? shopRows.us : xarbState.rows?.us || [], at: now };
     if (kalshi.length) {
-      xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
-        title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title,
-        eventTicker: r.eventKey.replace(/^kalshi:/, ''), url: r.url,
-      }]));
+      // title and event per ticker for the whale feed (whales.kalshiMeta makes
+      // the link from the event); one event string shared by its markets
+      const events = new Map();
+      xarbState.kalshiTitles = new Map(kalshi.map(r => {
+        let eventTicker = events.get(r.eventKey);
+        if (eventTicker === undefined) { eventTicker = r.eventKey.replace(/^kalshi:/, ''); events.set(r.eventKey, eventTicker); }
+        return [r.id, { title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title, eventTicker }];
+      }));
     }
     Object.assign(xarbState, {
       arbs, near, bids, middles, screen, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
