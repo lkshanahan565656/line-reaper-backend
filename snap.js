@@ -1,7 +1,36 @@
 // Summarise a .heapsnapshot: self size by node type, and objects grouped by
 // constructor + property names (a data shape), with the strings they own.
 const fs = require('fs');
-const s = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+// the file is bigger than a JS string can be: read it as bytes
+const buf = fs.readFileSync(process.argv[2]);
+const find = (str, from = 0) => { const i = buf.indexOf(str, from); if (i < 0) throw new Error(`no ${str}`); return i; };
+const nodesAt = find('"nodes":[');
+const head = buf.subarray(0, nodesAt).toString('utf8').replace(/,\s*$/, '') + '}';
+const s = JSON.parse(head);
+function ints(start, count) {
+  const out = new Float64Array(count); let i = start, n = 0, v = 0, inNum = false;
+  for (; n < count; i++) {
+    const c = buf[i];
+    if (c >= 48 && c <= 57) { v = v * 10 + (c - 48); inNum = true; }
+    else if (inNum) { out[n++] = v; v = 0; inNum = false; }
+  }
+  return { arr: out, end: i };
+}
+const NFc = s.snapshot.meta.node_fields.length, EFc = s.snapshot.meta.edge_fields.length;
+const nn = ints(nodesAt + 9, s.snapshot.node_count * NFc);
+const edgesAt = find('"edges":[', nn.end);
+const ee = ints(edgesAt + 9, s.snapshot.edge_count * EFc);
+s.nodes = nn.arr; s.edges = ee.arr;
+let i = find('"strings":[', ee.end) + 11;
+s.strings = [];
+while (true) {
+  while (buf[i] !== 34 && buf[i] !== 93) i++;
+  if (buf[i] === 93) break;
+  let j = i + 1;
+  while (buf[j] !== 34) j += buf[j] === 92 ? 2 : 1;
+  s.strings.push(j - i < 2000000 ? JSON.parse(buf.subarray(i, j + 1).toString('utf8')) : '(long)');
+  i = j + 1;
+}
 const m = s.snapshot.meta, nf = m.node_fields, ef = m.edge_fields;
 const NF = nf.length, EF = ef.length;
 const nTypes = m.node_types[0], eTypes = m.edge_types[0];
@@ -21,7 +50,13 @@ for (let n = 0; n < nodes.length; n += NF) {
     const keys = []; let owned = 0;
     for (let i = 0; i < ec; i++) {
       const k = e + i * EF;
-      if (eTypes[edges[k + eType]] !== 'property') continue;
+      const et = eTypes[edges[k + eType]];
+      if (et === 'internal') {
+        const nm = strings[edges[k + eName]];
+        if (nm === 'elements' || nm === 'table' || nm === 'properties') owned += nodes[edges[k + eTo] + iSize];
+        continue;
+      }
+      if (et !== 'property') continue;
       const key = strings[edges[k + eName]];
       if (keys.length < 7 && !key.startsWith('__')) keys.push(key);
       const to = edges[k + eTo];
