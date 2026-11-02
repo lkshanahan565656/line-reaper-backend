@@ -1,0 +1,47 @@
+{
+  "version": "3.226.10",
+  "accounts": {
+    "paywall": false,
+    "billing": false,
+    "authSecretSet": false,
+    "webhookSecretSet": false,
+    "plans": {
+      "ready": false,
+      "missing": [
+        "STRIPE_SECRET_KEY",
+        "STRIPE_PRICE_ID",
+        "STRIPE_WEBHOOK_SECRET",
+        "AUTH_SECRET",
+        "DATABASE_URL",
+        "LEGAL_EMAIL",
+        "LEGAL_STATE"
+      ],
+      "optionalMissing": [
+        "STRIPE_PRICE_ANNUAL_ID",
+        "STRIPE_PLUS_PRICE_ID",
+        "STRIPE_PLUS_PRICE_ANNUAL_ID",
+        "STRIPE_INTRO_PRICE_ID"
+      ],
+      "onSale": {
+        "plus": {
+          "month": false,
+          "year": false
+        },
+        "pro": {
+          "month": false,
+          "year": false
+        }
+      },
+      "pricing": "/pricing"
+    },
+    "sync": {
+      "gets": 0,
+      "puts": 0,
+      "conflicts": 0,
+      "rejected": 0,
+      "lastError": null,
+      "store": null,
+      "enabled": false
+    }
+  }
+}
