@@ -1,0 +1,25 @@
+name: diag-acctsync
+on: { push: { branches: [diag-acctsync] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, path: repo }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          mkdir o
+          for p in api/health api/status api/sync/status api/sync acctsync.js app.js; do
+            curl -s -m 30 "$SITE/$p" -o "o/$(echo $p | tr / _)" -w "$p %{http_code}\n" >> o/codes.txt || true
+          done
+          grep -c syncBoot o/app.js >> o/codes.txt || true
+          cd repo && npm ci --silent && npx playwright install --with-deps chromium >/dev/null 2>&1
+          V=$(node -p "require('./package.json').version")
+          npm run live-check -- "$V" > ../o/live-check.txt 2>&1; echo "exit $?" >> ../o/live-check.txt
+          cd ../o && rm -f app.js && git init -q && git checkout -q -b diag-acctsync-out && git add -A
+          git -c user.email=d@lr -c user.name=diag commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-acctsync-out
