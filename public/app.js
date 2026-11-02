@@ -539,6 +539,69 @@ function showTab(name, el) {
   if (name === 'clv') mybReady().then(renderCLV);
 }
 
+// ─── PRICE AGE (/api/price-age, priceage.js) ─────────────────────────────────
+// Seconds or minutes since each venue last answered, beside its prices on ODDS
+// SCREEN, SHOP, BEST PLAYS and the shopper, greyed once older than that venue's
+// stale mark. The board responses carry the venues' read times; the chips
+// count up every second from them (corrected for the server's clock) and the
+// times are re-read every 15 s while one of those screens is open.
+const PA = { v: {}, byName: {}, skew: 0, timer: null };
+function paTake(pa) {
+  if (!pa?.venues) return;
+  const t = Date.parse(pa.now);
+  if (isFinite(t)) PA.skew = t - Date.now();
+  PA.v = pa.venues;
+  PA.byName = {};
+  for (const [k, v] of Object.entries(pa.venues)) PA.byName[String(v.name || k).toLowerCase()] = k;
+}
+const paVenue = key => PA.v[key] || PA.v[PA.byName[String(key || '').toLowerCase()]] || null;
+const paSec = at => { const t = Date.parse(at || ''); return isFinite(t) ? Math.max(0, Math.round((Date.now() + PA.skew - t) / 1000)) : null; };
+const paFmt = s => (s == null ? '—' : s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : `${Math.floor(s / 86400)}d`);
+function paTitle(name, sec, staleSec, via) {
+  const t = sec < 60 ? `${sec} s` : sec < 3600 ? `${Math.floor(sec / 60)} min` : `${Math.floor(sec / 3600)} h`;
+  return `${name} price read ${t} ago${via === 'stream' ? ' (Kalshi live stream)' : ''}${sec > staleSec ? `. Stale: older than ${Math.max(1, Math.round(staleSec / 60))} min, check the venue` : ''}`;
+}
+// a venue's age chip (key or display name); `at` is the price's own read time when it has one
+function paChip(key, at = null) {
+  const v = paVenue(key);
+  const when = at || v?.at;
+  if (!when) return v ? `<span class="pa stale" title="${escAttr(`${v.name}: no read yet`)}">—</span>` : '';
+  const st = v?.staleSec ?? 300, sec = paSec(when), via = at ? 'poll' : v?.via;
+  return `<span class="pa${sec > st ? ' stale' : ''}${via === 'stream' ? ' live' : ''}" data-pa-at="${escAttr(when)}" data-pa-st="${st}" data-pa-n="${escAttr(v?.name || key)}" data-pa-via="${via || ''}" title="${escAttr(paTitle(v?.name || key, sec, st, via))}">${paFmt(sec)}</span>`;
+}
+// several venues on one play ("Kalshi + Polymarket US"): the oldest read
+function paChipAll(keys, at = null) {
+  if (at) return paChip(keys[0], at);
+  let worst = null;
+  for (const k of keys) { const v = paVenue(k); if (v && (!worst || (Date.parse(v.at || 0) || 0) < (Date.parse(worst.v.at || 0) || 0))) worst = { k, v }; }
+  return worst ? paChip(worst.k) : '';
+}
+// a venue's read is stale: its prices are greyed ([data-pv] cells)
+const paStale = key => { const v = paVenue(key); if (!v) return false; const s = paSec(v.at); return s == null || s > v.staleSec; };
+let paTicks = 0;
+function paTick() {
+  if (document.hidden) return;
+  const root = document.querySelector('.page.active');
+  if (!root) return;
+  root.querySelectorAll('.pa[data-pa-at]').forEach(el => {
+    const sec = paSec(el.dataset.paAt), st = +el.dataset.paSt;
+    const txt = paFmt(sec);
+    if (el.textContent !== txt) el.textContent = txt;
+    el.classList.toggle('stale', sec > st);
+    el.title = paTitle(el.dataset.paN, sec, st, el.dataset.paVia);
+  });
+  if (++paTicks % 5 === 0) root.querySelectorAll('[data-pv]').forEach(el => el.classList.toggle('pa-dim', paStale(el.dataset.pv)));
+}
+setInterval(paTick, 1000);
+async function paLoad() {
+  clearTimeout(PA.timer);
+  const on = ['page-odds', 'page-best', 'page-props'].some(id => document.getElementById(id)?.classList.contains('active'));
+  if (on && !document.hidden) {
+    try { const r = await fetch(`${BACKEND_URL}/api/price-age`); if (r.ok) paTake(await r.json()); } catch {}
+  }
+  PA.timer = setTimeout(paLoad, 15e3);
+}
+setTimeout(paLoad, 15e3);
 // ─── ODDS SCREEN ──────────────────────────────────────────────────────────────
 // /api/odds-screen: every venue on one row per side, Pinnacle's no-vig fair,
 // the best bettable price in green. A game's MOVES button draws its line
@@ -569,6 +632,7 @@ async function loadOdds() {
     const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     osUi.data = await r.json();
+    paTake(osUi.data.priceAge);
     osUi.refreshErr = null;
   } catch (e) {
     osUi.refreshErr = lrErr(e);
@@ -604,7 +668,7 @@ function renderOdds() {
   for (const id of Object.keys(osUi.open)) if (osUi.open[id]) osDrawChart(id);
 }
 function osGame(g, cols, pro) {
-  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.legal === 'yes' ? 'tx' : v.legal === 'unknown' ? 'lr-v-unk' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.legal === 'yes' ? `Legal in ${escAttr(lrStateName())}` : v.legal === 'unknown' ? `Not sure in ${escAttr(lrStateName())}: check with the venue. Never marked best` : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}${v.legal === 'unknown' ? '<span class="os-copy">?</span>' : ''}</th>`).join('')}</tr>`;
+  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.legal === 'yes' ? 'tx' : v.legal === 'unknown' ? 'lr-v-unk' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.legal === 'yes' ? `Legal in ${escAttr(lrStateName())}` : v.legal === 'unknown' ? `Not sure in ${escAttr(lrStateName())}: check with the venue. Never marked best` : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}${v.legal === 'unknown' ? '<span class="os-copy">?</span>' : ''}${paChip(v.key)}</th>`).join('')}</tr>`;
   const rows = g.markets.map(m => {
     const hold = m.bestHold == null ? '' : m.bestHold < 0 ? `<span style="color:#34d399">arb ${osPct(-m.bestHold)}</span>` : `hold at the best prices ${(m.bestHold * 100).toFixed(1)}%`;
     const mk = `<tr class="mk"><td class="side">${g.markets.length > 1 ? escAttr(m.label) : ''}</td><td colspan="${cols.length + (pro ? 1 : 0)}">${hold}</td></tr>`;
@@ -615,9 +679,10 @@ function osGame(g, cols, pro) {
         const xp = xpA({ event: `${g.away} @ ${g.home}`, league: g.leagueLabel, start: g.start, market: m.label, selection: s.label, line: x.point, venue: x.venue, venueName: x.name, american: x.american, decimal: x.decimal,
           fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, card: x.ref ? null : { k: 'move', game: g.id, market: m.key, side: s.label, i: si }, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
         const vctx = { url: x.url, league: g.league, what: `${g.away} @ ${g.home}, ${s.label}` };
-        if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
+        const pv = ` data-pv="${escAttr(x.venue)}"`, dim = paStale(x.venue) ? ' pa-dim' : '';
+        if (x.lineDiffers) return `<td class="diff${dim}"${pv}${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
         const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : x.legal === 'unknown' ? 'lr-v-unk' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : x.legal === 'unknown' ? 'lr-v-unk' : ''}${dim}"${pv}${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -2098,7 +2163,7 @@ function msRenderImports() {
 // not counted. The key that manages the record is kept in this browser
 // (lr_pub_record) and shown here to save. No stake or payout is sent.
 const MS_PUB = 'lr_pub_record';
-const msPub = { open: false, busy: false, drop: false, hint: '', server: null, timer: null };
+const msPub = { open: false, busy: false, drop: false, hint: '', server: null, timer: null, tool: null, feed: null, feedHint: '', feedBusy: false };
 function msPubGet() { try { const v = JSON.parse(lsGet(MS_PUB) || 'null'); return v && v.handle && v.key ? v : null; } catch { return null; } }
 function msPubSet(v) { lsSet(MS_PUB, v ? JSON.stringify(v) : 'null'); }
 function msPubToggle(on) {
@@ -2229,6 +2294,66 @@ async function msPubCopy(text, what) {
   try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); ok = true; } } catch {}
   showToast(ok ? `${what} copied` : `Copy it by hand: ${text}`, ok ? undefined : 'danger', ok ? undefined : 12000);
 }
+// the record's own widget and feed (MY SLIPS > RECORD > WIDGET / FEED)
+function msPubTool(t) { msPub.tool = msPub.tool === t ? null : t; msPub.feedHint = ''; if (msPub.tool === 'feed') msPubFeedRead(); msRenderPub(); }
+const msPubSnippet = h => `<script src="${location.origin}/embed.js" async></` + `script>\n<div data-line-reaper="record" data-handle="${h}"></div>`;
+async function msPubFeedRead() {
+  const p = msPubGet();
+  if (!p) return;
+  try { msPub.feed = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed`, 'GET', null, p.key); } catch (e) { msPub.feed = null; msPub.feedHint = e.message; }
+  msRenderPub();
+}
+async function msPubFeedConnect(kind) {
+  const p = msPubGet();
+  if (!p || msPub.feedBusy) return;
+  let body;
+  if (kind === 'discord') {
+    const u = (document.getElementById('msFeedHook')?.value || '').trim();
+    if (!/^https:\/\/(ptb\.|canary\.)?discord(app)?\.com\/api\/(v\d+\/)?webhooks\/\d+\/[\w-]+\/?$/.test(u)) { msPub.feedHint = 'That is not a Discord webhook URL. In Discord: Server Settings > Integrations > Webhooks > New Webhook > Copy Webhook URL.'; msRenderPub(); return; }
+    body = { discord: u };
+  } else {
+    const token = (document.getElementById('msFeedTgToken')?.value || '').trim(), chat = (document.getElementById('msFeedTgChat')?.value || '').trim();
+    if (!/^\d{5,15}:[\w-]{30,60}$/.test(token)) { msPub.feedHint = 'That is not a bot token. @BotFather gives one like 123456789:AA... when you make a bot.'; msRenderPub(); return; }
+    if (!/^(-?\d{3,20}|@[A-Za-z]\w{3,31})$/.test(chat)) { msPub.feedHint = 'The chat is a @channelname or a number like -1001234567890.'; msRenderPub(); return; }
+    body = { telegram: { token, chat } };
+  }
+  msPub.feedBusy = true; msPub.feedHint = kind === 'discord' ? 'Checking the webhook with Discord...' : 'Sending a first post to Telegram...'; msRenderPub();
+  try { const j = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed`, 'PUT', body, p.key); msPub.feed = j; msPub.feedHint = j.note || 'Connected.'; }
+  catch (e) { msPub.feedHint = e.message; }
+  msPub.feedBusy = false;
+  msRenderPub();
+}
+async function msPubFeedOff(kind) {
+  const p = msPubGet();
+  if (!p) return;
+  try { const j = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed?kind=${kind}`, 'DELETE', null, p.key); msPub.feed = j; msPub.feedHint = j.note || 'Disconnected.'; }
+  catch (e) { msPub.feedHint = e.message; }
+  msRenderPub();
+}
+function msPubToolHtml(p) {
+  if (msPub.tool === 'widget') {
+    const snip = msPubSnippet(p.handle);
+    return `<div class="ms-pub-tool" id="msPubWidget"><b>Widget for your site</b><div class="tl-note" style="margin-top:4px">Paste this into any page: it shows your record as the page does (picks logged before the start, each app and venue against Pinnacle's close, the strict label, no profit) and links back to it. It refreshes every minute.</div>
+      <code class="ms-pub-snip">${escAttr(snip)}</code>
+      <div class="ms-pub-row"><button class="mb-btn primary" data-copy="${escAttr(snip)}" onclick="msPubCopy(this.dataset.copy,'Widget code')">COPY WIDGET CODE</button><a class="mb-btn" href="/developers#widget-bettor" target="_blank" rel="noopener">MORE OPTIONS</a></div>
+      <iframe class="ms-pub-frame" src="/embed/record?handle=${encodeURIComponent(p.handle)}" title="Your record widget" loading="lazy"></iframe></div>`;
+  }
+  if (msPub.tool === 'feed') {
+    const f = msPub.feed;
+    const line = (x, name, kind) => !x ? '' : x.connected ? `<div class="ms-pub-row"><span class="tl-note" style="margin:0">${name}: connected, ${escAttr(x.where)}${x.lastOkAt ? `, last post ${escAttr(new Date(x.lastOkAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}` : ''}.</span><button class="mb-btn" onclick="msPubFeedOff('${kind}')">DISCONNECT ${name.toUpperCase()}</button></div>`
+      : x.stoppedAt ? `<div class="tl-note">${name}: stopped. ${escAttr(x.stoppedWhy || '')}${x.lastError ? ` (${escAttr(x.lastError)})` : ''}</div>` : '';
+    const dOn = f?.discord?.connected, tOn = f?.telegram?.connected;
+    const typed = { h: document.getElementById('msFeedHook')?.value || '', t: document.getElementById('msFeedTgToken')?.value || '', c: document.getElementById('msFeedTgChat')?.value || '' };
+    const html = `<div class="ms-pub-tool" id="msPubFeed"><b>Post your picks to Discord or Telegram</b><div class="tl-note" style="margin-top:4px">Each pick you log before its start posts the moment the server matches it to its game, with the server's time stamp and the price, and its graded result posts after the game. Picks logged late never post. No stake, units or profit, and nothing is placed. Anyone can add your handle to their own Discord on <a href="/developers#feed-records" target="_blank" rel="noopener">/developers</a>; it is the same post.</div>
+      ${f ? line(f.discord, 'Discord', 'discord') + line(f.telegram, 'Telegram', 'telegram') : '<div class="tl-note">Reading your channels...</div>'}${f?.subscribers ? `<div class="tl-note">${f.subscribers} other channel${f.subscribers === 1 ? '' : 's'} added your handle.</div>` : ''}
+      ${dOn ? '' : `<div class="ms-pub-row"><input type="text" id="msFeedHook" inputmode="url" maxlength="300" placeholder="Discord webhook URL" autocomplete="off"><button class="mb-btn primary" onclick="msPubFeedConnect('discord')">${msPub.feedBusy ? 'CHECKING...' : 'CONNECT DISCORD'}</button></div>`}
+      ${tOn ? '' : `<div class="ms-pub-row"><input type="text" id="msFeedTgToken" maxlength="80" placeholder="Telegram bot token" autocomplete="off"><input type="text" id="msFeedTgChat" maxlength="40" placeholder="@channel or chat id" autocomplete="off"><button class="mb-btn" onclick="msPubFeedConnect('telegram')">CONNECT TELEGRAM</button></div>`}
+      ${msPub.feedHint ? `<div class="mb-hint" id="msFeedHint">${escAttr(msPub.feedHint)}</div>` : ''}</div>`;
+    setTimeout(() => { for (const [id, v] of [['msFeedHook', typed.h], ['msFeedTgToken', typed.t], ['msFeedTgChat', typed.c]]) { const el = document.getElementById(id); if (el && v && !el.value) el.value = v; } }, 0);
+    return html;
+  }
+  return '';
+}
 function msRenderPub() {
   const el = document.getElementById('msPub');
   if (!el) return;
@@ -2260,13 +2385,91 @@ function msRenderPub() {
     return;
   }
   const sent = (p.sent || []).length, srv = msPub.server;
+  const kalTyped = msKalshiTyped();
   el.innerHTML = `<b>Your public record</b>
     <div class="ms-pub-row"><a class="ms-pub-link" href="${escAttr(url)}" target="_blank" rel="noopener">${escAttr(url.replace(/^https?:\/\//, ''))}</a></div>
     <div class="ms-pub-row"><a class="mb-btn primary" href="${escAttr(url)}" target="_blank" rel="noopener">OPEN PAGE</a><button class="mb-btn" onclick="msPubCopy('${escAttr(url)}','Link')">COPY LINK</button><button class="mb-btn" onclick="msPubSync(true)">SEND NEW SLIPS</button><button class="mb-btn" onclick="msUnpublish()">${msPub.drop ? 'TAP AGAIN TO UNPUBLISH' : 'UNPUBLISH'}</button><button class="mb-btn" onclick="msPubToggle(false)">CLOSE</button></div>
     <div class="tl-note">${sent} slip${sent === 1 ? '' : 's'} sent from this browser${srv ? `, ${srv.slips} on the page` : ''}. New slips go up as you add them.</div>
     <div class="ms-pub-row"><span class="tl-note" style="margin:0">${srv?.listed === false ? 'Not on the public list of records.' : 'Listed on the public list of records once a pick is logged before its start.'} <a href="/r" target="_blank" rel="noopener">See the list</a></span>${srv ? `<button class="mb-btn" onclick="msPubListed(${srv.listed === false})">${srv.listed === false ? 'ADD TO THE LIST' : 'TAKE OFF THE LIST'}</button>` : ''}</div>
+    <div class="ms-pub-row"><button class="mb-btn${msPub.tool === 'widget' ? ' primary' : ''}" onclick="msPubTool('widget')">WIDGET</button><button class="mb-btn${msPub.tool === 'feed' ? ' primary' : ''}" onclick="msPubTool('feed')">FEED</button><span class="tl-note" style="margin:0">Your record on your own site, Discord or Telegram.</span></div>
+    ${msPubToolHtml(p)}
     <div class="tl-note">Your key, the only way to add slips or unpublish from another browser. Save it somewhere safe: <span class="ms-pub-key">${escAttr(p.key)}</span> <button class="mb-btn" onclick="msPubCopy('${escAttr(p.key)}','Key')">COPY KEY</button></div>
+    <div id="msKalshi" class="ms-kal">${msKalshiHtml(p)}</div>
     ${rules}${hint}`;
+  msKalshiRestore(kalTyped);
+  if ((!msK.loaded || msK.handle !== p.handle) && !msK.loading) msKalshiLoad();
+}
+// ── CONNECT KALSHI: a read-only key, fills straight into the record (kalshilink.js) ──
+const msK = { info: null, status: null, loaded: false, loading: false, busy: false, hint: '', drop: false, open: false, handle: null };
+async function msKalshiLoad() {
+  const p = msPubGet();
+  if (!p || p.unpublished) return;
+  msK.loading = true;
+  if (msK.handle !== p.handle) Object.assign(msK, { status: null, hint: '', open: false, drop: false, handle: p.handle });
+  try { msK.info = await msPubCall('/api/kalshi-link', 'GET'); } catch { msK.info = null; }
+  if (msK.info?.enabled) { try { msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'GET', null, p.key); } catch (e) { msK.status = null; msK.hint = e.message; } }
+  msK.loaded = true; msK.loading = false;
+  msKalshiPaint();
+}
+// what was typed survives a redraw (the record panel redraws as slips regrade)
+const msKalshiTyped = () => ({ id: document.getElementById('msKalKeyId')?.value || '', pem: document.getElementById('msKalPem')?.value || '' });
+function msKalshiRestore(t) { const a = document.getElementById('msKalKeyId'), b = document.getElementById('msKalPem'); if (a) a.value = t.id; if (b) b.value = t.pem; }
+function msKalshiPaint() { const el = document.getElementById('msKalshi'); const p = msPubGet(); if (!el || !p) return; const t = msKalshiTyped(); el.innerHTML = msKalshiHtml(p); msKalshiRestore(t); }
+function msKalshiHtml(p) {
+  const head = '<b>Kalshi fills</b>';
+  if (!msK.loaded) return `${head}<div class="tl-note">Checking whether this server can connect Kalshi...</div>`;
+  if (!msK.info) return `${head}<div class="tl-note">Could not reach the server to check Kalshi. <button class="mb-btn" onclick="msK.loaded=false;msKalshiLoad()">TRY AGAIN</button></div>`;
+  if (!msK.info.enabled) return `${head}<div class="tl-note">Connecting a Kalshi account is not switched on on this server yet (${escAttr(msK.info.why || 'not set up')}). Log Kalshi bets in MY BETS meanwhile.</div>`;
+  const hint = msK.hint ? `<div class="mb-hint">${escAttr(msK.hint)}</div>` : '';
+  const st = msK.status;
+  const when = t => (t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'not yet');
+  if (st?.connected) {
+    const c = st.counts || {};
+    const off = (c.unmatched || 0) + (c.noSide || 0) + (c.price || 0);
+    return `${head} <span class="ms-tag ${st.status === 'active' ? 'pos' : 'neg'}">${st.status === 'active' ? 'CONNECTED' : 'PAUSED'}</span>
+      <div class="tl-note">Read-only key ${escAttr(st.keyHint || '')} (${escAttr((st.scopes || []).join(', '))}), connected ${when(st.connectedAt)}. Last read ${when(st.lastOkAt)}. ${c.imported || 0} order${c.imported === 1 ? '' : 's'} added to the record from ${c.fills || 0} fill${c.fills === 1 ? '' : 's'}${off ? `; ${off} fill${off === 1 ? '' : 's'} not on a game line we follow (props, futures, live or other markets), left off` : ''}.</div>
+      ${st.lastError ? `<div class="mb-hint">${escAttr(st.lastError)}</div>` : ''}
+      <div class="ms-pub-row">${st.status !== 'active' ? '<button class="mb-btn primary" onclick="msK.open=true;msK.status=null;msKalshiPaint()">CONNECT AGAIN</button>' : ''}<button class="mb-btn" onclick="msKalshiDisconnect()">${msK.drop ? 'TAP AGAIN TO DISCONNECT' : 'DISCONNECT'}</button></div>
+      <div class="tl-note">Every new fill on a full-game moneyline, spread or total of a game on the odds screen goes to your record as one bet an order, at Kalshi's price plus its fee, checked every five minutes. Don't also log those bets by hand in MY BETS, or they show twice.</div>${hint}`;
+  }
+  if (!msK.open) return `${head}<div class="tl-note">Connect your Kalshi account with a read-only key and every new fill goes to this record by itself, with Kalshi's own time and price.</div>
+    <div class="ms-pub-row"><button class="mb-btn primary" onclick="msK.open=true;msKalshiPaint()">CONNECT KALSHI</button></div>${hint}`;
+  return `${head}<ul>
+      <li>Make a <b>read-only</b> API key at Kalshi (the read scope only). A key that can trade or move money is refused and never saved.</li>
+      <li>We check the key's permissions with Kalshi first, keep it encrypted, never show it again, and only ever read your fills. Line Reaper never places a bet.</li>
+      <li>Only fills after you connect go to the record, so a past run can't be added later. Your record shows the pick, the price and the time; no contract counts or money.</li>
+      <li>DISCONNECT, or UNPUBLISH, deletes the key. You can also delete it at Kalshi any time.</li></ul>
+    <div class="ms-pub-row"><input type="text" id="msKalKeyId" placeholder="Kalshi Key ID" autocomplete="off" spellcheck="false" aria-label="Kalshi Key ID"></div>
+    <div class="ms-pub-row"><textarea id="msKalPem" rows="4" placeholder="-----BEGIN PRIVATE KEY-----" autocomplete="off" spellcheck="false" aria-label="Kalshi private key"></textarea></div>
+    <div class="ms-pub-row"><button class="mb-btn primary" onclick="msKalshiConnect()">${msK.busy ? 'CHECKING WITH KALSHI...' : 'CONNECT'}</button><button class="mb-btn" onclick="msK.open=false;msK.hint='';msKalshiPaint()">CANCEL</button></div>${hint}`;
+}
+async function msKalshiConnect() {
+  const p = msPubGet();
+  const keyId = (document.getElementById('msKalKeyId')?.value || '').trim();
+  const pemEl = document.getElementById('msKalPem');
+  const privateKey = (pemEl?.value || '').trim();
+  if (!p || msK.busy) return;
+  if (!keyId || !privateKey) { msK.hint = 'Paste both the Key ID and the private key.'; msKalshiPaint(); return; }
+  if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+-----END [A-Z ]*PRIVATE KEY-----/.test(privateKey)) { msK.hint = 'Paste the whole private key, from -----BEGIN to -----END.'; msKalshiPaint(); return; }
+  msK.busy = true; msK.hint = ''; msKalshiPaint();
+  try {
+    msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'POST', { keyId, privateKey }, p.key);
+    msK.open = false;
+    showToast('Kalshi connected: new fills go to your record');
+  } catch (e) { msK.hint = e.message; }
+  msK.busy = false;
+  msKalshiPaint();
+  // the key is never kept in the page once it's connected
+  if (msK.status?.connected) msKalshiRestore({ id: '', pem: '' });
+}
+async function msKalshiDisconnect() {
+  if (!msK.drop) { msK.drop = true; msKalshiPaint(); return; }
+  const p = msPubGet();
+  msK.drop = false;
+  if (!p) return;
+  try { msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'DELETE', null, p.key); showToast('Kalshi disconnected: the key was deleted'); }
+  catch (e) { msK.hint = e.message; }
+  msKalshiPaint();
 }
 
 const msPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
@@ -3140,7 +3343,10 @@ const BACKEND_URL = 'https://line-reaper-backend-production.up.railway.app';
 // paywall is off, none of this shows.
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-const acct = { token: lsGet('lr_token'), user: null, paywall: false, billing: false, mode: 'login' };
+// minutes after Pro that Plus sees an alert (plans.js ALERT_DELAY_MIN; a test keeps them equal)
+const ALERT_DELAY_MIN = 10;
+// want: the plan and period picked on /pricing ({ plan, interval }); choose: send a new account to /pricing to pick one
+const acct = { token: lsGet('lr_token'), user: null, paywall: false, billing: false, mode: 'login', want: null, choose: false };
 const _rawFetch = window.fetch.bind(window);
 window.fetch = (url, opts = {}) => {
   if (acct.token && typeof url === 'string' && url.startsWith(BACKEND_URL)) {
@@ -3173,7 +3379,8 @@ async function acctInit() {
     history.replaceState(null, '', location.pathname + location.hash);
     // the webhook can land a moment after Stripe redirects back
     for (let i = 0; i < 5 && acct.user && !acct.user.isPro; i++) { await new Promise(r => setTimeout(r, 2000)); await acctRefresh(); }
-    showToast(acct.user?.isPro ? 'Welcome to Line Reaper Pro' : 'Payment received. Pro unlocks as soon as Stripe confirms.', acct.user?.isPro ? '' : 'danger');
+    const name = acctPlanName(acct.user);
+    showToast(acct.user?.isPro ? `Welcome to Line Reaper ${name}` : 'Payment received. Your plan unlocks as soon as Stripe confirms.', acct.user?.isPro ? '' : 'danger');
     acctChanged();
   }
 }
@@ -3195,8 +3402,11 @@ function acctRender() {
   bar.style.display = 'flex';
   if (!acct.user) {
     bar.innerHTML = `<button class="acct-btn" onclick="acctOpen('login')">LOG IN</button><button class="acct-btn pro" onclick="acctOpen('signup')">GO PRO</button>`;
+  } else if (!acct.paywall) {
+    // no paywall: an account is for sync, so the bar opens its settings
+    bar.innerHTML = `<button class="acct-btn" onclick="layOpen()" title="${escAttr(acct.user.email)}">ACCOUNT</button><button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else if (acct.user.isPro) {
-    bar.innerHTML = `<span class="acct-btn pro" title="${escAttr(acct.user.email)}">PRO</span>${acct.billing ? `<button class="acct-btn" onclick="acctPortal()">BILLING</button>` : ''}<button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
+    bar.innerHTML = `<span class="acct-btn pro" title="${escAttr(acct.user.email)}">${acctPlanName(acct.user).toUpperCase()}</span>${acct.billing ? `<button class="acct-btn" onclick="acctPortal()">BILLING</button>` : ''}<button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else {
     bar.innerHTML = `<button class="acct-btn pro" onclick="acctUpgrade()">UPGRADE</button><button class="acct-btn" onclick="acctLogout()" title="${escAttr(acct.user.email)}">LOG OUT</button>`;
   }
@@ -3207,6 +3417,7 @@ const closedLaneLine = c => (c?.final ? `<div class="closed-lane" role="note"><b
 
 function acctOpen(mode, pitch) {
   acct.mode = mode;
+  acct.fromSync = false;
   const signup = mode === 'signup', del = mode === 'delete';
   document.getElementById('acctTitle').textContent = signup ? 'CREATE ACCOUNT' : del ? 'DELETE ACCOUNT' : 'LOG IN';
   const go = document.getElementById('acctGo');
@@ -3217,13 +3428,14 @@ function acctOpen(mode, pitch) {
   email.required = !del;
   document.getElementById('acctPass').autocomplete = signup ? 'new-password' : 'current-password';
   document.getElementById('acctPass').placeholder = del ? 'Your password, to confirm' : 'Password (8+ characters)';
-  document.getElementById('acctPitch').textContent = pitch || (signup ? 'Pro shows the side and EV on every +EV esports pick, live alerts, and correlated slip pricing.'
+  document.getElementById('acctPitch').textContent = pitch || (signup ? 'Plus shows the side and EV on every +EV pick and every research tab in full. Pro adds live alerts, phone push and the full API.'
     : del ? `This permanently deletes ${acct.user?.email || 'your account'} and its settings. A paid plan has to be cancelled in Billing first. This cannot be undone.` : '');
   document.getElementById('acctConsent').style.display = signup ? '' : 'none';
   // ticked on the welcome screen this session: carry it over
   document.getElementById('acctAge').checked = document.getElementById('acctTerms').checked = signup && !!document.getElementById('wlAgree')?.checked;
+  for (const id of ['acctAge', 'acctTerms']) acctTick(document.getElementById(id));
   document.getElementById('acctLegal').innerHTML = signup
-    ? (acct.billing ? 'Pro is a subscription that renews automatically until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
+    ? (acct.billing ? 'Plus and Pro are subscriptions that renew automatically, monthly or yearly, until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
     : del ? '' : 'By logging in you agree to the current <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.';
   document.getElementById('acctSwap').innerHTML = del ? '' : signup
     ? `Have an account? <a href="#" onclick="acctOpen('login');return false" style="color:#a78bfa">Log in</a>`
@@ -3233,6 +3445,8 @@ function acctOpen(mode, pitch) {
   document.getElementById(del ? 'acctPass' : 'acctEmail').focus();
 }
 function acctClose() { document.getElementById('acctModal').classList.remove('open'); }
+// a ticked consent box shows as ticked, and clears the reason it was asked for
+function acctTick(box) { box.closest('label')?.classList.toggle('on', box.checked); if (box.checked) document.getElementById('acctErr').textContent = ''; }
 
 async function acctSubmit(e) {
   e.preventDefault();
@@ -3240,6 +3454,10 @@ async function acctSubmit(e) {
   err.textContent = '';
   const signup = acct.mode === 'signup';
   if (acct.mode === 'delete') return acctDelete();
+  // the form is novalidate, so a phone shows the reason here rather than in a browser bubble
+  const em = document.getElementById('acctEmail').value.trim(), pw = document.getElementById('acctPass').value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = 'Enter your email address'; return; }
+  if (pw.length < 8) { err.textContent = 'Enter your password (8 or more characters)'; return; }
   if (signup && !document.getElementById('acctAge').checked) { err.textContent = 'Confirm you are 21 or older'; return; }
   if (signup && !document.getElementById('acctTerms').checked) { err.textContent = 'Agree to the Terms of Service and Privacy Policy to continue'; return; }
   const body = JSON.stringify({ email: document.getElementById('acctEmail').value, password: document.getElementById('acctPass').value,
@@ -3255,15 +3473,25 @@ async function acctSubmit(e) {
     acctClose();
     acctRender();
     acctChanged();
+    syncAfterSignIn();
     // a new account came here to buy, so send them straight to checkout
-    if (acct.mode === 'signup' && !d.user.isPro && acct.billing) acctUpgrade();
+    if (acct.mode === 'signup' && !acct.fromSync && !d.user.isPro && acct.billing && (acct.want || acct.choose)) acctUpgrade();
   } catch { err.textContent = 'Could not reach the server'; }
 }
 
-async function acctUpgrade() {
+// 'Free', 'Plus' or 'Pro' for an account (publicUser.tier; an older server sends isPro only)
+const acctPlanName = u => ({ plus: 'Plus', pro: 'Pro' }[u?.tier || (u?.isPro ? 'pro' : 'free')] || 'Free');
+// Checkout for the plan and period picked on /pricing (?start=plus|pro&interval=year,
+// kept in acct.want). With none picked yet, /pricing is where they pick. A paid
+// account switches plan or period in Billing (Stripe's portal), never a second checkout.
+async function acctUpgrade(plan, interval) {
+  const want = plan ? { plan, interval: interval || 'month' } : acct.want;
   if (!acct.user) return acctOpen('signup');
   if (!acct.billing) { showToast('Checkout is not switched on yet', 'danger'); return; }
-  const r = await fetch(`${BACKEND_URL}/api/billing/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnUrl: location.href.split('?')[0] }) }).catch(() => null);
+  if (acct.user.isPro) { showToast('Change your plan in Billing'); return acctPortal(); }
+  if (!want) { location.href = '/pricing'; return; }
+  acct.want = null;
+  const r = await fetch(`${BACKEND_URL}/api/billing/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnUrl: location.href.split('?')[0], plan: want.plan, interval: want.interval }) }).catch(() => null);
   const d = await r?.json().catch(() => ({}));
   if (d?.url) location.href = d.url; else showToast(d?.error || 'Checkout failed', 'danger');
 }
@@ -3272,7 +3500,11 @@ async function acctPortal() {
   const d = await r?.json().catch(() => ({}));
   if (d?.url) location.href = d.url; else showToast(d?.error || 'Billing portal failed', 'danger');
 }
-function acctLogout() { acctSetToken(null); acctRender(); acctChanged(); }
+function acctLogout() {
+  const was = !!acct.user;
+  acctSetToken(null); acctRender(); acctChanged(); syncSignedOut();
+  if (was && sync.status?.enabled) showToast('Signed out. This browser keeps its own copy of your bets and settings.');
+}
 async function acctDelete() {
   const err = document.getElementById('acctErr');
   const r = await fetch(`${BACKEND_URL}/api/auth/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: document.getElementById('acctPass').value }) }).catch(() => null);
@@ -3287,18 +3519,175 @@ async function acctDelete() {
 // what to do when someone locks into or out of Pro: reload what Pro changes
 function acctChanged() {
   if (alertState.source) { alertState.source.close(); alertState.source = null; }
+  if (alertState.poll) { clearTimeout(alertState.poll); alertState.poll = null; }
   alertState.locked = false;
   if (document.getElementById('esportsContent')?.offsetParent !== null || esportsState.picks?.length) loadEsports();
   if (evSource) { evSource.close(); evSource = null; evLive = false; }
   if (evActive) loadEv();
   if (tailActive) loadTail();
 }
-// a free user hitting a Pro feature
-function acctNeedPro(what) {
-  if (!acct.user) acctOpen('signup', `${what} is part of Line Reaper Pro. Create an account to start.`);
+// a free user hitting a paid feature (Plus and Pro), or a Plus member hitting
+// a Pro one (plan 'pro': live alerts and push): pick a plan on /pricing
+function acctNeedPro(what, plan = 'plus') {
+  if (!acct.user) { acct.choose = true; acctOpen('signup', `${what} ${plan === 'pro' ? 'is part of Line Reaper Pro' : 'comes with Line Reaper Plus and Pro'}. Create an account to start.`); }
   else acctUpgrade();
 }
-document.addEventListener('DOMContentLoaded', acctInit);
+document.addEventListener('DOMContentLoaded', () => acctInit().finally(syncBoot));
+
+// ── ACCOUNT SYNC ────────────────────────────────────────────────────────────
+// Signed in, this browser's bets, slips, favorites, saved views, layout and
+// alert kinds follow the account (the list and the merge rules are
+// acctsync.js, window.LRSync). localStorage stays the working copy, so
+// everything works offline and with sync off exactly as before; a change here
+// goes up a few seconds later, the account is read again when the app opens,
+// comes back to the front, and every 2 minutes. A setting changed on both
+// sides keeps this device's copy until the viewer picks in CUSTOMIZE.
+const SYNC_META = 'lr_sync_meta';
+const sync = { status: null, keys: new Set(), busy: false, again: false, err: null, timer: null, quiet: 0, devices: null };
+const syncMeta = () => { try { return JSON.parse(lsGet(SYNC_META) || 'null') || {}; } catch { return {}; } };
+const syncOn = () => !!(sync.status && sync.status.enabled && acct.user);
+const syncPageOn = id => !!document.getElementById(`page-${id}`)?.classList.contains('active');
+// every write to a synced key (whichever code made it) sends it up shortly
+try {
+  const setItem = Storage.prototype.setItem, removeItem = Storage.prototype.removeItem;
+  const touched = (store, k) => { try { if (!sync.quiet && store === window.localStorage && sync.keys.has(k) && syncOn()) syncSoon(4000); } catch {} };
+  Storage.prototype.setItem = function (k, v) { setItem.call(this, k, v); touched(this, k); };
+  Storage.prototype.removeItem = function (k) { removeItem.call(this, k); touched(this, k); };
+} catch {}
+function syncSoon(ms = 4000) { clearTimeout(sync.timer); sync.timer = setTimeout(() => { sync.timer = null; syncNow(); }, ms); }
+
+// what to redo on this page when the account brings a newer copy of a key
+const SYNC_HOOKS = {
+  lr_bets() {
+    if (!myb.ready) return;
+    try { const l = JSON.parse(lsGet(MYB_KEY) || '[]'); if (Array.isArray(l)) myb.list = LRBets.sortNewest(l.filter(b => b && b.id && b.odds > 1)); } catch {}
+    if (syncPageOn('betlog')) renderMyBets();
+  },
+  lr_slips() { if (ms.ready) { ms.ready = false; ms.loading = null; if (syncPageOn('myslips')) msOpen(); } },
+  lr_layout() { layLoad(); layApply(); document.body.classList.toggle('no-help', !layout.help); layFoldInit(); },
+  lr_shopper() { try { Object.assign(shpUi.opts, JSON.parse(lsGet('lr_shopper') || '{}')); } catch {} if (syncPageOn('odds') && shpUi.opts.mode !== 'lines') shpRender(); },
+  lr_os() { try { const o = JSON.parse(lsGet('lr_os') || '{}'); for (const k of ['league', 'state', 'market', 'sort', 'hidden']) if (k in o) osUi[k] = o[k]; } catch {} },
+  lr_mybooks() { try { const x = JSON.parse(lsGet('lr_mybooks') || '[]'); if (Array.isArray(x)) myBooks = x.filter(b => typeof b === 'string'); } catch {} },
+  lr_bankroll() { const n = parseFloat(lsGet('lr_bankroll')); if (isFinite(n)) esportsState.bankroll = n; },
+  lr_push_kinds() { pushState = null; },
+};
+SYNC_HOOKS.lr_slip_grades = SYNC_HOOKS.lr_pikkit = SYNC_HOOKS.lr_slip_imports = SYNC_HOOKS.lr_slips;
+SYNC_HOOKS.lr_state = () => lrSetState(lsGet('lr_state') || '', { save: false });
+SYNC_HOOKS.lr_odds_fmt = () => { const v = lsGet('lr_odds_fmt'); if (v) oddsFmtSet(v); };
+SYNC_HOOKS.lr_after_fees = () => { if ((lsGet('lr_after_fees') === '1') !== afUi.on) afToggle(); };
+
+async function syncBoot() {
+  try { const r = await fetch(`${BACKEND_URL}/api/sync/status`); sync.status = r.ok ? await r.json() : null; } catch { sync.status = null; }
+  sync.keys = new Set((sync.status?.keys || []).map(k => k.key));
+  syncRender();
+  if (syncOn()) { await syncNow(); syncDevices(); }
+}
+// resolved: { key: 'local' | 'account' } from the viewer's answer to a conflict
+async function syncNow(resolved) {
+  if (!syncOn()) return;
+  if (sync.busy) { sync.again = true; return; }
+  sync.busy = true; sync.err = null; syncRender();
+  try {
+    if (!window.LRSync) await mybLoadScript('/acctsync.js');
+    const uid = acct.user.id;
+    let meta = syncMeta();
+    if (meta.uid !== uid) meta = { uid, base: {}, conflicts: [] };   // first sign-in on this browser: a union
+    const answer = async r => { const j = await r.json().catch(() => ({})); if (r.status === 401) { acctSetToken(null); acctRender(); throw new Error('Signed out. Sign in again to sync.'); } return j; };
+    const r = await fetch(`${BACKEND_URL}/api/sync`, { cache: 'no-store' });
+    let doc = await answer(r);
+    if (!r.ok) throw new Error(doc.error || `The server answered ${r.status}`);
+    for (let i = 0; ; i++) {
+      const local = {};
+      for (const k of LRSync.KEY_LIST) local[k] = lsGet(k);
+      const m = LRSync.merge({ local, server: doc, base: meta.base, resolved });
+      if (Object.keys(m.push).length || Object.keys(m.tomb).length) {
+        const p = await fetch(`${BACKEND_URL}/api/sync`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: doc.rev, keys: m.push, tomb: m.tomb }) });
+        const j = await answer(p);
+        // another device wrote first: merge again on top of its copy
+        if (p.status === 409 && j.current && i < 3) { doc = j.current; continue; }
+        if (!p.ok) throw new Error(j.error || `The server answered ${p.status}`);
+        doc = j;
+      }
+      // a key changed here while we were away keeps its new value and goes up next time
+      const base = { ...m.base }, done = [];
+      sync.quiet++;
+      try {
+        for (const [k, v] of Object.entries(m.apply)) {
+          if (lsGet(k) !== local[k]) { if (meta.base[k]) base[k] = meta.base[k]; else delete base[k]; sync.again = true; continue; }
+          lsSet(k, v); done.push(k);
+        }
+      } finally { sync.quiet--; }
+      for (const k of done) { try { SYNC_HOOKS[k]?.(); } catch {} }
+      lsSet(SYNC_META, JSON.stringify({ uid, base, conflicts: m.conflicts, lastAt: new Date().toISOString(), rev: doc.rev }));
+      if (done.length && meta.lastAt) showToast(`Updated from your account: ${done.map(k => LRSync.KEYS[k].label).join(', ')}`);
+      break;
+    }
+  } catch (e) { sync.err = e.message || 'Sync failed'; }
+  finally {
+    sync.busy = false;
+    syncRender();
+    if (sync.again) { sync.again = false; syncSoon(1500); }
+  }
+}
+// this device's alerts join the account; the account's alert devices, by label
+async function syncDevices() {
+  if (!syncOn()) return;
+  try {
+    const sub = await pushSub();
+    const r = await fetch(`${BACKEND_URL}/api/sync/devices`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub?.endpoint || '' }) });
+    if (r.ok) sync.devices = (await r.json()).devices || [];
+  } catch {}
+  syncRender();
+}
+function syncResolve(key, pick) { syncNow({ [key]: pick === 'account' ? 'account' : 'local' }); }
+function syncSignIn(mode) { acctOpen(mode, 'Sign in to keep your bets, slips, favorites, saved views, layout and alert choices on every device. This browser keeps its own copy and merges it in.'); acct.fromSync = true; }
+async function syncAfterSignIn() {
+  if (!sync.status) await syncBoot();
+  else if (syncOn()) { await syncNow(); syncDevices(); }
+  if (syncOn()) showToast(sync.err ? `Signed in, but sync failed: ${sync.err}` : 'Signed in. Your bets and settings now sync to your account.', sync.err ? 'danger' : '');
+}
+function syncSignedOut() {
+  clearTimeout(sync.timer); sync.timer = null; sync.devices = null; sync.err = null;
+  lsSet(SYNC_META, null);
+  syncRender();
+}
+const syncAgo = t => { const s = Math.max(0, (Date.now() - Date.parse(t)) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
+function syncRender() {
+  const note = document.getElementById('syncNote'), rows = document.getElementById('syncRows'), mb = document.getElementById('mybSync');
+  const meta = syncMeta(), st = sync.status;
+  let n = '', h = '', m = '';
+  if (!st || !st.enabled) {
+    n = 'Your bets, slips and settings are saved in this browser only. Signing in to sync them between devices is not switched on for this server yet.';
+    m = 'Saved in this browser only. Export a CSV now and then to back it up.';
+  } else if (!acct.user) {
+    n = 'Sign in to keep your bets, slips, favorites, saved views, tab layout and alert choices on every device. This browser keeps its own copy and merges it into your account when you sign in.';
+    h = `<div class="lay-row"><span class="lay-name">Not signed in</span><button class="lay-b on" onclick="syncSignIn('login')">SIGN IN</button><button class="lay-b" onclick="syncSignIn('signup')">CREATE ACCOUNT</button></div>`;
+    m = `Saved in this browser only. <button class="mb-sync-b" onclick="syncSignIn('login')">SIGN IN</button> to keep them on every device.`;
+  } else {
+    const when = sync.busy ? 'Syncing…' : meta.lastAt ? `Last synced ${syncAgo(meta.lastAt)}` : 'Not synced yet';
+    n = 'Your bets, slips and settings sync to your account. This browser keeps a copy, so the app works offline too.';
+    h = `<div class="lay-row"><span class="lay-name" style="font-weight:500">Signed in as ${escAttr(acct.user.email)}</span><button class="lay-b" onclick="acctLogout()">SIGN OUT</button></div>
+      <div class="lay-row"><span class="lay-name" style="font-weight:500">${when}</span><button class="lay-b" onclick="syncNow()" ${sync.busy ? 'disabled' : ''}>SYNC NOW</button></div>`;
+    if (sync.err) h += `<p class="sync-err">${escAttr(sync.err)}</p>`;
+    for (const k of meta.conflicts || []) {
+      const label = sync.status.keys.find(x => x.key === k)?.label || k;
+      h += `<div class="lay-row sync-conflict"><span class="lay-name" style="font-weight:500">${escAttr(label)}: this device and your account differ. This device's copy is in use.</span><button class="lay-b on" onclick="syncResolve('${k}','local')">KEEP THIS DEVICE</button><button class="lay-b" onclick="syncResolve('${k}','account')">USE ACCOUNT</button></div>`;
+    }
+    if (sync.devices) h += `<p style="margin:8px 0 0">${sync.devices.length ? `Push alerts on this account: ${sync.devices.map(d => escAttr(d.label) + (d.thisDevice ? ' (this one)' : '')).join(', ')}. Alert kinds you pick apply to all of them.` : 'No device on this account has push alerts on yet. Turn them on below on each phone or computer you want them on.'}</p>`;
+    const c = (meta.conflicts || []).length;
+    m = sync.err ? `Not synced: ${escAttr(sync.err)}` : `${sync.busy ? 'Syncing to' : 'Synced to'} ${escAttr(acct.user.email)}${meta.lastAt && !sync.busy ? ` · ${syncAgo(meta.lastAt)}` : ''}.${c ? ` ${c} setting${c > 1 ? 's differ' : ' differs'} from your account: choose in CUSTOMIZE.` : ''}`;
+  }
+  if (note) note.textContent = n;
+  if (rows) rows.innerHTML = h;
+  if (mb) { mb.innerHTML = m; mb.classList.toggle('bad', !!(sync.err && acct.user)); }
+}
+setInterval(() => { if (syncOn() && document.visibilityState === 'visible') syncNow(); }, 120e3);
+setInterval(() => { if (document.getElementById('mybSync')?.offsetParent) syncRender(); }, 60e3);
+document.addEventListener('visibilitychange', () => {
+  if (!syncOn()) return;
+  if (document.visibilityState === 'visible') syncNow();
+  else if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; syncNow(); }
+});
 
 
 // ── LAYOUT ──────────────────────────────────────────────────────────────────
@@ -3410,6 +3799,8 @@ document.addEventListener('click', () => document.getElementById('moreMenu')?.cl
 function layOpen() {
   layRenderList();
   pushRefresh();
+  syncRender();
+  syncDevices();
   document.getElementById('layModal').classList.add('open');
 }
 
@@ -4037,20 +4428,24 @@ function welcomeInit() {
   // and signup/login open the account form when accounts are on
   // a slip shared from PrizePicks, Underdog or Sleeper to the installed app
   if (/[?&]share_(text|title|url)=/.test(location.search)) { try { sessionStorage.setItem('lr_welcomed', '1'); } catch {} msShareIn(); return; }
-  const start = new URLSearchParams(location.search).get('start');
+  let start = new URLSearchParams(location.search).get('start');
   if (start) {
-    const qs = new URLSearchParams(location.search); qs.delete('start');
+    const interval = new URLSearchParams(location.search).get('interval');
+    const qs = new URLSearchParams(location.search); qs.delete('start'); qs.delete('interval');
     history.replaceState(null, '', location.pathname + (qs.toString() ? `?${qs}` : '') + location.hash);
     try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
     if (!acct.token && (start === 'signup' || start === 'login')) {
       lrStatus().then(s => { if (s.accounts?.authSecretSet) acctOpen(start); }).catch(() => {});
     }
-    // "Get Pro": signed in goes to checkout; signed out signs up first, and a
-    // new account goes on to checkout from acctSubmit
-    if (start === 'pro') {
+    // "Get Plus" / "Get Pro" (&interval=year for annual): signed in goes to
+    // checkout; signed out signs up first, and a new account goes on to
+    // checkout from acctSubmit
+    if (start === 'plus' || start === 'pro') {
+      acct.want = { plan: start, interval: interval === 'year' ? 'year' : 'month' };
+      start = 'pro';
       lrStatus().then(async s => {
         if (!s.accounts?.authSecretSet) return;
-        if (!acct.token) return acctOpen('signup', s.accounts.billing ? 'Create your account, then checkout opens for Pro.' : '');
+        if (!acct.token) return acctOpen('signup', s.accounts.billing ? `Create your account, then checkout opens for ${acct.want.plan === 'plus' ? 'Plus' : 'Pro'}${acct.want.interval === 'year' ? ' annual' : ''}.` : '');
         if (!s.accounts.billing) return;
         acct.billing = true;
         await acctRefresh();
@@ -4825,6 +5220,7 @@ async function loadShop(seq) {
     const d = await r.json();
     if (seq !== pbState.seq) return;
     pbState.data = d;
+    paTake(d.priceAge);
     renderPropsBoard();
   } catch (e) {
     const el = document.getElementById('pbContent');
@@ -4898,13 +5294,13 @@ function renderShop() {
   const name = k => PB_BOOKS.find(x => x[0] === k)?.[1] || k, code = k => PB_BOOKS.find(x => x[0] === k)?.[2] || k;
   const multTxt = (k, c, side) => { const m = side === 'Over' ? c.over : c.under; return k === 'prizepicks' || m == null || m === 1 ? '' : ` ${m}x`; };
   const body = rows.map(r => {
-    const apps = Object.entries(r.apps).map(([k, c]) => `<span class="aps-app" style="--bk:${PB_COLOR[k]}"><i></i>${code(k)} ${c.line}</span>`).join('');
+    const apps = Object.entries(r.apps).map(([k, c]) => `<span class="aps-app${paStale(k) ? ' pa-dim' : ''}" data-pv="${k}" style="--bk:${PB_COLOR[k]}"><i></i>${code(k)} ${c.line}</span>`).join('');
     const sides = r.sides.map(s => {
       const c = r.apps[s.app];
       const tied = s.tied.length > 1 ? ` <span class="dim">(also ${s.tied.filter(a => a !== s.app).map(code).join(', ')})</span>` : '';
       const fair = s.fair != null ? `<span class="dim" title="${s.fairSource === 'sharp' ? 'Pinnacle or Kalshi at this number' : 'FanDuel or BetRivers only, not sharp'}">fair ${s.fair}%${s.fairSource === 'books' ? ' (books)' : ''}</span>` : d.pro ? '<span class="dim">no sharp price</span>' : '<span class="dim">fair: Pro</span>';
       const ev = s.ev != null ? `<span class="aps-ev ${s.ev > 0 ? 'pos' : 'neg'}" title="At ${escAttr(name(s.app))}'s own break-even ${(s.be * 100).toFixed(1)}%. Grey: research, not a play">EV ${pbEvTxt(s.ev)}</span>` : '';
-      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b>${multTxt(s.app, c, s.side)} ${vLink(s.app, { league: r.sport, player: r.player, what: `${r.player} ${r.market} ${s.line}` })}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
+      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b> ${paChip(s.app)}${multTxt(s.app, c, s.side)} ${vLink(s.app, { league: r.sport, player: r.player, what: `${r.player} ${r.market} ${s.line}` })}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
     }).join('');
     const mids = (r.middles || []).map(m => m.locked ? `<div class="aps-mid dim">${m.count} middle${m.count > 1 ? 's' : ''} worth more than zero: Pro</div>`
       : `<div class="aps-mid"><span class="aps-gap" style="color:#94a3b8">MIDDLE</span> <button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.over.app}','Over')">+</button> ${pbSideWord(m.over.app, 'Over')} ${m.over.line} ${code(m.over.app)} &nbsp;<button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.under.app}','Under')">+</button> ${pbSideWord(m.under.app, 'Under')} ${m.under.line} ${code(m.under.app)} <span class="dim">· window ${m.width} · both win ${(m.pMiddle * 100).toFixed(0)}% · ${m.expUnits > 0 ? '+' : ''}${m.expUnits}u a pair expected, on ${m.source === 'apps' ? "the apps' own numbers (no sharp price)" : 'the sharp price'} · two slips, one per app</span></div>`).join('');
@@ -5496,7 +5892,7 @@ async function loadSharpSignals() {
   let html = '';
   if (leads.length) html += card(`BET NOW · SOFT BOOKS STILL STALE (${leads.length})`, '#10b981', leads.map(e => line(e.text, `${escAttr((e.sport || '').toUpperCase())} · ${ago(e.ts)} ago`)).join(''));
   else if (d.lockedLeads) html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:10px;border:1px solid #f59e0b55;background:rgba(245,158,11,.06);border-radius:10px">
-      <div style="font-size:13px;color:#fcd34d"><b>${d.lockedLeads} soft books are behind a sharp move right now.</b> <span style="color:#cbd5e1">Pro shows which ones.</span></div>
+      <div style="font-size:13px;color:#fcd34d"><b>${d.lockedLeads} soft books are behind a sharp move right now.</b> <span style="color:#cbd5e1">Plus and Pro show which ones.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('Sharp leads')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
   if (steam.length) html += card('STEAM', '#fbbf24', steam.map(e => line(e.text, `${escAttr((e.sport || '').toUpperCase())} · ${ago(e.ts)} ago`)).join(''));
   if (rlm.length) html += card('REVERSE LINE MOVES · MONEY VS TICKETS', '#a78bfa', rlm.slice(0, 15).map(e => line(e.text, `${e.betsPct ?? '—'}% bets · ${e.moneyPct ?? '—'}% money`)).join(''));
@@ -6794,7 +7190,7 @@ function esStatEdge(p) {
 }
 
 function esRowButtons(p) {
-  if (p.locked) return `<button class="es-add" title="Pro shows which side to play" onclick="acctNeedPro('Seeing the picks')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>`;
+  if (p.locked) return `<button class="es-add" title="Plus and Pro show which side to play" onclick="acctNeedPro('Seeing the picks')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>`;
   const inSlip = esInSlip(p);
   return `<div style="display:flex;align-items:center;gap:4px">
     <button class="es-add ${inSlip ? 'in' : ''}" title="${inSlip ? 'Remove from slip' : 'Add to slip'}" onclick="esAdd(${p.__i})">${inSlip ? '✓' : '+'}</button>
@@ -6897,7 +7293,7 @@ function renderEsports() {
     return;
   }
   const lockBanner = esportsState.lockedCount ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid #f59e0b55;background:rgba(245,158,11,.06);border-radius:10px">
-      <div style="font-size:13px;color:#fcd34d"><b>${esportsState.lockedCount} +EV picks are locked.</b> <span style="color:#cbd5e1">Pro shows the side, the edge, and live alerts.</span></div>
+      <div style="font-size:13px;color:#fcd34d"><b>${esportsState.lockedCount} +EV picks are locked.</b> <span style="color:#cbd5e1">Plus shows the side and the edge; Pro adds live alerts.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('Seeing the picks')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>` : '';
   el.innerHTML = lockBanner + esStatsStrip(shown) + (esportsState.view === 'entry' ? esEntryHTML(shown)
     : esportsState.view === 'plays' ? esAutoSlipsHTML() + esPlaysHTML(picks)
@@ -6968,7 +7364,7 @@ async function loadEv() {
     if (!r.ok) { const err = new Error(String(r.status)); err.status = r.status; throw err; }
     const d = await r.json();
     evState.error = null;
-    Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
+    Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, live: d.live !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
     lrStateNotes(d.state, 'ev');
     renderEv();
   } catch (e) {
@@ -6976,7 +7372,8 @@ async function loadEv() {
     if (!evState.rows.length) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(evState.error)}</div></div>`;
     else renderEv();
   }
-  if (evActive && evState.pro) evConnect();
+  // the live stream is Pro's; Plus refreshes by polling below
+  if (evActive && evState.pro && evState.live) evConnect();
   // the stream drives refreshes; polling is the fallback when it's down
   if (evActive) evTimer = setTimeout(loadEv, evLive ? 120000 : 30000);
 }
@@ -7086,7 +7483,7 @@ function renderEv() {
   const rows = evFiltered();
   const locked = rows.filter(r => r.locked).length;
   const banner = locked ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border:1px solid #f59e0b55;background:rgba(245,158,11,.06);border-radius:10px">
-      <div style="font-size:13px;color:#fcd34d"><b>${locked} +EV bets found.</b> <span style="color:#cbd5e1">Pro shows the book, the price and the edge.</span></div>
+      <div style="font-size:13px;color:#fcd34d"><b>${locked} +EV bets found.</b> <span style="color:#cbd5e1">Plus and Pro show the book, the price and the edge.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('The +EV screener')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>` : '';
   const age = evState.updated ? Math.round((Date.now() - Date.parse(evState.updated)) / 1000) : null;
   const strip = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:12px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
@@ -7723,7 +8120,7 @@ function tailPassRow(s) {
 function tailSignalsHTML() {
   const all = tailState.signals;
   const bets = all.filter(tailActionable), passed = all.filter(s => !tailActionable(s));
-  const banner = !tailState.pro ? tailLockBanner(`<b>${tailState.locked ? `${tailState.locked} signal${tailState.locked === 1 ? '' : 's'} from the last ${tailState.delay} minutes ${tailState.locked === 1 ? 'is' : 'are'} locked.` : 'Live signals are a Pro feature.'}</b> <span style="color:#cbd5e1">Free shows signals ${tailState.delay || 30}+ minutes late with wallets hidden. Pro gets them the moment the sharp bets.</span>`, 'Live tail signals') : '';
+  const banner = !tailState.pro ? tailLockBanner(`<b>${tailState.locked ? `${tailState.locked} signal${tailState.locked === 1 ? '' : 's'} from the last ${tailState.delay} minutes ${tailState.locked === 1 ? 'is' : 'are'} locked.` : 'Live signals come with Plus and Pro.'}</b> <span style="color:#cbd5e1">Free shows signals ${tailState.delay || 30}+ minutes late with wallets hidden. Pro gets them the moment the sharp bets.</span>`, 'Live tail signals') : '';
   const sizedNow = bets.filter(s => s.type !== 'exit').length;
   const strip = tailStrip([
     `<span style="color:${sizedNow ? '#10b981' : '#f1f5f9'};font-weight:700">${sizedNow} TO BET</span>`,
@@ -7797,7 +8194,7 @@ function tailBoardHTML() {
   const rows = [...(d.rows || [])].sort((a, b) => canTake(b) - canTake(a));
   const takeable = rows.filter(canTake).length;
   const locked = d.locked || 0;
-  const banner = !tailState.pro && locked ? tailLockBanner(`<b>${locked} more market${locked === 1 ? '' : 's'} with sharp money ${locked === 1 ? 'is' : 'are'} locked.</b> <span style="color:#cbd5e1">Pro shows every market, the wallets and where to take the same side.</span>`, 'The Sharp Board') : '';
+  const banner = !tailState.pro && locked ? tailLockBanner(`<b>${locked} more market${locked === 1 ? '' : 's'} with sharp money ${locked === 1 ? 'is' : 'are'} locked.</b> <span style="color:#cbd5e1">Plus and Pro show every market, the wallets and where to take the same side.</span>`, 'The Sharp Board') : '';
   const strip = tailStrip([
     `<span style="color:#f1f5f9;font-weight:700">${rows.length + locked} MARKETS</span>`,
     rows.length ? `<span style="color:${takeable ? '#10b981' : '#94a3b8'}">${takeable} YOU CAN TAKE${tailUS() ? ' IN THE US' : ''}</span>` : '',
@@ -7836,7 +8233,7 @@ function tailBoardHTML() {
 function tailTradersHTML() {
   const st = tailState.traderState;
   const cat = tailState.category !== 'all' ? tailState.category : null;
-  const banner = !tailState.pro ? tailLockBanner('<b>Wallets are hidden.</b> <span style="color:#cbd5e1">Pro shows who they are, their full record and every signal live.</span>', 'The sharp leaderboard') : '';
+  const banner = !tailState.pro ? tailLockBanner('<b>Wallets are hidden.</b> <span style="color:#cbd5e1">Plus and Pro show who they are, their full record and every signal live.</span>', 'The sharp leaderboard') : '';
   const strip = tailStrip([
     `<span style="color:#f1f5f9;font-weight:700">${tailState.traders.length} WALLETS</span>`,
     st ? `<span>${st.graded?.A || 0} A · ${st.graded?.B || 0} B</span><span>${st.scored} SCORED OF ${st.candidates}</span>${st.pending ? `<span>${st.pending} WAITING</span>` : ''}` : '',
@@ -7889,7 +8286,7 @@ function tailWhalesHTML() {
     d.freshRecord?.texas ? `<span style="color:#93c5fd" title="The same games graded at the cheapest price you could get from Texas when the buy went out (Kalshi or Polymarket US). Buys with no Texas market are left out.">FROM TEXAS ${freshLine(d.freshRecord.texas)}</span>` : '',
     d.freshRecord?.firstBet ? `<span style="color:#fbbf24" title="Wallets on their first bet: first trade within a day and this is their only market. Ahead on Sep 24 to Oct 24 (147 games, +20.5u), but it lost on six months it was not fitted on (Apr to Sep: 760 games, -12.2u, t -0.5). Not a bet; kept as a check. Counted from v3.153.0.">FIRST BET (NO EDGE) ${freshLine(d.freshRecord.firstBet)}</span>` : '',
   ]);
-  const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Pro shows them live.</span>', 'Whale flow') : '';
+  const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Plus and Pro show them live.</span>', 'Whale flow') : '';
   const note = tailWithheld('whales');
   if (!flow.length && !events.length) return note + banner + strip + tailEmpty('NO WHALES THIS HOUR', `Prints of ${tailUsd(d.minUsd || 5000)} or more on Kalshi and Polymarket show up here. The backend checks both every 30 seconds.`);
   const flowRows = flow.map(f => {
@@ -8005,7 +8402,7 @@ function renderXscreen() {
   const d = xscreenUi.data;
   if (xscreenUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(xscreenUi.error)); return; }
   if (!d) return;
-  if (!d.pro) { el.innerHTML = tailLockBanner(`<b>${d.count || 0} game lines priced on both exchanges right now.</b> <span style="color:#cbd5e1">Pro shows each side's price on Kalshi and Polymarket US, and which is cheaper.</span>`, 'The exchange price screen'); return; }
+  if (!d.pro) { el.innerHTML = tailLockBanner(`<b>${d.count || 0} game lines priced on both exchanges right now.</b> <span style="color:#cbd5e1">Plus and Pro show each side's price on Kalshi and Polymarket US, and which is cheaper.</span>`, 'The exchange price screen'); return; }
   const rows = (d.rows || []).filter(r => (xscreenUi.kind === 'all' || r.kind === xscreenUi.kind) && (xscreenUi.league === 'all' || r.league === xscreenUi.league));
   if (xscreenUi.sort === 'ev') rows.sort((a, b) => (b.maxEv ?? -9) - (a.maxEv ?? -9));
   const hasFair = (d.rows || []).some(r => r.sides.some(x => x.fair != null));
@@ -8088,7 +8485,7 @@ function renderBig() {
   const note = `<div class="xa-sub" style="margin:0 0 6px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line.</div><details class="xa-how" style="margin:0 0 10px"><summary>How each venue is priced</summary><p>PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</p></details>`;
   let body;
   if (d.off) body = tailEmpty('BIG MONEY IS OFF', 'BIG_MONEY=off is set on the server.');
-  else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Pro shows each one, the money behind it and every venue's price.</span>`, 'Big money');
+  else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Plus and Pro show each one, the money behind it and every venue's price.</span>`, 'Big money');
   else if (d.withheld?.length === 2) body = tailEmpty('EXCHANGE DATA WITHHELD', escAttr(d.note || ''));
   else if (!(d.plays || []).length) body = tailEmpty('NO BIG MONEY RIGHT NOW', `Bets show up here when ${usd(bigUi.minUsd)}+ hits a game or player line before it starts.${d.hiddenMarketMakers ? ` ${d.hiddenMarketMakers} market-maker bet${d.hiddenMarketMakers === 1 ? ' is' : 's are'} hidden.` : ''}`);
   else {
@@ -8157,7 +8554,7 @@ function renderGas() {
   const note = `<div class="xa-sub" style="margin:0 0 10px">The rule: ${escAttr((rule.states || []).join(', '))}; the side asked ${c(rule.minPrice || 0.9)} to ${c(rule.maxPrice || 0.98)}, ${rule.fromHours || 12} to ${rule.toHours || 19} hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $${rule.minDepthUsd || 100}+ resting at the price and the book no wider than ${c(rule.maxSpread || 0.05)} (a 95¢ ask over a 30¢ bid isn't a real favourite; those lost about 13% a bet in the backtest).${bt.allNights ? ` Backtest on every market ${escAttr(bt.from || '')} to ${escAttr(bt.to || '')}: picking the states each week from the weeks before went ${pct(oos.roi)} a bet, about one loss in 50, and only about two standard errors over zero, so the live record decides. Losses bunch: on ${escAttr(bt.worstNight?.day || '')} ${bt.worstNight?.losses} bets lost together (${pct(bt.worstNight?.roi)} on the night). The other states went ${pct(bt.otherStates?.roi)} and Kalshi's national gas market ${pct(bt.national?.roi)}, so neither is listed. Book depth isn't in the history; tonight's depth is shown live.` : ''} Price includes Kalshi's fee on a 100-contract order.</div>`;
   let plays;
   if (d.off) plays = tailEmpty('GAS LOCKS ARE OFF', 'GAS_LOCKS=off is set on the server.');
-  else if (!d.pro) plays = tailLockBanner(`<b>${d.count || 0} gas lock${d.count === 1 ? '' : 's'} open right now.</b> <span style="color:#cbd5e1">Pro shows each one with its price and the dollars resting there.</span>`, 'Gas locks');
+  else if (!d.pro) plays = tailLockBanner(`<b>${d.count || 0} gas lock${d.count === 1 ? '' : 's'} open right now.</b> <span style="color:#cbd5e1">Plus and Pro show each one with its price and the dollars resting there.</span>`, 'Gas locks');
   else if (d.withheld?.length) plays = tailEmpty('KALSHI DATA WITHHELD', escAttr(d.note || ''));
   else if (!(d.plays || []).length) plays = tailEmpty('NO PLAYS RIGHT NOW', 'They show up the evening before each day\'s markets settle, about 3pm to 10pm Eastern.');
   else {
@@ -8431,7 +8828,7 @@ async function loadBest() {
   clearTimeout(bestUi.timer);
   const el = document.getElementById('bestContent');
   if (!bestUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
-  try { bestUi.data = await tailGet(`/api/best?limit=500${stateQ()}`); bestUi.error = null; lrStateNotes(bestUi.data.state, 'best'); }
+  try { bestUi.data = await tailGet(`/api/best?limit=500${stateQ()}`); bestUi.error = null; paTake(bestUi.data.priceAge); lrStateNotes(bestUi.data.state, 'best'); }
   catch (e) { bestUi.error = e.old ? 'Best plays need a newer backend.' : lrErr(e); }
   renderBest();
   if (document.getElementById('page-best').classList.contains('active')) bestUi.timer = setTimeout(loadBest, 60000);
@@ -8471,12 +8868,13 @@ function renderBest() {
   const edge = r => (r.ev != null ? `+${(r.ev * 100).toFixed(1)}%` : '—');
   const when = t => { const x = new Date(t); return t && Number.isFinite(x.getTime()) ? x.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
   bestUi.shown = rows;
+  const age = r => paChipAll(r.venueKeys?.length ? r.venueKeys : bestBooks(r), r.priceAt);
   const body = rows.map((r, i) => { const [v, c] = VC[r.verdict] || VC.early; return `<tr>
       <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span><div style="font-size:10px;color:var(--text2)">${escAttr(r.label)}</div></td>
       <td><b>${tailLink(r.url, escAttr(r.bet))}</b><div style="font-size:11px;color:var(--text2)">${escAttr(r.title)}${r.startsAt ? ` · ${escAttr(when(r.startsAt))}` : ''}</div>
-        <div class="bp-m">${escAttr(r.venue)} · ${price(r)}${r.maxPrice != null ? ` (max ${tailC(r.maxPrice)})` : ''} · ${size(r)} · <span style="color:var(--green)">${edge(r)}</span></div>
+        <div class="bp-m">${escAttr(r.venue)} ${age(r)} · ${price(r)}${r.maxPrice != null ? ` (max ${tailC(r.maxPrice)})` : ''} · ${size(r)} · <span style="color:var(--green)">${edge(r)}</span></div>
         <div style="font-size:11px;color:#94a3b8;margin-top:2px">${(r.why || []).map(escAttr).join(' · ')}</div>${r.warning ? `<div class="xa-warn">${escAttr(r.warning)}</div>` : ''}</td>
-      <td class="bp-c">${escAttr(r.venue)}</td>
+      <td class="bp-c">${escAttr(r.venue)} ${age(r)}</td>
       <td class="bp-c" style="text-align:right">${price(r)}${r.maxPrice != null ? `<div style="font-size:10px;color:var(--text2)">max ${tailC(r.maxPrice)}</div>` : ''}</td>
       <td class="bp-c" style="text-align:right">${size(r)}</td>
       <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td>
@@ -8489,8 +8887,8 @@ function renderBest() {
       <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th><th></th></tr></thead>
       <tbody>${body}</tbody></table></div>` : !d.total && d.outOfState && lrState ? `${tailEmpty(`NOTHING AT A ${escAttr(String(d.state?.name || lrStateName()).toUpperCase())} VENUE RIGHT NOW`, `${d.outOfState} play${d.outOfState === 1 ? ' is' : 's are'} at venues not legal in ${escAttr(d.state?.name || lrStateName())} (CUSTOMIZE &gt; My state). Nothing is better than a bad bet.`)}<div style="text-align:center;margin:-8px 0 12px"><button class="lr-sbar-b" onclick="lrSetState('')">SHOW ALL STATES</button></div>`
       : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
-    ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Pro unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">GET PRO</button></div>` : ''}
-    <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
+    ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Plus unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">UPGRADE</button></div>` : ''}
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). The timer by each venue is how long ago that price was read; grey means stale. Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
 }
 
 async function loadXarbs() {
@@ -8702,7 +9100,7 @@ function renderXarbs() {
   const note = tailWithheld('arbs');
   if (!d.pro) {
     const pcts = (d.arbs || []).slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
-    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}${d.books?.arbCount ? `, ${d.books.arbCount} sportsbook arb${d.books.arbCount === 1 ? '' : 's'}` : ''}${d.books?.middleCount ? `, ${d.books.middleCount} sportsbook middle${d.books.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
+    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}${d.books?.arbCount ? `, ${d.books.arbCount} sportsbook arb${d.books.arbCount === 1 ? '' : 's'}` : ''}${d.books?.middleCount ? `, ${d.books.middleCount} sportsbook middle${d.books.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Plus and Pro show each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
     return;
   }
   const all = [...(d.arbs || []), ...(d.near || []), ...(d.bids || [])];
@@ -8821,7 +9219,8 @@ function tailRecordHTML() {
 // The backend diffs every board refresh and streams events. The page shows a
 // toast, keeps a feed, and (if the user allows it) raises a desktop
 // notification so the tab can sit in the background.
-const alertState = { list: [], unread: 0, open: false, source: null, live: false };
+// delayMinutes: Plus sees the same alerts this late, polled (no stream); 0 for Pro
+const alertState = { list: [], unread: 0, open: false, source: null, live: false, delayMinutes: 0, poll: null };
 
 function alertText(e) {
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
@@ -8859,14 +9258,16 @@ function esRenderAlerts() {
   const color = k => k === 'edge' || k === 'gap' ? '#10b981' : k === 'move' ? '#fbbf24' : '#8391a7';
   if (alertState.locked) {
     el.innerHTML = `<div style="background:var(--card);border:1px solid #f59e0b55;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Live alerts are a Pro feature.</b> New price gaps and line moves, pushed the moment the board refreshes.</span>
-      <button class="acct-btn pro" onclick="acctNeedPro('Live alerts')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
+      <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Alerts come with Plus and Pro.</b> New price gaps and line moves: live on Pro, the same alerts ${ALERT_DELAY_MIN} minutes later on Plus.</span>
+      <button class="acct-btn pro" onclick="acctNeedPro('Alerts')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
     return;
   }
   el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
       <span style="font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700">ALERTS</span>
-      <span style="font-size:10px;color:${alertState.live ? '#10b981' : '#8391a7'}">${alertState.live ? '● LIVE' : '○ connecting'}</span>
+      ${alertState.delayMinutes > 0
+        ? `<span style="font-size:10px;color:#93c5fd">${alertState.delayMinutes} MIN DELAY (PLUS)</span><button class="sport-chip" style="font-size:10px;padding:3px 10px" onclick="acctNeedPro('Live alerts','pro')">LIVE WITH PRO</button>`
+        : `<span style="font-size:10px;color:${alertState.live ? '#10b981' : '#8391a7'}">${alertState.live ? '● LIVE' : '○ connecting'}</span>`}
       <button class="sport-chip" style="margin-left:auto;font-size:10px;padding:3px 10px" onclick="esToggleNotify()">${notifyOn ? 'DESKTOP OFF' : 'DESKTOP ON'}</button>
     </div>
     ${alertState.list.length ? alertState.list.slice(0, 30).map(e => `
@@ -8907,11 +9308,18 @@ function esOnAlert(e) {
 }
 
 async function esStartAlerts() {
-  if (alertState.source || typeof EventSource === 'undefined') return;
+  if (alertState.source || alertState.poll || typeof EventSource === 'undefined') return;
   try {
     const r = await fetch(`${BACKEND_URL}/api/esports/alerts?limit=30`);
-    if (r.status === 401 || r.status === 402) { alertState.locked = true; esRenderAlerts(); return; }   // Pro feature
-    if (r.ok) { alertState.list = (await r.json()).alerts || []; esRenderAlerts(); }
+    if (r.status === 401 || r.status === 402) { alertState.locked = true; esRenderAlerts(); return; }   // Plus and Pro
+    if (r.ok) {
+      const d = await r.json();
+      alertState.list = d.alerts || [];
+      alertState.delayMinutes = d.live === false ? d.delayMinutes || 0 : 0;
+      esRenderAlerts();
+      // Plus: no stream; the delayed list is read again every minute
+      if (d.live === false) { alertState.poll = setTimeout(() => { alertState.poll = null; esStartAlerts(); }, 60e3); return; }
+    }
   } catch { /* the stream below still works */ }
   // EventSource can't send headers, so the token rides in the query string
   const src = new EventSource(`${BACKEND_URL}/api/esports/stream${acct.token ? '?token=' + encodeURIComponent(acct.token) : ''}`);
@@ -9196,7 +9604,7 @@ function esLineRow(p, key) {
   const bookRow = B ? '' : `<div class="es-bookevs">${books || (p.locked ? '<span style="color:#f59e0b">Pro pick</span>' : '<span style="color:#7b8a9f">no book EVs: needs model input</span>')}</div>`;
   const sideWord = p.side ? (key ? esSideWord(p.side, key) : p.side === 'OVER' ? 'Over' : 'Under') : '—';
   const side = p.locked ? '' : `<div style="text-align:center"><span class="es-side ${p.side === 'OVER' ? 'over' : 'under'}">${escEs(sideWord)}<em>${p.prob != null ? Math.round(p.prob) + '%' : ''}</em></span>${p.predSource ? `<div class="es-src" style="color:${p.predSource === 'manual' ? '#a78bfa' : '#7b8a9f'}" title="${p.predSource === 'manual' ? 'Your model number' : 'Auto-predicted from HLTV/VLR stats'}">${p.predSource === 'manual' ? 'MANUAL' : 'AUTO'}</div>` : ''}</div>`;
-  const evTxt = p.locked && !B ? `<span class="es-lock" role="button" tabindex="0" onclick="acctNeedPro('Seeing the picks')" title="A +EV pick. Pro shows the side and the edge."><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>`
+  const evTxt = p.locked && !B ? `<span class="es-lock" role="button" tabindex="0" onclick="acctNeedPro('Seeing the picks')" title="A +EV pick. Plus and Pro show the side and the edge."><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>`
     : ev == null ? '—' : `${ev > 0 ? '+' : ''}${ev.toFixed(1)}%`;
   return `<div class="es-line${ev != null && ev >= 5 ? ' hot' : ''}">
     <div>${esRowButtons(p)}</div>
@@ -9291,7 +9699,7 @@ async function loadEsAutoSlips() {
 const ES_AS_FAIR = { h2h: 'H2H model', share: 'kill share', rounds: 'round model' };
 const esAsSide = (l, book) => book === 'PP' ? (l.side === 'OVER' ? 'More' : 'Less') : (l.side === 'OVER' ? 'Higher' : 'Lower');
 function esAutoSlipsHTML() {
-  if (esAsState.locked) return `<div class="es-as-note" role="button" tabindex="0" style="margin-bottom:12px;cursor:pointer;color:#f59e0b" onclick="acctNeedPro('Best slips')">BEST SLIPS: the best entry on each book is a Pro feature</div>`;
+  if (esAsState.locked) return `<div class="es-as-note" role="button" tabindex="0" style="margin-bottom:12px;cursor:pointer;color:#f59e0b" onclick="acctNeedPro('Best slips')">BEST SLIPS: the best entry on each book comes with Plus and Pro</div>`;
   const d = esAsState.data;
   if (!d) return '';
   if (!d.slips?.length) {
@@ -9786,7 +10194,7 @@ async function esCheckCorrelation(legs) {
     });
     if (seq !== esCorrSeq) return;                 // a newer slip replaced this one
     if (r.status === 404) { el.innerHTML = ''; return; }   // backend older than v3.12
-    if (r.status === 401 || r.status === 402) { el.innerHTML = `<span style="color:#f59e0b;cursor:pointer" role="button" tabindex="0" onclick="acctNeedPro('Correlated slip pricing')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> SERIES CHECK: same-series correlation pricing is a Pro feature</span>`; return; }
+    if (r.status === 401 || r.status === 402) { el.innerHTML = `<span style="color:#f59e0b;cursor:pointer" role="button" tabindex="0" onclick="acctNeedPro('Correlated slip pricing')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> SERIES CHECK: same-series correlation pricing comes with Plus and Pro</span>`; return; }
     const data = await r.json();
     if (!r.ok) { el.innerHTML = `<span style="color:#8391a7">Series check unavailable: ${escEs(data.error || r.status)}</span>`; return; }
     if (data.books) {
@@ -10431,7 +10839,7 @@ function shpOpps(d) {
     return `<tr class="shp-row"${xp} data-vrow="1" tabindex="0" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
+      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${paChip(x.provider, shpReadAt(x.ageSec ?? x.view?.ageSec))} ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -10456,7 +10864,7 @@ function shpMarketTable(m) {
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
       const xp = xpA({ event: m.event, league: String(m.league || '').toUpperCase(), start: m.start, market: shpMkt(m), selection: s.name, line: m.line, venue: p.provider, venueName: p.name, decimal: p.effective,
         fair: s.fair, fairSrc: SHP_FAIR[m.fair?.source] || m.fair?.source, ev: p.ref ? null : p.ev, fill: shpFillUsd(p.size, p.sizedAt), readAt: shpReadAt(p.ageSec), tag: [p.ref ? 'reference' : p.best ? 'best' : '', p.secondHand ? 'copy' : '', p.freshness === 'stale' ? 'stale' : '', p.oneWay ? 'one-way' : '', p.feeUnknown ? 'commission not in the price' : ''].filter(Boolean).join(', ') });
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}${p.freshness === 'stale' ? ' pa-dim' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}<div>${paChip(p.provider, shpReadAt(p.ageSec))}</div>${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr${s.prices.some(p => !p.ref) ? ' data-vrow="1"' : ''}><td style="white-space:nowrap">${canLog && s.prices.some(p => !p.ref && p.bettable !== false) ? `<button class="os-log" title="Log this bet in MY BETS: checked with the server, followed on Pinnacle's price at this number to the close and graded from the final" onclick="event.stopPropagation();shpLog('${escAttr(m.key)}',${si})">LOG</button>` : ''}${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');

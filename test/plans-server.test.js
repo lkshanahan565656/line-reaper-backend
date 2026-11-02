@@ -33,7 +33,8 @@ test('/api/plans: the plans, the price, and the viewer on Free', async () => {
   assert.equal(r.status, 200);
   assert.equal(r.body.paywall, true);
   assert.equal(r.body.onSale, false, 'no Stripe keys: not on sale');
-  assert.deepEqual(r.body.plans.map(p => p.id), ['free', 'pro']);
+  assert.deepEqual(r.body.plans.map(p => p.id), ['free', 'plus', 'pro']);
+  assert.deepEqual(r.body.plans.find(p => p.id === 'plus').onSale, { month: false, year: false }, 'no Stripe: nothing on sale');
   assert.equal(r.body.viewer.plan, 'free');
   assert.equal(r.body.price.monthly, 79);
   assert.equal(r.body.price.intro, null, 'no founding price in Stripe: none shown');
@@ -46,7 +47,8 @@ test('/pricing: renders, links back, and says Pro checkout is not open without S
   const r = await fetch(`${base}/pricing`);
   assert.equal(r.status, 200);
   const html = await r.text();
-  assert.match(html, /<h1>Free and Pro<\/h1>/);
+  assert.match(html, /<h1>Free, Plus and Pro<\/h1>/);
+  assert.match(html, /ASK ABOUT PLUS/);
   assert.match(html, /ASK ABOUT PRO/);
   assert.match(html, /Pro checkout is not open yet/);
   assert.doesNotMatch(html, /id="early"/);
@@ -120,4 +122,67 @@ test('/api/status: the switch to charging lists what is missing, by name only', 
   assert.equal(p.ready, false);
   assert.ok(p.missing.includes('STRIPE_SECRET_KEY') && p.missing.includes('DATABASE_URL') && !p.missing.includes('AUTH_SECRET'));
   assert.equal(p.pricing, '/pricing');
+});
+
+// Plus and Pro on the server: the tier comes from the account (the webhook
+// writes it), Plus gets the research gates and the same alerts later, only Pro
+// gets the live streams and push.
+const asTier = async (email, tier) => {
+  const token = await signup(email);
+  const me = await json('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  const u = await srv.auth.store.get(me.body.user.id);
+  if (tier !== 'free') Object.assign(u, { plan: tier, planStatus: 'active', subscriptionId: `sub_${tier}`, currentPeriodEnd: new Date(Date.now() + 30 * 86400e3).toISOString() });
+  await srv.auth.store.put(u);
+  return { Authorization: `Bearer ${token}` };
+};
+
+test('tiers: Free, Plus and Pro each get their own gates, limits and alert delay', async () => {
+  const free = await asTier('tier-free@example.com', 'free');
+  const plus = await asTier('tier-plus@example.com', 'plus');
+  const pro = await asTier('tier-pro@example.com', 'pro');
+  const me = await json('/api/auth/me', { headers: plus });
+  assert.equal(me.body.plan, 'plus');
+  assert.equal(me.body.user.tier, 'plus');
+  assert.equal(me.body.user.isPro, true, 'Plus is a paid plan');
+  assert.equal(me.body.limits.alertDelayMin, 10);
+  assert.equal((await json('/api/plans', { headers: plus })).body.viewer.plan, 'plus');
+  // research gates (requirePro): Plus and Pro in, Free out
+  assert.equal((await json('/api/esports/best-slips', { headers: free })).status, 402);
+  assert.notEqual((await json('/api/esports/best-slips', { headers: plus })).status, 402);
+  // alert lists: Plus delayed, Pro live, Free none
+  assert.equal((await json('/api/esports/alerts', { headers: free })).status, 402);
+  const pa = await json('/api/esports/alerts', { headers: plus });
+  assert.equal(pa.status, 200);
+  assert.equal(pa.body.live, false);
+  assert.equal(pa.body.delayMinutes, 10);
+  const ra = await json('/api/esports/alerts', { headers: pro });
+  assert.equal(ra.body.live, true);
+  assert.equal(ra.body.delayMinutes, 0);
+  const ev = await json('/api/ev/alerts', { headers: plus });
+  assert.equal(ev.status, 200);
+  assert.equal(ev.body.live, false);
+  // live streams and push: Pro only, and the refusal names the plan
+  for (const u of ['/api/esports/stream', '/api/ev/stream']) {
+    const r = await json(u, { headers: plus });
+    assert.equal(r.status, 402, u);
+    assert.equal(r.body.plan, 'pro');
+    assert.match(r.body.error, /10 minutes later/);
+  }
+  const ps = await post('/api/push/subscribe', { subscription: {} }, plus);
+  assert.equal(ps.status, 402);
+  // the API: Plus keeps Free's limits and one key; the Discord feed stays Pro
+  const k = await post('/api/v1/keys', { name: 'plus key' }, { ...plus, 'X-Forwarded-For': '10.1.0.9' });
+  assert.equal(k.status, 201);
+  assert.equal(k.body.plan, 'plus');
+  assert.deepEqual(k.body.limits, { perMinute: 10, perDay: 500 });
+});
+
+test('checkout: plan and period are checked before Stripe is asked', async () => {
+  const h = await asTier('tier-checkout@example.com', 'free');
+  const bad = await post('/api/billing/checkout', { plan: 'gold' }, h);
+  assert.equal(bad.status, 400);
+  const badI = await post('/api/billing/checkout', { plan: 'plus', interval: 'week' }, h);
+  assert.equal(badI.status, 400);
+  const off = await post('/api/billing/checkout', { plan: 'plus', interval: 'year' }, h);
+  assert.equal(off.status, 503, 'no Stripe keys: billing is not set up');
 });

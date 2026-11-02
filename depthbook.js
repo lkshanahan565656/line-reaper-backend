@@ -15,8 +15,7 @@
 
 const D = require('./depthfill');
 
-const r4 = x => Math.round(x * 1e4) / 1e4;
-const r2 = x => Math.round(x * 100) / 100;
+const { r4, r2 } = require('./mathutil');
 const EXCHANGES = new Set(['kalshi', 'gemini', 'polymarketus']);
 // reads a minute on top of the size record's. Polymarket US: none of the shopper's own. Its gateway
 // answered 429 to the record's 3 a pass and the shopper's 2 alike (live 03:14Z 10-25), so the shopper

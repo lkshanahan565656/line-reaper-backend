@@ -33,7 +33,7 @@ module.exports = [
     files: ['public/app.js'],
     languageOptions: {
       ecmaVersion: 2024,
-      globals: { ...globals.browser, LRCalc: 'readonly', LRFees: 'readonly', LRGlossary: 'readonly', LRSlips: 'readonly', LRBets: 'readonly', LRVenue: 'readonly' },
+      globals: { ...globals.browser, LRCalc: 'readonly', LRFees: 'readonly', LRGlossary: 'readonly', LRSlips: 'readonly', LRBets: 'readonly', LRVenue: 'readonly', LRSync: 'readonly' },
     },
     rules: { 'no-unused-vars': ['error', { vars: 'local', args: 'none', caughtErrors: 'none', ignoreRestSiblings: true, varsIgnorePattern: '^_' }] },
   },
@@ -43,7 +43,7 @@ module.exports = [
     languageOptions: { globals: { ...globals.browser, ...globals.node, showTab: 'readonly', shpUi: 'readonly' } },
   },
   {
-    files: ['calc.js', 'bets.js', 'slips.js', 'fees.js', 'glossary.js'],   // also served to the page
+    files: ['calc.js', 'bets.js', 'slips.js', 'fees.js', 'glossary.js', 'acctsync.js'],   // also served to the page
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
 ];
