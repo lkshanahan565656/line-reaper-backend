@@ -36,13 +36,13 @@ const S = require('./slips');
 
 const MAX_SLIPS = 5000, MAX_POST = 500, MAX_LEGS = 12, MAX_RECORDS = 20000;
 const CREATE_PER_HOUR = 3;
+const FEED_KINDS = ['discord', 'telegram'];
 const BAR = 50, CLV_T = 2, SHORT_SD = 1.5;
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 const RESERVED = new Set(['admin', 'api', 'app', 'card', 'cards', 'share', 'results', 'record', 'records', 'lr', 'linereaper', 'line_reaper', 'line_reaper_', 'official', 'support',
   'help', 'status', 'learn', 'leagues', 'developers', 'digest', 'null', 'undefined', 'pinnacle', 'kalshi', 'polymarket', 'prizepicks', 'underdog', 'sleeper', 'pikkit', 'staff', 'mod', 'root']);
 const sha256 = s => crypto.createHash('sha256').update(String(s)).digest('hex');
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r2OrNull: r2, r4OrNull: r4, escHtml: esc } = require('./mathutil');
 const str = (v, n = 80) => String(v ?? '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const err = (status, message) => Object.assign(new Error(message), { status });
 
@@ -80,6 +80,7 @@ function cleanSlip(s) {
 // esbets.js) is kept the same way; its start is the server's, read from the
 // matchup engine when the bet is first checked.
 const LB = require('./linebets');
+const VERIFIED_VENUE = 'kalshi_fill';
 const EB = require('./esbets');
 function cleanBet(b) {
   if (!b || typeof b !== 'object') return null;
@@ -206,7 +207,8 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
     let added = 0, skipped = 0, bad = 0;
     for (const raw of list) {
       const b = cleanBet(raw);
-      if (!b) { bad++; continue; }
+      // the connected-Kalshi venue is only ever filled by the server (addVerifiedBets)
+      if (!b || b.venue === VERIFIED_VENUE || /^kalshi-/.test(b.id)) { bad++; continue; }
       if (have.has(b.id)) { skipped++; continue; }
       if ([...have.values()].filter(d => d.status === 'live').length >= MAX_SLIPS) { bad++; continue; }
       const doc = { id: `bet|${h}|${b.id}`, kind: 'bet', status: 'live', handle: h, bet: b, receivedAt: at, grade: null };
@@ -215,6 +217,33 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
       added++;
     }
     return { added, skipped, bad, total: [...have.values()].filter(d => d.status === 'live').length };
+  }
+
+  // fills read from the owner's connected Kalshi account (kalshilink.js): the
+  // server's own call, no key needed. Same doc as a logged bet, plus where it
+  // came from (Kalshi's fill time and ticker); an id we have is left alone.
+  async function addVerifiedBets(handle, list) {
+    await init();
+    const h = cleanHandle(handle).handle;
+    if (!h || !live(h)) throw err(404, 'No published record with that handle.');
+    if (!bets.has(h)) bets.set(h, new Map());
+    const have = bets.get(h);
+    const at = new Date(now()).toISOString();
+    let added = 0, skipped = 0, bad = 0;
+    for (const raw of list || []) {
+      const b = cleanBet(raw);
+      const v = raw?.verified;
+      const filled = Date.parse(v?.filledAt || '');
+      if (!b || b.venue !== VERIFIED_VENUE || v?.by !== 'kalshi' || !Number.isFinite(filled)) { bad++; continue; }
+      if (have.has(b.id)) { skipped++; continue; }
+      if ([...have.values()].filter(d => d.status === 'live').length >= MAX_SLIPS) { bad++; continue; }
+      b.verified = { by: 'kalshi', filledAt: new Date(filled).toISOString(), ticker: str(v.ticker, 80), side: v.side === 'no' ? 'no' : 'yes' };
+      const doc = { id: `bet|${h}|${b.id}`, kind: 'bet', status: 'live', handle: h, bet: b, receivedAt: at, grade: null };
+      have.set(b.id, doc);
+      await store.put(doc);
+      added++;
+    }
+    return { added, skipped, bad };
   }
 
   // the whole record out: every slip emptied, the handle kept for its owner
@@ -237,7 +266,7 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
       bets.get(h).set(d.bet.id, out);
       await store.put(out);
     }
-    const doc = { ...r, status: 'unpublished', unpublishedAt: at };
+    const doc = { ...r, status: 'unpublished', unpublishedAt: at, feed: null };
     records.set(h, doc);
     await store.put(doc);
     return { handle: h, unpublishedAt: at };
@@ -321,7 +350,39 @@ function createRecordStore({ store, now = () => Date.now(), random = n => crypto
     slips: [...slips.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0),
     bets: [...bets.values()].reduce((a, m) => a + [...m.values()].filter(d => d.status === 'live').length, 0) });
   const listedHandles = () => liveHandles().filter(h => !records.get(h).unlisted);
-  return { init, publish, addSlips, addBets, unpublish, setListed, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, listedHandles, stats, owns: (h, t) => owns(records.get(h), t) };
+
+  // ── the owner's own channels (outfeed.js): one Discord webhook and one
+  // Telegram chat at most, kept sealed by the caller. Every pick logged before
+  // its start posts there, then its graded result. Dropped on unpublish. ──
+  async function setFeed(handle, token, kind, feed) {
+    await init();
+    const h = cleanHandle(handle).handle;
+    const r = h && live(h);
+    if (!r) throw err(404, 'No published record with that handle.');
+    if (!owns(r, token)) throw err(403, 'That key does not manage this record.');
+    if (!FEED_KINDS.includes(kind)) throw err(400, 'discord or telegram');
+    const doc = { ...r, feed: { ...(r.feed || {}), [kind]: feed || null } };
+    records.set(h, doc);
+    await store.put(doc);
+    return doc.feed;
+  }
+  const feedOf = h => { const r = live(h); return r?.feed || null; };
+  // after a send: ok resets the failure count; dead (or 5 fails in a row) stops that channel
+  async function markFeed(h, kind, res) {
+    const r = live(h);
+    const f = r?.feed?.[kind];
+    if (!f) return null;
+    const t = new Date(now()).toISOString();
+    const fails = res.ok ? 0 : (f.fails || 0) + 1;
+    const next = { ...f, fails, lastOkAt: res.ok ? t : f.lastOkAt || null, lastFailAt: res.ok ? f.lastFailAt || null : t,
+      lastError: res.ok ? null : String(res.why || '').slice(0, 160), deadAt: !res.ok && (res.dead || fails >= 5) ? t : f.deadAt && !res.ok ? f.deadAt : null };
+    const doc = { ...r, feed: { ...r.feed, [kind]: next } };
+    records.set(h, doc);
+    await store.put(doc);
+    return next;
+  }
+  return { init, publish, addSlips, addBets, addVerifiedBets, unpublish, setListed, applyGrades, applyBetGrades, pendingLegs, pendingBets, get, slipsOf, betsOf, liveHandles, listedHandles, stats,
+    setFeed, feedOf, markFeed, owns: (h, t) => owns(records.get(h), t) };
 }
 const publicMeta = r => ({ handle: r.handle, status: r.status, createdAt: r.createdAt, publishedAt: r.publishedAt, unpublishedAt: r.unpublishedAt || null, restarts: (r.restarts || []).length, listed: !r.unlisted });
 
@@ -462,7 +523,8 @@ function betsView(docs) {
     pooled: { ...betStats(counted), label: 'pooled, never proven', why: 'Every venue together. A record is judged one venue at a time.', profitShown: false },
     late: { bets: late.length, ...(() => { const s = betStats(late); return { graded: s.graded, record: s.record }; })(), note: 'Logged after the game started: shown, never counted.' },
     rows: rows.map(r => ({ id: r.b.id, venue: r.b.venue, venueName: r.b.venueName, event: r.b.event, pick: r.b.pick, decimal: r.b.decimal, market: r.es ? 'series' : r.b.track.market, kind: r.es ? 'esports' : 'line', receivedAt: r.d.receivedAt,
-      start: r.start, timing: r.timing, counted: r.timing === 'on time', pinClose: r.pin ? r.g.closeFair : null, clv: r.clv, outcome: r.outcome, units: r.units, note: r.note })),
+      start: r.start, timing: r.timing, counted: r.timing === 'on time', pinClose: r.pin ? r.g.closeFair : null, clv: r.clv, outcome: r.outcome, units: r.units, note: r.note,
+      ...(r.b.verified ? { verified: 'kalshi', filledAt: r.b.verified.filledAt } : {}) })),
   };
 }
 
@@ -647,6 +709,37 @@ ${v.rows.length ? `<div class="scroll"><table><thead><tr><th>Bettor</th><th>Labe
 </html>`;
 }
 
+// ── the record widget and the record feed (embeds.js, outfeed.js) ──
+// One record's card: each app and venue judged on its own, the strict label
+// only where the record's page shows it, nothing pooled, picks logged late
+// counted apart. No units and no profit, ever: the card links to the page.
+function bettorCard(v) {
+  if (!v || v.status !== 'live') return { handle: v?.handle || null, status: v?.status || 'missing', at: v?.at || null, url: v?.handle ? `/r/${v.handle}` : '/r' };
+  const kinds = [
+    ...(v.apps || []).map(a => ({ kind: 'app', name: a.appName, unit: 'legs', n: a.pinN, target: BAR, clv: a.clv, clvT: a.clvT, beat: a.beat, graded: a.graded,
+      record: a.graded ? `${a.hits}-${a.graded - a.hits}` : null, recordOf: 'legs hit-missed', label: a.label, why: a.why || null })),
+    ...(v.bets?.venues || []).map(x => ({ kind: 'venue', name: x.venueName, unit: 'bets', n: x.pinN, target: BAR, clv: x.clv, clvT: x.clvT, beat: x.beat, graded: x.graded,
+      record: x.graded ? x.record : null, recordOf: 'won-lost', label: x.label, why: x.why || null })),
+  ].sort((a, b) => (b.label === 'proven') - (a.label === 'proven') || b.n - a.n || b.graded - a.graded);
+  return {
+    handle: v.handle, status: 'live', at: v.at, publishedAt: v.publishedAt, url: `/r/${v.handle}`, card: `/card/record-${v.handle}.png`,
+    onTime: (v.counts?.onTime || 0) + (v.bets?.counts.onTime || 0), late: (v.counts?.late || 0) + (v.bets?.counts.late || 0),
+    checking: (v.counts?.checking || 0) + (v.bets?.counts.checking || 0),
+    proven: [...(v.proven || []), ...(v.bets?.proven || [])], kinds,
+    rule: `Proven only with ${BAR} picks at one app or venue logged before their start and graded against Pinnacle's own close, a CLV t of ${CLV_T} or more, and results not running ${SHORT_SD} sd under that close. Never pooled. Picks logged after the start are shown on the record and never counted. No profit is shown here.`,
+  };
+}
+// every pick on a full view (recordView with every slip on one page), in the
+// shape the record feed reads: when it reached us, whether it counts, whether
+// it is settled
+function feedItems(v) {
+  if (!v || v.status !== 'live') return [];
+  return [
+    ...(v.slips || []).map(s => ({ key: `s:${s.id}`, type: 'slip', timing: s.timing, receivedAt: s.receivedAt, start: s.firstStart, final: !!s.result && s.result !== 'open', group: s.appName, slip: s })),
+    ...(v.bets?.rows || []).map(b => ({ key: `b:${b.id}`, type: 'bet', timing: b.timing, receivedAt: b.receivedAt, start: b.start, final: !!b.outcome, group: b.kind === 'esports' ? `${b.venueName} esports` : b.venueName, bet: b })),
+  ];
+}
+
 // ── downloads ──
 const CSV_COLS = ['slip_id', 'received_at_utc', 'placed_at_given', 'app', 'legs', 'timing', 'counted', 'slip_result', 'slip_units', 'leg', 'sport', 'player', 'market', 'side', 'line', 'game', 'start_utc',
   'pinnacle_close_fair', 'clv_vs_pinnacle_pct', 'leg_result', 'stat', 'graded_by'];
@@ -659,7 +752,6 @@ function csv(view) {
 }
 
 // ── the page ──
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pc = (x, d = 1) => (x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(d)}%`);
 const share = x => (x == null ? '—' : `${Math.round(x * 100)}%`);
 const utc = t => { const ms = Date.parse(t || ''); return Number.isFinite(ms) ? `${new Date(ms).toISOString().slice(0, 16).replace('T', ' ')} UTC` : '—'; };
@@ -766,14 +858,14 @@ ${v.apps.map(a => `<tr><td>${esc(a.appName)}</td><td>${label(a.label)}${a.why ? 
   if (bv && bv.counts.bets) {
     const bp = bv.pooled;
     body += `<h2>Game-line bets</h2>
-<p class="note">Moneylines, spreads and totals logged in MY BETS, and esports series winners logged from MATCHUPS, each against Pinnacle's no-vig close at the bet's own number (CLV is the price taken times that close, minus one) and settled from the final score or the series result. An esports series Pinnacle never priced is shown as unpriced and never graded against a close. Each venue's esports bets are judged apart from its game lines. 1 unit a bet.</p>
+<p class="note">Moneylines, spreads and totals logged in MY BETS, and esports series winners logged from MATCHUPS, each against Pinnacle's no-vig close at the bet's own number (CLV is the price taken times that close, minus one) and settled from the final score or the series result. An esports series Pinnacle never priced is shown as unpriced and never graded against a close. Each venue's esports bets are judged apart from its game lines. 1 unit a bet.${bv.rows.some(b => b.verified) ? ' <b>Kalshi (connected)</b> bets are read from the bettor\'s own Kalshi account with a read-only key: one order is one bet, at the price Kalshi filled it plus its fee, and only orders filled after the account was connected are imported. We see only the account (or sub-account) that key reads.' : ''}</p>
 <div class="scroll"><table><thead><tr><th>Venue</th><th>Label</th><th>Bets vs Pinnacle</th><th>CLV</th><th>Record</th><th>Units</th></tr></thead><tbody>
 ${bv.venues.map(x => `<tr><td>${esc(x.venueName)}</td><td>${label(x.label)}${x.why ? `<span class="sub">${esc(x.why)}</span>` : ''}</td><td>${x.pinN} / ${BAR}</td><td class="${cls(x.clv)}">${pc(x.clv)}${x.clvT != null ? `<span class="sub">t ${x.clvT}</span>` : ''}</td><td>${x.record}${x.open ? `<span class="sub">${x.open} open</span>` : ''}</td><td class="${cls(x.units)}">${unitsText(x.units, x.profitShown)}</td></tr>`).join('')}
 <tr><td>All venues</td><td>${label(bp.label)}<span class="sub">${esc(bp.why)}</span></td><td>${bp.pinN}</td><td class="${cls(bp.clv)}">${pc(bp.clv)}</td><td>${bp.record}</td><td class="${cls(bp.units)}">${unitsText(bp.units, false)}</td></tr>
 </tbody></table></div>
 <p class="note">${bv.counts.onTime} on time, ${bv.counts.late} late (logged after the start: shown, never counted), ${bv.counts.checking} still matching to a game.</p>
-${bv.rows.slice(0, 100).map(b => `<div class="slip${b.timing === 'late' ? ' late' : ''}"><div class="slip-h"><b>${esc(b.venueName)}</b><span>${esc(b.pick)}</span><span>@ ${esc(b.decimal.toFixed(2))}</span><span class="${b.outcome === 'win' ? 'pos' : b.outcome === 'loss' ? 'neg' : ''}">${esc(b.outcome ? b.outcome.toUpperCase() : 'open')}${b.units != null ? ` ${b.units > 0 ? '+' : ''}${b.units.toFixed(2)}u` : ''}</span>${b.timing === 'late' ? '<span class="tag late">LATE · not counted</span>' : b.timing === 'checking' ? '<span class="tag">matching</span>' : ''}</div>
-<div class="meta">${esc(b.event)} · logged ${esc(utc(b.receivedAt))}${b.start ? ` · starts ${esc(utc(b.start))}` : ''} · ${b.clv != null ? `PIN close ${(b.pinClose * 100).toFixed(1)}%, CLV ${esc(pc(b.clv))}` : esc(b.note || 'Pinnacle close at the start')}</div></div>`).join('')}`;
+${bv.rows.slice(0, 100).map(b => `<div class="slip${b.timing === 'late' ? ' late' : ''}"><div class="slip-h"><b>${esc(b.venueName)}</b><span>${esc(b.pick)}</span><span>@ ${esc(b.decimal.toFixed(2))}</span><span class="${b.outcome === 'win' ? 'pos' : b.outcome === 'loss' ? 'neg' : ''}">${esc(b.outcome ? b.outcome.toUpperCase() : 'open')}${b.units != null ? ` ${b.units > 0 ? '+' : ''}${b.units.toFixed(2)}u` : ''}</span>${b.verified ? '<span class="tag" title="Read from the bettor\'s Kalshi account with a read-only key: price, side and time are Kalshi\'s">KALSHI FILL</span>' : ''}${b.timing === 'late' ? '<span class="tag late">LATE · not counted</span>' : b.timing === 'checking' ? '<span class="tag">matching</span>' : ''}</div>
+<div class="meta">${esc(b.event)} · ${b.verified ? `Kalshi fill ${esc(utc(b.filledAt))}, read ${esc(utc(b.receivedAt))}` : `logged ${esc(utc(b.receivedAt))}`}${b.start ? ` · starts ${esc(utc(b.start))}` : ''} · ${b.clv != null ? `PIN close ${(b.pinClose * 100).toFixed(1)}%, CLV ${esc(pc(b.clv))}` : esc(b.note || 'Pinnacle close at the start')}</div></div>`).join('')}`;
   }
   body += `<h2>Late slips</h2><p class="note">${v.late.slips ? `${v.late.slips} slip${v.late.slips === 1 ? '' : 's'} (${v.late.legs} legs, ${v.late.graded} graded, ${share(v.late.hitRate)} hit). ` : 'None. '}${esc(v.late.note)}</p>`;
   const base = `/r/${encodeURIComponent(v.handle)}`;
@@ -792,4 +884,4 @@ ${s.legs.map(l => `<div class="leg"><div class="who"><b>${esc(l.player)}</b> ${e
   return head + body + foot;
 }
 
-module.exports = { createRecordStore, boardEntries, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };
+module.exports = { VERIFIED_VENUE, createRecordStore, bettorCard, feedItems, FEED_KINDS, boardEntries, indexRow, indexView, indexHtml, cleanHandle, cleanSlip, cleanBet, slimBetGrade, betsView, slimGrade, gradeSlip, timingOf, labelOf, groupStats, recordView, csv, pageHtml, pinLeg, BAR, CLV_T, SHORT_SD, MAX_POST, HANDLE_RE };

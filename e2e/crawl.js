@@ -233,8 +233,18 @@ async function sweepTab(page, name, rep, w, opts) {
         // done with this modal: close it the way a viewer would, then carry on
         await page.keyboard.press('Escape');
         await settle(page, w, opts, 60);
-        if (await page.evaluate(() => window.__e2e.overlay())) {
-          issue(rep, 'modal-no-escape', { tab: name, modal: C.root });
+        // a modal opened from another (SIGN IN from CUSTOMIZE): Escape closes the top one, so
+        // press again while each press uncovers a different one
+        let top = await page.evaluate(() => window.__e2e.overlay());
+        for (let i = 0; i < 3 && top && top !== C.root && top !== C.name; i++) {
+          const was = top;
+          await page.keyboard.press('Escape');
+          await settle(page, w, opts, 60);
+          top = await page.evaluate(() => window.__e2e.overlay());
+          if (top === was) break;
+        }
+        if (top) {
+          issue(rep, 'modal-no-escape', { tab: name, modal: top });
           await page.evaluate(() => window.__e2e.closeOverlay());
         }
         if (++stuck > 5) break;

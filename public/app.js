@@ -2096,7 +2096,7 @@ function msRenderImports() {
 // not counted. The key that manages the record is kept in this browser
 // (lr_pub_record) and shown here to save. No stake or payout is sent.
 const MS_PUB = 'lr_pub_record';
-const msPub = { open: false, busy: false, drop: false, hint: '', server: null, timer: null };
+const msPub = { open: false, busy: false, drop: false, hint: '', server: null, timer: null, tool: null, feed: null, feedHint: '', feedBusy: false };
 function msPubGet() { try { const v = JSON.parse(lsGet(MS_PUB) || 'null'); return v && v.handle && v.key ? v : null; } catch { return null; } }
 function msPubSet(v) { lsSet(MS_PUB, v ? JSON.stringify(v) : 'null'); }
 function msPubToggle(on) {
@@ -2227,6 +2227,66 @@ async function msPubCopy(text, what) {
   try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); ok = true; } } catch {}
   showToast(ok ? `${what} copied` : `Copy it by hand: ${text}`, ok ? undefined : 'danger', ok ? undefined : 12000);
 }
+// the record's own widget and feed (MY SLIPS > RECORD > WIDGET / FEED)
+function msPubTool(t) { msPub.tool = msPub.tool === t ? null : t; msPub.feedHint = ''; if (msPub.tool === 'feed') msPubFeedRead(); msRenderPub(); }
+const msPubSnippet = h => `<script src="${location.origin}/embed.js" async></` + `script>\n<div data-line-reaper="record" data-handle="${h}"></div>`;
+async function msPubFeedRead() {
+  const p = msPubGet();
+  if (!p) return;
+  try { msPub.feed = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed`, 'GET', null, p.key); } catch (e) { msPub.feed = null; msPub.feedHint = e.message; }
+  msRenderPub();
+}
+async function msPubFeedConnect(kind) {
+  const p = msPubGet();
+  if (!p || msPub.feedBusy) return;
+  let body;
+  if (kind === 'discord') {
+    const u = (document.getElementById('msFeedHook')?.value || '').trim();
+    if (!/^https:\/\/(ptb\.|canary\.)?discord(app)?\.com\/api\/(v\d+\/)?webhooks\/\d+\/[\w-]+\/?$/.test(u)) { msPub.feedHint = 'That is not a Discord webhook URL. In Discord: Server Settings > Integrations > Webhooks > New Webhook > Copy Webhook URL.'; msRenderPub(); return; }
+    body = { discord: u };
+  } else {
+    const token = (document.getElementById('msFeedTgToken')?.value || '').trim(), chat = (document.getElementById('msFeedTgChat')?.value || '').trim();
+    if (!/^\d{5,15}:[\w-]{30,60}$/.test(token)) { msPub.feedHint = 'That is not a bot token. @BotFather gives one like 123456789:AA... when you make a bot.'; msRenderPub(); return; }
+    if (!/^(-?\d{3,20}|@[A-Za-z]\w{3,31})$/.test(chat)) { msPub.feedHint = 'The chat is a @channelname or a number like -1001234567890.'; msRenderPub(); return; }
+    body = { telegram: { token, chat } };
+  }
+  msPub.feedBusy = true; msPub.feedHint = kind === 'discord' ? 'Checking the webhook with Discord...' : 'Sending a first post to Telegram...'; msRenderPub();
+  try { const j = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed`, 'PUT', body, p.key); msPub.feed = j; msPub.feedHint = j.note || 'Connected.'; }
+  catch (e) { msPub.feedHint = e.message; }
+  msPub.feedBusy = false;
+  msRenderPub();
+}
+async function msPubFeedOff(kind) {
+  const p = msPubGet();
+  if (!p) return;
+  try { const j = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/feed?kind=${kind}`, 'DELETE', null, p.key); msPub.feed = j; msPub.feedHint = j.note || 'Disconnected.'; }
+  catch (e) { msPub.feedHint = e.message; }
+  msRenderPub();
+}
+function msPubToolHtml(p) {
+  if (msPub.tool === 'widget') {
+    const snip = msPubSnippet(p.handle);
+    return `<div class="ms-pub-tool" id="msPubWidget"><b>Widget for your site</b><div class="tl-note" style="margin-top:4px">Paste this into any page: it shows your record as the page does (picks logged before the start, each app and venue against Pinnacle's close, the strict label, no profit) and links back to it. It refreshes every minute.</div>
+      <code class="ms-pub-snip">${escAttr(snip)}</code>
+      <div class="ms-pub-row"><button class="mb-btn primary" data-copy="${escAttr(snip)}" onclick="msPubCopy(this.dataset.copy,'Widget code')">COPY WIDGET CODE</button><a class="mb-btn" href="/developers#widget-bettor" target="_blank" rel="noopener">MORE OPTIONS</a></div>
+      <iframe class="ms-pub-frame" src="/embed/record?handle=${encodeURIComponent(p.handle)}" title="Your record widget" loading="lazy"></iframe></div>`;
+  }
+  if (msPub.tool === 'feed') {
+    const f = msPub.feed;
+    const line = (x, name, kind) => !x ? '' : x.connected ? `<div class="ms-pub-row"><span class="tl-note" style="margin:0">${name}: connected, ${escAttr(x.where)}${x.lastOkAt ? `, last post ${escAttr(new Date(x.lastOkAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}` : ''}.</span><button class="mb-btn" onclick="msPubFeedOff('${kind}')">DISCONNECT ${name.toUpperCase()}</button></div>`
+      : x.stoppedAt ? `<div class="tl-note">${name}: stopped. ${escAttr(x.stoppedWhy || '')}${x.lastError ? ` (${escAttr(x.lastError)})` : ''}</div>` : '';
+    const dOn = f?.discord?.connected, tOn = f?.telegram?.connected;
+    const typed = { h: document.getElementById('msFeedHook')?.value || '', t: document.getElementById('msFeedTgToken')?.value || '', c: document.getElementById('msFeedTgChat')?.value || '' };
+    const html = `<div class="ms-pub-tool" id="msPubFeed"><b>Post your picks to Discord or Telegram</b><div class="tl-note" style="margin-top:4px">Each pick you log before its start posts the moment the server matches it to its game, with the server's time stamp and the price, and its graded result posts after the game. Picks logged late never post. No stake, units or profit, and nothing is placed. Anyone can add your handle to their own Discord on <a href="/developers#feed-records" target="_blank" rel="noopener">/developers</a>; it is the same post.</div>
+      ${f ? line(f.discord, 'Discord', 'discord') + line(f.telegram, 'Telegram', 'telegram') : '<div class="tl-note">Reading your channels...</div>'}${f?.subscribers ? `<div class="tl-note">${f.subscribers} other channel${f.subscribers === 1 ? '' : 's'} added your handle.</div>` : ''}
+      ${dOn ? '' : `<div class="ms-pub-row"><input type="text" id="msFeedHook" inputmode="url" maxlength="300" placeholder="Discord webhook URL" autocomplete="off"><button class="mb-btn primary" onclick="msPubFeedConnect('discord')">${msPub.feedBusy ? 'CHECKING...' : 'CONNECT DISCORD'}</button></div>`}
+      ${tOn ? '' : `<div class="ms-pub-row"><input type="text" id="msFeedTgToken" maxlength="80" placeholder="Telegram bot token" autocomplete="off"><input type="text" id="msFeedTgChat" maxlength="40" placeholder="@channel or chat id" autocomplete="off"><button class="mb-btn" onclick="msPubFeedConnect('telegram')">CONNECT TELEGRAM</button></div>`}
+      ${msPub.feedHint ? `<div class="mb-hint" id="msFeedHint">${escAttr(msPub.feedHint)}</div>` : ''}</div>`;
+    setTimeout(() => { for (const [id, v] of [['msFeedHook', typed.h], ['msFeedTgToken', typed.t], ['msFeedTgChat', typed.c]]) { const el = document.getElementById(id); if (el && v && !el.value) el.value = v; } }, 0);
+    return html;
+  }
+  return '';
+}
 function msRenderPub() {
   const el = document.getElementById('msPub');
   if (!el) return;
@@ -2258,13 +2318,91 @@ function msRenderPub() {
     return;
   }
   const sent = (p.sent || []).length, srv = msPub.server;
+  const kalTyped = msKalshiTyped();
   el.innerHTML = `<b>Your public record</b>
     <div class="ms-pub-row"><a class="ms-pub-link" href="${escAttr(url)}" target="_blank" rel="noopener">${escAttr(url.replace(/^https?:\/\//, ''))}</a></div>
     <div class="ms-pub-row"><a class="mb-btn primary" href="${escAttr(url)}" target="_blank" rel="noopener">OPEN PAGE</a><button class="mb-btn" onclick="msPubCopy('${escAttr(url)}','Link')">COPY LINK</button><button class="mb-btn" onclick="msPubSync(true)">SEND NEW SLIPS</button><button class="mb-btn" onclick="msUnpublish()">${msPub.drop ? 'TAP AGAIN TO UNPUBLISH' : 'UNPUBLISH'}</button><button class="mb-btn" onclick="msPubToggle(false)">CLOSE</button></div>
     <div class="tl-note">${sent} slip${sent === 1 ? '' : 's'} sent from this browser${srv ? `, ${srv.slips} on the page` : ''}. New slips go up as you add them.</div>
     <div class="ms-pub-row"><span class="tl-note" style="margin:0">${srv?.listed === false ? 'Not on the public list of records.' : 'Listed on the public list of records once a pick is logged before its start.'} <a href="/r" target="_blank" rel="noopener">See the list</a></span>${srv ? `<button class="mb-btn" onclick="msPubListed(${srv.listed === false})">${srv.listed === false ? 'ADD TO THE LIST' : 'TAKE OFF THE LIST'}</button>` : ''}</div>
+    <div class="ms-pub-row"><button class="mb-btn${msPub.tool === 'widget' ? ' primary' : ''}" onclick="msPubTool('widget')">WIDGET</button><button class="mb-btn${msPub.tool === 'feed' ? ' primary' : ''}" onclick="msPubTool('feed')">FEED</button><span class="tl-note" style="margin:0">Your record on your own site, Discord or Telegram.</span></div>
+    ${msPubToolHtml(p)}
     <div class="tl-note">Your key, the only way to add slips or unpublish from another browser. Save it somewhere safe: <span class="ms-pub-key">${escAttr(p.key)}</span> <button class="mb-btn" onclick="msPubCopy('${escAttr(p.key)}','Key')">COPY KEY</button></div>
+    <div id="msKalshi" class="ms-kal">${msKalshiHtml(p)}</div>
     ${rules}${hint}`;
+  msKalshiRestore(kalTyped);
+  if ((!msK.loaded || msK.handle !== p.handle) && !msK.loading) msKalshiLoad();
+}
+// ── CONNECT KALSHI: a read-only key, fills straight into the record (kalshilink.js) ──
+const msK = { info: null, status: null, loaded: false, loading: false, busy: false, hint: '', drop: false, open: false, handle: null };
+async function msKalshiLoad() {
+  const p = msPubGet();
+  if (!p || p.unpublished) return;
+  msK.loading = true;
+  if (msK.handle !== p.handle) Object.assign(msK, { status: null, hint: '', open: false, drop: false, handle: p.handle });
+  try { msK.info = await msPubCall('/api/kalshi-link', 'GET'); } catch { msK.info = null; }
+  if (msK.info?.enabled) { try { msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'GET', null, p.key); } catch (e) { msK.status = null; msK.hint = e.message; } }
+  msK.loaded = true; msK.loading = false;
+  msKalshiPaint();
+}
+// what was typed survives a redraw (the record panel redraws as slips regrade)
+const msKalshiTyped = () => ({ id: document.getElementById('msKalKeyId')?.value || '', pem: document.getElementById('msKalPem')?.value || '' });
+function msKalshiRestore(t) { const a = document.getElementById('msKalKeyId'), b = document.getElementById('msKalPem'); if (a) a.value = t.id; if (b) b.value = t.pem; }
+function msKalshiPaint() { const el = document.getElementById('msKalshi'); const p = msPubGet(); if (!el || !p) return; const t = msKalshiTyped(); el.innerHTML = msKalshiHtml(p); msKalshiRestore(t); }
+function msKalshiHtml(p) {
+  const head = '<b>Kalshi fills</b>';
+  if (!msK.loaded) return `${head}<div class="tl-note">Checking whether this server can connect Kalshi...</div>`;
+  if (!msK.info) return `${head}<div class="tl-note">Could not reach the server to check Kalshi. <button class="mb-btn" onclick="msK.loaded=false;msKalshiLoad()">TRY AGAIN</button></div>`;
+  if (!msK.info.enabled) return `${head}<div class="tl-note">Connecting a Kalshi account is not switched on on this server yet (${escAttr(msK.info.why || 'not set up')}). Log Kalshi bets in MY BETS meanwhile.</div>`;
+  const hint = msK.hint ? `<div class="mb-hint">${escAttr(msK.hint)}</div>` : '';
+  const st = msK.status;
+  const when = t => (t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'not yet');
+  if (st?.connected) {
+    const c = st.counts || {};
+    const off = (c.unmatched || 0) + (c.noSide || 0) + (c.price || 0);
+    return `${head} <span class="ms-tag ${st.status === 'active' ? 'pos' : 'neg'}">${st.status === 'active' ? 'CONNECTED' : 'PAUSED'}</span>
+      <div class="tl-note">Read-only key ${escAttr(st.keyHint || '')} (${escAttr((st.scopes || []).join(', '))}), connected ${when(st.connectedAt)}. Last read ${when(st.lastOkAt)}. ${c.imported || 0} order${c.imported === 1 ? '' : 's'} added to the record from ${c.fills || 0} fill${c.fills === 1 ? '' : 's'}${off ? `; ${off} fill${off === 1 ? '' : 's'} not on a game line we follow (props, futures, live or other markets), left off` : ''}.</div>
+      ${st.lastError ? `<div class="mb-hint">${escAttr(st.lastError)}</div>` : ''}
+      <div class="ms-pub-row">${st.status !== 'active' ? '<button class="mb-btn primary" onclick="msK.open=true;msK.status=null;msKalshiPaint()">CONNECT AGAIN</button>' : ''}<button class="mb-btn" onclick="msKalshiDisconnect()">${msK.drop ? 'TAP AGAIN TO DISCONNECT' : 'DISCONNECT'}</button></div>
+      <div class="tl-note">Every new fill on a full-game moneyline, spread or total of a game on the odds screen goes to your record as one bet an order, at Kalshi's price plus its fee, checked every five minutes. Don't also log those bets by hand in MY BETS, or they show twice.</div>${hint}`;
+  }
+  if (!msK.open) return `${head}<div class="tl-note">Connect your Kalshi account with a read-only key and every new fill goes to this record by itself, with Kalshi's own time and price.</div>
+    <div class="ms-pub-row"><button class="mb-btn primary" onclick="msK.open=true;msKalshiPaint()">CONNECT KALSHI</button></div>${hint}`;
+  return `${head}<ul>
+      <li>Make a <b>read-only</b> API key at Kalshi (the read scope only). A key that can trade or move money is refused and never saved.</li>
+      <li>We check the key's permissions with Kalshi first, keep it encrypted, never show it again, and only ever read your fills. Line Reaper never places a bet.</li>
+      <li>Only fills after you connect go to the record, so a past run can't be added later. Your record shows the pick, the price and the time; no contract counts or money.</li>
+      <li>DISCONNECT, or UNPUBLISH, deletes the key. You can also delete it at Kalshi any time.</li></ul>
+    <div class="ms-pub-row"><input type="text" id="msKalKeyId" placeholder="Kalshi Key ID" autocomplete="off" spellcheck="false" aria-label="Kalshi Key ID"></div>
+    <div class="ms-pub-row"><textarea id="msKalPem" rows="4" placeholder="-----BEGIN PRIVATE KEY-----" autocomplete="off" spellcheck="false" aria-label="Kalshi private key"></textarea></div>
+    <div class="ms-pub-row"><button class="mb-btn primary" onclick="msKalshiConnect()">${msK.busy ? 'CHECKING WITH KALSHI...' : 'CONNECT'}</button><button class="mb-btn" onclick="msK.open=false;msK.hint='';msKalshiPaint()">CANCEL</button></div>${hint}`;
+}
+async function msKalshiConnect() {
+  const p = msPubGet();
+  const keyId = (document.getElementById('msKalKeyId')?.value || '').trim();
+  const pemEl = document.getElementById('msKalPem');
+  const privateKey = (pemEl?.value || '').trim();
+  if (!p || msK.busy) return;
+  if (!keyId || !privateKey) { msK.hint = 'Paste both the Key ID and the private key.'; msKalshiPaint(); return; }
+  if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+-----END [A-Z ]*PRIVATE KEY-----/.test(privateKey)) { msK.hint = 'Paste the whole private key, from -----BEGIN to -----END.'; msKalshiPaint(); return; }
+  msK.busy = true; msK.hint = ''; msKalshiPaint();
+  try {
+    msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'POST', { keyId, privateKey }, p.key);
+    msK.open = false;
+    showToast('Kalshi connected: new fills go to your record');
+  } catch (e) { msK.hint = e.message; }
+  msK.busy = false;
+  msKalshiPaint();
+  // the key is never kept in the page once it's connected
+  if (msK.status?.connected) msKalshiRestore({ id: '', pem: '' });
+}
+async function msKalshiDisconnect() {
+  if (!msK.drop) { msK.drop = true; msKalshiPaint(); return; }
+  const p = msPubGet();
+  msK.drop = false;
+  if (!p) return;
+  try { msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'DELETE', null, p.key); showToast('Kalshi disconnected: the key was deleted'); }
+  catch (e) { msK.hint = e.message; }
+  msKalshiPaint();
 }
 
 const msPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
@@ -3194,6 +3332,9 @@ function acctRender() {
   bar.style.display = 'flex';
   if (!acct.user) {
     bar.innerHTML = `<button class="acct-btn" onclick="acctOpen('login')">LOG IN</button><button class="acct-btn pro" onclick="acctOpen('signup')">GO PRO</button>`;
+  } else if (!acct.paywall) {
+    // no paywall: an account is for sync, so the bar opens its settings
+    bar.innerHTML = `<button class="acct-btn" onclick="layOpen()" title="${escAttr(acct.user.email)}">ACCOUNT</button><button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else if (acct.user.isPro) {
     bar.innerHTML = `<span class="acct-btn pro" title="${escAttr(acct.user.email)}">${acctPlanName(acct.user).toUpperCase()}</span>${acct.billing ? `<button class="acct-btn" onclick="acctPortal()">BILLING</button>` : ''}<button class="acct-btn" onclick="acctLogout()">LOG OUT</button>`;
   } else {
@@ -3206,6 +3347,7 @@ const closedLaneLine = c => (c?.final ? `<div class="closed-lane" role="note"><b
 
 function acctOpen(mode, pitch) {
   acct.mode = mode;
+  acct.fromSync = false;
   const signup = mode === 'signup', del = mode === 'delete';
   document.getElementById('acctTitle').textContent = signup ? 'CREATE ACCOUNT' : del ? 'DELETE ACCOUNT' : 'LOG IN';
   const go = document.getElementById('acctGo');
@@ -3221,6 +3363,7 @@ function acctOpen(mode, pitch) {
   document.getElementById('acctConsent').style.display = signup ? '' : 'none';
   // ticked on the welcome screen this session: carry it over
   document.getElementById('acctAge').checked = document.getElementById('acctTerms').checked = signup && !!document.getElementById('wlAgree')?.checked;
+  for (const id of ['acctAge', 'acctTerms']) acctTick(document.getElementById(id));
   document.getElementById('acctLegal').innerHTML = signup
     ? (acct.billing ? 'Plus and Pro are subscriptions that renew automatically, monthly or yearly, until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
     : del ? '' : 'By logging in you agree to the current <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.';
@@ -3232,6 +3375,8 @@ function acctOpen(mode, pitch) {
   document.getElementById(del ? 'acctPass' : 'acctEmail').focus();
 }
 function acctClose() { document.getElementById('acctModal').classList.remove('open'); }
+// a ticked consent box shows as ticked, and clears the reason it was asked for
+function acctTick(box) { box.closest('label')?.classList.toggle('on', box.checked); if (box.checked) document.getElementById('acctErr').textContent = ''; }
 
 async function acctSubmit(e) {
   e.preventDefault();
@@ -3239,6 +3384,10 @@ async function acctSubmit(e) {
   err.textContent = '';
   const signup = acct.mode === 'signup';
   if (acct.mode === 'delete') return acctDelete();
+  // the form is novalidate, so a phone shows the reason here rather than in a browser bubble
+  const em = document.getElementById('acctEmail').value.trim(), pw = document.getElementById('acctPass').value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = 'Enter your email address'; return; }
+  if (pw.length < 8) { err.textContent = 'Enter your password (8 or more characters)'; return; }
   if (signup && !document.getElementById('acctAge').checked) { err.textContent = 'Confirm you are 21 or older'; return; }
   if (signup && !document.getElementById('acctTerms').checked) { err.textContent = 'Agree to the Terms of Service and Privacy Policy to continue'; return; }
   const body = JSON.stringify({ email: document.getElementById('acctEmail').value, password: document.getElementById('acctPass').value,
@@ -3254,8 +3403,9 @@ async function acctSubmit(e) {
     acctClose();
     acctRender();
     acctChanged();
+    syncAfterSignIn();
     // a new account came here to buy, so send them straight to checkout
-    if (acct.mode === 'signup' && !d.user.isPro && acct.billing && (acct.want || acct.choose)) acctUpgrade();
+    if (acct.mode === 'signup' && !acct.fromSync && !d.user.isPro && acct.billing && (acct.want || acct.choose)) acctUpgrade();
   } catch { err.textContent = 'Could not reach the server'; }
 }
 
@@ -3280,7 +3430,11 @@ async function acctPortal() {
   const d = await r?.json().catch(() => ({}));
   if (d?.url) location.href = d.url; else showToast(d?.error || 'Billing portal failed', 'danger');
 }
-function acctLogout() { acctSetToken(null); acctRender(); acctChanged(); }
+function acctLogout() {
+  const was = !!acct.user;
+  acctSetToken(null); acctRender(); acctChanged(); syncSignedOut();
+  if (was && sync.status?.enabled) showToast('Signed out. This browser keeps its own copy of your bets and settings.');
+}
 async function acctDelete() {
   const err = document.getElementById('acctErr');
   const r = await fetch(`${BACKEND_URL}/api/auth/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: document.getElementById('acctPass').value }) }).catch(() => null);
@@ -3308,7 +3462,162 @@ function acctNeedPro(what, plan = 'plus') {
   if (!acct.user) { acct.choose = true; acctOpen('signup', `${what} ${plan === 'pro' ? 'is part of Line Reaper Pro' : 'comes with Line Reaper Plus and Pro'}. Create an account to start.`); }
   else acctUpgrade();
 }
-document.addEventListener('DOMContentLoaded', acctInit);
+document.addEventListener('DOMContentLoaded', () => acctInit().finally(syncBoot));
+
+// ── ACCOUNT SYNC ────────────────────────────────────────────────────────────
+// Signed in, this browser's bets, slips, favorites, saved views, layout and
+// alert kinds follow the account (the list and the merge rules are
+// acctsync.js, window.LRSync). localStorage stays the working copy, so
+// everything works offline and with sync off exactly as before; a change here
+// goes up a few seconds later, the account is read again when the app opens,
+// comes back to the front, and every 2 minutes. A setting changed on both
+// sides keeps this device's copy until the viewer picks in CUSTOMIZE.
+const SYNC_META = 'lr_sync_meta';
+const sync = { status: null, keys: new Set(), busy: false, again: false, err: null, timer: null, quiet: 0, devices: null };
+const syncMeta = () => { try { return JSON.parse(lsGet(SYNC_META) || 'null') || {}; } catch { return {}; } };
+const syncOn = () => !!(sync.status && sync.status.enabled && acct.user);
+const syncPageOn = id => !!document.getElementById(`page-${id}`)?.classList.contains('active');
+// every write to a synced key (whichever code made it) sends it up shortly
+try {
+  const setItem = Storage.prototype.setItem, removeItem = Storage.prototype.removeItem;
+  const touched = (store, k) => { try { if (!sync.quiet && store === window.localStorage && sync.keys.has(k) && syncOn()) syncSoon(4000); } catch {} };
+  Storage.prototype.setItem = function (k, v) { setItem.call(this, k, v); touched(this, k); };
+  Storage.prototype.removeItem = function (k) { removeItem.call(this, k); touched(this, k); };
+} catch {}
+function syncSoon(ms = 4000) { clearTimeout(sync.timer); sync.timer = setTimeout(() => { sync.timer = null; syncNow(); }, ms); }
+
+// what to redo on this page when the account brings a newer copy of a key
+const SYNC_HOOKS = {
+  lr_bets() {
+    if (!myb.ready) return;
+    try { const l = JSON.parse(lsGet(MYB_KEY) || '[]'); if (Array.isArray(l)) myb.list = LRBets.sortNewest(l.filter(b => b && b.id && b.odds > 1)); } catch {}
+    if (syncPageOn('betlog')) renderMyBets();
+  },
+  lr_slips() { if (ms.ready) { ms.ready = false; ms.loading = null; if (syncPageOn('myslips')) msOpen(); } },
+  lr_layout() { layLoad(); layApply(); document.body.classList.toggle('no-help', !layout.help); layFoldInit(); },
+  lr_shopper() { try { Object.assign(shpUi.opts, JSON.parse(lsGet('lr_shopper') || '{}')); } catch {} if (syncPageOn('odds') && shpUi.opts.mode !== 'lines') shpRender(); },
+  lr_os() { try { const o = JSON.parse(lsGet('lr_os') || '{}'); for (const k of ['league', 'state', 'market', 'sort', 'hidden']) if (k in o) osUi[k] = o[k]; } catch {} },
+  lr_mybooks() { try { const x = JSON.parse(lsGet('lr_mybooks') || '[]'); if (Array.isArray(x)) myBooks = x.filter(b => typeof b === 'string'); } catch {} },
+  lr_bankroll() { const n = parseFloat(lsGet('lr_bankroll')); if (isFinite(n)) esportsState.bankroll = n; },
+  lr_push_kinds() { pushState = null; },
+};
+SYNC_HOOKS.lr_slip_grades = SYNC_HOOKS.lr_pikkit = SYNC_HOOKS.lr_slip_imports = SYNC_HOOKS.lr_slips;
+SYNC_HOOKS.lr_state = () => lrSetState(lsGet('lr_state') || '', { save: false });
+SYNC_HOOKS.lr_odds_fmt = () => { const v = lsGet('lr_odds_fmt'); if (v) oddsFmtSet(v); };
+SYNC_HOOKS.lr_after_fees = () => { if ((lsGet('lr_after_fees') === '1') !== afUi.on) afToggle(); };
+
+async function syncBoot() {
+  try { const r = await fetch(`${BACKEND_URL}/api/sync/status`); sync.status = r.ok ? await r.json() : null; } catch { sync.status = null; }
+  sync.keys = new Set((sync.status?.keys || []).map(k => k.key));
+  syncRender();
+  if (syncOn()) { await syncNow(); syncDevices(); }
+}
+// resolved: { key: 'local' | 'account' } from the viewer's answer to a conflict
+async function syncNow(resolved) {
+  if (!syncOn()) return;
+  if (sync.busy) { sync.again = true; return; }
+  sync.busy = true; sync.err = null; syncRender();
+  try {
+    if (!window.LRSync) await mybLoadScript('/acctsync.js');
+    const uid = acct.user.id;
+    let meta = syncMeta();
+    if (meta.uid !== uid) meta = { uid, base: {}, conflicts: [] };   // first sign-in on this browser: a union
+    const answer = async r => { const j = await r.json().catch(() => ({})); if (r.status === 401) { acctSetToken(null); acctRender(); throw new Error('Signed out. Sign in again to sync.'); } return j; };
+    const r = await fetch(`${BACKEND_URL}/api/sync`, { cache: 'no-store' });
+    let doc = await answer(r);
+    if (!r.ok) throw new Error(doc.error || `The server answered ${r.status}`);
+    for (let i = 0; ; i++) {
+      const local = {};
+      for (const k of LRSync.KEY_LIST) local[k] = lsGet(k);
+      const m = LRSync.merge({ local, server: doc, base: meta.base, resolved });
+      if (Object.keys(m.push).length || Object.keys(m.tomb).length) {
+        const p = await fetch(`${BACKEND_URL}/api/sync`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rev: doc.rev, keys: m.push, tomb: m.tomb }) });
+        const j = await answer(p);
+        // another device wrote first: merge again on top of its copy
+        if (p.status === 409 && j.current && i < 3) { doc = j.current; continue; }
+        if (!p.ok) throw new Error(j.error || `The server answered ${p.status}`);
+        doc = j;
+      }
+      // a key changed here while we were away keeps its new value and goes up next time
+      const base = { ...m.base }, done = [];
+      sync.quiet++;
+      try {
+        for (const [k, v] of Object.entries(m.apply)) {
+          if (lsGet(k) !== local[k]) { if (meta.base[k]) base[k] = meta.base[k]; else delete base[k]; sync.again = true; continue; }
+          lsSet(k, v); done.push(k);
+        }
+      } finally { sync.quiet--; }
+      for (const k of done) { try { SYNC_HOOKS[k]?.(); } catch {} }
+      lsSet(SYNC_META, JSON.stringify({ uid, base, conflicts: m.conflicts, lastAt: new Date().toISOString(), rev: doc.rev }));
+      if (done.length && meta.lastAt) showToast(`Updated from your account: ${done.map(k => LRSync.KEYS[k].label).join(', ')}`);
+      break;
+    }
+  } catch (e) { sync.err = e.message || 'Sync failed'; }
+  finally {
+    sync.busy = false;
+    syncRender();
+    if (sync.again) { sync.again = false; syncSoon(1500); }
+  }
+}
+// this device's alerts join the account; the account's alert devices, by label
+async function syncDevices() {
+  if (!syncOn()) return;
+  try {
+    const sub = await pushSub();
+    const r = await fetch(`${BACKEND_URL}/api/sync/devices`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub?.endpoint || '' }) });
+    if (r.ok) sync.devices = (await r.json()).devices || [];
+  } catch {}
+  syncRender();
+}
+function syncResolve(key, pick) { syncNow({ [key]: pick === 'account' ? 'account' : 'local' }); }
+function syncSignIn(mode) { acctOpen(mode, 'Sign in to keep your bets, slips, favorites, saved views, layout and alert choices on every device. This browser keeps its own copy and merges it in.'); acct.fromSync = true; }
+async function syncAfterSignIn() {
+  if (!sync.status) await syncBoot();
+  else if (syncOn()) { await syncNow(); syncDevices(); }
+  if (syncOn()) showToast(sync.err ? `Signed in, but sync failed: ${sync.err}` : 'Signed in. Your bets and settings now sync to your account.', sync.err ? 'danger' : '');
+}
+function syncSignedOut() {
+  clearTimeout(sync.timer); sync.timer = null; sync.devices = null; sync.err = null;
+  lsSet(SYNC_META, null);
+  syncRender();
+}
+const syncAgo = t => { const s = Math.max(0, (Date.now() - Date.parse(t)) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(t).toLocaleDateString(); };
+function syncRender() {
+  const note = document.getElementById('syncNote'), rows = document.getElementById('syncRows'), mb = document.getElementById('mybSync');
+  const meta = syncMeta(), st = sync.status;
+  let n = '', h = '', m = '';
+  if (!st || !st.enabled) {
+    n = 'Your bets, slips and settings are saved in this browser only. Signing in to sync them between devices is not switched on for this server yet.';
+    m = 'Saved in this browser only. Export a CSV now and then to back it up.';
+  } else if (!acct.user) {
+    n = 'Sign in to keep your bets, slips, favorites, saved views, tab layout and alert choices on every device. This browser keeps its own copy and merges it into your account when you sign in.';
+    h = `<div class="lay-row"><span class="lay-name">Not signed in</span><button class="lay-b on" onclick="syncSignIn('login')">SIGN IN</button><button class="lay-b" onclick="syncSignIn('signup')">CREATE ACCOUNT</button></div>`;
+    m = `Saved in this browser only. <button class="mb-sync-b" onclick="syncSignIn('login')">SIGN IN</button> to keep them on every device.`;
+  } else {
+    const when = sync.busy ? 'Syncing…' : meta.lastAt ? `Last synced ${syncAgo(meta.lastAt)}` : 'Not synced yet';
+    n = 'Your bets, slips and settings sync to your account. This browser keeps a copy, so the app works offline too.';
+    h = `<div class="lay-row"><span class="lay-name" style="font-weight:500">Signed in as ${escAttr(acct.user.email)}</span><button class="lay-b" onclick="acctLogout()">SIGN OUT</button></div>
+      <div class="lay-row"><span class="lay-name" style="font-weight:500">${when}</span><button class="lay-b" onclick="syncNow()" ${sync.busy ? 'disabled' : ''}>SYNC NOW</button></div>`;
+    if (sync.err) h += `<p class="sync-err">${escAttr(sync.err)}</p>`;
+    for (const k of meta.conflicts || []) {
+      const label = sync.status.keys.find(x => x.key === k)?.label || k;
+      h += `<div class="lay-row sync-conflict"><span class="lay-name" style="font-weight:500">${escAttr(label)}: this device and your account differ. This device's copy is in use.</span><button class="lay-b on" onclick="syncResolve('${k}','local')">KEEP THIS DEVICE</button><button class="lay-b" onclick="syncResolve('${k}','account')">USE ACCOUNT</button></div>`;
+    }
+    if (sync.devices) h += `<p style="margin:8px 0 0">${sync.devices.length ? `Push alerts on this account: ${sync.devices.map(d => escAttr(d.label) + (d.thisDevice ? ' (this one)' : '')).join(', ')}. Alert kinds you pick apply to all of them.` : 'No device on this account has push alerts on yet. Turn them on below on each phone or computer you want them on.'}</p>`;
+    const c = (meta.conflicts || []).length;
+    m = sync.err ? `Not synced: ${escAttr(sync.err)}` : `${sync.busy ? 'Syncing to' : 'Synced to'} ${escAttr(acct.user.email)}${meta.lastAt && !sync.busy ? ` · ${syncAgo(meta.lastAt)}` : ''}.${c ? ` ${c} setting${c > 1 ? 's differ' : ' differs'} from your account: choose in CUSTOMIZE.` : ''}`;
+  }
+  if (note) note.textContent = n;
+  if (rows) rows.innerHTML = h;
+  if (mb) { mb.innerHTML = m; mb.classList.toggle('bad', !!(sync.err && acct.user)); }
+}
+setInterval(() => { if (syncOn() && document.visibilityState === 'visible') syncNow(); }, 120e3);
+setInterval(() => { if (document.getElementById('mybSync')?.offsetParent) syncRender(); }, 60e3);
+document.addEventListener('visibilitychange', () => {
+  if (!syncOn()) return;
+  if (document.visibilityState === 'visible') syncNow();
+  else if (sync.timer) { clearTimeout(sync.timer); sync.timer = null; syncNow(); }
+});
 
 
 // ── LAYOUT ──────────────────────────────────────────────────────────────────
@@ -3420,6 +3729,8 @@ document.addEventListener('click', () => document.getElementById('moreMenu')?.cl
 function layOpen() {
   layRenderList();
   pushRefresh();
+  syncRender();
+  syncDevices();
   document.getElementById('layModal').classList.add('open');
 }
 

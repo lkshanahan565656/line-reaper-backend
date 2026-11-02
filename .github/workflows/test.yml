@@ -3,15 +3,20 @@ on:
   pull_request:
   push:
     branches: [main]
+# a newer push to the same branch replaces the run still going (Actions is
+# shared with the recorders, so superseded runs only hold a runner)
+concurrency: { group: 'test-${{ github.ref }}', cancel-in-progress: true }
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --no-audit --no-fund
+          cache: npm
+      - run: npm ci --no-audit --no-fund
       - run: node --check server.js
       - run: npm run lint
       - run: npm run typecheck
