@@ -119,6 +119,19 @@ async function openAsync(key, env) {
   return JSON.parse(raw.toString('utf8'));
 }
 
+// Sends an export without a second copy of it: res.json() would stringify the
+// whole body, tens of MB of base64 held twice on the heap for each pull. The
+// base64 needs no escaping, so it goes out as is between the other fields.
+function sendSnapshot(res, body) {
+  const { data, ...rest } = body || {};
+  res.type('application/json');
+  if (typeof data !== 'string' || !/^[A-Za-z0-9+/=]*$/.test(data.slice(0, 64))) return res.send(JSON.stringify(body));
+  const head = JSON.stringify(rest);
+  res.write(`${head.slice(0, -1)}${head.length > 2 ? ',' : ''}"data":"`);
+  res.write(data);
+  res.end('"}');
+}
+
 // fetchJson(url) → parsed body, or null for "no such file"; throws otherwise.
 function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, meta = () => null, log = console, retryMs = 5 * 60e3, bootRetryMs = 2000, now = () => Date.now() } = {}) {
   // bootRetryMs: the first boot retry waits this long, the second twice it
@@ -290,4 +303,4 @@ function axiosFetchJson(axios) {
   };
 }
 
-module.exports = { createBackup, keyFromEnv, keysFromEnv, keyIdOf, sourcesFromEnv, axiosFetchJson, seal, open, sealAsync, openAsync, payloadChunks };
+module.exports = { sendSnapshot, createBackup, keyFromEnv, keysFromEnv, keyIdOf, sourcesFromEnv, axiosFetchJson, seal, open, sealAsync, openAsync, payloadChunks };

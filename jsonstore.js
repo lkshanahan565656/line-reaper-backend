@@ -36,6 +36,14 @@ const DEFAULT_DELAY_MS = envDelay !== undefined && envDelay !== '' && Number.isF
 // someone acts, so 2 s costs next to nothing. LR_USER_STORE_WRITE_MS overrides.
 const envUser = process.env.LR_USER_STORE_WRITE_MS;
 const USER_DELAY_MS = envUser !== undefined && envUser !== '' && Number.isFinite(+envUser) ? +envUser : 2000;
+// Caches that refill on their own and ride in the results backup too (the
+// tail engine's wallet scores: ~36 MB rewritten whole at every write, a third
+// of all store bytes written on 11-02) only need the disk across a crash, where
+// a 30-minute-old copy is as good as a fresh one. 30 minutes where the default
+// is slow (Railway), the default elsewhere. LR_CACHE_STORE_WRITE_MS overrides.
+const envCache = process.env.LR_CACHE_STORE_WRITE_MS;
+const CACHE_DELAY_MS = envCache !== undefined && envCache !== '' && Number.isFinite(+envCache) ? +envCache
+  : (DEFAULT_DELAY_MS >= 60e3 ? Math.max(DEFAULT_DELAY_MS, 30 * 60e3) : DEFAULT_DELAY_MS);
 const CHUNK_ROWS = 400;
 
 const live = new Set();   // stores with unwritten changes, for the exit hook
@@ -165,4 +173,4 @@ const storeStats = () => ({
     .map(([file, f]) => ({ file, writes: f.writes, rows: f.rows, mb: Math.round(f.bytes / 1048576), ms: f.ms })),
 });
 
-module.exports = { createJsonFileStore, flushAll, storeStats, DEFAULT_DELAY_MS, USER_DELAY_MS };
+module.exports = { createJsonFileStore, flushAll, storeStats, DEFAULT_DELAY_MS, USER_DELAY_MS, CACHE_DELAY_MS };
