@@ -177,9 +177,7 @@ test('security.js: safeEqual, limiter windows, callerIp takes the proxy-added ad
   const r = security.readiness({ PAYWALL: 'on', STRIPE_SECRET_KEY: 'sk' });
   assert.equal(r.ready, false);
   assert.ok(r.missing.some(m => m.startsWith('AUTH_SECRET')) && r.missing.some(m => m.startsWith('STRIPE_WEBHOOK_SECRET')));
-  assert.ok(security.readiness({ AUTH_SECRET: 'x', DATABASE_URL: 'x', TRACKER_ADMIN_TOKEN: 'z'.repeat(30), FEED_SECRET: 'f' }).ready);
-  // the backup key is never asked for: changing it today would start the record empty
-  assert.ok(!security.readiness({}).missing.some(m => m.includes('RESULTS_BACKUP_KEY')));
+  assert.ok(security.readiness({ AUTH_SECRET: 'x', DATABASE_URL: 'x', TRACKER_ADMIN_TOKEN: 'z'.repeat(30), RESULTS_BACKUP_KEY: 'k', FEED_SECRET: 'f' }).ready);
 });
 
 test('Stripe webhook: a non-numeric timestamp is refused even before the signature', () => {

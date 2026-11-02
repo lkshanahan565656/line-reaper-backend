@@ -42,7 +42,8 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness() }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness(),
+  resultsBackup: (({ state, snapshotAt, note, readWith, keys, refused, lastExportAt }) => ({ state, snapshotAt, note, readWith, keys, refused, lastExportAt }))(resultsBackup.status()) }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
 // The CPU and heap profilers name every function and slow the server while
@@ -10426,7 +10427,13 @@ app.get('/developers', async (req, res) => {
 const outFeed = require('./outfeed');
 const outFeedOwner = outFeed.ownerDestinations(process.env);
 for (const p of outFeedOwner.problems) console.warn(`Feed: ${p}`);
-const outFeedSeal = outFeed.sealer(process.env.FEED_SECRET ? require('crypto').createHash('sha256').update(`line-reaper-feed|${process.env.FEED_SECRET}`).digest() : require('./backup').keyFromEnv(process.env));
+// sealed with FEED_SECRET, else the results backup key; every backup key this
+// server can make still opens what was sealed before either changed
+const outFeedSeal = (() => {
+  const backupKeys = require('./backup').keysFromEnv(process.env);
+  const feedKey = process.env.FEED_SECRET ? require('crypto').createHash('sha256').update(`line-reaper-feed|${process.env.FEED_SECRET}`).digest() : backupKeys[0] || null;
+  return outFeed.sealer(feedKey, backupKeys);
+})();
 const outFeedStore = resultsBackup.wrap('outFeed', createEvStoreFromEnv(process.env, { table: 'out_feed', fileVar: 'OUT_FEED_FILE', file: 'out-feed.json' }), { appendOnly: false });
 const outFeedReady = outFeedStore.init().catch(e => console.warn('Feed store:', e.message));
 const outFeedState = { record: { checkedAt: null, rows: 0, posted: null, error: null }, moves: { last: null, error: null }, digest: { last: null, error: null }, ownerCheck: null, connects: new Map() };
