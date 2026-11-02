@@ -39,7 +39,7 @@ function verifyWebhook(rawBody, header, secret, { toleranceSec = 300, now = Date
   const parts = String(header || '').split(',').map(p => p.split('='));
   const t = parts.find(([k]) => k === 't')?.[1];
   const sigs = parts.filter(([k]) => k === 'v1').map(([, v]) => v);
-  if (!t || !sigs.length) throw new Error('Malformed Stripe-Signature header');
+  if (!t || !/^\d{1,12}$/.test(t) || !sigs.length) throw new Error('Malformed Stripe-Signature header');
   if (Math.abs(now / 1000 - parseInt(t)) > toleranceSec) throw new Error('Webhook timestamp outside tolerance');
   const payload = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody);
   const want = crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest();
@@ -90,6 +90,8 @@ function createBilling({ http, secretKey, priceId, introPriceId = null, introOpe
 
   async function checkout(user, { successUrl, cancelUrl, legalUrl = null }) {
     if (!configured()) throw Object.assign(new Error('Billing is not set up yet'), { status: 503 });
+    // a second checkout on a live subscription would charge twice: Billing manages it
+    if (user.subscriptionId && ['active', 'trialing', 'past_due'].includes(user.planStatus)) throw Object.assign(new Error('This account already has Pro. Manage it in Billing.'), { status: 409 });
     const customer = await ensureCustomer(user);
     // the founding price while seats are left (an account that paid before pays the full price)
     const founding = !!introPriceId && !user.subscriptionId && await introOpen(user);

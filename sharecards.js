@@ -32,7 +32,7 @@ const VENUE_COLOR = { pinnacle: '#94a3b8', fanduel: '#3b82f6', betrivers: '#f59e
   draftkings: '#84cc16', betmgm: '#eab308', caesars: '#fb923c', bet365: '#4ade80', fanatics: '#ef4444', hardrock: '#c084fc', thescore: '#60a5fa' };
 const colorOf = v => VENUE_COLOR[v] || '#8391a7';
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const { escHtml: esc } = require('./mathutil');
 // strip control characters (resvg draws nothing for them; a feed name could carry one)
 const clean = s => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
 // cut text to maxPx at this size, with an ellipsis
@@ -388,7 +388,6 @@ function renderPng(svg) {
     ? r.renderAsync(svg, { font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: FONT }, fitTo: { mode: 'original' } }).then(img => img.asPng())
     : Promise.resolve(new r.Resvg(svg, { font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: FONT } }).render().asPng());
 }
-const pngReady = () => !!loadResvg();
 
 // ── link previews: Open Graph and Twitter tags ──
 // meta: { title, description, image, url, alt }. image and url absolute.
@@ -497,4 +496,4 @@ function safeOpen(to) {
 }
 
 module.exports = { W, H, FONT, CHAR, fit, wrap, textW, fillText, priceCard, moveCard, leagueCard, recordCardSvg, bettorCard, boardCard, digestCard, alertsCard, emptyCard, pickSeries, chartSvg,
-  renderPng, pngReady, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };
+  renderPng, metaTags, injectMeta, LEAGUE_PAGES, leagueOfPath, sharePage, safeOpen, americanOfDec, PRICE_LABEL, MOVE_LABEL, LEAGUE_LABEL, FONT_FILES };

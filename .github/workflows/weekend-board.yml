@@ -4,16 +4,17 @@
 # last Sunday night game, graded from ESPN after every run. Same chain as
 # nfl-sunday.yml: each run records about 5.5 hours, grades what has finished
 # (board-<WEEK>-report) and starts the next; the last run waits for Sunday
-# night's games to end and grades the weekend. Starts itself every Saturday
-# 14:00Z; a push to diag-boards (or a manual run) starts it any other time.
+# night's games to end and grades the weekend. A push to diag-boards (or a
+# manual run) starts it; its Saturday 14:00Z schedule was dropped 10-27 (the
+# NBA/CFB/NHL board graded losing on 10,245 legs, lane closed).
 # The esports board (esrecord.js: CS2, LoL, Valorant, Dota 2, R6, CoD on the
 # same four apps, next to Pinnacle, BetRivers, Kalshi and Polymarket US) is
 # the same chain with LEAGUES=CS,LOL,VAL,DOTA,R6,COD and PREFIX=esboard:
-# Saturdays 14:20Z, or a push to diag-esboard.
+# Saturdays 14:20Z (still scheduled: it re-reads the Map 1 kill Unders lead),
+# or a push to diag-esboard.
 name: weekend-board
 on:
   schedule:
-    - cron: '0 14 * * 6'
     - cron: '20 14 * * 6'
   push:
     branches: [diag-boards, diag-esboard]

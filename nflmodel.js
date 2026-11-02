@@ -66,8 +66,7 @@ function teamCode(name) {
 }
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2, r4 } = require('./mathutil');
 
 // ── score shapes ──
 const npdf = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2);

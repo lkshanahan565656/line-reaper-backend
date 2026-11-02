@@ -539,7 +539,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.221.2');
+  assert.equal(body.version, require('../package.json').version);
   assert.equal(body.tail.scored, 1);
   // the Kalshi-leads lead-lag record: on by default, nothing seen yet in this test
   assert.equal(body.leadLag.on, true);
@@ -569,8 +569,10 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.221.2');
-  assert.equal((await get('/')).body.version, '3.221.2');
+  const pkg = require('../package.json'), lock = require('../package-lock.json');
+  assert.equal(lock.version, pkg.version, 'package-lock.json follows package.json');
+  assert.equal(lock.packages[''].version, pkg.version);
+  assert.equal((await get('/')).body.version, pkg.version);
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -984,7 +986,7 @@ test('US mode strips polymarket.com links however deep, and nothing else', () =>
 });
 
 test('the bundled app: opens on SHARP TAIL, venue line, no bankroll or dollar sizing, the footer, the ARBS tab, and its scripts parse', () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const html = require('./app-source').both;
   assert.match(html, /<button class="tab active" onclick="showTab\('tail',this\)">SHARP TAIL</, 'the first tab, open by default');
   assert.match(html, /<div class="page active" id="page-tail">/);
   for (const v of ['signals', 'board', 'traders', 'whales', 'record']) assert.ok(html.includes(`['${v}', `), v);
@@ -1473,7 +1475,9 @@ test('Kalshi maker: research label, empty record, the backtest seed, no orders a
   assert.ok(body.backtest && body.backtest.byEdge['0.02'], 'the backtest seed ships');
   assert.match(body.note, /Nothing here places an order/);
   const st = await get('/api/status');
-  assert.equal(st.body.kalshiMaker.on, true);
+  assert.equal(st.body.kalshiMaker.on, false, 'closed for good (coldstore.js): no new bids');
+  assert.equal(st.body.kalshiMaker.closed.final, true);
+  assert.equal(body.closed.final, true);
 });
 
 test('Exchange outrights: research label, empty record per sport, no orders anywhere', async () => {
