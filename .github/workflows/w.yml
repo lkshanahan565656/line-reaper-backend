@@ -1,0 +1,25 @@
+name: diag-esresearch-live
+on: { push: { branches: [diag-esresearch-live] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - run: |
+          mkdir o; cd o
+          curl -s -m 30 "$SITE/api/status" -o status.json -w 'status %{http_code}\n' > codes.txt || true
+          curl -s -m 60 "$SITE/esports/research" -o index.html -w 'index %{http_code} %{time_total}s\n' >> codes.txt || true
+          curl -s -m 60 "$SITE/api/esports/research" -o list.json -w 'list %{http_code} %{time_total}s\n' >> codes.txt || true
+          for g in LOL DOTA CS VAL; do
+            u=$(python3 -c "import json;d=json.load(open('list.json'));ps=[p for p in d['players'] if p['game']=='$g'];print(ps[0]['url'] if ps else '')" 2>/dev/null)
+            [ -n "$u" ] || continue
+            curl -s -m 60 "$SITE/api$u" -o "p-$g.json" -w "$g $u %{http_code} %{time_total}s\n" >> codes.txt || true
+            sleep 25
+            curl -s -m 60 "$SITE/api$u" -o "p-$g-2.json" -w "$g again %{http_code} %{time_total}s\n" >> codes.txt || true
+          done
+          date -u >> codes.txt
+          git init -q; git checkout -q -b diag-esresearch-live-out; git add -A
+          git -c user.email=d@lr -c user.name=diag commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-esresearch-live-out
