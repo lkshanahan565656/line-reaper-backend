@@ -6,7 +6,7 @@ on:
 jobs:
   read:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 6
     steps:
       - env:
           # sent to /api/ops/heap and /api/ops/profile, which need it once TRACKER_ADMIN_TOKEN is set on Railway
@@ -17,6 +17,10 @@ jobs:
           echo "railway status:"; curl -s -m 20 https://status.railway.com/api/v2/summary.json | python3 -c "import json,sys; j=json.load(sys.stdin); print(j['status']); [print('incident:', i['name'], i['status'], i.get('updated_at')) for i in j.get('incidents',[])]; [print('component:', c['name'], c['status']) for c in j.get('components',[]) if c['status']!='operational']" || echo "status page unreadable"
           echo "memguard+faults:"; curl -s -m 20 $U/api/ops | python3 -c "import json,sys; j=json.load(sys.stdin); print(json.dumps({k:j.get(k) for k in ['uptimeS','boot','memory','memGuard','faults','stalls','gc']})[:4000])"
           echo "record:"; curl -s -m 30 -o /dev/null -w '%{http_code} %{time_total}s\n' $U/api/record; curl -s -m 30 -o /dev/null -w '%{http_code} %{time_total}s\n' $U/api/results; curl -s -m 30 -o /dev/null -w '%{http_code} %{time_total}s\n' $U/card/record.png
+          echo "heap sample:"; curl -s -m 200 $U/api/ops/heap?s=110 > heap.json; python3 -c "
+          import json; j=json.load(open('heap.json')); print(json.dumps({k:v for k,v in j.items() if k not in ('top','self','inclusive')})[:1500]);
+          [print(k, json.dumps(v)[:3500]) for k,v in j.items() if isinstance(v,list)]
+          " || head -c 500 heap.json
           echo "root:"; curl -s -m 20 -o /dev/null -w '%{http_code} %{time_total}s\n' $U/
           echo "health:"; curl -s -m 20 $U/api/health | head -c 300; echo
           curl -s -m 30 $U/api/ops > ops.json
