@@ -30,8 +30,7 @@ const venues = require('./venues');
 
 const DAY = 86400e3;
 const KEEP_DAYS = 30;
-const LIVE_KEEP_HOURS = 6;
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r4OrNull: r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const prob = a => (a == null || !Number.isFinite(a) ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 
@@ -356,6 +355,7 @@ const PAGE_CSS = `
 .st-pick select, .st-pick button, .st-pick input { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
 .st-pick span { flex-basis:100%; font-size:11px; }
+@media (max-width:560px) { .st-pick { display:grid; grid-template-columns:max-content minmax(0,1fr); } .st-pick button, .st-pick span { grid-column:1 / -1; } .st-pick button { justify-self:start; } }
 .links { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
 .links .go { margin:0; }
 td.n, th.n { text-align:right; white-space:nowrap; }
@@ -595,5 +595,5 @@ function filterIndex(rows, { q = '', league = '', kind = '', before = null, from
   return { rows: page, total, hidden, next: out.length > limit ? page[page.length - 1].start : null };
 }
 
-module.exports = { statLabel, KEEP_DAYS, LIVE_KEEP_HOURS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
+module.exports = { statLabel, KEEP_DAYS, DAY, thin, gameDiff, propDiff, encodeGame, decodeGame, encodeProp, decodeProp, createArchive, cutGame, propSides, windowed,
   CSV_COLUMNS, toCsv, toJson, chartSvg, marketPage, indexPage, filterIndex, venueRole, usableIn, nameOf, venuesPrefScript };

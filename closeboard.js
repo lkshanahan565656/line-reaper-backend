@@ -38,7 +38,7 @@ const evtrack = require('./evtrack');
 const sporttrack = require('./sporttrack');
 
 const TARGET = 50;
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
+const { r2OrNull: r2, r4OrNull: r4 } = require('./mathutil');
 const mean = a => (a.length ? a.reduce((x, v) => x + v, 0) / a.length : null);
 
 const BOOK = { fanduel: 'FanDuel', betrivers: 'BetRivers', draftkings: 'DraftKings', betmgm: 'BetMGM', caesars: 'Caesars', bet365: 'bet365',
@@ -273,7 +273,6 @@ function scoreboard(lists = {}, opts = {}) {
 // (Pinnacle blended with Kalshi and Matchbook) for the other main lines, and
 // for each other kind what its row on the scoreboard says it closes on.
 const PIN_OWN = new Set(['gemini', 'polymarketus', 'kalshi']);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
 const american = d => (!(d > 1) ? null : d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)));
 function closeOn(p) {
   if (p.kind === 'props-stale-exact' || (PIN_OWN.has(p.book) && p.kind === 'ev')) return "Pinnacle's own close";

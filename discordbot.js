@@ -98,9 +98,9 @@ const installUrl = appId => `https://discord.com/oauth2/authorize?client_id=${ap
 
 // an interaction's command and options → { name, opts: { name: value } }
 function commandOf(i) {
-  const d = i?.data || {};
+  const d = i?.data && typeof i.data === 'object' ? i.data : {};
   const opts = {};
-  for (const o of d.options || []) if (o && typeof o.name === 'string') opts[o.name] = typeof o.value === 'string' ? o.value.slice(0, 80) : o.value;
+  for (const o of Array.isArray(d.options) ? d.options : []) if (o && typeof o.name === 'string') opts[o.name] = typeof o.value === 'string' ? o.value.slice(0, 80) : o.value;
   return { name: String(d.name || ''), opts };
 }
 // a member who can manage the server (Discord sends the member's permissions as a string)
@@ -301,6 +301,8 @@ function createBot({ handlers = {}, settings = null, http = null, deferAfterMs =
     if (!verify(key, { signature, timestamp, body, now: now() })) { stats.badSignature++; return { status: 401, body: { error: 'bad signature' } }; }
     let i;
     try { i = JSON.parse(body.toString('utf8')); } catch { return { status: 400, body: { error: 'bad json' } }; }
+    // valid JSON that is not an interaction object ("null", a list, a number)
+    if (!i || typeof i !== 'object' || Array.isArray(i)) return { status: 400, body: { error: 'not an interaction' } };
     if (i.type === TYPE.PING) { stats.pings++; return { status: 200, body: { type: REPLY.PONG } }; }
     if (i.type !== TYPE.COMMAND) return { status: 200, body: { type: REPLY.MESSAGE, data: note('Not supported', 'This bot answers slash commands only.') } };
     stats.interactions++;

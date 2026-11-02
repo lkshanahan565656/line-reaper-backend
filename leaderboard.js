@@ -21,8 +21,7 @@ const venues = require('./venues');
 
 const WINDOWS = { '7d': { days: 7, name: 'Last 7 days' }, '30d': { days: 30, name: 'Last 30 days' }, all: { days: null, name: 'All time' } };
 const Z95 = 1.959964;
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const { r2OrNull: r2, r4OrNull: r4, escHtml: esc } = require('./mathutil');
 
 // a league as one short code: 'basketball_nba' → NBA, 'ncaaf' → CFB
 const LEAGUE_ALIAS = { NCAAF: 'CFB', NCAAB: 'CBB', NCAAM: 'CBB', CS: 'CS2', CSGO: 'CS2', LEAGUE: 'LOL', VALORANT: 'VAL' };
@@ -134,7 +133,6 @@ function publicBody(view) {
 }
 
 // ── the section on /r ──
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pc = (x, d = 2) => (x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(d)}%`);
 const share = x => (x == null ? '—' : `${Math.round(x * 100)}%`);
 const TAG = { proven: 'pv', 'losing to the close': 'neg', building: 'bd' };
@@ -189,6 +187,7 @@ const SECTION_CSS = `
 .st-pick { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 16px; font:500 12px var(--mono); color:var(--muted); }
 .st-pick select, .st-pick button { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; min-width:0; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
+@media (max-width:560px) { .st-pick { display:grid; grid-template-columns:max-content minmax(0,1fr); } .st-pick button, .st-pick span { grid-column:1 / -1; } .st-pick button { justify-self:start; } }
 .lb-f { margin:0 0 12px; }
 table.lb td:first-child { font-family:var(--mono); font-weight:700; }
 .st-yes { color:var(--green2); } .st-no { color:#f87171; } .st-unknown { color:#f59e0b; }

@@ -144,6 +144,7 @@ const PAGE_CSS = `
 .st-pick select, .st-pick button { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; }
 .st-pick button { cursor:pointer; letter-spacing:1px; }
 .st-pick span { flex-basis:100%; font-size:11px; }
+@media (max-width:560px) { .st-pick { display:grid; grid-template-columns:max-content minmax(0,1fr); } .st-pick button, .st-pick span { grid-column:1 / -1; } .st-pick button { justify-self:start; } }
 .lg-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; list-style:none; padding:0; margin:0 0 20px; }
 .lg-list a { display:block; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); text-decoration:none; font-weight:600; }
 .lg-list a span { display:block; font:500 11px var(--mono); color:var(--muted); }

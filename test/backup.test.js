@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
-const { createBackup, keyFromEnv, sourcesFromEnv } = require('../backup');
+const { createBackup, keyFromEnv, keysFromEnv, keyIdOf, sourcesFromEnv } = require('../backup');
 const { createMemoryStore } = require('../evtrack');
 
 const key = crypto.randomBytes(32);
@@ -39,20 +39,92 @@ test('export → restore round trip adds only missing records', async () => {
   assert.equal(two.b.status().state, 'ready');
 });
 
-test('no backup yet, or another key: start fresh and export', async () => {
+test('no backup yet: start fresh and export', async () => {
   const none = setup();
   await none.b.wrap('tail', createMemoryStore()).init();
   assert.equal(none.b.status().note, 'no backup yet');
   assert.equal((await none.b.exportSnapshot()).v, 1);
+});
 
-  const other = setup({ k: crypto.randomBytes(32) });
-  await other.b.wrap('tail', createMemoryStore()).init();
-  const snap = await other.b.exportSnapshot();
+// a snapshot sealed with `k` holding one tail record
+async function snapshotWith(k, rows = [{ id: 'a', status: 'settled' }]) {
+  const src = setup({ k });
+  const st = src.b.wrap('tail', createMemoryStore());
+  await st.init();
+  for (const r of rows) await st.put(r);
+  return src.b.exportSnapshot();
+}
+
+test('a snapshot sealed with a key this server cannot make pauses exports, never overwrites', async () => {
+  const snap = await snapshotWith(crypto.randomBytes(32));
   const mine = setup({ file: snap });
   const s = mine.b.wrap('tail', createMemoryStore());
   await s.init();
-  assert.match(mine.b.status().note, /another key/);
-  assert.equal((await mine.b.exportSnapshot()).v, 1);
+  assert.equal(mine.b.status().state, 'retrying');
+  assert.match(mine.b.status().note, /another key.*RESULTS_BACKUP_OLD_KEYS/);
+  await assert.rejects(mine.b.exportSnapshot(), e => e.status === 503);
+});
+
+test('a damaged snapshot under the right key pauses exports too', async () => {
+  const snap = await snapshotWith(key);
+  const bad = { ...snap, tag: crypto.randomBytes(16).toString('base64') };
+  const mine = setup({ file: bad });
+  await mine.b.wrap('tail', createMemoryStore()).init();
+  assert.equal(mine.b.status().state, 'retrying');
+  assert.match(mine.b.status().note, /can't be opened/);
+  await assert.rejects(mine.b.exportSnapshot(), e => e.status === 503);
+});
+
+test('RESULTS_BACKUP_KEY set later: read with the Railway-id key, seal the next with the new one', async () => {
+  const ids = { RAILWAY_PROJECT_ID: 'p', RAILWAY_SERVICE_ID: 's', RAILWAY_ENVIRONMENT_ID: 'e' };
+  const before = keysFromEnv(ids);
+  assert.equal(before.length, 1);
+  const snap = await snapshotWith(before[0]);
+  const after = keysFromEnv({ ...ids, RESULTS_BACKUP_KEY: 'new secret' });
+  assert.equal(after.length, 2);
+  assert.ok(after[1].equals(before[0]), 'the ids key is still made, second');
+  const remote = { file: snap };
+  const b = createBackup({ keys: after, sources: ['mem://x'], fetchJson: async () => remote.file, log: quiet });
+  const s = b.wrap('tail', createMemoryStore());
+  await s.init();
+  assert.equal(b.status().state, 'ready');
+  assert.equal(b.status().readWith, 'older');
+  assert.equal((await s.all()).length, 1, 'the record came back');
+  const next = await b.exportSnapshot();
+  assert.equal(next.keyId, keyIdOf(after[0]), 'sealed with the new key');
+  assert.deepEqual(next.counts, { tail: 1 });
+});
+
+test('new Railway ids: RESULTS_BACKUP_OLD_KEYS opens the old snapshot', async () => {
+  const old = { RAILWAY_PROJECT_ID: 'p', RAILWAY_SERVICE_ID: 's', RAILWAY_ENVIRONMENT_ID: 'e' };
+  const snap = await snapshotWith(keysFromEnv(old)[0]);
+  const moved = { RAILWAY_PROJECT_ID: 'p2', RAILWAY_SERVICE_ID: 's2', RAILWAY_ENVIRONMENT_ID: 'e2' };
+  const lost = createBackup({ keys: keysFromEnv(moved), sources: ['mem://x'], fetchJson: async () => snap, log: quiet });
+  await lost.wrap('tail', createMemoryStore()).init();
+  assert.equal(lost.status().state, 'retrying', 'without the old secret: paused, not empty');
+  const found = createBackup({ keys: keysFromEnv({ ...moved, RESULTS_BACKUP_OLD_KEYS: ' other , p|s|e ' }), sources: ['mem://x'], fetchJson: async () => snap, log: quiet });
+  const s = found.wrap('tail', createMemoryStore());
+  await s.init();
+  assert.equal(found.status().state, 'ready');
+  assert.equal((await s.all()).length, 1);
+});
+
+test('an export with under half the records read at boot is refused', async () => {
+  const rows = Array.from({ length: 300 }, (_, i) => ({ id: `r${i}` }));
+  const snap = await snapshotWith(key, rows);
+  const mine = setup({ file: snap });
+  const inner = createMemoryStore();
+  const s = mine.b.wrap('tail', inner);
+  await s.init();
+  assert.equal((await s.all()).length, 300);
+  assert.deepEqual((await mine.b.exportSnapshot()).counts, { tail: 300 });
+  // the records vanish from under the backup (a store that failed to load)
+  const two = setup({ file: snap });
+  const empty = createMemoryStore();
+  const w = two.b.wrap('tail', { ...empty, init: async () => {}, all: async () => [] });
+  await w.init();
+  await assert.rejects(two.b.exportSnapshot(), e => e.status === 503 && /300 read at boot/.test(e.message));
+  assert.match(two.b.status().refused, /export refused/);
 });
 
 test('an unreadable backup source pauses exports instead of overwriting', async () => {

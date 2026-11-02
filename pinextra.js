@@ -17,7 +17,7 @@ const { devigPower } = require('./pinprops');
 
 const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
 const SPORTS = { TENNIS: 33, MMA: 22 };
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+const { toProb } = require('./mathutil');
 
 // two prices → P(first) with the vig out, or null
 function pair(a, b) {

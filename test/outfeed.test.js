@@ -167,6 +167,12 @@ test('a customer webhook is sealed at rest and opens only with the same key', ()
   assert.ok(!JSON.stringify(box).includes('webhooks'));
   assert.equal(s.open(box), HOOK);
   assert.equal(feed.sealer(crypto.randomBytes(32)).open(box), null);
+  // a new key still opens what the old one sealed, and seals with the new one
+  const oldKey = crypto.randomBytes(32), newKey = crypto.randomBytes(32);
+  const sealedOld = feed.sealer(oldKey).seal(HOOK);
+  const moved = feed.sealer(newKey, [oldKey, newKey]);
+  assert.equal(moved.open(sealedOld), HOOK);
+  assert.equal(feed.sealer(oldKey).open(moved.seal(HOOK)), null, 'new seals use the new key');
   assert.equal(feed.sealer(null).open(feed.sealer(null).seal(HOOK)), HOOK);
 });
 

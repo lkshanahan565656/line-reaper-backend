@@ -70,7 +70,7 @@ const AN_PROPS = {
     core_bet_type_34_rbi: 'rbis', core_bet_type_32_singles: 'singles' },
 };
 
-const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { num } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const american = v => { const a = num(v); return a != null && Math.abs(a) >= 100 ? Math.round(a) : null; };
 const decToAm = d => (d >= 2 ? Math.round((d - 1) * 100) : d > 1 ? Math.round(-100 / (d - 1)) : null);

@@ -1,4 +1,4 @@
-// The app's odds formats (LROddsFmt in public/index.html, between
+// The app's odds formats (LROddsFmt in public/app.js, between
 // LR_ODDSFMT_BEGIN and LR_ODDSFMT_END) for the pages the server draws: league
 // pages, share cards and widgets. One copy of the arithmetic: this module
 // reads the app's own block, so a page and the app never disagree.
@@ -6,9 +6,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-const block = html.match(/^\/\/ LR_ODDSFMT_BEGIN\n([\s\S]*?)^\/\/ LR_ODDSFMT_END$/m);
-if (!block) throw new Error('oddsfmt: the LR_ODDSFMT block is missing from public/index.html');
+const src = fs.readFileSync(path.join(__dirname, 'public', 'app.js'), 'utf8');
+const block = src.match(/^\/\/ LR_ODDSFMT_BEGIN\n([\s\S]*?)^\/\/ LR_ODDSFMT_END$/m);
+if (!block) throw new Error('oddsfmt: the LR_ODDSFMT block is missing from public/app.js');
 const F = new Function(`${block[1]}\nreturn LROddsFmt;`)();
 
 // a query value -> a format, American when it is missing or unknown
