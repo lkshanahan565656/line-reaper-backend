@@ -33,7 +33,7 @@ test('every environment variable the server reads is in .env.example', () => {
 });
 
 test('every endpoint /developers lists has a route', () => {
-  const src = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+  const src = require('./server-source');
   const routed = new Set([...src.matchAll(/app\.(?:get|post|delete)\('([^']+)'/g)].map(m => m[1].replace(/:[A-Za-z]+/g, ':p')));
   const listed = require('../publicapi').ENDPOINTS.map(e => String(e.path).split('?')[0].replace(/\{[A-Za-z]+\}/g, ':p'));
   assert.ok(listed.length > 10);

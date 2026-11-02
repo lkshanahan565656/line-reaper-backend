@@ -80,7 +80,7 @@ test('stores people write to keep a short write delay; bulk stores take the defa
   assert.equal(bulk.delayMs, DEFAULT_DELAY_MS);
   assert.ok(USER_DELAY_MS <= 5000);
   // the records people publish and the bets they log are user stores
-  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const src = require('./server-source');
   for (const file of ['pub-records.json', 'line-bets.json', 'es-bets.json', 'slip-late.json', 'api-keys.json', 'push-subs.json', 'alert-log.json']) {
     assert.match(src, new RegExp(`file: '${file.replace('.', '\\.')}', user: true`), file);
   }

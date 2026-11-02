@@ -93,7 +93,7 @@ test('the installable app files are in place', () => {
 });
 
 test('server mounts the app files and push routes', () => {
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   for (const r of ["get('/manifest.webmanifest'", "get('/sw.js'", "get('/icons/:name'", "get('/api/push/key'", "post('/api/push/subscribe'", "post('/api/push/unsubscribe'"]) assert.ok(server.includes(`app.${r}`), r);
   assert.match(server, /withPush\(webhookOnly, push[,)]/);
 });
@@ -113,7 +113,7 @@ const scripted = script => { // endpoint → list of statusCodes to throw before
 };
 
 test('every alert title the server sends maps to a kind; unknown ones go to other', () => {
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   const titles = new Set();
   for (const m of server.matchAll(/(?:postAlert|webhook\.send|\bsend)\(.*?,\s*'([^']+)'(?:,\s*\{.*\})?\)\s*;?\s*$/gm)) titles.add(m[1]);
   assert.ok(titles.size >= 10, `found ${[...titles].join(', ')}`);
@@ -217,7 +217,7 @@ test('self-test reports setup without secrets', async () => {
 });
 
 test('server: push store rides the results backup; every push route is mounted', () => {
-  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const server = require('./server-source');
   assert.match(server, /resultsBackup\.wrap\('push', pushStore, \{ appendOnly: false \}\)/);
   assert.ok(server.indexOf('const resultsBackup =') < server.indexOf('const push ='));
   for (const r of ["get('/api/push/kinds'", "post('/api/push/kinds'", "post('/api/push/device'", "post('/api/push/test'", "post('/api/push/ack'", "get('/api/push/test/:nonce'", "get('/api/push/selftest'", "get('/api/push/log'"]) assert.ok(server.includes(`app.${r}`), r);
