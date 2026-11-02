@@ -111,7 +111,7 @@ function optionsFromEnv(env = process.env) {
 }
 
 // ── small helpers ──
-const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { numNoBool: num } = require('./mathutil');
 const round = (x, n) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10 ** n) / 10 ** n);
 const r2 = x => round(x, 2);
 const lower = v => (v == null ? '' : String(v).trim().toLowerCase());
