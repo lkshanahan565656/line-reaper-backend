@@ -68,8 +68,8 @@ desktop/             launcher for the packaged desktop build (npm run build_desk
 into `routes/` is under way: a section moves as it was into
 `routes/<name>.js`, whose `mount(ctx)` runs at the section's old spot (so
 route order holds), takes what it reads from `server.js` in `ctx` and returns
-what `server.js` reads back. A value `server.js` reassigns later (a `let`)
-goes in as a getter, never by value. Tests that read the source use
+what `server.js` reads back. A value `server.js` reassigns later (a `let`) or
+defines after the mount goes in as a getter, never by value. Tests that read the source use
 `test/server-source.js`, which covers both. Modules don't import `server.js`.
 They take what they need (`axios`, stores, other modules' state) as
 arguments, which is what makes them testable without a server.
