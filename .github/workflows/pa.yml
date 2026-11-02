@@ -1,0 +1,21 @@
+name: diag-priceage
+on: { push: { branches: [diag-priceage] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - run: |
+          mkdir o; cd o
+          for p in "api/price-age" "api/status" "api/odds-screen?state=TX" "api/best?limit=50" "api/props/shop?limit=20"; do
+            f=$(echo "$p" | tr '/?=&' '____'); curl -s -m 40 "$SITE/$p" -o "$f.json" -w "$p %{http_code}\n" >> codes.txt || true
+          done
+          sleep 20; curl -s -m 30 "$SITE/api/price-age" -o api_price-age-2.json -w 'price-age-2 %{http_code}\n' >> codes.txt || true
+          g=$(python3 -c "import json;d=json.load(open('api_odds-screen_state_TX.json'));print((d.get('games') or [{}])[0].get('id',''))" 2>/dev/null)
+          [ -n "$g" ] && curl -s -m 30 "$SITE/lines/game/$g" -o lines-game.html -w "lines/game/$g %{http_code}\n" >> codes.txt || true
+          date -u >> codes.txt
+          git init -q; git checkout -q -b diag-priceage-out; git add -A
+          git -c user.email=d@lr -c user.name=diag commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-priceage-out
