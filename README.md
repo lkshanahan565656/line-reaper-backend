@@ -82,7 +82,7 @@ the map.
 | **Esports** | `esboard.js`, `esrecord.js`, `esmatchup.js` + `esmatchupdata.js` (MATCHUPS), `esbooks.js`, `esinplay.js`, `esmarket.js`, `esmatch.js`, `esmarkets.js`, `esgames.js`, `esgaps.js`, `esstale.js`, `escal.js`, `esslips.js`, `esbets.js`, `esmodels.js`, `h2hdata.js` + `h2hmodel.js`, `roundmodel.js`, `sharemodel.js`, `mapunders.js`, `context.js`, `ratings.js` |
 | **Sports models** (labelled model, never an edge) | `nbamodel.js` + `nbadata.js`, `cfbmodel.js` + `cfbdata.js`, `cbbmodel.js` + `cbbdata.js`, `nflmodel.js` + `nflgl.js`, `soccermodel.js` + `soccergl.js`, `propcal.js`, `farlines.js`, `propstats.js`, `sportprops.js`, `mlbboard.js`, `nflsunday.js` |
 | **The record** | `closeboard.js` (proven or not), `claims.js` (what public pages may say), `results.js` (RESULTS), `evtrack.js`, `tailtrack.js`, `sporttrack.js`, `sliptrack.js`, `bidtrack.js`, `middletrack.js`, `bookarbtrack.js`, `xsize.js`, `execcheck.js`, `staleexact.js`, `appscore.js`, `graders.js`, `sportgrade.js`, `extragrade.js`, `tracker.js`, `digest.js`, `alertlog.js` |
-| **User features** | `bets.js` (MY BETS), `slips.js`, `slip.js`, `slipbuild.js`, `slipgrade.js`, `sliplog.js`, `slipstamp.js` (MY SLIPS), `linebets.js`, `pubrecord.js` (`/r/<handle>`), `leaderboard.js` (`/r`), `auth.js` (accounts, sync), `billing.js` (Stripe), `plans.js` (Free and Pro), `licences.js` |
+| **User features** | `bets.js` (MY BETS), `slips.js`, `slip.js`, `slipbuild.js`, `slipgrade.js`, `sliplog.js`, `slipstamp.js` (MY SLIPS), `linebets.js`, `pubrecord.js` (`/r/<handle>`), `leaderboard.js` (`/r`), `auth.js` (accounts, sync), `billing.js` (Stripe), `plans.js` (Free, Plus and Pro, monthly or annual), `licences.js` |
 | **Outbound** | `alerts.js`, `push.js` (Web Push), `webhook.js`, `outfeed.js` (Discord and Telegram feed), `discordbot.js`, `telegrambot.js`, `publicapi.js` (`/api/v1`), `embeds.js` (widgets, `/developers`), `sharecards.js` |
 | **Public pages** | `landing.html` (sales page), `learn.js`, `glossary.js`, `leagues.js`, `linehist.js` (`/lines`), `legal.js`, `status.js`, `a11y.js` (skip link, focus ring on every server page) |
 | **Platform** | `jsonstore.js` (file stores), `coldstore.js` (closed lanes on disk), `backup.js` (results snapshot), `ops.js` (`/api/ops`), `memguard.js` (heap cap watch: a planned restart right after a results backup instead of an out-of-memory crash; `/api/ops` → `memGuard`), `security.js` (headers, per-address write and sign-in limits, JSON errors, the `security` block in `/api/ops`), `livecheck.js`, `quota.js` (Odds API credits), `appbundle.js` (hashed, pre-compressed app script) |
@@ -134,11 +134,12 @@ The flags that change behaviour most:
 | Variable | Effect |
 |---|---|
 | `DATABASE_URL` | Postgres for trackers and accounts instead of files |
-| `PAYWALL` | `on` enforces Free/Pro (`plans.js`). Off (default): everyone gets Pro, and pages say "early access" |
-| `AUTH_SECRET`, `STRIPE_*` | Accounts and billing. Dormant until set |
+| `PAYWALL` | `on` enforces Free/Plus/Pro (`plans.js`). Off (default): everyone gets Pro, and pages say "early access" |
+| `AUTH_SECRET`, `STRIPE_*` | Accounts and billing. Dormant until set. `STRIPE_PRICE_ID` (Pro monthly) is the one price required; `STRIPE_PRICE_ANNUAL_ID`, `STRIPE_PLUS_PRICE_ID` and `STRIPE_PLUS_PRICE_ANNUAL_ID` each put one more plan or period on sale |
 | `ODDS_API_KEY` | The paid Odds API. Off on live. LINES, LINE SHOP and CLV hide themselves without it |
 | `ALERT_WEBHOOK_URL` | Where alerts go (ntfy, Slack, Discord, Telegram; comma list) |
 | `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord slash commands. Dormant until all three are set |
+| `DISCORD_INVITE_URL`, `DISCORD_ALERT_DELAY_MIN` | The owned Discord server: its public invite (/discord and the JOIN links) and how late its alert channels post (default 30 min). Channels come from topic-prefixed `DISCORD_WEBHOOK_URLS` entries |
 | `TELEGRAM_BOT_TOKEN` (+ `TELEGRAM_CHAT_IDS` for the feed) | Telegram commands and feed |
 | `RESULTS_BACKUP_KEY` | Pins the backup key. On Railway it derives from the project ids. Safe to set on a running deploy: the old snapshot is still read with the ids key and the next one is sealed with this. A snapshot no key opens pauses exports (never overwritten). |
 | `RESULTS_BACKUP_OLD_KEYS` | Comma-separated earlier secrets the backup may have been sealed with (an old `RESULTS_BACKUP_KEY`, or old ids as `project\|service\|environment`), for a new service or a key that was replaced. Read only. |

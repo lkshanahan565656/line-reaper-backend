@@ -203,3 +203,87 @@ test('the key store keeps one feed per key, retires it after 5 fails or a dead a
   assert.equal(store.rows.get(b.id).feed, null);
   assert.equal(await keys.setFeed(b.key, { hookId: '3' }), null, 'a revoked key cannot connect');
 });
+
+// ── the owned Discord server: topics per channel, alerts, invite ──
+const H = id => `https://discord.com/api/webhooks/${id}/${'z'.repeat(68)}`;
+
+test('an owner entry can name the topics its channel carries; no prefix keeps the feed posts', () => {
+  const o = feed.ownerDestinations({ DISCORD_WEBHOOK_URLS: `${H('100000000000000001')}, record=${H('100000000000000002')}, alerts=${H('100000000000000003')}, Ev + SHARP=${H('100000000000000004')}, feed+gas=${H('100000000000000005')}` });
+  assert.deepEqual(o.problems, []);
+  assert.deepEqual(o.dests.map(d => d.topics || null), [null, ['record'], feed.ALERT_TOPICS, ['ev', 'sharp'], ['digest', 'record', 'moves', 'gas']]);
+  assert.deepEqual(o.dests.map(feed.topicsOf)[0], ['digest', 'record', 'moves']);
+  const bad = feed.ownerDestinations({ DISCORD_WEBHOOK_URLS: `vip=${H('100000000000000006')}, record+picks=${H('100000000000000007')}, ${H('100000000000000007')}` });
+  assert.equal(bad.dests.length, 1, 'only known topics; an entry with none left is skipped');
+  assert.deepEqual(bad.dests[0].topics, ['record']);
+  assert.equal(bad.problems.length, 3);
+  assert.match(bad.problems[0], /unknown topic "vip"/);
+  assert.match(bad.problems[2], /twice/);
+});
+
+test('the invite link: discord.gg or discord.com/invite only, normalised', () => {
+  assert.equal(feed.parseInvite('https://discord.gg/abcDEF12'), 'https://discord.gg/abcDEF12');
+  assert.equal(feed.parseInvite(' https://discord.com/invite/line-reaper/ '), 'https://discord.gg/line-reaper');
+  for (const bad of ['', null, 'http://discord.gg/abc', 'https://discord.gg.evil.com/abc', 'https://discord.gg/abc?x=1', 'https://evil.com/discord.gg/abc', 'javascript:alert(1)']) assert.equal(feed.parseInvite(bad), null, String(bad));
+});
+
+test('a feed post goes only to the owner channels that carry it; customers get feed posts as before', async () => {
+  const sent = [];
+  const owner = feed.ownerDestinations({ DISCORD_WEBHOOK_URLS: `${H('100000000000000001')},record=${H('100000000000000002')},alerts=${H('100000000000000003')}` }).dests;
+  const f = feed.createFeed({ owner, subscribers: () => [{ kind: 'discord', id: 'key-1', url: H('100000000000000009') }], post: async url => { sent.push(/webhooks\/(\d+)/.exec(url)[1].slice(-1)); } });
+  await f.send({ kind: 'moves', title: 'm', text: 't' });
+  assert.deepEqual(sent.sort(), ['1', '9']);
+  sent.length = 0;
+  await f.send({ kind: 'record', title: 'r', text: 't' });
+  assert.deepEqual(sent.sort(), ['1', '2', '9']);
+});
+
+test('alerts wait the delay, group per channel, keep their text and say how late they are', async () => {
+  let t = Date.parse('2026-10-28T18:00:00Z');
+  const sent = [];
+  const owner = feed.ownerDestinations({ DISCORD_WEBHOOK_URLS: `alerts=${H('100000000000000003')},tail=${H('100000000000000004')},record=${H('100000000000000002')}` }).dests;
+  const r = feed.createAlertRelay({ owner, delayMs: 30 * 60e3, origin: 'https://lr.test', now: () => t, sendTo: async (d, p) => { sent.push({ d: d.id.slice(-1), p }); return { ok: true }; } });
+  assert.equal(r.channels, 2);
+  assert.equal(r.add({ text: 'EV: BetRivers NYJ +150 @everyone https://polymarket.com/event/x', title: 'EV alerts', kind: 'ev' }), true);
+  assert.equal(r.add({ text: 'Tail: wallet bought YES', title: 'Tail alerts', kind: 'tail' }), true);
+  assert.equal(r.add({ text: 'booting', title: 'Startup', kind: 'other' }), false, 'the startup ping is not an alert');
+  assert.deepEqual(await r.flush(), { posts: 0 }, 'nothing before the delay');
+  t += 30 * 60e3;
+  await r.flush();
+  assert.deepEqual(sent.map(s => s.d).sort(), ['3', '4']);
+  const all = sent.find(s => s.d === '3').p;
+  assert.equal(all.kind, 'alerts');
+  assert.match(all.text, /^Sent to members 30 min before this post\. Prices have likely moved/);
+  assert.match(all.text, /\*\*EV alerts · 18:00 UTC\*\*\nEV: BetRivers NYJ \+150/);
+  assert.match(all.text, /Tail: wallet bought YES/);
+  assert.equal(all.link, 'https://lr.test/alerts');
+  const req = feed.discordRequest({ url: H('100000000000000003') }, all)[0].data;
+  assert.doesNotMatch(req.embeds[0].description, /polymarket\.com|@everyone/);
+  assert.doesNotMatch(sent.find(s => s.d === '4').p.text, /BetRivers/, 'the tail channel gets only tail alerts');
+  assert.equal(r.stats().posted, 2);
+  assert.equal(r.stats().pending, 0);
+});
+
+test('alerts: a long burst splits into posts that fit, the queue is capped, no alert channel means off', async () => {
+  const owner = feed.ownerDestinations({ DISCORD_WEBHOOK_URLS: `alerts=${H('100000000000000003')}` }).dests;
+  const sent = [];
+  const r = feed.createAlertRelay({ owner, delayMs: 0, max: 30, sendTo: async (d, p) => { sent.push(p); return { ok: true }; } });
+  for (let i = 0; i < 40; i++) r.add({ text: `alert ${i} ${'x'.repeat(400)}`, title: 'EV alerts', kind: 'ev' });
+  assert.equal(r.stats().dropped, 10);
+  await r.flush();
+  assert.ok(sent.length > 1);
+  for (const p of sent) assert.ok(p.text.length <= 4000, `${p.text.length} chars`);
+  assert.equal(sent.map(p => (p.text.match(/alert \d+/g) || []).length).reduce((a, b) => a + b, 0), 30);
+  assert.ok(!sent[0].text.startsWith('Sent to members'), 'no delay: no late note');
+  const off = feed.createAlertRelay({ owner: feed.ownerDestinations({ DISCORD_WEBHOOK_URLS: H('100000000000000001') }).dests, sendTo: async () => { throw new Error('no'); } });
+  assert.equal(off.on, false);
+  assert.equal(off.add({ text: 'x', title: 'EV alerts', kind: 'ev' }), false);
+});
+
+test('a customer\'s welcome post is unchanged; an owner channel\'s names its topics', () => {
+  assert.equal(feed.welcomePost({ origin: 'https://lr.test' }).title, 'Line Reaper feed connected');
+  assert.match(feed.welcomePost({}).text, /disconnect it on the developers page/);
+  const w = feed.welcomePost({ origin: 'https://lr.test', topics: ['moves', 'ev'], alertDelayMin: 30 });
+  assert.equal(w.title, 'Line Reaper channel connected');
+  assert.doesNotMatch(w.text, /digest/);
+  assert.match(w.text, /alerts: \+EV plays at proven books, 30 minutes after members get them/);
+});

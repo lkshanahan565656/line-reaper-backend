@@ -2,14 +2,18 @@
 // Subscriptions through Stripe Checkout and the Stripe customer portal, called
 // over Stripe's REST API with the HTTP client we already use (no SDK).
 //
-//   1. POST /api/billing/checkout → we create (once) a Stripe customer for the
-//      user, then a Checkout Session for STRIPE_PRICE_ID; the app redirects.
+//   1. POST /api/billing/checkout {plan, interval} → we create (once) a Stripe
+//      customer for the user, then a Checkout Session for that plan's price
+//      (Pro monthly STRIPE_PRICE_ID, Pro annual STRIPE_PRICE_ANNUAL_ID, Plus
+//      STRIPE_PLUS_PRICE_ID and STRIPE_PLUS_PRICE_ANNUAL_ID); the app redirects.
+//      A plan whose price id is not set is not on sale.
 //   2. Stripe posts subscription events to /api/billing/webhook; we verify the
 //      signature and copy status + period end onto the user.
 //   3. POST /api/billing/portal → a portal session where they manage or cancel.
 //
-// Entitlement is read from the user record (auth.isPro), which only webhooks
-// write. The browser can't grant itself anything.
+// Entitlement is read from the user record (auth.isPro, auth.tierOf), which
+// only webhooks write: the tier comes from the price on the subscription, never
+// from what the browser asked for. The browser can't grant itself anything.
 
 const crypto = require('crypto');
 
@@ -51,13 +55,34 @@ function verifyWebhook(rawBody, header, secret, { toleranceSec = 300, now = Date
   return JSON.parse(payload);
 }
 
-// introPriceId (optional): the founding price, used for checkout while
-// introOpen() says seats are left. Stripe's own amounts are read once an hour
-// (prices()), so the pricing page shows what Stripe will really charge.
-function createBilling({ http, secretKey, priceId, introPriceId = null, introOpen = async () => false, store, trialDays = 0, log = console, now = () => Date.now() }) {
+// The plans on sale and their Stripe price ids. Pro monthly is required
+// (configured() is false without it); every other price is optional and its
+// plan or interval is simply not offered until its id is set.
+const INTERVALS = ['month', 'year'];
+const PAID_TIERS = ['plus', 'pro'];
+function priceCatalog({ priceId = null, annualPriceId = null, plusPriceId = null, plusAnnualPriceId = null } = {}) {
+  const clean = v => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  return { pro: { month: clean(priceId), year: clean(annualPriceId) }, plus: { month: clean(plusPriceId), year: clean(plusAnnualPriceId) } };
+}
+
+// introPriceId (optional): the founding price (Pro monthly only), used for
+// checkout while introOpen() says seats are left. Stripe's own amounts are read
+// once an hour (prices()), so the pricing page shows what Stripe will charge.
+function createBilling({ http, secretKey, priceId, annualPriceId = null, plusPriceId = null, plusAnnualPriceId = null, introPriceId = null, introOpen = async () => false, store, trialDays = 0, log = console, now = () => Date.now() }) {
   const headers = () => ({ Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/x-www-form-urlencoded' });
   const post = async (path, body) => (await http.post(`${STRIPE}${path}`, form(body).toString(), { headers: headers(), timeout: 15000 })).data;
-  const configured = () => !!(secretKey && priceId);
+  const catalog = priceCatalog({ priceId, annualPriceId, plusPriceId, plusAnnualPriceId });
+  const configured = () => !!(secretKey && catalog.pro.month);
+  // which plan and interval can be bought: { pro: { month: true, year: false }, plus: {...} }
+  const onSale = () => Object.fromEntries(PAID_TIERS.map(t => [t, Object.fromEntries(INTERVALS.map(i => [i, configured() && !!catalog[t][i]]))]));
+  // a price id on a subscription → { tier, interval }; the founding price is Pro
+  // monthly. An id we don't know (one made by hand in Stripe) counts as Pro,
+  // which is what every subscription was before tiers.
+  function planOfPrice(id) {
+    if (id && introPriceId && id === introPriceId) return { tier: 'pro', interval: 'month', known: true };
+    for (const t of PAID_TIERS) for (const i of INTERVALS) if (id && catalog[t][i] === id) return { tier: t, interval: i, known: true };
+    return { tier: 'pro', interval: null, known: false };
+  }
   const priceCache = new Map();   // id → { at, value }
   // { amount (major units), currency, interval } or null; never throws
   async function priceOf(id) {
@@ -75,9 +100,11 @@ function createBilling({ http, secretKey, priceId, introPriceId = null, introOpe
       return hit?.value || null;
     }
   }
+  // main/intro: Pro monthly and the founding price (as before); the rest by plan
   async function prices() {
-    const [main, intro] = await Promise.all([priceOf(priceId), introPriceId ? priceOf(introPriceId) : null]);
-    return { main, intro };
+    const [main, intro, proYear, plusMonth, plusYear] = await Promise.all([priceOf(catalog.pro.month), introPriceId ? priceOf(introPriceId) : null,
+      priceOf(catalog.pro.year), priceOf(catalog.plus.month), priceOf(catalog.plus.year)]);
+    return { main, intro, pro: { month: main, year: proYear }, plus: { month: plusMonth, year: plusYear } };
   }
 
   async function ensureCustomer(user) {
@@ -88,17 +115,24 @@ function createBilling({ http, secretKey, priceId, introPriceId = null, introOpe
     return c.id;
   }
 
-  async function checkout(user, { successUrl, cancelUrl, legalUrl = null }) {
+  // plan: 'plus' | 'pro'; interval: 'month' | 'year'. Anything else, or a
+  // price that is not set, is a 400: checkout never guesses a price.
+  async function checkout(user, { successUrl, cancelUrl, legalUrl = null, plan = 'pro', interval = 'month' } = {}) {
     if (!configured()) throw Object.assign(new Error('Billing is not set up yet'), { status: 503 });
-    // a second checkout on a live subscription would charge twice: Billing manages it
-    if (user.subscriptionId && ['active', 'trialing', 'past_due'].includes(user.planStatus)) throw Object.assign(new Error('This account already has Pro. Manage it in Billing.'), { status: 409 });
+    if (!PAID_TIERS.includes(plan) || !INTERVALS.includes(interval)) throw Object.assign(new Error('Pick Plus or Pro, monthly or annual'), { status: 400 });
+    const price = catalog[plan][interval];
+    if (!price) throw Object.assign(new Error(`${plan === 'plus' ? 'Plus' : 'Pro'} ${interval === 'year' ? 'annual' : 'monthly'} is not on sale yet`), { status: 400 });
+    // a second checkout on a live subscription would charge twice: switching
+    // plan or interval happens in Billing (Stripe's portal), which prorates
+    if (user.subscriptionId && ['active', 'trialing', 'past_due'].includes(user.planStatus)) throw Object.assign(new Error('This account already has a paid plan. Change or cancel it in Billing.'), { status: 409, billing: true });
     const customer = await ensureCustomer(user);
-    // the founding price while seats are left (an account that paid before pays the full price)
-    const founding = !!introPriceId && !user.subscriptionId && await introOpen(user);
+    // the founding price while seats are left, on Pro monthly only (an account
+    // that paid before pays the full price)
+    const founding = plan === 'pro' && interval === 'month' && !!introPriceId && !user.subscriptionId && await introOpen(user);
     const session = await post('/checkout/sessions', {
       mode: 'subscription', customer, client_reference_id: user.id,
-      line_items: [{ price: founding ? introPriceId : priceId, quantity: 1 }],
-      ...(founding ? { metadata: { founding: '1' } } : {}),
+      line_items: [{ price: founding ? introPriceId : price, quantity: 1 }],
+      metadata: { plan, interval, ...(founding ? { founding: '1' } : {}) },
       success_url: successUrl, cancel_url: cancelUrl,
       allow_promotion_codes: 'true',
       // the automatic-renewal terms, right above the pay button (state
@@ -106,7 +140,7 @@ function createBilling({ http, secretKey, priceId, introPriceId = null, introOpe
       ...(legalUrl ? { custom_text: { submit: { message: renewalNotice(legalUrl) } } } : {}),
       ...(trialDays > 0 ? { subscription_data: { trial_period_days: trialDays } } : {}),
     });
-    return { url: session.url, id: session.id };
+    return { url: session.url, id: session.id, plan, interval, founding };
   }
 
   async function portal(user, { returnUrl }) {
@@ -146,7 +180,13 @@ function createBilling({ http, secretKey, priceId, introPriceId = null, introOpe
           if (stale) return { ignored: 'stale event', user: user.id };
         }
         if (isFinite(created) && created > 0) user.lastEventAt = created;
-        user.plan = event.type === 'customer.subscription.deleted' ? 'free' : 'pro';
+        // the tier is whatever price the subscription is on now (a switch in
+        // the portal arrives as an update with the new price)
+        const item = (obj.items?.data || []).find(i => i?.price?.id) || null;
+        const priced = planOfPrice(item?.price?.id || obj.plan?.id || null);
+        if (!priced.known && event.type !== 'customer.subscription.deleted') log.warn?.(`Billing: price ${item?.price?.id || obj.plan?.id || 'none'} is not one of ours; counted as Pro`);
+        user.plan = event.type === 'customer.subscription.deleted' ? 'free' : priced.tier;
+        user.planInterval = event.type === 'customer.subscription.deleted' ? null : (priced.interval || item?.price?.recurring?.interval || null);
         user.planStatus = event.type === 'customer.subscription.deleted' ? 'canceled' : obj.status;
         user.subscriptionId = obj.id;
         // a founding seat is taken for good once a subscription on the intro price exists
@@ -164,7 +204,7 @@ function createBilling({ http, secretKey, priceId, introPriceId = null, introOpe
     }
   }
 
-  return { checkout, portal, handleEvent, configured, prices, priceOf };
+  return { checkout, portal, handleEvent, configured, onSale, planOfPrice, prices, priceOf };
 }
 
-module.exports = { createBilling, verifyWebhook, form, renewalNotice };
+module.exports = { createBilling, verifyWebhook, form, renewalNotice, priceCatalog, INTERVALS, PAID_TIERS };

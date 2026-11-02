@@ -35,14 +35,19 @@ What it checks, and fails on:
   (the CSV holds exactly the rows shown, filters applied) and open its print
   view, open a label's glossary definition from its ? and by long press, and
   make a SHARE CARD (the card image loads at 1200x630, the copied link is a
-  page whose og:image is the card, SAVE IMAGE downloads a PNG).
+  page whose og:image is the card, SAVE IMAGE downloads a PNG), and sign in on two
+  browsers: the bets merge both ways, a layout that differs waits for USE
+  ACCOUNT, and signing out keeps the local copy. The harness sets AUTH_SECRET
+  so sign-in and sync run against the file store in its temp folder;
+  `/api/auth` and `/api/sync` always reach the offline server, never the
+  recording.
 
 `allow.json` lists the few exceptions, each with its reason. The report is
 written to `e2e/out/report.json`, with a screenshot for each failed flow.
 
 Options: `E2E_TABS=odds,props`, `E2E_VIEWPORTS=desktop`, `E2E_FLOWS=1` (with
 `E2E_TABS`), `E2E_HEADED=1`, `E2E_TRACE=1` (print every click),
-`E2E_MS_PER_TAB`, `E2E_SHARDS`. `npm run e2e:serve` runs the offline server on
+`E2E_MS_PER_TAB`, `E2E_SHARDS`, `E2E_SYNC=off` (the page with account sync off, as the live site is until AUTH_SECRET and Postgres are set). `npm run e2e:serve` runs the offline server on
 port 3456 to look at by hand.
 
 ## A new recording
@@ -65,6 +70,13 @@ caller cannot post a result). The command waits for the result, prints it, and
 exits 0 on a pass. The last result is in `/api/ops` under `liveCheck`.
 
 ## Accessibility (`npm run a11y`)
+
+`offline.js` is the one window with the service worker on: it loads the app,
+lets the worker save ESPORTS, cuts the network and reloads. The app must still
+open, every saved row must carry its "read N min ago, may be stale" stamp, the
+banner must say the data is saved and not live, and TRY AGAIN must clear it all
+once the network is back. `E2E_OFFLINE=0` skips it; `E2E_OFFLINE_SHOT=<dir>`
+saves a screenshot of the offline screen.
 
 `a11y.js` boots the same offline server and runs axe-core (WCAG 2.1 A and AA
 rules) on every app tab, the welcome screen, the tour, CUSTOMIZE, SEARCH (empty

@@ -59,12 +59,9 @@ const APPS = new Set(['prizepicks', 'underdog', 'sleeper']);
 const BOOKS = new Set(['fanduel', 'betrivers']);
 const EXCHANGES = new Set(['kalshi', 'polymarketus']);
 
-const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
-const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
+const { numNoBool: num, r4OrNull: r4, r2OrNull: r2, toProb } = require('./mathutil');
 const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const iso = t => (t == null ? null : new Date(t).toISOString());
-const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 const toDecimal = a => (a > 0 ? 1 + a / 100 : 1 + 100 / -a);
 // a chance as American odds (0.556 → −125)
 const american = p => (!(p > 0 && p < 1) ? null : p >= 0.5 ? -Math.round((100 * p) / (1 - p)) : Math.round((100 * (1 - p)) / p));
@@ -155,6 +152,16 @@ function exchangeCost(row, ask) {
   return null;
 }
 const midOf = row => (row.yesAsk > 0 && row.yesAsk < 1 && row.noAsk > 0 && row.noAsk < 1 ? r4((row.yesAsk + 1 - row.noAsk) / 2) : null);
+// one side of an exchange row as a venue of a bet (null when it has no ask under $1)
+function exchangeVenue(row, side) {
+  const ask = side === 'yes' ? row.yesAsk : row.noAsk;
+  const cost = exchangeCost(row, ask);
+  if (cost == null || cost >= 1) return null;
+  const mid = midOf(row);
+  return { venue: row.exchange, name: BOOK_NAMES[row.exchange], implied: cost, decimal: r4(1 / cost), price: ask,
+    american: american(cost), url: row.url || null, marketId: row.id, side, mid: side === 'yes' ? mid : mid == null ? null : r4(1 - mid),
+    ...(row.quoteAt ? { at: row.quoteAt } : {}) };
+}
 
 // Every exchange row Pinnacle prices, and the books' prices of the same bets.
 // matches: pingames.matchRows(rows, pinGames); freeGames: freebooks' Odds API
@@ -181,14 +188,12 @@ function gameIndex(matches = [], freeGames = {}) {
     if (!EXCHANGES.has(m.row.exchange) || !m.row.tradable) continue;
     for (const [side, key] of [['yes', k.yes], ['no', k.no]]) {
       if (!key) continue;
-      const ask = side === 'yes' ? m.row.yesAsk : m.row.noAsk;
-      const cost = exchangeCost(m.row, ask);
-      if (cost == null || cost >= 1) continue;
-      const b = bet(key, m.game), had = b.venues.find(v => v.venue === m.row.exchange);
-      if (had && had.implied <= cost) continue;
+      const v = exchangeVenue(m.row, side);
+      if (!v) continue;
+      const b = bet(key, m.game), had = b.venues.find(x => x.venue === m.row.exchange);
+      if (had && had.implied <= v.implied) continue;
       if (had) b.venues.splice(b.venues.indexOf(had), 1);
-      b.venues.push({ venue: m.row.exchange, name: BOOK_NAMES[m.row.exchange], implied: cost, decimal: r4(1 / cost), price: ask,
-        american: american(cost), url: m.row.url || null, marketId: m.row.id, side, mid: side === 'yes' ? midOf(m.row) : midOf(m.row) == null ? null : r4(1 - midOf(m.row)) });
+      b.venues.push(v);
     }
   }
   // FanDuel and BetRivers at the same line
@@ -544,6 +549,6 @@ const BACKTEST = {
 };
 
 module.exports = {
-  DEFAULTS, BACKTEST, BOOK_NAMES, optsFromEnv, american, normPrint, rowBets, flipKey, betLabel, pinFair, exchangeCost, gameIndex, rungIndex, bookPropIndex, atLine, appPrice,
+  DEFAULTS, BACKTEST, BOOK_NAMES, optsFromEnv, american, normPrint, rowBets, flipKey, betLabel, pinFair, exchangeCost, exchangeVenue, gameIndex, rungIndex, bookPropIndex, atLine, appPrice,
   propVenues, flowOf, groupMoney, pickBest, createBigMoneyTracker, gameOutcome,
 };

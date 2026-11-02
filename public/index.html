@@ -1209,6 +1209,7 @@ body::before { background:none; }
 .wl-agree, .acct-check { display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.5; color:var(--text2); margin:0 0 14px; cursor:pointer; text-align:left; }
 .wl-agree input, .acct-check input { flex:none; width:16px; height:16px; margin:2px 0 0; accent-color:#10b981; cursor:pointer; }
 .wl-agree a, .acct-check a { color:var(--text); text-underline-offset:2px; }
+.acct-check.on { color:var(--text); }
 .wl-agree.need { color:#fca5a5; }
 .wl-btn:disabled, .wl-skip:disabled { opacity:.45; cursor:not-allowed; }
 .acct-check { margin:10px 0 0; font-size:12px; }
@@ -1241,6 +1242,13 @@ body::before { background:none; }
 .lay-b { background:#161c28; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 10px 'Inter',sans-serif; letter-spacing:.8px; padding:5px 8px; cursor:pointer; min-width:34px; }
 .lay-b:hover { color:var(--text); }
 .lay-sel { background:#161c28; border:1px solid var(--border2); color:var(--text); border-radius:6px; font:600 11px 'Inter',sans-serif; padding:5px 6px; max-width:130px; }
+.mb-sync { color:var(--muted2); font-size:11px; letter-spacing:.3px; margin:6px 0 0; }
+.mb-sync.bad, .sync-err { color:var(--red); }
+.sync-err { font-size:12px; margin:6px 0 0; }
+.mb-sync-b { background:none; border:1px solid var(--border2); color:var(--text2); border-radius:5px; font:600 10px 'Inter',sans-serif; letter-spacing:.8px; padding:2px 6px; cursor:pointer; }
+.mb-sync-b:hover { color:var(--text); }
+.sync-conflict { flex-wrap:wrap; }
+.sync-conflict .lay-name { flex-basis:100%; }
 .lay-b.on { color:#10b981; border-color:rgba(16,185,129,.45); }
 .lay-foot { display:flex; gap:8px; margin-top:16px; }
 .lay-foot button { flex:1; padding:11px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--text); font:700 12px 'Inter',sans-serif; letter-spacing:1px; cursor:pointer; }
@@ -1289,7 +1297,13 @@ body.no-help .clv-info { display:none; }
 .ms-pub input[type=text] { flex:1 1 160px; min-width:0; max-width:100%; box-sizing:border-box; background:var(--surface); border:1px solid var(--border2); border-radius:8px; color:var(--text); font:12px 'JetBrains Mono',monospace; padding:8px 10px; }
 .ms-pub input[type=text]:focus { outline:none; border-color:var(--green); }
 .ms-pub .ms-pub-link { font:600 13px 'JetBrains Mono',monospace; color:var(--green2); overflow-wrap:anywhere; }
+.ms-pub .ms-kal { border-top:1px solid var(--border); margin-top:10px; padding-top:8px; }
+.ms-pub .ms-kal textarea { width:100%; min-height:72px; font:11px 'JetBrains Mono',monospace; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:6px; }
+.ms-pub .ms-kal input { min-width:240px; }
 .ms-pub .ms-pub-key { font:11px 'JetBrains Mono',monospace; color:var(--text2); overflow-wrap:anywhere; word-break:break-all; }
+.ms-pub .ms-pub-tool { border-top:1px solid var(--border); margin-top:10px; padding-top:8px; }
+.ms-pub .ms-pub-snip { display:block; font:11px/1.5 'JetBrains Mono',monospace; color:var(--text); background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:8px 10px; overflow-wrap:anywhere; word-break:break-all; white-space:pre-wrap; margin:6px 0; }
+.ms-pub .ms-pub-frame { display:block; width:100%; height:300px; border:0; border-radius:8px; background:#080b10; margin:6px 0; }
 .ms-pub ul { margin:6px 0 4px; padding-left:18px; font-size:11px; color:var(--text2); line-height:1.6; }
 .ms-slip { background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; }
 .ms-slip-head { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 14px; background:rgba(0,0,0,.15); font-size:12px; }
@@ -1526,6 +1540,16 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .shp-num { font-family:'JetBrains Mono',monospace; white-space:nowrap; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
+/* PRICE AGE: how long ago the venue answered; grey once stale */
+.pa { display:inline-block; margin-left:4px; font:600 9px 'JetBrains Mono',monospace; color:#34d399; letter-spacing:0; text-transform:none; vertical-align:middle; font-variant-numeric:tabular-nums; }
+.pa.live::before { content:''; display:inline-block; width:5px; height:5px; margin-right:3px; border-radius:50%; background:#34d399; vertical-align:middle; }
+.pa.stale { color:var(--muted2); }
+.pa.stale::before { background:var(--muted2); }
+/* stale: a flat light grey (no opacity, so it keeps AA contrast even under the tour's dimmer), italic, dashed */
+.pa-dim, .pa-dim a, .pa-dim .ev { color:#a3adbd !important; font-style:italic; }
+.pa-dim .ev { opacity:1; }
+.os-tbl td.pa-dim { box-shadow:inset 0 0 0 1px rgba(163,173,189,.35); }
+.os-tbl td.best.pa-dim, .os-tbl td.top.pa-dim { background:transparent; outline:1px dashed #7b8a9f; font-weight:400; }
 .shp-dim { color:var(--text2); font-size:11px; }
 .mv-t td { vertical-align:top; }
 .mv-t .mv-what { white-space:normal; min-width:170px; max-width:280px; }
@@ -1679,6 +1703,22 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .gl-pop .gl-h { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; color:var(--text); margin:0 0 4px; }
 .gl-pop .gl-x { background:none; border:0; color:var(--text2); cursor:pointer; font-size:12px; padding:0 2px; }
 .gl-pop .gl-more { display:inline-block; margin-top:6px; color:#34d399; font-size:11px; text-decoration:none; }
+/* offline: the banner, the install bar, and the age stamp on each row */
+.off-banner { margin:8px 16px; padding:8px 12px; max-height:40vh; overflow:auto; border:1px solid rgba(245,158,11,.55); background:rgba(245,158,11,.1); border-radius:10px; font-size:12px; line-height:1.6; color:#fde68a; position:relative; z-index:5; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; }
+.off-banner[hidden], .pwa-bar[hidden] { display:none; }
+.off-banner strong { color:#fbbf24; letter-spacing:.5px; }
+.off-banner span { flex:1 1 220px; min-width:0; color:#e2e8f0; }
+.off-retry, .pwa-bar button { font:700 11px 'JetBrains Mono',monospace; letter-spacing:1px; padding:6px 10px; border-radius:6px; border:1px solid #fbbf24; background:transparent; color:#fbbf24; cursor:pointer; }
+.lr-stamp { display:block; margin-top:2px; font:600 9px/1.3 'JetBrains Mono',monospace; letter-spacing:.3px; color:#fbbf24; white-space:normal; overflow-wrap:anywhere; text-transform:none; grid-column:1 / -1; flex-basis:100%; }
+.pwa-bar { position:fixed; left:12px; right:12px; bottom:12px; z-index:60; max-width:560px; margin:0 auto; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; padding:10px 12px; background:#111620; border:1px solid #263044; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.5); font-size:12px; line-height:1.5; color:#e2e8f0; }
+.pwa-bar > span:first-child { flex:1 1 240px; min-width:0; }
+.pwa-bar-btns { display:flex; gap:8px; }
+.pwa-bar button { border-color:#334155; color:#cbd5e1; }
+.pwa-bar button.primary { border-color:#10b981; color:#10b981; }
+.pwa-steps { margin:8px 0 2px; font-size:12px; line-height:1.6; color:#cbd5e1; }
+.pwa-steps summary { cursor:pointer; font-weight:700; color:#e2e8f0; padding:6px 0; }
+.pwa-steps p { margin:6px 0; }
+.lr-join { display:inline-flex; align-items:center; gap:6px; }
 </style>
 <style id="xpPrintCss" media="print">
 /* the print view (PRINT on a data screen, or the browser's own print): light,
@@ -1792,6 +1832,11 @@ body::before { display:none !important; }
     <button class="tab" onclick="showTab('sharp',this)">SHARP FEED</button>
     <button class="tab" onclick="showTab('clv',this)">CLV</button>
   </nav>
+  <div id="offBanner" class="off-banner" role="status" aria-live="polite" hidden>
+    <strong id="offHead">OFFLINE.</strong>
+    <span id="offText"></span>
+    <button type="button" class="off-retry" onclick="location.reload()">TRY AGAIN</button>
+  </div>
 </header>
 
 <div id="netBanner" style="display:none;margin:10px 16px 0;padding:12px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:10px;font-size:12px;line-height:1.7;color:#fca5a5;position:relative;z-index:5">
@@ -1801,12 +1846,17 @@ body::before { display:none !important; }
   <button type="button" aria-label="Hide this notice" onclick="this.parentElement.style.display='none'" style="position:absolute;top:8px;right:12px;cursor:pointer;color:#8391a7;font-weight:800;background:none;border:0;font-size:inherit">✕</button>
 </div>
 
+<div id="pwaBar" class="pwa-bar" role="region" aria-label="Install Line Reaper" hidden>
+  <span>Install Line Reaper on this device: it opens full screen from its own icon, can get push alerts, and keeps the last screens you read for when the network drops.</span>
+  <span class="pwa-bar-btns"><button type="button" class="primary" onclick="pwaInstall()">INSTALL</button><button type="button" onclick="pwaBarHide(true)">NOT NOW</button></span>
+</div>
+
 <main id="main" tabindex="-1">
 <!-- ODDS SCREEN PAGE -->
 <div class="page" id="page-odds">
   <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair. <a href="/learn/no-vig-fair-odds" target="_blank" rel="noopener" style="color:var(--green)">How the fair works</a>.
+    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair. The timer by each venue's name is how long ago it last answered; it and that venue's prices turn grey once the read is stale. <a href="/learn/no-vig-fair-odds" target="_blank" rel="noopener" style="color:var(--green)">How the fair works</a>.
     <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. The strip on top shows the venues legal in your state (CUSTOMIZE &gt; My state). A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
   </div>
   <div class="sport-row" id="oddsModes"></div>
@@ -2044,7 +2094,8 @@ body::before { display:none !important; }
 <div class="page" id="page-betlog">
   <div class="mb-head">
     <div><div class="tl-title">MY BETS</div>
-      <div class="tl-blurb">Every bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.</div></div>
+      <div class="tl-blurb">Every bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own.</div>
+      <div class="mb-sync" id="mybSync">Saved in this browser only. Export a CSV now and then to back it up.</div></div>
     <div class="mb-actions">
       <button class="mb-btn primary" onclick="mybForm()">ADD BET</button>
       <button class="mb-btn" onclick="mybExport()">EXPORT CSV</button>
@@ -2101,7 +2152,7 @@ body::before { display:none !important; }
   <div id="pkTray" style="display:none"></div>
   <div data-state-bar></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
+    <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Esports players: <a href="/esports/research" style="color:var(--green)">hit rates and line history</a>.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
   </div>
   <div id="pmStrip" style="margin-top:12px"></div>
@@ -2220,7 +2271,7 @@ body::before { display:none !important; }
 
   <div id="esPropsPane" style="display:none">
   <div class="clv-info" style="border-left: 3px solid #8b5cf6">
-    <strong style="color:#e8e8e8">PLAYER PROPS</strong> Every esports prop line, priced off where the books put it together (Underdog and Sleeper payouts, every book's line), nudged by our player model only as far as its record has earned. A play is a book that's out of line with the others.
+    <strong style="color:#e8e8e8">PLAYER PROPS</strong> Every esports prop line, priced off where the books put it together (Underdog and Sleeper payouts, every book's line), nudged by our player model only as far as its record has earned. A play is a book that's out of line with the others. <a href="/esports/research" style="color:var(--green)">Player research</a>: each player's hit rate against today's app line, splits and past lines.
   </div>
 
   <div class="row" id="esportsSportRow" style="margin: 12px 0; flex-wrap: wrap; gap:6px">
@@ -2300,8 +2351,11 @@ body::before { display:none !important; }
 
 <div class="lay-modal" id="layModal" onclick="if(event.target===this)layClose()">
   <div class="lay-box" role="dialog" aria-label="Customize layout">
-    <h3>Customize your layout</h3>
-    <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>
+    <h3>Account</h3>
+    <p id="syncNote">Your bets, slips and settings are saved in this browser only.</p>
+    <div id="syncRows"></div>
+    <h3 style="margin-top:18px">Customize your layout</h3>
+    <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device, and on your account when you are signed in.</p>
     <div class="lay-row"><span class="lay-name">My state<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Where you bet from. Every screen greys or hides the venues not legal there and marks the ones that are. A view filter only: prices and alerts are the same for everyone</span></span><select class="lay-sel lr-state" id="layState" aria-label="My state" onchange="lrSetState(this.value)"><option value="TX">Texas</option></select></div>
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
@@ -2313,9 +2367,18 @@ body::before { display:none !important; }
     <div class="lay-row"><span class="lay-name">Single-key shortcuts<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Turn off if you use speech input or a screen reader that sends letters. Ctrl+K and Esc still work</span></span><button class="lay-b" id="layKeys" onclick="layToggleKeys()"></button></div>
     <div class="lay-row"><span class="lay-name">Public API and widgets<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Make an API key, read the docs, and copy a widget for your own site. The same data for everyone</span></span><a class="lay-b" id="layDev" href="/developers" target="_blank" rel="noopener" style="text-decoration:none">OPEN</a></div>
     <div class="lay-row"><span class="lay-name">Plans and pricing<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)" id="layPlanNote">What Free and Pro get, and the price. Paying buys the tool, not an edge</span></span><a class="lay-b" id="layPricing" href="/pricing" target="_blank" rel="noopener" style="text-decoration:none">OPEN</a></div>
+    <div class="lay-row" id="layDiscordRow" hidden><span class="lay-name">Line Reaper Discord<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">The official server: the record, alerts and line moves, the same posts for every member. No paid picks room</span></span><a class="lay-b" id="layDiscord" data-lr-discord href="/discord" target="_blank" rel="noopener" style="text-decoration:none">JOIN</a></div>
     <h3 style="margin-top:18px">Phone app</h3>
     <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>
     <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>
+    <p id="pwaInstalled" style="display:none;margin:6px 0 0;color:var(--green)">Installed: you are using Line Reaper from your home screen.</p>
+    <details class="pwa-steps" id="pwaSteps">
+      <summary>Add to home screen: the steps</summary>
+      <p><b>iPhone or iPad (Safari).</b> 1. Open this page in Safari. 2. Tap Share, the square with an arrow, at the bottom of the screen. 3. Scroll down and tap Add to Home Screen. 4. Tap Add. 5. Open Line Reaper from the new icon; push alerts work only from there.</p>
+      <p><b>Android (Chrome).</b> 1. Open this page in Chrome. 2. Tap the three dots at the top right. 3. Tap Install app (on some phones it says Add to Home screen). 4. Tap Install.</p>
+      <p><b>Computer (Chrome or Edge).</b> Click the install icon at the right end of the address bar, or INSTALL above when it shows.</p>
+      <p><b>Offline.</b> The installed app keeps the last answer of each screen you open. When the network drops, those screens show again with every row marked with how old it is. They are never shown as live prices.</p>
+    </details>
     <div class="lay-row"><span class="lay-name">Push alerts</span><button class="lay-b" id="pushBtn" onclick="pushToggle()">TURN ON</button></div>
     <div id="pushMore" style="display:none">
       <p style="margin:10px 0 2px">Alerts to get on this device. Everyone gets the same text for each alert.</p>
@@ -2349,12 +2412,12 @@ body::before { display:none !important; }
       <button class="acct-btn" onclick="acctClose()" aria-label="Close">✕</button>
     </div>
     <div id="acctPitch" style="font-size:12px;color:#94a3b8;margin-top:8px"></div>
-    <form onsubmit="acctSubmit(event)">
+    <form onsubmit="acctSubmit(event)" novalidate>
       <input id="acctEmail" type="email" aria-label="Email" placeholder="Email" autocomplete="email" required>
       <input id="acctPass" type="password" aria-label="Password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
       <div id="acctConsent" style="display:none">
-        <label class="acct-check"><input type="checkbox" id="acctAge"><span>I am 21 or older.</span></label>
-        <label class="acct-check"><input type="checkbox" id="acctTerms"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>, <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="/refunds" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
+        <label class="acct-check"><input type="checkbox" id="acctAge" onchange="acctTick(this)"><span>I am 21 or older.</span></label>
+        <label class="acct-check"><input type="checkbox" id="acctTerms" onchange="acctTick(this)"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>, <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="/refunds" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
       </div>
       <div id="acctErr" style="color:var(--red);font-size:12px;margin-top:8px;min-height:14px"></div>
       <button class="acct-btn pro" type="submit" id="acctGo" style="width:100%;padding:10px;margin-top:6px;font-size:12px">LOG IN</button>

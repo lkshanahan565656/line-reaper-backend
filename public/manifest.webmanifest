@@ -1,18 +1,102 @@
 {
   "name": "Line Reaper",
   "short_name": "Line Reaper",
-  "description": "Made for sharps, by sharps. Sharp Tail signals, Best Plays and exchange edges.",
+  "description": "Odds screen, exchange shopper, esports research and a public graded record. Information only: it takes no bets.",
   "id": "/app",
   "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#080b10",
   "theme_color": "#080b10",
-  "orientation": "portrait",
-  "share_target": { "action": "/app", "method": "GET", "params": { "title": "share_title", "text": "share_text", "url": "share_url" } },
+  "orientation": "any",
+  "share_target": {
+    "action": "/app",
+    "method": "GET",
+    "params": {
+      "title": "share_title",
+      "text": "share_text",
+      "url": "share_url"
+    }
+  },
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "categories": [
+    "sports",
+    "utilities"
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "shortcuts": [
+    {
+      "name": "Odds screen",
+      "short_name": "Odds",
+      "url": "/app?start=odds",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Results: the graded record",
+      "short_name": "Results",
+      "url": "/app?start=results",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "My bets",
+      "short_name": "My bets",
+      "url": "/app?start=betlog",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Alert history",
+      "short_name": "Alerts",
+      "url": "/app?start=alerts",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }
