@@ -1,0 +1,31 @@
+name: diag-recfeed
+on: { push: { branches: [diag-recfeed] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - run: |
+          mkdir o; cd o
+          c() { curl -s -m 30 "$SITE$1" -o "$2" -w "$1 %{http_code}\n" -X "${3:-GET}" >> codes.txt || true; }
+          c /api/health health.json
+          c /api/records index.json
+          H=$(python3 -c "import json;r=json.load(open('index.json')).get('rows',[]);print(r[0]['handle'] if r else 'nobody_here')" 2>/dev/null || echo nobody_here)
+          echo "handle $H" >> codes.txt
+          c "/embed/record?handle=$H" widget.html
+          c "/embed/record?handle=nobody_here" widget-missing.html
+          c "/embed.js" embed.js
+          c /developers dev.html
+          c /api/status status.json
+          c "/api/records/$H/feed" feed-nokey.json
+          c /api/v1 v1.json
+          c "/api/v1/records/$H" v1rec-nokey.json
+          grep -c 'widget-bettor\|feed-records' dev.html >> codes.txt || true
+          grep -o "'handle'" embed.js | head -1 >> codes.txt || true
+          python3 -c "import json;s=json.load(open('status.json'));print('outFeed.records',json.dumps(s.get('outFeed',{}).get('records')))" >> codes.txt || true
+          date -u >> codes.txt
+          git init -q; git checkout -q -b diag-recfeed-out; git add -A
+          git -c user.email=d@lr -c user.name=diag commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-recfeed-out
