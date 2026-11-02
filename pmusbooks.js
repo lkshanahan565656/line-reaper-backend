@@ -40,7 +40,7 @@ const SOCCER_RESULT = /^soccer_team_full_time_winner$/;
 const WINNER = /^([a-z]+_team_full_game_winner|tennis_match_winner|ufc_fight_winner|[a-z]+_fight_winner)$/;
 const LINE = /^([a-z]+)_team_full_(?:game|time)_(spread|total)$/;
 
-const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const { numNoBool: num } = require('./mathutil');
 const amount = v => num(v && typeof v === 'object' ? v.value : v);
 const unit = p => (p > 0 && p < 1 ? p : null);
 const norm = s => String(s || '').trim().toLowerCase();

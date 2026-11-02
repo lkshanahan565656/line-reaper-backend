@@ -6,7 +6,9 @@
 // alerts without a real push service, use the TOOLS calculator, and move and
 // hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
 // view by link and open it cold on a fresh device, export and print a screen,
-// open a label's glossary definition, and search everything from any screen.
+// open a label's glossary definition, search everything from any screen, and
+// sign in on two browsers so bets sync between them and a differing layout
+// waits for USE ACCOUNT.
 // The crawl clicks everything; these check results.
 'use strict';
 /* global esmState, renderEsMatches, pk, renderPkTray, pkClear, mybFormClose, shpSorted, shpLoggable, shpOpen, emuState, oddsFmtSet, gsRender, osUi, renderOdds, pbState, lrState -- the app's own functions, called in page.evaluate */
@@ -636,6 +638,35 @@ const FLOWS = {
       const rows = csv.ok() ? (await csv.text()).split('\n').filter(Boolean) : [];
       expect(/^slip_id,/.test(rows[0] || '') && rows.filter(x => /Josh Allen|Stefon Diggs/.test(x)).length >= 2, 'the CSV should hold the pasted legs');
     } finally { await p2.close(); }
+    // WIDGET: the code to copy and a preview of this record's widget
+    await page.locator('#msPub button', { hasText: /^WIDGET$/ }).click();
+    await settle(page, w, opts, 150);
+    const snip = await text(page, '#msPubWidget .ms-pub-snip');
+    expect(snip.includes(`data-handle="${handle}"`) && /embed\.js/.test(snip), `the widget code is wrong: "${snip.slice(0, 160)}"`);
+    expect(await page.locator('#msPubWidget iframe').count() === 1, 'no widget preview');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the record panel scrolls sideways with the widget open');
+    // FEED: a wrong webhook is refused on the page, with words
+    await page.locator('#msPub button', { hasText: /^FEED$/ }).click();
+    await settle(page, w, opts, 300);
+    await page.fill('#msFeedHook', 'https://example.com/not-a-hook');
+    await page.locator('#msPub button', { hasText: 'CONNECT DISCORD' }).click();
+    await settle(page, w, opts, 100);
+    expect(/not a Discord webhook URL/.test(await text(page, '#msFeedHint')), `CONNECT DISCORD with a wrong URL said "${await text(page, '#msFeedHint')}"`);
+    expect(/Picks logged late never post/.test(await text(page, '#msPubFeed')), 'the feed panel does not say late picks never post');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the record panel scrolls sideways with the feed open');
+    await page.locator('#msPub button', { hasText: /^FEED$/ }).click();
+    // the widget on its own
+    const p4 = await page.context().newPage();
+    try {
+      await p4.setViewportSize(page.viewportSize());
+      const r = await p4.goto(`${opts.base}/embed/record?handle=${handle}`, { waitUntil: 'domcontentloaded' });
+      expect(r.status() === 200, `the record widget answered ${r.status()}`);
+      const t = await p4.locator('body').innerText();
+      expect(t.toLowerCase().includes(`@${handle}`) && /FULL RECORD/.test(t), `the record widget lacks the handle or its link: "${t.slice(0, 120)}"`);
+      expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(t), 'the record widget shows broken text or a claim');
+      expect(!/PROVEN/.test(t) || /Proven means/.test(t), 'the record widget says PROVEN without the rule');
+      expect(await p4.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the record widget scrolls sideways');
+    } finally { await p4.close(); }
     // the list of records: take this one off it and back on, then read /r
     const off = page.locator('#msPub button', { hasText: 'TAKE OFF THE LIST' });
     await off.waitFor({ timeout: 4000 });
@@ -1491,6 +1522,101 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     if (got.rendered) expect(/GAP VS FAIR/i.test(got.t) && /Biggest gaps vs fair, not an edge/i.test(got.t) && /Gaps? vs fair/i.test(got.t), 'a gap card must read GAP VS FAIR under a "not an edge" header');
   },
 
+  // runs after the flows above, so this browser already has bets, slips and a saved layout
+  async 'sign in, sync bets to a second device, settle a conflict'(page, w, opts) {
+    if (opts.live) return;
+    const st = await (await fetch(`${opts.base}/api/sync/status`)).json();
+    if (!st.enabled) {
+      // sync off (no AUTH_SECRET, or Railway without Postgres): local only, as before, and it says so
+      await openTab(page, 'betlog', w, opts);
+      expect(/Saved in this browser only/.test(await text(page, '#mybSync')), `MY BETS status with sync off: "${await text(page, '#mybSync')}"`);
+      expect(!(await page.locator('#mybSync button').count()), 'MY BETS offers SIGN IN while sync is off');
+      await page.locator('.tab-row .tab-end').click();
+      await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+      expect(/not switched on/.test(await text(page, '#syncNote')) && !(await page.locator('#syncRows button').count()), 'CUSTOMIZE should say sync is off, with no buttons');
+      await page.keyboard.press('Escape');
+      return;
+    }
+    const email = `e2e-${opts.viewportName}-${process.pid}@example.com`, pass = 'e2e-password-1';
+    const layoutA = JSON.stringify({ order: [], more: {}, hidden: {}, help: true, folds: {}, e2e: 'device A' });
+    await page.evaluate(v => localStorage.setItem('lr_layout', v), layoutA);
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect(/Sign in to keep your bets/.test(await text(page, '#syncNote')), `CUSTOMIZE should offer sign-in: "${await text(page, '#syncNote')}"`);
+    await page.locator('#syncRows button', { hasText: 'CREATE ACCOUNT' }).click();
+    await page.locator('#acctModal.open').waitFor({ timeout: 4000 });
+    await page.fill('#acctEmail', email);
+    await page.fill('#acctPass', pass);
+    await page.check('#acctAge');
+    await page.check('#acctTerms');
+    await page.locator('#acctGo').click();
+    for (let i = 0; i < 40 && !/Signed in as/.test(await text(page, '#syncRows')); i++) await settle(page, w, opts, 100);
+    expect(/Signed in as/.test(await text(page, '#syncRows')), `after sign-up CUSTOMIZE reads "${await text(page, '#syncRows')}"`);
+    for (let i = 0; i < 40 && /Syncing|Not synced yet/.test(await text(page, '#syncRows')); i++) await settle(page, w, opts, 100);
+    expect(/Last synced/.test(await text(page, '#syncRows')), `the first sync did not finish: "${await text(page, '#syncRows')}"`);
+    // the account now holds this browser's bets
+    const token = await page.evaluate(() => localStorage.getItem('lr_token'));
+    const doc = await (await fetch(`${opts.base}/api/sync`, { headers: { authorization: `Bearer ${token}` } })).json();
+    expect(/E2E Chiefs -3/.test(doc.keys?.lr_bets?.v || ''), 'the account did not get the bets');
+    expect(doc.keys?.lr_layout?.v === layoutA, 'the account did not get the layout');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 80);
+    await openTab(page, 'betlog', w, opts);
+    expect(new RegExp(`Synced to ${email.replace(/[.@]/g, '\\$&')}`).test(await text(page, '#mybSync')), `MY BETS status reads "${await text(page, '#mybSync')}"`);
+
+    // device B: a fresh browser with its own bet and its own layout
+    const ctx = await page.context().browser().newContext({ viewport: page.viewportSize(), serviceWorkers: 'block', timezoneId: 'America/Chicago', locale: 'en-US' });
+    await ctx.route('**/*', route => (route.request().url().startsWith(opts.base) ? route.continue() : route.abort('blockedbyclient')));
+    try {
+      const b = await newAppPage(ctx, opts);
+      const repB = { requests: 0, issues: [] };
+      const wb = watch(b, repB, opts);
+      await enterApp(b, wb, opts, repB);
+      const layoutB = JSON.stringify({ order: [], more: {}, hidden: {}, help: true, folds: {}, e2e: 'device B' });
+      const own = { id: 'e2e-device-b', placedAt: new Date(opts.now).toISOString(), event: 'Jets @ Bills', pick: 'E2E Device B Bills ML', odds: 1.5, stake: 10, result: 'open', book: 'Kalshi', sport: 'NFL', tool: 'manual' };
+      await b.evaluate(([l, bet]) => { localStorage.setItem('lr_layout', l); localStorage.setItem('lr_bets', JSON.stringify([bet])); }, [layoutB, own]);
+      await openTab(b, 'betlog', wb, opts);
+      expect(/Saved in this browser only/.test(await text(b, '#mybSync')), `device B MY BETS status reads "${await text(b, '#mybSync')}"`);
+      await b.locator('#mybSync button', { hasText: 'SIGN IN' }).click();
+      await b.locator('#acctModal.open').waitFor({ timeout: 4000 });
+      await b.fill('#acctEmail', email);
+      await b.fill('#acctPass', pass);
+      await b.locator('#acctGo').click();
+      for (let i = 0; i < 50 && !/Synced to/.test(await text(b, '#mybSync')); i++) await settle(b, wb, opts, 100);
+      expect(/Synced to/.test(await text(b, '#mybSync')), `device B after sign-in: "${await text(b, '#mybSync')}"`);
+      // both devices' bets, on device B's screen and in its storage
+      const bets = await ls(b, 'lr_bets');
+      expect(bets.some(x => x.pick === 'E2E Chiefs -3') && bets.some(x => x.id === 'e2e-device-b'), `device B holds ${bets.map(x => x.pick).join(', ')}`);
+      expect(/E2E Chiefs -3/.test(await text(b, '#mybList')), 'device B does not list the bet from device A');
+      // the layouts differ: device B keeps its own until it picks
+      expect(/differ/.test(await text(b, '#mybSync')), `device B should say a setting differs: "${await text(b, '#mybSync')}"`);
+      await b.locator('.tab-row .tab-end').click();
+      await b.locator('#layModal.open').waitFor({ timeout: 4000 });
+      expect(/Tab layout: this device and your account differ/.test(await text(b, '#syncRows')), `no conflict row: "${await text(b, '#syncRows')}"`);
+      expect((await b.evaluate(() => localStorage.getItem('lr_layout'))) === layoutB, 'device B lost its own layout before choosing');
+      await b.locator('#syncRows .sync-conflict button', { hasText: 'USE ACCOUNT' }).click();
+      for (let i = 0; i < 40 && /differ/.test(await text(b, '#syncRows')); i++) await settle(b, wb, opts, 100);
+      expect(!/differ/.test(await text(b, '#syncRows')), 'the conflict row stayed after USE ACCOUNT');
+      expect((await b.evaluate(() => localStorage.getItem('lr_layout'))) === layoutA, 'USE ACCOUNT did not bring the account layout');
+      const bad = repB.issues.filter(i => /page-error|console|http-5xx|request-failed/.test(i.kind));
+      expect(!bad.length, `device B: ${bad.map(i => `${i.kind} ${i.message || i.url || i.text || ''}`).join('; ').slice(0, 300)}`);
+      await b.close();
+    } finally { await ctx.close(); }
+
+    // device A picks up device B's bet on its next sync
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#syncRows button', { hasText: 'SYNC NOW' }).click();
+    for (let i = 0; i < 40 && !(await ls(page, 'lr_bets')).some(x => x.id === 'e2e-device-b'); i++) await settle(page, w, opts, 100);
+    expect((await ls(page, 'lr_bets')).some(x => x.id === 'e2e-device-b'), 'device A did not get device B\'s bet');
+    // sign out: this browser keeps its copy
+    await page.locator('#syncRows button', { hasText: 'SIGN OUT' }).click();
+    await settle(page, w, opts, 120);
+    expect(/Not signed in/.test(await text(page, '#syncRows')), 'SIGN OUT did not sign out');
+    expect((await ls(page, 'lr_bets')).some(x => x.pick === 'E2E Chiefs -3'), 'signing out removed the local bets');
+    await page.keyboard.press('Escape');
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');
@@ -1571,7 +1697,8 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
       const body = await page.evaluate(() => document.body.innerText);
       expect(!claimy.test(body), 'the developers page shows a claim or broken text');
       expect(/GET \/api\/v1\/best-prices/.test(body) && /GET \/api\/v1\/record/.test(body), 'an endpoint is missing from the docs');
-      expect(await page.locator('iframe[data-lr-id]').count() === 3, 'the three widget previews are missing');
+      expect(await page.locator('iframe[data-lr-id]').count() >= 3, 'the widget previews are missing');
+      expect(await page.locator('#widget-bettor pre').count() === 2 && await page.locator('#feed-records').count() === 1, 'the bettor record widget or the records-on-your-feed form is missing');
       if (!opts.live) {
         // TRY IT before a key says to make one, rather than doing nothing
         const tryBtn = page.locator('[data-try]').first();
@@ -1606,6 +1733,11 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
         await page.locator('#fd button[type=submit]').click();
         await page.waitForFunction(() => !/Checking the webhook/.test(document.getElementById('fdOut').textContent), null, { timeout: 15000 });
         expect(/Discord|Connected/.test(await text(page, '#fdOut')), `CONNECT said "${await text(page, '#fdOut')}"`);
+        // bettor records on the feed need a connected webhook first, and say so
+        await page.locator('#frHandles').fill('nobody_here');
+        await page.locator('#fr button[type=submit]').click();
+        await page.waitForFunction(() => !/Saving/.test(document.getElementById('frOut').textContent), null, { timeout: 6000 });
+        expect(/Discord webhook first|No published record|Saved/.test(await text(page, '#frOut')), `SAVE records said "${await text(page, '#frOut')}"`);
         await page.locator('#fdOff').click();
         await page.waitForFunction(() => /Disconnected/.test(document.getElementById('fdOut').textContent), null, { timeout: 6000 });
         expect(await fits(), 'the developers page scrolls sideways after the feed steps');

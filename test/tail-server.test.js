@@ -1475,7 +1475,9 @@ test('Kalshi maker: research label, empty record, the backtest seed, no orders a
   assert.ok(body.backtest && body.backtest.byEdge['0.02'], 'the backtest seed ships');
   assert.match(body.note, /Nothing here places an order/);
   const st = await get('/api/status');
-  assert.equal(st.body.kalshiMaker.on, true);
+  assert.equal(st.body.kalshiMaker.on, false, 'closed for good (coldstore.js): no new bids');
+  assert.equal(st.body.kalshiMaker.closed.final, true);
+  assert.equal(body.closed.final, true);
 });
 
 test('Exchange outrights: research label, empty record per sport, no orders anywhere', async () => {

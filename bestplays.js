@@ -26,8 +26,7 @@ const { canonName } = require('./ev');
 const { idOf: sportPropId } = require('./sporttrack');
 const sportPropsLib = require('./sportprops');
 
-const r2 = x => Math.round(x * 100) / 100;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2, r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t); return Number.isFinite(x) ? x : null; };
 const quarter = x => Math.floor(x * 4) / 4;
 
