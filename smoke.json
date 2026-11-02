@@ -1,0 +1,64 @@
+{
+ "ok": true,
+ "at": "2026-11-02T13:00:25.570Z",
+ "base": "https://line-reaper-backend-production.up.railway.app",
+ "want": "3.226.16",
+ "version": "3.226.16",
+ "run": "41449233879",
+ "nonce": "mvz9nqqn-9w8u00",
+ "failures": [],
+ "warnings": 6,
+ "dead": [
+  {
+   "tab": "betlog",
+   "label": "Log bet",
+   "family": "button[submit].primary|mybFormSave()",
+   "onclick": "mybFormSave()",
+   "overlay": "mybModal",
+   "viewport": "phone"
+  },
+  {
+   "tab": "lines",
+   "label": "COPY LINK",
+   "family": "button[submit].primary.xp-btn|scCopy()",
+   "onclick": "scCopy()",
+   "overlay": "scSheet",
+   "viewport": "phone"
+  },
+  {
+   "tab": "ev",
+   "label": "EXPORT",
+   "family": "button[submit].xp-btn|xpCsv()",
+   "onclick": "xpCsv()",
+   "overlay": null,
+   "viewport": "phone"
+  },
+  {
+   "tab": "betlog",
+   "label": "Log bet",
+   "family": "button[submit].primary|mybFormSave()",
+   "onclick": "mybFormSave()",
+   "overlay": "mybModal",
+   "viewport": "desktop"
+  },
+  {
+   "tab": "lines",
+   "label": "COPY LINK",
+   "family": "button[submit].primary.xp-btn|scCopy()",
+   "onclick": "scCopy()",
+   "overlay": "scSheet",
+   "viewport": "desktop"
+  },
+  {
+   "tab": "ev",
+   "label": "EXPORT",
+   "family": "button[submit].xp-btn|xpCsv()",
+   "onclick": "xpCsv()",
+   "overlay": null,
+   "viewport": "desktop"
+  }
+ ],
+ "clicks": 579,
+ "tabs": 17,
+ "ms": 136000
+}
