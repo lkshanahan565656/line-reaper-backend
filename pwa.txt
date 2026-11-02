@@ -1,0 +1,32 @@
+{
+ "controller": true,
+ "swScript": "https://line-reaper-backend-production.up.railway.app/sw.js",
+ "caches": {
+  "lr-shell-3.226.10": [
+   "/fees.js",
+   "/app",
+   "/calc.js",
+   "/glossary.js",
+   "/slips.js",
+   "/bets.js",
+   "/manifest.webmanifest",
+   "/icons/icon-192.png",
+   "/icons/apple-touch-icon.png"
+  ]
+ },
+ "ui": {
+  "stepsOpen": true,
+  "layOpen": true,
+  "pushBtn": "BLOCKED",
+  "discordRowHidden": true,
+  "pushBtns": 1,
+  "offBannerHidden": true,
+  "pwaBar": true
+ },
+ "manifestLink": "https://line-reaper-backend-production.up.railway.app/manifest.webmanifest",
+ "pageErrors": [],
+ "shortcut_odds": "page-odds",
+ "shortcut_results": "page-odds",
+ "shortcut_betlog": "page-odds",
+ "shortcut_alerts": "page-odds"
+}

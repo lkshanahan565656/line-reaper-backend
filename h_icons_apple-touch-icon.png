@@ -1,0 +1,21 @@
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+cache-control: public, max-age=86400
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://line-reaper-backend-production.up.railway.app; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+content-type: image/png
+cross-origin-opener-policy: same-origin
+date: Mon, 02 Nov 2026 03:40:07 GMT
+etag: W/"76a-1a19a17fdd0"
+last-modified: Mon, 02 Nov 2026 02:30:26 GMT
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=()
+referrer-policy: strict-origin-when-cross-origin
+server: railway-hikari
+strict-transport-security: max-age=31536000; includeSubDomains
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+x-railway-request-id: 3Em4EkfCQDCySLiHYqVb7A
+content-length: 1898
+x-hikari-trace: lax1.sx7j
+x-railway-edge: lax1
+

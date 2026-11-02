@@ -1,0 +1,7 @@
+'use strict';
+// Line Reaper service worker: push alerts, and the app when the network fails.
+//
+// Network first, always: a page that can reach the server gets the live answer
+// and nothing here changes it. Only when a request fails (no network, or the
+// server answers 5xx, as it does for a few minutes while Railway swaps a
+// deploy) does the worker answer from the last copy it saved, marked w

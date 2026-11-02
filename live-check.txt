@@ -1,0 +1,8 @@
+
+> line-reaper-backend@3.226.10 live-check
+> node e2e/live-check.js 3.226.10
+
+Command failed: git push -q origin b357feea8702fa6091bbc375fd5d66dd24dfabdc:refs/heads/diag-e2e-smoke
+fatal: could not read Username for 'https://github.com': No such device or address
+
+exit 2
