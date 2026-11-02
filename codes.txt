@@ -1,0 +1,10 @@
+status 200
+index 200 1.030090s
+list 200 0.927572s
+LOL /esports/research/LOL/369 200 20.271094s
+LOL again 200 0.480040s
+DOTA /esports/research/DOTA/DarkLord%5E 200 0.289280s
+DOTA again 200 0.563178s
+CS /esports/research/CS/EliGE 200 0.336103s
+CS again 200 0.262785s
+Mon Nov  2 03:30:42 UTC 2026
