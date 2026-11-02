@@ -37,6 +37,10 @@
   ],
   "misses": [
     {
+      "key": "^/api/kalshi-link$",
+      "why": "new in v3.222.0 (CONNECT KALSHI on a published record, kalshilink.js): whether this server can connect Kalshi is the offline server's own setting (off without AUTH_SECRET), so it answers; kalshilink tests check the key check and the import, and the PUBLISH RECORD flow checks the section"
+    },
+    {
       "key": "^/api/records/",
       "why": "new in v3.208.0 (MY SLIPS > PUBLISH RECORD, pubrecord.js): a bettor's own record lives on the server it was published to, so the offline server answers it; pubrecord tests check the rule and the PUBLISH RECORD flow checks the page"
     },
