@@ -183,3 +183,28 @@ test('scoreWallet: CLV in the stats, at most B without 15 measured, A needs +2%,
   assert.deepEqual([thin.categories.sports.clvScope, thin.categories.sports.clvN], ['wallet', 25]);
 });
 function round4(x) { return Math.round(x * 1e4) / 1e4; }
+
+test('the CLV market cache keeps only what a closing window reads, and every window comes out the same', () => {
+  const full = [
+    T.parseGammaMarket({ conditionId: 'c', question: 'Lakers vs. Celtics', gameStartTime: '2026-10-06T23:30:00Z', endDate: '2026-10-07T04:00:00Z', slug: 'nba-lal-bos', tags: [{ id: 1, label: 'NBA' }], clobTokenIds: '["1","2"]', outcomes: '["Lakers","Celtics"]' }),
+    T.parseGammaMarket({ question: 'Lakers vs. Celtics' }),
+    T.parseGammaMarket({ question: 'Lakers -4.5', sportsMarketType: 'spreads' }),
+    T.parseGammaMarket({ question: 'Will the Lakers win the 2026 NBA Finals?', closedTime: '2026-06-20 02:10:00+00' }),
+    T.parseGammaMarket({ closedTime: iso(NOW - 5 * DAY) }),
+    T.parseGammaMarket({ endDate: iso(NOW - 2 * DAY) }),
+    T.parseGammaMarket({ gameStartTime: iso(NOW + H) }),
+  ];
+  const positions = [
+    { asset: 'tok', price: 0.4, category: 'sports', title: 'Lakers vs. Celtics', endAt: NOW - DAY },
+    { asset: 'tok', price: 0.4, category: 'sports', title: 'NBA Champion', endAt: NOW - DAY, enteredAt: Date.parse('2026-06-19T00:00:00Z') },
+    { asset: 'p', price: 0.5, category: 'politics', endAt: NOW + 30 * DAY, enteredAt: NOW - DAY },
+    { asset: 'p', price: 0.5, category: 'politics', endAt: null, enteredAt: NOW - 3 * DAY },
+  ];
+  for (const m of full) {
+    const slim = T.clvMarketOf(m);
+    assert.deepEqual(Object.keys(slim).sort(), ['closedAt', 'endDate', 'gameStartTime', 'question', 'sportsMarketType']);
+    for (const p of positions) assert.deepEqual(T.clvWindow(p, slim, { now: NOW }), T.clvWindow(p, m, { now: NOW }));
+  }
+  assert.equal(T.clvMarketOf(null), null, 'no market is still no market');
+  assert.ok(JSON.stringify(T.clvMarketOf(full[0])).length < JSON.stringify(full[0]).length / 2);
+});
