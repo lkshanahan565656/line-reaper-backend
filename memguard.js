@@ -13,7 +13,9 @@
 //   hard   heap at the hard line twice in a row (a minute): flush and exit 1
 //          now, before V8 crashes mid-write. Not in the first 10 minutes,
 //          while the boot restore peaks.
-// Back under 90% of the soft line cancels a pending soft restart.
+// Heap and RSS are timed apart: each clears once back under 90% of its own
+// line, and with both clear a pending soft restart is cancelled. Why a
+// process left is kept for the next boot (status().previousExit).
 //
 // On by default on Railway only (a laptop or the desktop app has nothing to
 // restart it). Settings (all optional): MEM_GUARD=off|on; MEM_SOFT_MB,
@@ -44,15 +46,19 @@ function createMemGuard({
   now = () => Date.now(),
   sampleMs = 30e3, sustainMs = 10 * 60e3, backupWaitMs = 25 * 60e3, bootGraceMs = 10 * 60e3, flushMs = 8000,
   log = console,
+  record = () => {},               // keep why this process left (a file the next boot reads)
+  previousExit = null,             // what the last process kept with record(), shown in status()
 } = {}) {
   const t0 = now();
   const state = { on: limits.on, ...limits, heapMb: null, rssMb: null, peakHeapMb: 0, peakRssMb: 0,
-    overSince: null, pendingSince: null, hardHits: 0, exiting: null, checks: 0 };
+    overSince: null, heapOverSince: null, rssOverSince: null, pendingSince: null, hardHits: 0, exiting: null, checks: 0 };
   let timer = null;
 
   async function leave(reason) {
     if (state.exiting) return;
     state.exiting = { reason, at: new Date(now()).toISOString() };
+    try { record({ ...state.exiting, heapMb: state.heapMb, rssMb: state.rssMb, peakHeapMb: state.peakHeapMb, peakRssMb: state.peakRssMb, upMin: Math.round((now() - t0) / 60e3) }); }
+    catch (e) { log.warn?.(`Memory guard: could not keep the exit reason: ${e.message}`); }
     log.warn?.(`Memory guard: restarting (${reason}); heap ${state.heapMb} MB, RSS ${state.rssMb} MB`);
     let done = false;
     await Promise.race([
@@ -77,10 +83,20 @@ function createMemGuard({
       if (++state.hardHits >= 2) { leave(`heap at the hard line ${state.hardMb} MB`); return 'hard'; }
     } else state.hardHits = 0;
 
-    const over = state.heapMb >= state.softMb || state.rssMb >= state.rssSoftMb;
-    const wellUnder = state.heapMb < state.softMb * 0.9 && state.rssMb < state.rssSoftMb * 0.9;
-    if (over) state.overSince ??= t;
-    else if (wellUnder) { state.overSince = null; state.pendingSince = null; }
+    // Heap and RSS each keep their own clock: one starts when it reaches its
+    // line and stops once it is back under 90% of that line. A heap spike
+    // then clears when the heap comes down, even with RSS sitting in its own
+    // top 10% (live 11-02: RSS held at 2.03 GB of a 2.24 GB line, so one
+    // heap spike never cleared and every boot restarted ~16 minutes in).
+    const track = (key, mb, line) => {
+      if (mb >= line) state[key] ??= t;
+      else if (mb < line * 0.9) state[key] = null;
+    };
+    track('heapOverSince', state.heapMb, state.softMb);
+    track('rssOverSince', state.rssMb, state.rssSoftMb);
+    const since = [state.heapOverSince, state.rssOverSince].filter(x => x != null);
+    state.overSince = since.length ? Math.min(...since) : null;
+    if (state.overSince == null) state.pendingSince = null;
 
     if (!state.pendingSince && state.overSince != null && t - state.overSince >= sustainMs) {
       state.pendingSince = t;
@@ -106,7 +122,8 @@ function createMemGuard({
     const iso = x => (x != null ? new Date(x).toISOString() : null);
     return { on: state.on, capMb: state.capMb, softMb: state.softMb, hardMb: state.hardMb, rssSoftMb: state.rssSoftMb,
       heapMb: state.heapMb, rssMb: state.rssMb, peakHeapMb: state.peakHeapMb, peakRssMb: state.peakRssMb,
-      overSince: iso(state.overSince), restartPendingSince: iso(state.pendingSince), exiting: state.exiting };
+      overSince: iso(state.overSince), heapOverSince: iso(state.heapOverSince), rssOverSince: iso(state.rssOverSince),
+      restartPendingSince: iso(state.pendingSince), exiting: state.exiting, previousExit };
   }
 
   return { start, stop, check, status };

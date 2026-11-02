@@ -109,3 +109,29 @@ test('off: never samples or exits', () => {
   for (let m = 0; m < 60; m++) assert.strictEqual(r.at(m), null);
   assert.deepStrictEqual(r.exits, []);
 });
+
+test('a heap spike clears once the heap comes down, even with RSS high but under its line (live 11-02)', () => {
+  const r = rig({ heap: 1100, rss: 2000 });   // RSS in the top 10% of its 2,096 MB line, never over it
+  r.at(0);
+  r.heap = 1400; r.at(1);                     // one spike over the 1,346 MB soft line
+  r.heap = 1150; r.at(2);                     // back under 90% of it
+  assert.strictEqual(r.guard.status().overSince, null);
+  for (let m = 3; m <= 30; m++) r.at(m);
+  assert.strictEqual(r.guard.status().restartPendingSince, null, 'no restart from a spike that passed');
+  assert.deepStrictEqual(r.exits, []);
+});
+
+test('leaving keeps why, for the next boot to show', async () => {
+  const kept = [];
+  const r = rig({ heap: 1530 });
+  r.guard = createMemGuard({ limits: { on: true, capMb: 1584, softMb: 1346, hardMb: 1520, rssSoftMb: 2096 },
+    usage: () => ({ heapUsed: r.heap * MB, rss: 900 * MB }), exit: c => r.exits.push(c), now: () => r.t,
+    record: x => kept.push(x), previousExit: { reason: 'earlier', at: 'x' }, log: { warn() {} } });
+  r.t = 11 * 60e3; r.guard.check(); r.t = 11.5 * 60e3; r.guard.check();
+  await settle(); await settle();
+  assert.strictEqual(kept.length, 1);
+  assert.match(kept[0].reason, /hard line/);
+  assert.strictEqual(kept[0].peakHeapMb, 1530);
+  assert.strictEqual(kept[0].upMin, 12);
+  assert.deepStrictEqual(r.guard.status().previousExit, { reason: 'earlier', at: 'x' });
+});
