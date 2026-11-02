@@ -1,0 +1,18 @@
+name: diag kalshi link
+on: { push: { branches: [diag-kalshi-link] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir out; cd out
+          for p in /api/kalshi-link /api/health /api/records/nobody_here_x/kalshi; do
+            echo "== $p" >> read.txt
+            curl -s -m 30 -w '\nHTTP %{http_code}\n' "$B$p" | head -c 2000 >> read.txt || true
+          done
+          curl -s -m 30 "$B/app.js" | grep -c "msKalshiHtml" >> read.txt || echo 0 >> read.txt
+          git init -q; git checkout -q -b diag-kalshi-link-out; git add read.txt
+          git -c user.name=diag -c user.email=diag@x commit -qm "diag $(date -u +%FT%TZ)"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-kalshi-link-out
