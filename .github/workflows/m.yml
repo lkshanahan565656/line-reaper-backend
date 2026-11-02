@@ -5,12 +5,12 @@ on:
 jobs:
   m:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
-        with: { ref: claude/project-thread-j5cmcv-heap, path: app }
+        with: { ref: main, path: app }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: cd app && npm ci --omit=dev --ignore-scripts --no-audit --no-fund >/dev/null
-      - run: NODE_PATH=app/node_modules node --expose-gc measure.js
+      - run: MINUTES=10 ./run.sh
