@@ -629,9 +629,16 @@ async function loadOdds() {
   if (osUi.league) qs.set('league', osUi.league);
   if (lrState) qs.set('state', lrState);
   try {
-    const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    osUi.data = await r.json();
+    const url = `${BACKEND_URL}/api/odds-screen?${qs}`;
+    // the page asked for this already (index.html head); used once, and only when it matches
+    const pre = window.LR_OS_PREFETCH; window.LR_OS_PREFETCH = null;
+    let d = pre && pre.url === url ? await pre.p : null;
+    if (!d) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      d = await r.json();
+    }
+    osUi.data = d;
     paTake(osUi.data.priceAge);
     osUi.refreshErr = null;
   } catch (e) {

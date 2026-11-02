@@ -12,6 +12,25 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<!-- ODDS SCREEN is the first screen for most visits: ask for its data now, while
+     the app script downloads, instead of after it runs. app.js takes this answer
+     once in loadOdds() when the request matches; anything else fetches as before. -->
+<script>
+(() => { try {
+  if (!/^https?:$/.test(location.protocol) || location.hash) return;
+  const ls = k => localStorage.getItem(k);
+  if ((ls('lr_tab') || 'odds') !== 'odds') return;
+  const mode = JSON.parse(ls('lr_shopper') || '{}').mode;
+  if (mode && mode !== 'lines') return;
+  const os = JSON.parse(ls('lr_os') || '{}'), st = ls('lr_state');
+  const qs = new URLSearchParams();
+  if (os.league) qs.set('league', os.league);
+  qs.set('state', st === null ? 'TX' : st);
+  if (!qs.get('state')) qs.delete('state');
+  const url = `${location.origin}/api/odds-screen?${qs}`;
+  window.LR_OS_PREFETCH = { url, p: fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null) };
+} catch { /* private window or bad saved JSON: the app fetches as usual */ } })();
+</script>
 <!-- fonts load beside the page instead of holding up its first paint (display=swap shows system text until they land) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
