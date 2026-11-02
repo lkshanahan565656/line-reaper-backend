@@ -21,7 +21,7 @@ jobs:
           node -e "const s=require('./o/api_status');console.log(JSON.stringify({version:s.version,community:s.community,owner:s.outFeed&&s.outFeed.owner}))" >> o/codes.txt 2>&1 || true
           rm -f o/api_status o/icons_* o/sw.js
           cd repo && npm ci --silent && npx playwright install --with-deps chromium >/dev/null 2>&1
-          SITE=$SITE node ../pwa.js > ../o/pwa.txt 2>&1 || true
+          cp ../pwa.js ./pwa-diag.js && SITE=$SITE node pwa-diag.js > ../o/pwa.txt 2>&1 || true
           V=$(node -p "require('./package.json').version")
           npm run live-check -- "$V" > ../o/live-check.txt 2>&1; echo "exit $?" >> ../o/live-check.txt
           cd ../o && git init -q && git checkout -q -b diag-pwa-out && git add -A
