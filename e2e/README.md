@@ -71,6 +71,13 @@ exits 0 on a pass. The last result is in `/api/ops` under `liveCheck`.
 
 ## Accessibility (`npm run a11y`)
 
+`offline.js` is the one window with the service worker on: it loads the app,
+lets the worker save ESPORTS, cuts the network and reloads. The app must still
+open, every saved row must carry its "read N min ago, may be stale" stamp, the
+banner must say the data is saved and not live, and TRY AGAIN must clear it all
+once the network is back. `E2E_OFFLINE=0` skips it; `E2E_OFFLINE_SHOT=<dir>`
+saves a screenshot of the offline screen.
+
 `a11y.js` boots the same offline server and runs axe-core (WCAG 2.1 A and AA
 rules) on every app tab, the welcome screen, the tour, CUSTOMIZE, SEARCH (empty
 and with results), the shortcut list, the bet form and the log-in box, and on

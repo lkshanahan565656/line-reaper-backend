@@ -1703,6 +1703,22 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .gl-pop .gl-h { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; color:var(--text); margin:0 0 4px; }
 .gl-pop .gl-x { background:none; border:0; color:var(--text2); cursor:pointer; font-size:12px; padding:0 2px; }
 .gl-pop .gl-more { display:inline-block; margin-top:6px; color:#34d399; font-size:11px; text-decoration:none; }
+/* offline: the banner, the install bar, and the age stamp on each row */
+.off-banner { margin:8px 16px; padding:8px 12px; max-height:40vh; overflow:auto; border:1px solid rgba(245,158,11,.55); background:rgba(245,158,11,.1); border-radius:10px; font-size:12px; line-height:1.6; color:#fde68a; position:relative; z-index:5; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; }
+.off-banner[hidden], .pwa-bar[hidden] { display:none; }
+.off-banner strong { color:#fbbf24; letter-spacing:.5px; }
+.off-banner span { flex:1 1 220px; min-width:0; color:#e2e8f0; }
+.off-retry, .pwa-bar button { font:700 11px 'JetBrains Mono',monospace; letter-spacing:1px; padding:6px 10px; border-radius:6px; border:1px solid #fbbf24; background:transparent; color:#fbbf24; cursor:pointer; }
+.lr-stamp { display:block; margin-top:2px; font:600 9px/1.3 'JetBrains Mono',monospace; letter-spacing:.3px; color:#fbbf24; white-space:normal; overflow-wrap:anywhere; text-transform:none; grid-column:1 / -1; flex-basis:100%; }
+.pwa-bar { position:fixed; left:12px; right:12px; bottom:12px; z-index:60; max-width:560px; margin:0 auto; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; padding:10px 12px; background:#111620; border:1px solid #263044; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.5); font-size:12px; line-height:1.5; color:#e2e8f0; }
+.pwa-bar > span:first-child { flex:1 1 240px; min-width:0; }
+.pwa-bar-btns { display:flex; gap:8px; }
+.pwa-bar button { border-color:#334155; color:#cbd5e1; }
+.pwa-bar button.primary { border-color:#10b981; color:#10b981; }
+.pwa-steps { margin:8px 0 2px; font-size:12px; line-height:1.6; color:#cbd5e1; }
+.pwa-steps summary { cursor:pointer; font-weight:700; color:#e2e8f0; padding:6px 0; }
+.pwa-steps p { margin:6px 0; }
+.lr-join { display:inline-flex; align-items:center; gap:6px; }
 </style>
 <style id="xpPrintCss" media="print">
 /* the print view (PRINT on a data screen, or the browser's own print): light,
@@ -1816,6 +1832,11 @@ body::before { display:none !important; }
     <button class="tab" onclick="showTab('sharp',this)">SHARP FEED</button>
     <button class="tab" onclick="showTab('clv',this)">CLV</button>
   </nav>
+  <div id="offBanner" class="off-banner" role="status" aria-live="polite" hidden>
+    <strong id="offHead">OFFLINE.</strong>
+    <span id="offText"></span>
+    <button type="button" class="off-retry" onclick="location.reload()">TRY AGAIN</button>
+  </div>
 </header>
 
 <div id="netBanner" style="display:none;margin:10px 16px 0;padding:12px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);border-radius:10px;font-size:12px;line-height:1.7;color:#fca5a5;position:relative;z-index:5">
@@ -1823,6 +1844,11 @@ body::before { display:none !important; }
   <span style="color:#cbd5e1">Check your connection, then reload. If other sites load fine, the server may be restarting after an update: give it a few minutes.</span><br>
   <span style="color:#94a3b8;font-size:11px">Server status: <a href="/status" style="color:#e2e8f0">/status</a>.</span>
   <button type="button" aria-label="Hide this notice" onclick="this.parentElement.style.display='none'" style="position:absolute;top:8px;right:12px;cursor:pointer;color:#8391a7;font-weight:800;background:none;border:0;font-size:inherit">✕</button>
+</div>
+
+<div id="pwaBar" class="pwa-bar" role="region" aria-label="Install Line Reaper" hidden>
+  <span>Install Line Reaper on this device: it opens full screen from its own icon, can get push alerts, and keeps the last screens you read for when the network drops.</span>
+  <span class="pwa-bar-btns"><button type="button" class="primary" onclick="pwaInstall()">INSTALL</button><button type="button" onclick="pwaBarHide(true)">NOT NOW</button></span>
 </div>
 
 <main id="main" tabindex="-1">
@@ -2341,9 +2367,18 @@ body::before { display:none !important; }
     <div class="lay-row"><span class="lay-name">Single-key shortcuts<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Turn off if you use speech input or a screen reader that sends letters. Ctrl+K and Esc still work</span></span><button class="lay-b" id="layKeys" onclick="layToggleKeys()"></button></div>
     <div class="lay-row"><span class="lay-name">Public API and widgets<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Make an API key, read the docs, and copy a widget for your own site. The same data for everyone</span></span><a class="lay-b" id="layDev" href="/developers" target="_blank" rel="noopener" style="text-decoration:none">OPEN</a></div>
     <div class="lay-row"><span class="lay-name">Plans and pricing<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)" id="layPlanNote">What Free and Pro get, and the price. Paying buys the tool, not an edge</span></span><a class="lay-b" id="layPricing" href="/pricing" target="_blank" rel="noopener" style="text-decoration:none">OPEN</a></div>
+    <div class="lay-row" id="layDiscordRow" hidden><span class="lay-name">Line Reaper Discord<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">The official server: the record, alerts and line moves, the same posts for every member. No paid picks room</span></span><a class="lay-b" id="layDiscord" data-lr-discord href="/discord" target="_blank" rel="noopener" style="text-decoration:none">JOIN</a></div>
     <h3 style="margin-top:18px">Phone app</h3>
     <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>
     <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>
+    <p id="pwaInstalled" style="display:none;margin:6px 0 0;color:var(--green)">Installed: you are using Line Reaper from your home screen.</p>
+    <details class="pwa-steps" id="pwaSteps">
+      <summary>Add to home screen: the steps</summary>
+      <p><b>iPhone or iPad (Safari).</b> 1. Open this page in Safari. 2. Tap Share, the square with an arrow, at the bottom of the screen. 3. Scroll down and tap Add to Home Screen. 4. Tap Add. 5. Open Line Reaper from the new icon; push alerts work only from there.</p>
+      <p><b>Android (Chrome).</b> 1. Open this page in Chrome. 2. Tap the three dots at the top right. 3. Tap Install app (on some phones it says Add to Home screen). 4. Tap Install.</p>
+      <p><b>Computer (Chrome or Edge).</b> Click the install icon at the right end of the address bar, or INSTALL above when it shows.</p>
+      <p><b>Offline.</b> The installed app keeps the last answer of each screen you open. When the network drops, those screens show again with every row marked with how old it is. They are never shown as live prices.</p>
+    </details>
     <div class="lay-row"><span class="lay-name">Push alerts</span><button class="lay-b" id="pushBtn" onclick="pushToggle()">TURN ON</button></div>
     <div id="pushMore" style="display:none">
       <p style="margin:10px 0 2px">Alerts to get on this device. Everyone gets the same text for each alert.</p>

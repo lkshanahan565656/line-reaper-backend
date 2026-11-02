@@ -475,6 +475,8 @@ let steamAlerts = new Set();
 const netFails = new Set();
 function noteNetFail(src) {
   netFails.add(src);
+  // a device that knows it is offline gets the offline banner (saved data), not this one
+  if (navigator.onLine === false && typeof lrOffRender === 'function') { lrOff.offline = true; lrOffRender(); return; }
   if (netFails.size >= 2) {
     const b = document.getElementById('netBanner');
     if (b) b.style.display = 'block';
@@ -3361,6 +3363,9 @@ async function acctInit() {
     acct.paywall = !!s.accounts?.paywall;
     acct.billing = !!s.accounts?.billing;
     acct.paused = (s.dataLicences?.paused || []).map(p => (typeof p === 'string' ? p : p.key));
+    // the owned Discord server: its JOIN row shows only once the invite is set
+    const dRow = document.getElementById('layDiscordRow');
+    if (dRow) dRow.hidden = !s.community?.discord;
     if (acct.paused.includes('prizepicks') && acct.paused.includes('underdog')) updateBackendStatus(backendOnline);
   } catch {}
   if (acct.token) {
@@ -3386,7 +3391,7 @@ async function acctRefresh() {
   acctRender();
 }
 
-function acctSetToken(t) { acct.token = t; lsSet('lr_token', t); if (!t) acct.user = null; }
+function acctSetToken(t) { const was = acct.token; acct.token = t; lsSet('lr_token', t); if (!t) acct.user = null; if (was && !t && typeof lrOffClear === 'function') lrOffClear(); }
 
 function acctRender() {
   const fd = document.getElementById('footDelete');
@@ -3807,14 +3812,137 @@ const pwaStandalone = () => window.matchMedia('(display-mode: standalone)').matc
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
 }
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaPrompt = e; pushRefresh(); });
-window.addEventListener('appinstalled', () => { pwaPrompt = null; pushRefresh(); });
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaPrompt = e; pushRefresh(); pwaBarShow(); });
+window.addEventListener('appinstalled', () => { pwaPrompt = null; pushRefresh(); pwaBarHide(); });
 async function pwaInstall() {
   if (!pwaPrompt) return;
   pwaPrompt.prompt();
   try { await pwaPrompt.userChoice; } catch {}
-  pwaPrompt = null; pushRefresh();
+  pwaPrompt = null; pushRefresh(); pwaBarHide();
 }
+// CUSTOMIZE opened at the phone app section, its steps unfolded
+function pwaShowSteps() {
+  layOpen();
+  const steps = document.getElementById('pwaSteps');
+  if (steps && !pwaStandalone()) steps.open = true;
+  (steps && !pwaStandalone() ? steps : document.getElementById('pwaNote'))?.scrollIntoView({ block: 'center' });
+}
+// the install bar: only where the browser offers its own install (Chrome,
+// Edge, Android), never in the installed app, and NOT NOW keeps it away for 30 days
+const PWA_SNOOZE = 'lr_install_snooze';
+function pwaBarShow() {
+  const bar = document.getElementById('pwaBar');
+  if (!bar || !pwaPrompt || pwaStandalone()) return;
+  const until = Number(lsGet(PWA_SNOOZE) || 0);
+  if (until > Date.now()) return;
+  bar.hidden = false;
+}
+function pwaBarHide(snooze) {
+  const bar = document.getElementById('pwaBar');
+  if (bar) bar.hidden = true;
+  if (snooze) lsSet(PWA_SNOOZE, String(Date.now() + 30 * 864e5));
+}
+
+// ── OFFLINE ─────────────────────────────────────────────────────────────────
+// The service worker answers from the device only when a request fails (no
+// network, or the server down for a deploy), and marks that answer
+// x-lr-cached with the time it was read (x-lr-read-at). While any screen shows
+// such an answer, the page says so: a banner, the live pill reads CACHED, and
+// every row carries "read N min ago, may be stale". A saved price is never
+// shown as live. MY BETS, MY SLIPS, TOOLS and CLV are this device's own
+// records, not prices, so they get no stamp.
+let lrWsLast = null;   // the live pill's last real state, put back when saved data clears
+const lrOff = { stale: new Map(), offline: typeof navigator !== 'undefined' && navigator.onLine === false, timer: null, obs: null, raf: 0 };
+const LR_OFF_SKIP = new Set(['betlog', 'myslips', 'tools', 'clv']);
+const LR_OFF_ROWS = `tbody tr, ${typeof XP_CARDS === 'string' ? XP_CARDS : '.pb-card'}`;
+const lrOffKey = u => { try { const x = new URL(u, location.href); ['t', '_', 'ts', 'nocache'].forEach(k => x.searchParams.delete(k)); return x.pathname + x.search; } catch { return String(u); } };
+const lrOffOldest = () => { let m = Infinity; for (const v of lrOff.stale.values()) m = Math.min(m, v); return isFinite(m) ? m : null; };
+function lrOffAge(t) {
+  const min = Math.max(0, Math.round((Date.now() - t) / 60000));
+  return min < 1 ? 'under a minute' : min < 90 ? `${min} min` : `${Math.round(min / 60)} h`;
+}
+(() => {
+  const f = window.fetch;
+  if (typeof f !== 'function') return;
+  window.fetch = function (...args) {
+    const p = f.apply(this, args);
+    try {
+      const u = String(args[0]?.url || args[0] || '');
+      if (/\/api\//.test(u)) p.then(r => {
+        if (!r) return;
+        const k = lrOffKey(u);
+        if (r.headers.get('x-lr-cached') === '1') lrOff.stale.set(k, Number(r.headers.get('x-lr-read-at')) || Date.now());
+        else if (r.ok && lrOff.stale.has(k)) lrOff.stale.delete(k);
+        else return;
+        lrOffRender();
+      }).catch(() => {});
+    } catch {}
+    return p;
+  };
+})();
+function lrOffStamp() {
+  const t = lrOffOldest();
+  return t == null ? '' : `read ${lrOffAge(t)} ago, may be stale`;
+}
+// stamp every data row of the open screen (and new ones as they draw)
+function lrOffStampRows() {
+  lrOff.raf = 0;
+  const on = lrOff.stale.size > 0, txt = lrOffStamp();
+  for (const el of document.querySelectorAll('.lr-stamp')) {
+    if (!on || LR_OFF_SKIP.has(el.closest('.page')?.id?.replace(/^page-/, ''))) el.remove();
+    else if (el.textContent !== txt) el.textContent = txt;
+  }
+  if (!on) return;
+  const pg = document.querySelector('.page.active');
+  if (!pg || LR_OFF_SKIP.has(pg.id.replace(/^page-/, ''))) return;
+  for (const row of pg.querySelectorAll(LR_OFF_ROWS)) {
+    const host = row.tagName === 'TR' ? row.querySelector('td') : row;
+    if (!host || host.querySelector(':scope > .lr-stamp')) continue;
+    if (row.tagName === 'TR' && row.cells.length === 1 && row.cells[0].colSpan > 1) continue;   // an empty-state or note row
+    const s = document.createElement('span');
+    s.className = 'lr-stamp'; s.textContent = txt;
+    host.appendChild(s);
+  }
+}
+function lrOffRender() {
+  const stale = lrOff.stale.size > 0, offline = lrOff.offline;
+  document.body.classList.toggle('lr-stale', stale);
+  const ban = document.getElementById('offBanner');
+  if (ban) {
+    ban.hidden = !stale && !offline;
+    const t = lrOffOldest();
+    document.getElementById('offHead').textContent = stale
+      ? (offline ? 'OFFLINE. Showing saved data, not live prices.' : 'SAVED DATA. The server did not answer, so some rows are not live prices.')
+      : 'OFFLINE. Nothing updates until you are back online.';
+    document.getElementById('offText').textContent = stale
+      ? `This device read these screens ${lrOffAge(t)} ago. Prices have likely moved since, so check the venue before you act on any of them.`
+      : 'Screens this device has opened before show what they last read, each row marked with its age.';
+  }
+  if (stale || offline) updateWSStatus(false, 'POLLING', true);
+  else if (lrWsLast) updateWSStatus(lrWsLast.active, lrWsLast.mode);
+  lrOffStampRows();
+  if (stale && !lrOff.obs && typeof MutationObserver === 'function') {
+    lrOff.obs = new MutationObserver(() => { if (!lrOff.raf) lrOff.raf = requestAnimationFrame(lrOffStampRows); });
+    lrOff.obs.observe(document.body, { childList: true, subtree: true });
+  } else if (!stale && lrOff.obs) { lrOff.obs.disconnect(); lrOff.obs = null; }
+  clearInterval(lrOff.timer);
+  lrOff.timer = stale ? setInterval(() => lrOffRender(), 30000) : null;
+}
+// back online: read the open screen again (each screen's own load drops its stamps)
+function lrOffRetry() {
+  const pg = document.querySelector('.page.active')?.id?.replace(/^page-/, '');
+  const btn = pg && [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${pg}',this)`);
+  if (btn && typeof showTab === 'function') showTab(pg, btn); else location.reload();
+}
+window.addEventListener('offline', () => { lrOff.offline = true; lrOffRender(); });
+window.addEventListener('online', () => { lrOff.offline = false; lrOffRender(); if (lrOff.stale.size) lrOffRetry(); });
+// logging out drops every saved answer, so the next person on this device starts clean
+function lrOffClear() {
+  lrOff.stale.clear(); lrOffRender();
+  try { navigator.serviceWorker?.controller?.postMessage({ type: 'lr-clear-api' }); } catch {}
+  try { if (window.caches) caches.keys().then(ks => ks.filter(k => /^lr-api-/.test(k)).forEach(k => caches.delete(k))).catch(() => {}); } catch {}
+}
+document.addEventListener('DOMContentLoaded', () => { if (lrOff.offline) lrOffRender(); });
 const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const b64ToBytes = b => { const p = '='.repeat((4 - b.length % 4) % 4), r = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, c => c.charCodeAt(0)); };
 async function pushSub() {
@@ -3864,6 +3992,9 @@ async function pushRefresh() {
   if (!btn) return;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   row.style.display = pwaPrompt && !pwaStandalone() ? '' : 'none';
+  const inst = document.getElementById('pwaInstalled'), steps = document.getElementById('pwaSteps');
+  if (inst) inst.style.display = pwaStandalone() ? '' : 'none';
+  if (steps) steps.style.display = pwaStandalone() ? 'none' : '';
   more.style.display = 'none';
   if (!pushOk()) {
     btn.disabled = true; btn.textContent = 'NOT AVAILABLE'; btn.classList.remove('on');
@@ -4326,6 +4457,8 @@ function welcomeInit() {
     if (start === 'digest') window.lrDigestStart = true;
     // ?start=alerts: RESULTS opened on the alert history
     if (start === 'alerts') window.lrAlertsStart = true;
+    // ?start=install (the sales page's "Install the app"): CUSTOMIZE opened on the phone app steps
+    if (start === 'install') { pwaShowSteps(); return; }
     const tabName = start === 'digest' || start === 'alerts' ? 'results' : start.replace(/[^a-z]/g, '');
     const tabBtn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${tabName}',this)`);
     if (tabBtn) tabBtn.click();
@@ -4557,11 +4690,14 @@ const BOOK_LOGOS = {
   sleeper:     'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCABAAEADASIAAhEBAxEB/8QAHQAAAgEFAQEAAAAAAAAAAAAABQYHAQIDBAgACf/EADUQAAIBAwIDBQYGAQUAAAAAAAECAwQFEQAGBxIhMTJBUWEIEyJxgZEUFUJScrFiRpKhosL/xAAZAQADAQEBAAAAAAAAAAAAAAABAgMEAAX/xAAhEQEAAgEEAgMBAAAAAAAAAAABAAIRAwQSMSFBUXGhE//aAAwDAQACEQMRAD8A5zsVjSoQVVUuUPcT93qfTTIipEoRFVFHYFGBrFGqxRrGowqgKB6DV3Mderp0KGCYrWbMy82t+x2K5bluUVttNK9VVTMFVFIH3J6AaF82nzg5vGk2hu2CprIneKRuQlBkgFSp/vP009lx4gO4B3VtC+bKuIt99oWpJmXnjPMHSRezKsOhH9aDc2pb9ojiBat13O3Wm1rJILWZDNO8ZTLuF+BQeuABknzPpqH+bQpZa5YbAPiXyIkqlJEV1PaGGRpbvtjSnQ1VKMIO+n7fUemmHm1bIolRkcZVgQR6aXUoXMM6tmrKc2vZ1j5tELPRfi5XkYZjiAJ9T4DRzFhPZ2zbhvO9QWujKxGQF3kcdI0Hax9P7JGuh9ucBtmWgQyVMNXcqqMhvfTzFVLDyRcDHoc6ivhBuSi23vF1uEiQQ10H4ZZnOFR+YMuT4A4xn5a6Pim7Oupai+pWgQFfvZ62ZuuaouVRFW0ddWMZnmpagjLHx5Wyv0AGoS4k+z1uDY9PLc7dL+dWmMFpJI4+WaBfN0Gcj/JfqBrp6kuk0KBFcFR2BuuNbqXSR+0IR8tQL6lWUa1SfPzm1Xm1J/tBbBptn7piuNsgEFsu4aVYkGFhmB+NB5A5DAeGSPDUWc2tdbZMzOmHEx82m7bcKJYJqlyFX3jlm8goGk3m027dD3Lat0t8PxTqSyqO05AOP+pGgMMXq+6yVcre7Ajj8BjJI9dGLPxM3jYKdaa3bhrYoFGFiYiRVHoGBx9NbO0bht6rt0tk3JEkac5lpazuvCT3l5h2Dpnr07dBtxWejtFUFobtS3GB8lTEfjT+QHT7HTOm8efqYNPfDr2296tU6ceE+R6+x/YffjTxBf8A1RVp/CONf/OmLZ/tF7sstwi/PqgXq3kgSq8arMq+LIygZI8jkH01H23bPR3eqK112pbdAmCzSn43/iD0+50Z3dcNvUdvhsm3IlkQOJaqs7zzEd1ebxHUnp07NL/HNOb1Dqb/AI7iu3pVV7ceA+V6+g/JOPtFzUd74YWy70sizQ/jYJoJR+pJI2GfqMfbXMvNqaOKMs23uCuzNs1pIrpCkskZ7UVFZsH5GRR9NQnzaSngm+3cxJIHUMpyGGRopt+9yWO4rUqC0ZHLIgOCy+nqO0aUrbcliUQzHCjut5eh0WWRXGVYMPMHOkpqZMkNqtWSlPse278U3Lbtwpqeuk+Kall6Ryt4spHVGPipGM9RoRLwd3nGxVbZFLjxjqoyP+SNJMFVNSyCSnmkhcfqjYqfuNH6biRu+kQJDuK4BR0AZw+P9wOqch7iw1T8F971DBfyuGIHxkqowB9idPO2uFVk4ehNy76utIxpiJIaVMmPnHUdvWRvJQMZ7c6i+bidvOdeV9y3EA/scJ/QGgFbcay5Te/rquoqpeznnkZ2+5OgpOjLxH31Ub/3LLc5FaKmjX3NLCxyY4gc9f8AIkkn548NKrSBEZmPRRk6saRUGWYKB4k40JuVyEqmGE5U95vP00lrlSNWrZn/2Q==',
 };
 
-function updateWSStatus(active, mode='POLLING') {
+function updateWSStatus(active, mode='POLLING', fromOffline = false) {
+  if (!fromOffline) lrWsLast = { active, mode };
   const dot = document.getElementById('wsDot');
   const lbl = document.getElementById('wsLabel');
-  if (dot) dot.style.background = active ? 'var(--green)' : '#555';
-  if (lbl) lbl.textContent = active ? mode : 'OFFLINE';
+  const stale = typeof lrOff !== 'undefined' && lrOff.stale.size > 0;
+  if (stale || (typeof lrOff !== 'undefined' && lrOff.offline)) active = false;
+  if (dot) dot.style.background = active ? 'var(--green)' : stale ? 'var(--gold)' : '#555';
+  if (lbl) lbl.textContent = active ? mode : stale ? 'SAVED DATA' : 'OFFLINE';
 }
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
