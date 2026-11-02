@@ -848,6 +848,11 @@ const bigMoney = require('./bigmoney');
 const altLines = require('./altlines');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
+// a lane closed for good keeps its record on disk, not in memory (coldstore.js)
+const cold = require('./coldstore');
+const recordStore = (name, opts) => resultsBackup.wrap(name, cold.closed(name)
+  ? cold.createDiskStore(cold.diskFileFor(process.env, opts), { label: `Closed lane ${name}` })
+  : createEvStoreFromEnv(process.env, opts));
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel's and BetRivers' ladders and alternate lines (altlines.js), graded
@@ -967,7 +972,7 @@ shopTracker.ready().catch(e => console.error('Shop tracker: store failed to init
 // PROMOS (promos.js): the apps' discounted and boosted legs at their own
 // payout, followed to the close and graded in a record of their own
 const promoTracker = createSportTracker({
-  store: resultsBackup.wrap('promoLegs', createEvStoreFromEnv(process.env, { table: 'promo_legs', fileVar: 'PROMO_LEGS_FILE', file: 'promo-legs.json' })),
+  store: recordStore('promoLegs', { table: 'promo_legs', fileVar: 'PROMO_LEGS_FILE', file: 'promo-legs.json' }),
   grader: sportGrader,
 });
 promoTracker.ready().catch(e => console.error('Promo tracker: store failed to initialise:', e.message));
@@ -4444,7 +4449,7 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
 // backend already holds (sportsbooks, with the exchange books attached).
 // bid-then-hedge plans, followed to a fill, a cancel or the start (bidtrack.js)
 const bidTracker = require('./bidtrack').createBidTracker({
-  store: resultsBackup.wrap('bidArbs', createEvStoreFromEnv(process.env, { table: 'bid_arbs', fileVar: 'BIDARB_TRACK_FILE', file: 'bid-arbs.json' })),
+  store: recordStore('bidArbs', { table: 'bid_arbs', fileVar: 'BIDARB_TRACK_FILE', file: 'bid-arbs.json' }),
   fees: XARB_OPTS,
 });
 bidTracker.ready().catch(e => console.error('Bid tracker: store failed to initialise:', e.message));
@@ -4502,7 +4507,7 @@ async function scanGasLocks() {
 // 50 graded (the first flag per map). ESPORTS_INPLAY=off stops it.
 const esinplay = require('./esinplay');
 const inplayTracker = esinplay.createInplayTracker({
-  store: resultsBackup.wrap('esportsInplay', createEvStoreFromEnv(process.env, { table: 'esports_inplay', fileVar: 'ESPORTS_INPLAY_FILE', file: 'esports-inplay.json' })),
+  store: recordStore('esportsInplay', { table: 'esports_inplay', fileVar: 'ESPORTS_INPLAY_FILE', file: 'esports-inplay.json' }),
   http: upstream,
 });
 inplayTracker.ready().catch(e => console.error('In-play: store failed to initialise:', e.message));
@@ -4512,7 +4517,8 @@ async function scanInplay() {
   if (process.env.ESPORTS_INPLAY === 'off' || inplayBusy) return [];
   inplayBusy = true;
   try {
-    const fresh = await inplayLive.tick();
+    // closed: no live reads, only the open rows' grading
+    const fresh = cold.closed('esportsInplay') ? [] : await inplayLive.tick();
     if (Date.now() - inplayGradedAt > 5 * 60e3) { inplayGradedAt = Date.now(); await inplayTracker.grade(); }
     return fresh;
   } finally { inplayBusy = false; }
@@ -4577,7 +4583,7 @@ async function scanXarbs() {
     catch (e) { console.warn('Exchange arbs: price screen:', e.message); }
     await middleTracker.record(middles).catch(e => console.warn('Middle tracker:', e.message));
     if (now - middleGradedAt > 10 * 60e3) { middleGradedAt = now; middleTracker.grade().catch(e => console.warn('Middle tracker:', e.message)); }
-    await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
+    if (!cold.closed('bidArbs')) await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList, usMatches: us.matchList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
     }
@@ -5873,7 +5879,7 @@ app.get('/api/xarbs', async (req, res) => {
   // sportsbook pairs (bookarbs.js): FanDuel, BetRivers, Kalshi, Polymarket US
   const bookArbList = bookArbState.arbs.filter(arbOk(lic)), bookMiddleList = bookArbState.middles.filter(arbOk(lic));
   const books = { arbCount: bookArbList.length, middleCount: bookMiddleList.length, updated: bookArbState.updated, record: bookRecord };
-  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, middleRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, bidClosed: cold.closedInfo('bidArbs'), middleRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
   if (!pro) return res.json({ ...base, books: { ...books, arbs: bookArbList.map(a => ({ profitPct: a.profitPct, locked: true })) }, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
     ...base, books: { ...books, arbs: bookArbList, middles: bookMiddleList.slice(0, 60), counts: bookArbState.counts },
@@ -5942,7 +5948,7 @@ app.get('/api/esports/inplay', async (req, res) => {
     const summary = esinplay.summarize(rows);
     const recent = rows.filter(r => r.status === 'graded').sort((a, b) => (b.flaggedAt || '').localeCompare(a.flaggedAt || '')).slice(0, 40);
     const base = { updated: inplayLive.state.updated, pro, summary, rule: esinplay.DEFAULTS, models: Object.fromEntries(Object.entries(esinplay.MODELS).map(([g, m]) => [g, m ? m.kind : null])),
-      fit: esinplay.INPLAY_FITS, counts: inplayLive.state.counts, off: process.env.ESPORTS_INPLAY === 'off',
+      fit: esinplay.INPLAY_FITS, counts: inplayLive.state.counts, off: process.env.ESPORTS_INPLAY === 'off', closed: cold.closedInfo('esportsInplay'),
       note: 'Our live win probability against Kalshi\'s in-play ask, fee included, with the size resting there. Records only: nothing alerts, nothing trades. Counted toward 50 graded: the first flag per map and team.',
       ...withheldBody(withheldOf(lic, ['kalshi'])) };
     if (!pro || !lic.kalshi) return res.json({ ...base, recent });
@@ -7183,7 +7189,7 @@ const shopDepthOn = () => !/^(off|0|false|no)$/i.test(String(process.env.SHOP_DE
 const shopDepth = depthBook.createDepthBook({ readAsks: ref => xsize.readAsks({ get: (url, cfg) => axios.get(url, cfg) }, ref) });
 const xsizeOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_SIZE || '').trim());
 const xsizeTracker = xsize.createSizeTracker({
-  store: resultsBackup.wrap('xsize', createEvStoreFromEnv(process.env, { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' })),
+  store: recordStore('xsize', { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' }),
   // straight to the venues, not the polite queue: there a book read waited
   // behind the exchange scans' thousands of Kalshi calls, so a minute's pass
   // took ten (2 passes in the first 10 minutes live, 10-24). At most ~70 reads a minute.
@@ -7193,7 +7199,7 @@ const xsizeTracker = xsize.createSizeTracker({
 xsizeTracker.ready().catch(e => console.error('Exchange size: store failed to initialise:', e.message));
 let xsizeRunning = false;
 async function scanExchangeSize() {
-  if (!xsizeOn() || xsizeRunning || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  if (!xsizeOn() || cold.closed('xsize') || xsizeRunning || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
   xsizeRunning = true;
   try {
     const kalshiRows = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS && licences.isOn('kalshi') ? kalshiGameRows.rows : [];
@@ -7215,7 +7221,7 @@ app.get('/api/exchange-size', async (req, res) => {
     const bets = all.filter(b => hasPro(req) || b.status === 'closed').sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt))
       .slice(0, Math.min(parseInt(req.query.limit) || 200, 2000));
     res.json({ venues: xsize.VENUES, tiers: require('./depthfill').TIERS, summary: xsize.summarize(all),
-      open: all.filter(b => b.status === 'open').length, state: xsizeTracker.state, bets,
+      open: all.filter(b => b.status === 'open').length, state: xsizeTracker.state, bets, closed: cold.closedInfo('xsize'),
       note: 'A record, not a tip sheet: no alerts until a venue and size passes at 50 graded (checks/xsize-2026-10-24/PREREGISTERED.md).' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -7228,13 +7234,13 @@ app.get('/api/exchange-size', async (req, res) => {
 // Research: no alerts, no orders. KALSHI_MAKER=off stops it.
 const kmaker = require('./kmaker');
 const kmakerOn = () => !/^(off|0|false|no)$/i.test(String(process.env.KALSHI_MAKER || '').trim());
-const kmakerStore = resultsBackup.wrap('kalshiMaker', createEvStoreFromEnv(process.env, { table: 'kalshi_maker_bids', fileVar: 'KALSHI_MAKER_FILE', file: 'kalshi-maker-bids.json' }));
+const kmakerStore = recordStore('kalshiMaker', { table: 'kalshi_maker_bids', fileVar: 'KALSHI_MAKER_FILE', file: 'kalshi-maker-bids.json' });
 const kmakerTracker = kmaker.createMakerTracker({ store: kmakerStore, http: { get: (url, cfg) => axios.get(url, cfg) } });
 kmakerTracker.ready().catch(e => console.error('Kalshi maker: store failed to initialise:', e.message));
 const kmakerBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'kalshi-maker-backtest.json'), 'utf8')); } catch { return null; } })();
 let kmakerRunning = false;
 async function scanKalshiMaker() {
-  if (!kmakerOn() || kmakerRunning || !licences.isOn('kalshi') || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  if (!kmakerOn() || cold.closed('kalshiMaker') || kmakerRunning || !licences.isOn('kalshi') || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
   if (!(Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS)) return;
   kmakerRunning = true;
   try { await kmakerTracker.scan({ games: freeBooksState.games, pinGames: freeBooksState.pinGames || [], kalshiRows: kalshiGameRows.rows }); }
@@ -7260,7 +7266,7 @@ app.get('/api/kalshi-maker', async (req, res) => {
     const done = all.filter(b => b.status === 'graded' || b.status === 'unfilled' || b.status === 'filled');
     const recent = (hasPro(req) ? all : done).slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(kmakerSlim);
     const bt = kmakerBacktest;
-    res.json({ label: 'research', kind: kmaker.KIND, note: KMAKER_NOTE, edge: kmaker.EDGE, makerRate: kmaker.MAKER_RATE, kalshi: !!lic.kalshi,
+    res.json({ label: 'research', closed: cold.closedInfo('kalshiMaker'), kind: kmaker.KIND, note: KMAKER_NOTE, edge: kmaker.EDGE, makerRate: kmaker.MAKER_RATE, kalshi: !!lic.kalshi,
       kinds: kmaker.byKind(all), kindsAtBid: kmaker.byKind(all, { fill: 'atBid' }),
       record: kmaker.summarize(all.filter(b => (b.kind || kmaker.kindOf(b)) === kmaker.KIND)), atBid: kmaker.summarize(all.filter(b => (b.kind || kmaker.kindOf(b)) === kmaker.KIND), { fill: 'atBid' }), bySport: kmaker.summarizeBy(all, b => b.sport),
       board, boardAt: kmakerTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(kmakerTracker.state), recent,
@@ -7278,13 +7284,13 @@ app.get('/api/kalshi-maker', async (req, res) => {
 // orders. EXCHANGE_PROPS=off stops it.
 const exprops = require('./exprops');
 const expropsOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_PROPS || '').trim());
-const expropsStore = resultsBackup.wrap('exchangeProps', createEvStoreFromEnv(process.env, { table: 'exchange_props', fileVar: 'EXCHANGE_PROPS_FILE', file: 'exchange-props.json' }));
+const expropsStore = recordStore('exchangeProps', { table: 'exchange_props', fileVar: 'EXCHANGE_PROPS_FILE', file: 'exchange-props.json' });
 const expropsTracker = exprops.createExchangePropsTracker({ store: expropsStore, http: { get: (url, cfg) => axios.get(url, cfg) } });
 expropsTracker.ready().catch(e => console.error('Exchange props: store failed to initialise:', e.message));
 const expropsBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'exchange-props-backtest.json'), 'utf8')); } catch { return null; } })();
 let expropsRunning = false;
 async function scanExchangeProps() {
-  if (!expropsOn() || expropsRunning || !licences.isOn('kalshi') || !licences.isOn('pinnacle')) return;
+  if (!expropsOn() || cold.closed('exchangeProps') || expropsRunning || !licences.isOn('kalshi') || !licences.isOn('pinnacle')) return;
   // both reads fresh: Kalshi's ladders (5 min) and Pinnacle's props (2 min)
   if (!kpropsState.rungs || Date.now() - Date.parse(kpropsState.updated || 0) > 12 * 60e3 || Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) return;
   expropsRunning = true;
@@ -7311,7 +7317,7 @@ app.get('/api/exchange-props', async (req, res) => {
       .sort((a, b) => b.best - a.best || Date.parse(a.start) - Date.parse(b.start)).slice(0, 300);
     const done = all.filter(b => b.status === 'graded' || b.status === 'unfilled' || b.status === 'filled');
     const recent = (hasPro(req) ? all : done).filter(b => exprops.counts(b) || b.status === 'unfilled').slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(expropsSlim);
-    res.json({ label: 'research', note: EXPROPS_NOTE, edge: exprops.EDGE, of: exprops.MIN_N, takerRate: exprops.TAKER_RATE, makerRate: exprops.MAKER_RATE, kalshi: !!lic.kalshi, pinnacle: !!lic.pinnacle,
+    res.json({ label: 'research', closed: cold.closedInfo('exchangeProps'), note: EXPROPS_NOTE, edge: exprops.EDGE, of: exprops.MIN_N, takerRate: exprops.TAKER_RATE, makerRate: exprops.MAKER_RATE, kalshi: !!lic.kalshi, pinnacle: !!lic.pinnacle,
       kinds: exprops.byKind(all), board, boardAt: expropsTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(expropsTracker.state), recent,
       backtest: expropsBacktest });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -8706,7 +8712,7 @@ app.get('/api/props/shop/scorecard', async (req, res) => {
 // (checks/promos-2026-10-25). Not a bet until a kind clears 50 graded live.
 const promos = require('./promos');
 // PROMO_RECORD=off stops recording the promo legs (on by default: alerts are off either way)
-const PROMO_RECORD = String(process.env.PROMO_RECORD || 'on').toLowerCase() !== 'off';
+const PROMO_RECORD = String(process.env.PROMO_RECORD || 'on').toLowerCase() !== 'off' && !cold.closed('promoLegs');
 const promoRowsSeen = new Map();
 let promoCache = { at: 0, src: null, rows: [], counts: null };
 // every promo leg the readers hold now (PrizePicks only while its pulls are fresh, like its board lines)
@@ -8781,7 +8787,7 @@ let promoRecordCache = { at: 0, body: null };
 app.get('/api/props/promos/record', async (req, res) => {
   try {
     if (!promoRecordCache.body || Date.now() - promoRecordCache.at > 60e3) promoRecordCache = { at: Date.now(), body: promos.recordSummary(await promoTracker.list({ limit: 1e6 })) };
-    res.json({ ...promoRecordCache.body, recording: PROMO_RECORD, preregistered: 'checks/promos-2026-10-25/PREREGISTERED.md' });
+    res.json({ ...promoRecordCache.body, recording: PROMO_RECORD, closed: cold.closedInfo('promoLegs'), preregistered: 'checks/promos-2026-10-25/PREREGISTERED.md' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -9477,9 +9483,9 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),
-  exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
-  kalshiMaker: { on: kmakerOn(), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
-  exchangeProps: { on: expropsOn(), ...(({ board: _b, ...st }) => st)(expropsTracker.state) },
+  exchangeSize: { on: xsizeOn() && !cold.closed('xsize'), closed: cold.closedInfo('xsize'), ...xsizeTracker.state },
+  kalshiMaker: { on: kmakerOn() && !cold.closed('kalshiMaker'), closed: cold.closedInfo('kalshiMaker'), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
+  exchangeProps: { on: expropsOn() && !cold.closed('exchangeProps'), closed: cold.closedInfo('exchangeProps'), ...(({ board: _b, ...st }) => st)(expropsTracker.state) },
   exchangeOutrights: { on: outrightsOn(), ...(({ board: _b, ...st }) => st)(outrightsTracker.state), feed: { pinAt: outrightsFeed.state.pinAt, kalshiAt: outrightsFeed.state.kalshiAt, pmusAt: outrightsFeed.state.pmusAt, reads: outrightsFeed.state.reads, errors: outrightsFeed.state.errors } },
   shopDepth: { on: shopDepthOn(), ...shopDepth.state, budget: depthBook.READ_BUDGET },
   resultsBackup: resultsBackup.status(),
