@@ -30,8 +30,9 @@ app.use(writeLimiter);
 // Memory guard (memguard.js): a planned restart, right after a results backup,
 // when memory stays high, instead of a crash at V8's limit
 // Why the last process left (memguard-exit.json, on the container's disk):
-// read once at boot for /api/ops. Railway's restarts wipe that disk too (seen
-// 06:22Z 11-02), so resultsBackup.previousRun below is the record that lasts
+// read once at boot for /api/ops. Only the guard writes it: a crash (V8 out
+// of heap, as at 06:22Z 11-02, when the disk itself survived) leaves none,
+// and a deploy wipes the disk; resultsBackup.previousRun below covers both
 const MEMGUARD_EXIT_FILE = path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'memguard-exit.json');
 const memGuardPrevious = (() => {
   try { const x = JSON.parse(fs.readFileSync(MEMGUARD_EXIT_FILE, 'utf8')); fs.unlinkSync(MEMGUARD_EXIT_FILE); return x; }
