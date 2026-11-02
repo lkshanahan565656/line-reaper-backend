@@ -2318,6 +2318,7 @@ function msRenderPub() {
     return;
   }
   const sent = (p.sent || []).length, srv = msPub.server;
+  const kalTyped = msKalshiTyped();
   el.innerHTML = `<b>Your public record</b>
     <div class="ms-pub-row"><a class="ms-pub-link" href="${escAttr(url)}" target="_blank" rel="noopener">${escAttr(url.replace(/^https?:\/\//, ''))}</a></div>
     <div class="ms-pub-row"><a class="mb-btn primary" href="${escAttr(url)}" target="_blank" rel="noopener">OPEN PAGE</a><button class="mb-btn" onclick="msPubCopy('${escAttr(url)}','Link')">COPY LINK</button><button class="mb-btn" onclick="msPubSync(true)">SEND NEW SLIPS</button><button class="mb-btn" onclick="msUnpublish()">${msPub.drop ? 'TAP AGAIN TO UNPUBLISH' : 'UNPUBLISH'}</button><button class="mb-btn" onclick="msPubToggle(false)">CLOSE</button></div>
@@ -2326,7 +2327,82 @@ function msRenderPub() {
     <div class="ms-pub-row"><button class="mb-btn${msPub.tool === 'widget' ? ' primary' : ''}" onclick="msPubTool('widget')">WIDGET</button><button class="mb-btn${msPub.tool === 'feed' ? ' primary' : ''}" onclick="msPubTool('feed')">FEED</button><span class="tl-note" style="margin:0">Your record on your own site, Discord or Telegram.</span></div>
     ${msPubToolHtml(p)}
     <div class="tl-note">Your key, the only way to add slips or unpublish from another browser. Save it somewhere safe: <span class="ms-pub-key">${escAttr(p.key)}</span> <button class="mb-btn" onclick="msPubCopy('${escAttr(p.key)}','Key')">COPY KEY</button></div>
+    <div id="msKalshi" class="ms-kal">${msKalshiHtml(p)}</div>
     ${rules}${hint}`;
+  msKalshiRestore(kalTyped);
+  if ((!msK.loaded || msK.handle !== p.handle) && !msK.loading) msKalshiLoad();
+}
+// ── CONNECT KALSHI: a read-only key, fills straight into the record (kalshilink.js) ──
+const msK = { info: null, status: null, loaded: false, loading: false, busy: false, hint: '', drop: false, open: false, handle: null };
+async function msKalshiLoad() {
+  const p = msPubGet();
+  if (!p || p.unpublished) return;
+  msK.loading = true;
+  if (msK.handle !== p.handle) Object.assign(msK, { status: null, hint: '', open: false, drop: false, handle: p.handle });
+  try { msK.info = await msPubCall('/api/kalshi-link', 'GET'); } catch { msK.info = null; }
+  if (msK.info?.enabled) { try { msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'GET', null, p.key); } catch (e) { msK.status = null; msK.hint = e.message; } }
+  msK.loaded = true; msK.loading = false;
+  msKalshiPaint();
+}
+// what was typed survives a redraw (the record panel redraws as slips regrade)
+const msKalshiTyped = () => ({ id: document.getElementById('msKalKeyId')?.value || '', pem: document.getElementById('msKalPem')?.value || '' });
+function msKalshiRestore(t) { const a = document.getElementById('msKalKeyId'), b = document.getElementById('msKalPem'); if (a) a.value = t.id; if (b) b.value = t.pem; }
+function msKalshiPaint() { const el = document.getElementById('msKalshi'); const p = msPubGet(); if (!el || !p) return; const t = msKalshiTyped(); el.innerHTML = msKalshiHtml(p); msKalshiRestore(t); }
+function msKalshiHtml(p) {
+  const head = '<b>Kalshi fills</b>';
+  if (!msK.loaded) return `${head}<div class="tl-note">Checking whether this server can connect Kalshi...</div>`;
+  if (!msK.info) return `${head}<div class="tl-note">Could not reach the server to check Kalshi. <button class="mb-btn" onclick="msK.loaded=false;msKalshiLoad()">TRY AGAIN</button></div>`;
+  if (!msK.info.enabled) return `${head}<div class="tl-note">Connecting a Kalshi account is not switched on on this server yet (${escAttr(msK.info.why || 'not set up')}). Log Kalshi bets in MY BETS meanwhile.</div>`;
+  const hint = msK.hint ? `<div class="mb-hint">${escAttr(msK.hint)}</div>` : '';
+  const st = msK.status;
+  const when = t => (t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'not yet');
+  if (st?.connected) {
+    const c = st.counts || {};
+    const off = (c.unmatched || 0) + (c.noSide || 0) + (c.price || 0);
+    return `${head} <span class="ms-tag ${st.status === 'active' ? 'pos' : 'neg'}">${st.status === 'active' ? 'CONNECTED' : 'PAUSED'}</span>
+      <div class="tl-note">Read-only key ${escAttr(st.keyHint || '')} (${escAttr((st.scopes || []).join(', '))}), connected ${when(st.connectedAt)}. Last read ${when(st.lastOkAt)}. ${c.imported || 0} order${c.imported === 1 ? '' : 's'} added to the record from ${c.fills || 0} fill${c.fills === 1 ? '' : 's'}${off ? `; ${off} fill${off === 1 ? '' : 's'} not on a game line we follow (props, futures, live or other markets), left off` : ''}.</div>
+      ${st.lastError ? `<div class="mb-hint">${escAttr(st.lastError)}</div>` : ''}
+      <div class="ms-pub-row">${st.status !== 'active' ? '<button class="mb-btn primary" onclick="msK.open=true;msK.status=null;msKalshiPaint()">CONNECT AGAIN</button>' : ''}<button class="mb-btn" onclick="msKalshiDisconnect()">${msK.drop ? 'TAP AGAIN TO DISCONNECT' : 'DISCONNECT'}</button></div>
+      <div class="tl-note">Every new fill on a full-game moneyline, spread or total of a game on the odds screen goes to your record as one bet an order, at Kalshi's price plus its fee, checked every five minutes. Don't also log those bets by hand in MY BETS, or they show twice.</div>${hint}`;
+  }
+  if (!msK.open) return `${head}<div class="tl-note">Connect your Kalshi account with a read-only key and every new fill goes to this record by itself, with Kalshi's own time and price.</div>
+    <div class="ms-pub-row"><button class="mb-btn primary" onclick="msK.open=true;msKalshiPaint()">CONNECT KALSHI</button></div>${hint}`;
+  return `${head}<ul>
+      <li>Make a <b>read-only</b> API key at Kalshi (the read scope only). A key that can trade or move money is refused and never saved.</li>
+      <li>We check the key's permissions with Kalshi first, keep it encrypted, never show it again, and only ever read your fills. Line Reaper never places a bet.</li>
+      <li>Only fills after you connect go to the record, so a past run can't be added later. Your record shows the pick, the price and the time; no contract counts or money.</li>
+      <li>DISCONNECT, or UNPUBLISH, deletes the key. You can also delete it at Kalshi any time.</li></ul>
+    <div class="ms-pub-row"><input type="text" id="msKalKeyId" placeholder="Kalshi Key ID" autocomplete="off" spellcheck="false" aria-label="Kalshi Key ID"></div>
+    <div class="ms-pub-row"><textarea id="msKalPem" rows="4" placeholder="-----BEGIN PRIVATE KEY-----" autocomplete="off" spellcheck="false" aria-label="Kalshi private key"></textarea></div>
+    <div class="ms-pub-row"><button class="mb-btn primary" onclick="msKalshiConnect()">${msK.busy ? 'CHECKING WITH KALSHI...' : 'CONNECT'}</button><button class="mb-btn" onclick="msK.open=false;msK.hint='';msKalshiPaint()">CANCEL</button></div>${hint}`;
+}
+async function msKalshiConnect() {
+  const p = msPubGet();
+  const keyId = (document.getElementById('msKalKeyId')?.value || '').trim();
+  const pemEl = document.getElementById('msKalPem');
+  const privateKey = (pemEl?.value || '').trim();
+  if (!p || msK.busy) return;
+  if (!keyId || !privateKey) { msK.hint = 'Paste both the Key ID and the private key.'; msKalshiPaint(); return; }
+  if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+-----END [A-Z ]*PRIVATE KEY-----/.test(privateKey)) { msK.hint = 'Paste the whole private key, from -----BEGIN to -----END.'; msKalshiPaint(); return; }
+  msK.busy = true; msK.hint = ''; msKalshiPaint();
+  try {
+    msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'POST', { keyId, privateKey }, p.key);
+    msK.open = false;
+    showToast('Kalshi connected: new fills go to your record');
+  } catch (e) { msK.hint = e.message; }
+  msK.busy = false;
+  msKalshiPaint();
+  // the key is never kept in the page once it's connected
+  if (msK.status?.connected) msKalshiRestore({ id: '', pem: '' });
+}
+async function msKalshiDisconnect() {
+  if (!msK.drop) { msK.drop = true; msKalshiPaint(); return; }
+  const p = msPubGet();
+  msK.drop = false;
+  if (!p) return;
+  try { msK.status = await msPubCall(`/api/records/${encodeURIComponent(p.handle)}/kalshi`, 'DELETE', null, p.key); showToast('Kalshi disconnected: the key was deleted'); }
+  catch (e) { msK.hint = e.message; }
+  msKalshiPaint();
 }
 
 const msPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
