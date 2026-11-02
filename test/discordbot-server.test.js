@@ -162,3 +162,12 @@ test('/api/status shows the bot without any secret', async () => {
   assert.ok(s.discordBot.interactions >= 5);
   assert.doesNotMatch(JSON.stringify(s.discordBot), /Gab12C|yyyy/);
 });
+
+test('malformed but signed bodies get a 400 from the endpoint, not a 500', async () => {
+  for (const raw of ['null', '[]', 'not json']) {
+    const ts = String(Math.floor(Date.now() / 1000));
+    const signature = crypto.sign(null, Buffer.from(ts + raw), OWNER.privateKey).toString('hex');
+    const r = await fetch(base + '/discord/interactions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Signature-Ed25519': signature, 'X-Signature-Timestamp': ts }, body: raw });
+    assert.equal(r.status, 400, raw);
+  }
+});

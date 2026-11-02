@@ -15,8 +15,7 @@
 const { createMemoryStore } = require('./evtrack');
 
 const DEFAULTS = { lagMs: 2 * 60e3, lateMs: 4 * 60e3, stake: 100, minMiddleEv: 2, provenN: 50, keepMs: 3 * 86400e3 };
-const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r2OrNull: r2, r4 } = require('./mathutil');
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const isExchange = v => v === 'kalshi' || v === 'polymarketus';
 const bookKey = l => `${l.venue}:${l.marketId}:${l.side}`;

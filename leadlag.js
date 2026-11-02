@@ -33,7 +33,7 @@
 const { canonName } = require('./ev');
 
 const MARKET = { ml: 'h2h', spread: 'spreads', total: 'totals' };
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 const implied = v => (v && v.decimal > 1 ? 1 / v.decimal : null);
 
 // the +EV screen's market group and side names for an odds-screen side

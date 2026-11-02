@@ -1,0 +1,71 @@
+{
+  "_source": "Shapes from the Telegram Bot API docs (Update, Message, Chat, User, MessageEntity), Bot API 7.x. Ids and names are made up.",
+  "groupCommand": {
+    "update_id": 900000001,
+    "message": {
+      "message_id": 4101, "date": 1761600000,
+      "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp", "username": "sharp", "language_code": "en" },
+      "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" },
+      "text": "/odds@LineReaperTestBot Lakers",
+      "entities": [ { "offset": 0, "length": 24, "type": "bot_command" } ]
+    }
+  },
+  "privateStart": {
+    "update_id": 900000002,
+    "message": {
+      "message_id": 7, "date": 1761600005,
+      "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp", "language_code": "en" },
+      "chat": { "id": 42424242, "first_name": "Sharp", "type": "private" },
+      "text": "/start",
+      "entities": [ { "offset": 0, "length": 6, "type": "bot_command" } ]
+    }
+  },
+  "topicCommand": {
+    "update_id": 900000003,
+    "message": {
+      "message_id": 4120, "message_thread_id": 4000, "is_topic_message": true, "date": 1761600010,
+      "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp" },
+      "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup", "is_forum": true },
+      "text": "/moves nfl line",
+      "entities": [ { "offset": 0, "length": 6, "type": "bot_command" } ]
+    }
+  },
+  "anonymousAdminSettings": {
+    "update_id": 900000004,
+    "message": {
+      "message_id": 4130, "date": 1761600020,
+      "from": { "id": 1087968824, "is_bot": true, "first_name": "Group", "username": "GroupAnonymousBot" },
+      "sender_chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" },
+      "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" },
+      "text": "/settings TX",
+      "entities": [ { "offset": 0, "length": 9, "type": "bot_command" } ]
+    }
+  },
+  "otherBotCommand": {
+    "update_id": 900000005,
+    "message": { "message_id": 4140, "date": 1761600030, "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp" }, "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" }, "text": "/odds@SomeOtherBot Lakers", "entities": [ { "offset": 0, "length": 19, "type": "bot_command" } ] }
+  },
+  "photoWithCaption": {
+    "update_id": 900000006,
+    "message": { "message_id": 4150, "date": 1761600040, "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp" }, "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" },
+      "photo": [ { "file_id": "AgACAgEAAx0", "file_unique_id": "AQAD", "width": 90, "height": 90, "file_size": 1200 } ], "caption": "/odds Lakers", "caption_entities": [ { "offset": 0, "length": 5, "type": "bot_command" } ] }
+  },
+  "editedMessage": {
+    "update_id": 900000007,
+    "edited_message": { "message_id": 4101, "date": 1761600000, "edit_date": 1761600050, "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp" }, "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" }, "text": "/odds Celtics" }
+  },
+  "channelPost": {
+    "update_id": 900000008,
+    "channel_post": { "message_id": 12, "date": 1761600060, "sender_chat": { "id": -1009876543210, "title": "Line news", "type": "channel" }, "chat": { "id": -1009876543210, "title": "Line news", "type": "channel" }, "text": "/odds Lakers" }
+  },
+  "myChatMember": {
+    "update_id": 900000009,
+    "my_chat_member": { "chat": { "id": -1001234567890, "title": "Picks", "type": "supergroup" }, "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp" }, "date": 1761600070,
+      "old_chat_member": { "user": { "id": 123456789, "is_bot": true, "first_name": "Line Reaper", "username": "LineReaperTestBot" }, "status": "left" },
+      "new_chat_member": { "user": { "id": 123456789, "is_bot": true, "first_name": "Line Reaper", "username": "LineReaperTestBot" }, "status": "member" } }
+  },
+  "callbackQuery": {
+    "update_id": 900000010,
+    "callback_query": { "id": "4382bfdwdsb323b2d9", "from": { "id": 42424242, "is_bot": false, "first_name": "Sharp" }, "chat_instance": "-123", "data": "x" }
+  }
+}
