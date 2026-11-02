@@ -11,13 +11,14 @@ jobs:
         with: { ref: main, path: repo }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: |
+      - shell: bash {0}
+        run: |
           mkdir o
           for p in api/health api/status api/sync/status api/sync acctsync.js app.js; do
             curl -s -m 30 "$SITE/$p" -o "o/$(echo $p | tr / _)" -w "$p %{http_code}\n" >> o/codes.txt || true
           done
           grep -c syncBoot o/app.js >> o/codes.txt || true
-          cd repo && npm ci --silent && npx playwright install --with-deps chromium >/dev/null 2>&1
+          cd repo; npm ci > ../o/npm.txt 2>&1; echo "npm ci $?" >> ../o/codes.txt; npx playwright install --with-deps chromium > ../o/pw.txt 2>&1; echo "pw $?" >> ../o/codes.txt
           V=$(node -p "require('./package.json').version")
           npm run live-check -- "$V" > ../o/live-check.txt 2>&1; echo "exit $?" >> ../o/live-check.txt
           cd ../o && rm -f app.js && git init -q && git checkout -q -b diag-acctsync-out && git add -A
