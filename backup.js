@@ -16,8 +16,14 @@
 //            keep being graded across deploys.
 //
 // A restore only ever adds missing ids. Until the snapshot has been read (or
-// is known not to exist, or was made with another key) the export answers
-// 503, so a container that couldn't read it never overwrites a fuller one.
+// is known not to exist) the export answers 503, so a container that couldn't
+// read it never overwrites a fuller one. That includes a snapshot sealed with
+// a key this container can't make: setting RESULTS_BACKUP_KEY, or a new
+// Railway service (new ids), changes the key. The snapshot is read with every
+// key the container can make (keysFromEnv: RESULTS_BACKUP_KEY, the Railway
+// ids, RESULTS_BACKUP_OLD_KEYS) and the next export is sealed with the first.
+// One it can't open keeps exports paused (state 'retrying', the note says
+// what to set) instead of starting the record empty and overwriting it.
 // The envelope's counts (plain numbers, no data) let the Action refuse a
 // snapshot with fewer records than the last one under the same key.
 
@@ -28,11 +34,20 @@ const DEFAULT_REPO = 'lkshanahan565656/line-reaper-backend';
 const BRANCH = 'results-data';
 const FILE = 'results.json';
 
-function keyFromEnv(env = process.env) {
-  const secret = env.RESULTS_BACKUP_KEY ||
-    (env.RAILWAY_PROJECT_ID && env.RAILWAY_SERVICE_ID ? [env.RAILWAY_PROJECT_ID, env.RAILWAY_SERVICE_ID, env.RAILWAY_ENVIRONMENT_ID || ''].join('|') : null);
-  return secret ? crypto.createHash('sha256').update(`line-reaper-results|${secret}`).digest() : null;
+const keyOfSecret = secret => crypto.createHash('sha256').update(`line-reaper-results|${secret}`).digest();
+// every key this container can make, the one new snapshots are sealed with
+// first: RESULTS_BACKUP_KEY, the Railway ids, then RESULTS_BACKUP_OLD_KEYS
+// (comma-separated earlier secrets: an old RESULTS_BACKUP_KEY, or old ids
+// written project|service|environment)
+function keysFromEnv(env = process.env) {
+  const secrets = [
+    env.RESULTS_BACKUP_KEY,
+    env.RAILWAY_PROJECT_ID && env.RAILWAY_SERVICE_ID ? [env.RAILWAY_PROJECT_ID, env.RAILWAY_SERVICE_ID, env.RAILWAY_ENVIRONMENT_ID || ''].join('|') : null,
+    ...String(env.RESULTS_BACKUP_OLD_KEYS || '').split(','),
+  ].map(x => String(x || '').trim()).filter(Boolean);
+  return [...new Set(secrets)].map(keyOfSecret);
 }
+const keyFromEnv = (env = process.env) => keysFromEnv(env)[0] || null;
 const keyIdOf = key => crypto.createHash('sha256').update(key).digest('hex').slice(0, 12);
 
 function sourcesFromEnv(env = process.env) {
@@ -105,7 +120,12 @@ async function openAsync(key, env) {
 }
 
 // fetchJson(url) → parsed body, or null for "no such file"; throws otherwise.
-function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJson, log = console, retryMs = 5 * 60e3, now = () => Date.now() } = {}) {
+function createBackup({ key, keys, sources = sourcesFromEnv(), fetchJson, log = console, retryMs = 5 * 60e3, now = () => Date.now() } = {}) {
+  keys = (keys || (key !== undefined ? [key] : keysFromEnv())).filter(Boolean);
+  key = keys[0] || null;   // new snapshots are sealed with this one
+  let readWith = null;     // 'current' | 'older' once a snapshot was opened
+  let readCounts = null;   // records per store in the snapshot read at boot
+  let refused = null;      // why the last export was refused, if it was
   const stores = new Map();   // name → { store, appendOnly }
   const restored = {};        // name → records added from the snapshot
   let state = key ? 'pending' : 'off';   // pending → ready | retrying; off without a key
@@ -121,15 +141,28 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
   }
 
   // → { stores } to restore, or null when there is nothing usable
+  // A snapshot this container can't open is never a reason to start empty:
+  // it throws, so load() keeps exports paused and keeps trying.
   async function readOnce() {
     const { body } = await fetchSnapshot();
     if (!body) { note = 'no backup yet'; return null; }
-    if (body.keyId && body.keyId !== keyIdOf(key)) { note = 'backup made with another key; starting fresh'; return null; }
-    try {
-      const payload = await openAsync(key, body);
-      snapshotAt = body.at || null;
-      return payload;
-    } catch (e) { note = `backup unreadable (${e.message}); starting fresh`; return null; }
+    const tryKeys = body.keyId ? keys.filter(k => keyIdOf(k) === body.keyId) : keys;
+    if (!tryKeys.length) {
+      throw Object.assign(new Error(`the backup was sealed with another key (${body.keyId}), not one this server can make; `
+        + 'exports are paused so it is not overwritten. Put the old secret in RESULTS_BACKUP_OLD_KEYS (DEPLOY.md), or undo the key change'), { keep: true });
+    }
+    let lastErr = null;
+    for (const k of tryKeys) {
+      try {
+        const payload = await openAsync(k, body);
+        snapshotAt = body.at || null;
+        readWith = k === key ? 'current' : 'older';
+        readCounts = Object.fromEntries(Object.entries(payload?.stores || {}).map(([n, d]) => [n, Array.isArray(d) ? d.length : 0]));
+        note = readWith === 'older' ? 'read with an older key; the next snapshot is sealed with the current one' : null;
+        return payload;
+      } catch (e) { lastErr = e; }
+    }
+    throw Object.assign(new Error(`the backup can't be opened (${lastErr?.message || 'no key'}); exports are paused so it is not overwritten`), { keep: true });
   }
 
   async function addMissing(name, store, docs) {
@@ -152,7 +185,7 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
     loading = (async () => {
       for (let i = 0; i < 3; i++) {
         try { const p = await readOnce(); state = 'ready'; return p; }
-        catch (e) { note = `could not read the backup: ${e.message}`; }
+        catch (e) { note = e.keep ? e.message : `could not read the backup: ${e.message}`; }
         if (i < 2) await new Promise(r => setTimeout(r, 2000 * (i + 1)));
       }
       state = 'retrying';
@@ -164,7 +197,7 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
           for (const [name, { store }] of stores) await addMissing(name, store, p?.stores?.[name]).catch(() => 0);
           state = 'ready';
           log.log?.('Results backup: read on retry; exports back on');
-        } catch (e) { note = `could not read the backup: ${e.message}`; }
+        } catch (e) { note = e.keep ? e.message : `could not read the backup: ${e.message}`; }
       }, retryMs);
       timer.unref?.();
       return null;
@@ -201,6 +234,19 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
       payload.stores[name] = docs;
       (appendOnly ? counts : other)[name] = docs.length;
     }
+    // the same guard as the Action's (.github/backup-guard.jq), here too: an
+    // export with under half the append-only records the boot read is a
+    // server that lost them, never one to keep
+    if (readCounts) {
+      const both = Object.keys(counts).filter(n => readCounts[n] != null);
+      const had = both.reduce((a, n) => a + readCounts[n], 0), has = both.reduce((a, n) => a + counts[n], 0);
+      if (had > 100 && has < 0.5 * had) {
+        refused = `export refused at ${new Date(now()).toISOString()}: ${has} records against ${had} read at boot`;
+        log.warn?.(`Results backup: ${refused}`);
+        throw Object.assign(new Error(refused), { status: 503 });
+      }
+    }
+    refused = null;
     const body = { v: 1, at: new Date(now()).toISOString(), keyId: keyIdOf(key), counts, other, ...(await sealAsync(key, payload)) };
     cached = { t: now(), body };
     lastExportAt = body.at;
@@ -208,7 +254,7 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
   }
 
   function status() {
-    return { state, snapshotAt, note, restored: { ...restored }, stores: [...stores.keys()], lastExportAt };
+    return { state, snapshotAt, note, readWith, keys: keys.length, refused, restored: { ...restored }, stores: [...stores.keys()], lastExportAt };
   }
 
   return { wrap, load, exportSnapshot, status };
@@ -230,4 +276,4 @@ function axiosFetchJson(axios) {
   };
 }
 
-module.exports = { createBackup, keyFromEnv, keyIdOf, sourcesFromEnv, axiosFetchJson, seal, open, sealAsync, openAsync, payloadChunks };
+module.exports = { createBackup, keyFromEnv, keysFromEnv, keyIdOf, sourcesFromEnv, axiosFetchJson, seal, open, sealAsync, openAsync, payloadChunks };

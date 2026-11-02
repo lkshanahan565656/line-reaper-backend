@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - uses: actions/cache@v4
         id: pw
         with: { path: ~/.cache/ms-playwright, key: 'pw-${{ runner.os }}-1.63.0-shell' }
@@ -28,6 +28,10 @@ jobs:
       # fails on a serious or critical finding not in e2e/a11y-baseline.json
       - if: success() || failure()
         run: npm run a11y
+      # cold boot: no snapshot, no backup, no keys, network refused; every
+      # /api GET answers clean JSON, every page and tab shows an honest empty state
+      - if: success() || failure()
+        run: npm run cold
       - if: failure()
         uses: actions/upload-artifact@v4
         with: { name: e2e-report, path: e2e/out, retention-days: 7 }

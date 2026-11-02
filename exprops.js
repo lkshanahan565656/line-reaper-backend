@@ -42,11 +42,10 @@ const SETTLE_MAX_MS = 12 * 3600e3;    // a rung settles within this long after t
 const MIN_PRICE = 0.03;
 const API = 'https://api.elections.kalshi.com/trade-api/v2';
 const LEAGUES = new Set(['NFL', 'NBA', 'NHL', 'MLB', 'WNBA']);
-const ROLES = ['taker', 'maker'];
 // Kalshi's stat words that ev.canonMarket leaves long
 const MKEY_FIX = { 'points,_rebounds,_and_assists': 'pra', 'points,_rebounds_and_assists': 'pra' };
 const mkeyOf = k => MKEY_FIX[k] || k;
-const r4 = x => Math.round(x * 1e4) / 1e4;
+const { r4 } = require('./mathutil');
 const cents = x => Math.round(x * 100) / 100;
 
 const takerFee = p => fees.orderFee('kalshi', p, LOT, { rate: TAKER_RATE, round: true }) / LOT;
@@ -296,4 +295,4 @@ function createExchangePropsTracker({ store, http, now = () => Date.now(), maxBo
   return { scan, settle, list, state, ready: () => loaded, rateOf };
 }
 
-module.exports = { mkeyOf, EDGE, MIN_N, LEAGUES, ROLES, TAKER_RATE, MAKER_RATE, takerFee, kindOf, parseKind, priceRung, boardOf, grade, summarize, byKind, counts, createExchangePropsTracker };
+module.exports = { mkeyOf, EDGE, MIN_N, LEAGUES, TAKER_RATE, MAKER_RATE, takerFee, kindOf, parseKind, priceRung, boardOf, grade, summarize, byKind, counts, createExchangePropsTracker };

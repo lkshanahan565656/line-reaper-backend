@@ -6,7 +6,10 @@ const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
 
+// the one place the version lives: bump package.json (and its lock) only
+const VERSION = require('./package.json').version;
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 3001;
 // health, event-loop stalls, slow requests and the boot timeline (ops.js)
 const ops = require('./ops').createOps();
@@ -14,12 +17,20 @@ const fees = require('./fees');
 const { runSteps, runStepsAsync, createSlicer } = require('./ops');
 ops.start();
 app.use(ops.middleware);
+// headers, per-address write limits, JSON errors (security.js)
+const security = require('./security');
+// the app reads the API from its own origin or the production one (BACKEND_URL in public/app.js)
+const APP_API_ORIGIN = (() => { try { return (/const BACKEND_URL = '(https:\/\/[^'/]+)'/.exec(fs.readFileSync(path.join(__dirname, 'public', 'app.js'), 'utf8')) || [])[1] || null; } catch { return null; } })();
+app.use(security.headers({ connect: APP_API_ORIGIN ? [APP_API_ORIGIN] : [] }));
+// Stripe's webhook retries in bursts and is signed, so it is never limited
+const writeLimiter = security.writeLimit({ skip: req => !req.path.startsWith('/api/') || req.path === '/api/billing/webhook' });
+app.use(writeLimiter);
 // Answered before anything else is mounted, and from memory only: Railway's
 // health check and the uptime probe get an answer while feeds are still warming.
 app.get('/api/health', (req, res) => {
   const o = ops.state();
   res.set('Cache-Control', 'no-store').json({
-    ok: true, version: require('./package.json').version, uptimeS: o.uptimeS,
+    ok: true, version: VERSION, uptimeS: o.uptimeS,
     listening: o.boot.some(b => b.mark === 'listening'), boot: o.boot,
     stalls: { count: o.stalls.count, worstMs: o.stalls.worstMs, last: o.stalls.recent[0] || null },
     inFlight: o.requests.inFlight, memory: o.memory,
@@ -31,12 +42,27 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState } }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state(), pubRecords: { ...pubRecords.stats(), grading: pubRecordState }, security: security.readiness(),
+  resultsBackup: (({ state, snapshotAt, note, readWith, keys, refused, lastExportAt }) => ({ state, snapshotAt, note, readWith, keys, refused, lastExportAt }))(resultsBackup.status()) }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
+// The CPU and heap profilers name every function and slow the server while
+// they run: with TRACKER_ADMIN_TOKEN set they need it (x-admin-token, which
+// the diag workflows send from a GitHub secret); without it they stay open,
+// and /api/ops security.missing says so.
+app.use(['/api/ops/profile', '/api/ops/heap'], (req, res, next) => {
+  const want = process.env.TRACKER_ADMIN_TOKEN;
+  if (!want || security.safeEqual(req.get('x-admin-token'), want)) return next();
+  res.status(401).set('Cache-Control', 'no-store').json({ error: 'The profilers need the admin token (x-admin-token).' });
+});
 const profiler = require('./ops').createProfiler();
 app.get('/api/ops/profile', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await profiler.profile(parseFloat(req.query.s) || 20)); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+const heapSampler = require('./ops').createHeapSampler();
+app.get('/api/ops/heap', async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json(await heapSampler.sample(parseFloat(req.query.s) || 30)); }
   catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 
@@ -49,6 +75,11 @@ if (!OWLS_API_KEY) console.warn('OWLS_API_KEY is not set: Owls feeds will fail a
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
 
 app.use(cors({ origin: '*' }));
+// gzip/brotli on every answer big enough to gain (the odds screen is ~400 KB
+// raw, ~40 KB compressed). Event streams are left alone so each event still
+// leaves at once; answers that set their own Content-Encoding pass through.
+const compression = require('compression');
+app.use(compression({ filter: (req, res) => !/text\/event-stream/i.test(String(res.getHeader('Content-Type') || '')) && compression.filter(req, res) }));
 // focus ring, skip link and reduced motion on every server-drawn page (a11y.js); /app has its own
 app.use(require('./a11y').middleware(req => req.path === '/app'));
 
@@ -68,7 +99,7 @@ app.post(['/discord/interactions', '/discord/interactions/:appId'], express.raw(
 
 // account sync uploads a user's whole bet list: a bigger limit for that route only
 app.use('/api/sync', express.json({ limit: '9mb' }));
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use((req, res, next) => auth.attach()(req, res, next));
 
 // ─── CACHE ────────────────────────────────────────────────────────────────────
@@ -801,14 +832,14 @@ const { createBackup, axiosFetchJson } = require('./backup');
 const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on.
 // The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
-const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' });
+const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json', user: true });
 // wrapped with Postgres too, so the day DATABASE_URL is attached the phones and
 // the key come over from the backup instead of every phone signing up again
 const push = require('./push').createPush({ store: resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
 // Every alert as it went out (alertlog.js): /alerts and RESULTS > ALERT HISTORY
 // grade the bets each one named. Append-only on the results backup, so a deploy keeps it.
 const alertLogLib = require('./alertlog');
-const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLog', require('./evtrack').createStoreFromEnv(process.env, { table: 'alert_log', fileVar: 'ALERT_LOG_FILE', file: 'alert-log.json' })) });
+const alertLog = alertLogLib.createAlertLog({ store: resultsBackup.wrap('alertLog', require('./evtrack').createStoreFromEnv(process.env, { table: 'alert_log', fileVar: 'ALERT_LOG_FILE', file: 'alert-log.json', user: true })) });
 const webhook = require('./push').withPush(webhookOnly, push, {
   onSent: ({ text, what, kind, meta, webhooks, phones }) => alertLog.record({ text, title: what, kind, reached: { webhooks, phones }, items: meta?.items || [] }),
 });
@@ -821,6 +852,11 @@ const bigMoney = require('./bigmoney');
 const altLines = require('./altlines');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
+// a lane closed for good keeps its record on disk, not in memory (coldstore.js)
+const cold = require('./coldstore');
+const recordStore = (name, opts) => resultsBackup.wrap(name, cold.closed(name)
+  ? cold.createDiskStore(cold.diskFileFor(process.env, opts), { label: `Closed lane ${name}` })
+  : createEvStoreFromEnv(process.env, opts));
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel's and BetRivers' ladders and alternate lines (altlines.js), graded
@@ -927,7 +963,7 @@ const appScoreResults = appScore.createResults({
 // scores (slipgrade.js); finished results kept for everyone who logs that leg
 const slipLate = require('./slipgrade');
 const lateSlipGrader = slipLate.createLateGrader({
-  store: resultsBackup.wrap('slipLate', createEvStoreFromEnv(process.env, { table: 'slip_late', fileVar: 'SLIP_LATE_FILE', file: 'slip-late.json' })),
+  store: resultsBackup.wrap('slipLate', createEvStoreFromEnv(process.env, { table: 'slip_late', fileVar: 'SLIP_LATE_FILE', file: 'slip-late.json', user: true })),
   book: propCloseBook, grader: sportGrader, scan: slipLate.createBoxScan({ http: axios }),
 });
 // SHOP (appshop.js): the softest number across the apps and the middles
@@ -940,7 +976,7 @@ shopTracker.ready().catch(e => console.error('Shop tracker: store failed to init
 // PROMOS (promos.js): the apps' discounted and boosted legs at their own
 // payout, followed to the close and graded in a record of their own
 const promoTracker = createSportTracker({
-  store: resultsBackup.wrap('promoLegs', createEvStoreFromEnv(process.env, { table: 'promo_legs', fileVar: 'PROMO_LEGS_FILE', file: 'promo-legs.json' })),
+  store: recordStore('promoLegs', { table: 'promo_legs', fileVar: 'PROMO_LEGS_FILE', file: 'promo-legs.json' }),
   grader: sportGrader,
 });
 promoTracker.ready().catch(e => console.error('Promo tracker: store failed to initialise:', e.message));
@@ -3113,6 +3149,15 @@ const mapUndersModelTracker = createTracker({
   graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: -1000, fairProb: mapUnderFair, idSuffix: p => p.appKey,
 });
 mapUndersModelTracker.ready().catch(e => console.error('Map unders model tracker: store failed to initialise:', e.message));
+// rows recorded twice from two listings of one match (before v3.222.0): voided, the first signal kept
+async function voidMapUnderDupes() {
+  const out = {};
+  for (const [name, t] of [['rule', mapUndersTracker], ['model', mapUndersModelTracker]]) {
+    const dup = new Set(mapunders.duplicateRows(await t.list({ limit: 1e6 })).map(r => r.id));
+    out[name] = dup.size ? await t.voidWhere(r => dup.has(r.id), 'Duplicate: the app listed this match twice; the first signal is kept') : 0;
+  }
+  return out;
+}
 // the app's break-even for the Under at its read payout, or null when the Under is closed
 function mapUnderBe(p, app, line) {
   if (app === 'PP') return sportProps.PP_GRADE.be;
@@ -3140,7 +3185,8 @@ function runMapUnders(picks, now = Date.now()) {
       st.legs++;
     }
   }
-  const groups = mapunders.flagGroups(legs, (id, game, n) => mapunders.pinAnchor(matches.get(id)?.ladders, game, n));
+  // one leg per app and player: an app can list one match twice (10-27: Underdog's own title and a PrizePicks-style one)
+  const groups = mapunders.flagGroups(mapunders.dedupeLegs(legs), (id, game, n) => mapunders.pinAnchor(matches.get(id)?.ladders, game, n));
   // kill shares for LoL and Dota: each team's players with stats on any app (sharemodel.teamShares)
   const shares = new Map();
   const shareOf = leg => {
@@ -3190,7 +3236,7 @@ function runMapUnders(picks, now = Date.now()) {
         ppLine: x.leg.line, udLine: app === 'UD' ? x.leg.line : null, sleeperLine: app === 'SL' ? x.leg.line : null,
         modelPred: x.leg.mean ?? null, predSource: 'map unders', marketPred: x.leg.mean ?? null, fairSource: x.fair != null ? (x.leg.muFair?.kind || null) : null,
         context: p.context || null, appKey: app, muFair: x.leg.muFair || null,
-        trackExtra: { appKey: app, game: g.game, span: g.map, be: x.be, signalDecimal: +(1 / x.be).toFixed(4), appSum: g.appSum, anchor: g.anchor.kills,
+        trackExtra: { appKey: app, game: g.game, span: g.map, matchKey: `${g.game}|${g.matchId}`, be: x.be, signalDecimal: +(1 / x.be).toFixed(4), appSum: g.appSum, anchor: g.anchor.kills,
           anchorSrc: g.anchor.src, gapPct: g.gapPct, under5: g.under5, modelProb: x.fair, modelEdge: x.edge, share: x.leg.share ?? null,
           teamKills: x.leg.teamKills ?? null, players: g.teams.map(t => t.n) },
       };
@@ -3389,8 +3435,7 @@ tracker.ready().then(
 // Paid features. With the paywall off, everyone is treated as a subscriber.
 // The admin token always counts, so the owner never needs a subscription.
 function isAdmin(req) {
-  const admin = process.env.TRACKER_ADMIN_TOKEN;
-  return !!admin && req.get('x-admin-token') === admin;
+  return security.safeEqual(req.get('x-admin-token'), process.env.TRACKER_ADMIN_TOKEN);
 }
 function hasPro(req) {
   if (!PAYWALL) return true;
@@ -3454,7 +3499,7 @@ function redactForFree(picks) {
 function requireAdmin(req, res, next) {
   const want = process.env.TRACKER_ADMIN_TOKEN;
   if (!want) return res.status(503).json({ error: 'Set TRACKER_ADMIN_TOKEN on the server to enable manual grading.' });
-  if (req.get('x-admin-token') !== want) return res.status(401).json({ error: 'Bad or missing admin token' });
+  if (!security.safeEqual(req.get('x-admin-token'), want)) return res.status(401).json({ error: 'Bad or missing admin token' });
   next();
 }
 
@@ -4424,7 +4469,7 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
 // backend already holds (sportsbooks, with the exchange books attached).
 // bid-then-hedge plans, followed to a fill, a cancel or the start (bidtrack.js)
 const bidTracker = require('./bidtrack').createBidTracker({
-  store: resultsBackup.wrap('bidArbs', createEvStoreFromEnv(process.env, { table: 'bid_arbs', fileVar: 'BIDARB_TRACK_FILE', file: 'bid-arbs.json' })),
+  store: recordStore('bidArbs', { table: 'bid_arbs', fileVar: 'BIDARB_TRACK_FILE', file: 'bid-arbs.json' }),
   fees: XARB_OPTS,
 });
 bidTracker.ready().catch(e => console.error('Bid tracker: store failed to initialise:', e.message));
@@ -4482,7 +4527,7 @@ async function scanGasLocks() {
 // 50 graded (the first flag per map). ESPORTS_INPLAY=off stops it.
 const esinplay = require('./esinplay');
 const inplayTracker = esinplay.createInplayTracker({
-  store: resultsBackup.wrap('esportsInplay', createEvStoreFromEnv(process.env, { table: 'esports_inplay', fileVar: 'ESPORTS_INPLAY_FILE', file: 'esports-inplay.json' })),
+  store: recordStore('esportsInplay', { table: 'esports_inplay', fileVar: 'ESPORTS_INPLAY_FILE', file: 'esports-inplay.json' }),
   http: upstream,
 });
 inplayTracker.ready().catch(e => console.error('In-play: store failed to initialise:', e.message));
@@ -4492,7 +4537,8 @@ async function scanInplay() {
   if (process.env.ESPORTS_INPLAY === 'off' || inplayBusy) return [];
   inplayBusy = true;
   try {
-    const fresh = await inplayLive.tick();
+    // closed: no live reads, only the open rows' grading
+    const fresh = cold.closed('esportsInplay') ? [] : await inplayLive.tick();
     if (Date.now() - inplayGradedAt > 5 * 60e3) { inplayGradedAt = Date.now(); await inplayTracker.grade(); }
     return fresh;
   } finally { inplayBusy = false; }
@@ -4557,7 +4603,7 @@ async function scanXarbs() {
     catch (e) { console.warn('Exchange arbs: price screen:', e.message); }
     await middleTracker.record(middles).catch(e => console.warn('Middle tracker:', e.message));
     if (now - middleGradedAt > 10 * 60e3) { middleGradedAt = now; middleTracker.grade().catch(e => console.warn('Middle tracker:', e.message)); }
-    await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
+    if (!cold.closed('bidArbs')) await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList, usMatches: us.matchList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
     }
@@ -4566,13 +4612,22 @@ async function scanXarbs() {
       try { screen = xvalue.screenFairs(screen, { usRows: us.rowList, polymarket, books: xvalueState.books, usMatches: us.matchList }); } catch (e) { console.warn('Exchange price screen fairs:', e.message); }
     }
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
-    // every row this scan read, for BIG MONEY's line shop (pingames.matchRows)
-    xarbState.rows = { kalshi: kalshi.length ? kalshi : xarbState.rows?.kalshi || [], polymarket: polymarket.length ? polymarket : xarbState.rows?.polymarket || [], us: us.rowList?.length ? us.rowList : xarbState.rows?.us || [], at: now };
+    // the rows BIG MONEY's line shop reads (bigGames: Kalshi's game contracts,
+    // Polymarket's sports, Polymarket US), not every row: the rest of a
+    // 100k-row catalogue would sit in memory until the next scan for nothing
+    const shopRows = {
+      kalshi: kalshi.filter(r => r.gameKey), polymarket: polymarket.filter(r => r.category === 'sports'), us: us.rowList || [],
+    };
+    xarbState.rows = { kalshi: kalshi.length ? shopRows.kalshi : xarbState.rows?.kalshi || [], polymarket: polymarket.length ? shopRows.polymarket : xarbState.rows?.polymarket || [], us: shopRows.us.length ? shopRows.us : xarbState.rows?.us || [], at: now };
     if (kalshi.length) {
-      xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
-        title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title,
-        eventTicker: r.eventKey.replace(/^kalshi:/, ''), url: r.url,
-      }]));
+      // title and event per ticker for the whale feed (whales.kalshiMeta makes
+      // the link from the event); one event string shared by its markets
+      const events = new Map();
+      xarbState.kalshiTitles = new Map(kalshi.map(r => {
+        let eventTicker = events.get(r.eventKey);
+        if (eventTicker === undefined) { eventTicker = r.eventKey.replace(/^kalshi:/, ''); events.set(r.eventKey, eventTicker); }
+        return [r.id, { title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title, eventTicker }];
+      }));
     }
     Object.assign(xarbState, {
       arbs, near, bids, middles, screen, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
@@ -4934,16 +4989,26 @@ const publicJobs = jobs => Object.fromEntries(Object.entries(jobs).map(([k, j]) 
 // The app itself. Served from here it talks to this same server, so one
 // deploy ships both and there's no backend URL to keep in sync.
 const APP_FILE = path.join(__dirname, 'public', 'index.html');
-let appHtml = null;
+const APP_JS = path.join(__dirname, 'public', 'app.js');
+const appbundle = require('./appbundle');
+// The page (public/index.html) and its script (public/app.js) are read once.
+// The script goes out as /assets/app.<hash>.js: the hash changes with every
+// deploy that changes it, so a browser keeps it for a year and a revisit only
+// revalidates the small page. The script is compressed once (appbundle.js).
+let appBundle = null;
 function loadApp() {
-  if (appHtml) return appHtml;
+  if (appBundle) return appBundle.html;
   try {
-    appHtml = fs.readFileSync(APP_FILE, 'utf8')
+    const js = fs.readFileSync(APP_JS, 'utf8')
       .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;')
-      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`)
+      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`);
+    const hash = require('crypto').createHash('sha256').update(js).digest('hex').slice(0, 12);
+    const html = fs.readFileSync(APP_FILE, 'utf8')
+      .replace('<script src="/app.js"></script>', `<script src="/assets/app.${hash}.js"></script>`)
       .replace('/*@@LRVENUE@@*/', () => fs.readFileSync(path.join(__dirname, 'venuelinks.js'), 'utf8').replace(/<\/script/gi, '<\\/script'));
-  } catch { appHtml = null; }
-  return appHtml;
+    appBundle = { html, hash, packed: appbundle.pack(js) };
+  } catch { appBundle = null; }
+  return appBundle?.html ?? null;
 }
 legal.mount(app);
 // The Learn pages (learn.js): no-vig, EV, CLV, hold and arbs, middles, Kelly,
@@ -5042,6 +5107,16 @@ app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
   res.set('Cache-Control', 'no-cache').type('html').send(html);
+});
+// The app's script. The current hash is kept a year; any other hash (a page
+// cached from before a deploy) gets today's script, revalidated every time.
+app.get('/assets/app.:hash.js', (req, res) => {
+  if (!loadApp()) return res.sendStatus(404);
+  const { packed, hash } = appBundle, current = req.params.hash === hash;
+  res.set({ 'Cache-Control': current ? 'public, max-age=31536000, immutable' : 'no-cache', Vary: 'Accept-Encoding' }).type('application/javascript');
+  const enc = appbundle.pick(packed, req.get('accept-encoding'));
+  if (!enc) return res.send(packed.raw);
+  res.set('Content-Encoding', enc).send(enc === 'br' ? packed.br : packed.gz);
 });
 // The calculator math the TOOLS tab runs in the browser (the same file the
 // tests check), so the page and the tests can't drift apart.
@@ -5228,40 +5303,34 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.222.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: VERSION, updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
 const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
 
+// guessing passwords: per address, and per email whatever the address
+const loginByIp = security.createWindowLimiter({ limit: 20, windowMs: 15 * 60e3 });
+const loginFailsByEmail = security.createWindowLimiter({ limit: 10, windowMs: 60 * 60e3 });
+const signupByIp = security.createWindowLimiter({ limit: 5, windowMs: 60 * 60e3 });
+const emailKey = e => (typeof e === 'string' ? e.trim().toLowerCase().slice(0, 254) : '');
 app.post('/api/auth/signup', async (req, res) => {
+  const lim = security.isLocal(req) ? { ok: true } : signupByIp.take(security.callerIp(req));
+  if (!lim.ok) return security.tooMany(res, lim, `Too many new accounts from this address. Try again in ${Math.ceil(lim.retryAfter / 60)} min.`);
   try {
     const consent = { terms: req.body?.acceptTerms === true, age: req.body?.confirmAge === true, version: req.body?.termsVersion, ip: (req.get('x-forwarded-for') || '').split(',')[0].trim() || req.ip };
     res.status(201).json(await auth.signup(req.body?.email, req.body?.password, consent));
   }
   catch (e) { sendErr(res, e); }
 });
-// Wrong passwords: 10 per email and 30 per address in 15 minutes, then a wait.
-// Accounts now hold people's bets, so guessing has to be slow.
-const loginFails = new Map();   // 'e:<email>' | 'ip:<addr>' → [ms]
-function loginBlocked(keys, now = Date.now()) {
-  for (const [k, max] of keys) {
-    const list = (loginFails.get(k) || []).filter(t => now - t < 15 * 60e3);
-    loginFails.set(k, list);
-    if (list.length >= max) return true;
-  }
-  return false;
-}
-function loginFailed(keys, now = Date.now()) {
-  for (const [k] of keys) loginFails.set(k, [...(loginFails.get(k) || []), now].slice(-50));
-  if (loginFails.size > 20000) loginFails.clear();
-}
-const clientIp = req => (req.get('x-forwarded-for') || '').split(',')[0].trim() || req.ip;
 app.post('/api/auth/login', async (req, res) => {
-  const keys = [[`e:${String(req.body?.email || '').trim().toLowerCase()}`, 10], [`ip:${clientIp(req)}`, 30]];
-  if (loginBlocked(keys)) return res.status(429).json({ error: 'Too many wrong passwords. Wait 15 minutes and try again.' });
-  try { res.json(await auth.login(req.body?.email, req.body?.password)); }
-  catch (e) { if (e.status === 401) loginFailed(keys); sendErr(res, e); }
+  const email = emailKey(req.body?.email);
+  const local = security.isLocal(req);
+  const lim = local ? { ok: true } : loginByIp.take(security.callerIp(req));
+  const fails = email && !local ? loginFailsByEmail.peek(email) : 0;
+  if (!lim.ok || fails >= 10) return security.tooMany(res, lim.ok ? { retryAfter: 900 } : lim, 'Too many sign-in attempts. Wait a few minutes and try again.');
+  try { const out = await auth.login(req.body?.email, req.body?.password); if (email) loginFailsByEmail.reset(email); res.json(out); }
+  catch (e) { if (e.status === 401 && email) loginFailsByEmail.take(email); sendErr(res, e); }
 });
 // Delete your own account (privacy rights). Needs the password, and a paid
 // subscription has to be cancelled first so nobody is billed for a deleted account.
@@ -5343,9 +5412,10 @@ app.get('/pricing', async (req, res) => {
   } catch (e) { console.warn('Pricing page:', e.message); res.status(500).type('text/plain').send('The pricing page could not be built just now. Try again in a minute.'); }
 });
 // where Stripe should send people back to: the page they came from
+// (this site only: Stripe must not be told to send a paying customer elsewhere)
 function returnUrl(req, fallback = '/') {
   const u = req.body?.returnUrl || req.get('referer') || fallback;
-  return /^https?:\/\//.test(u) ? u : fallback;
+  try { return typeof u === 'string' && new URL(u).host === req.get('host') && /^https?:$/.test(new URL(u).protocol) ? u : fallback; } catch { return fallback; }
 }
 app.post('/api/billing/checkout', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Log in first' });
@@ -5881,7 +5951,7 @@ app.get('/api/xarbs', async (req, res) => {
   // sportsbook pairs (bookarbs.js): FanDuel, BetRivers, Kalshi, Polymarket US
   const bookArbList = bookArbState.arbs.filter(arbOk(lic)), bookMiddleList = bookArbState.middles.filter(arbOk(lic));
   const books = { arbCount: bookArbList.length, middleCount: bookMiddleList.length, updated: bookArbState.updated, record: bookRecord };
-  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, middleRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, bidClosed: cold.closedInfo('bidArbs'), middleRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
   if (!pro) return res.json({ ...base, books: { ...books, arbs: bookArbList.map(a => ({ profitPct: a.profitPct, locked: true })) }, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
     ...base, books: { ...books, arbs: bookArbList, middles: bookMiddleList.slice(0, 60), counts: bookArbState.counts },
@@ -5950,7 +6020,7 @@ app.get('/api/esports/inplay', async (req, res) => {
     const summary = esinplay.summarize(rows);
     const recent = rows.filter(r => r.status === 'graded').sort((a, b) => (b.flaggedAt || '').localeCompare(a.flaggedAt || '')).slice(0, 40);
     const base = { updated: inplayLive.state.updated, pro, summary, rule: esinplay.DEFAULTS, models: Object.fromEntries(Object.entries(esinplay.MODELS).map(([g, m]) => [g, m ? m.kind : null])),
-      fit: esinplay.INPLAY_FITS, counts: inplayLive.state.counts, off: process.env.ESPORTS_INPLAY === 'off',
+      fit: esinplay.INPLAY_FITS, counts: inplayLive.state.counts, off: process.env.ESPORTS_INPLAY === 'off', closed: cold.closedInfo('esportsInplay'),
       note: 'Our live win probability against Kalshi\'s in-play ask, fee included, with the size resting there. Records only: nothing alerts, nothing trades. Counted toward 50 graded: the first flag per map and team.',
       ...withheldBody(withheldOf(lic, ['kalshi'])) };
     if (!pro || !lic.kalshi) return res.json({ ...base, recent });
@@ -6283,8 +6353,7 @@ app.get('/api/esports/picks', async (req, res) => {
 let lastManualRefresh = 0;
 app.post('/api/esports/refresh', async (req, res) => {
   // anyone can ask, but only the admin can force more than one rebuild a minute
-  const admin = process.env.TRACKER_ADMIN_TOKEN && req.get('x-admin-token') === process.env.TRACKER_ADMIN_TOKEN;
-  if (!admin && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
+  if (!isAdmin(req) && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
   lastManualRefresh = Date.now();
   await esPicksOnce();
   res.json({ ok: true, count: esportsCache.picks.length });
@@ -6410,7 +6479,7 @@ app.get('/api/esports/probe/:sport/:name', async (req, res) => {
     if (!found?.slug) return res.json({ source: 'bo3', error: 'no search hit for that name' });
     const raw = await bo3RawStats(found.slug);
     res.json({ source: 'bo3', found, raw, parsed: bo3ExtractProfile(name, raw.gen, raw.map, raw.acc) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(502).json({ error: `The stats source did not answer: ${String(e.message || e).slice(0, 120)}` }); }
 });
 
 app.get('/api/prizepicks', (req, res) => {
@@ -7192,7 +7261,7 @@ const shopDepthOn = () => !/^(off|0|false|no)$/i.test(String(process.env.SHOP_DE
 const shopDepth = depthBook.createDepthBook({ readAsks: ref => xsize.readAsks({ get: (url, cfg) => axios.get(url, cfg) }, ref) });
 const xsizeOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_SIZE || '').trim());
 const xsizeTracker = xsize.createSizeTracker({
-  store: resultsBackup.wrap('xsize', createEvStoreFromEnv(process.env, { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' })),
+  store: recordStore('xsize', { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' }),
   // straight to the venues, not the polite queue: there a book read waited
   // behind the exchange scans' thousands of Kalshi calls, so a minute's pass
   // took ten (2 passes in the first 10 minutes live, 10-24). At most ~70 reads a minute.
@@ -7202,7 +7271,7 @@ const xsizeTracker = xsize.createSizeTracker({
 xsizeTracker.ready().catch(e => console.error('Exchange size: store failed to initialise:', e.message));
 let xsizeRunning = false;
 async function scanExchangeSize() {
-  if (!xsizeOn() || xsizeRunning || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  if (!xsizeOn() || cold.closed('xsize') || xsizeRunning || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
   xsizeRunning = true;
   try {
     const kalshiRows = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS && licences.isOn('kalshi') ? kalshiGameRows.rows : [];
@@ -7224,7 +7293,7 @@ app.get('/api/exchange-size', async (req, res) => {
     const bets = all.filter(b => hasPro(req) || b.status === 'closed').sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt))
       .slice(0, Math.min(parseInt(req.query.limit) || 200, 2000));
     res.json({ venues: xsize.VENUES, tiers: require('./depthfill').TIERS, summary: xsize.summarize(all),
-      open: all.filter(b => b.status === 'open').length, state: xsizeTracker.state, bets,
+      open: all.filter(b => b.status === 'open').length, state: xsizeTracker.state, bets, closed: cold.closedInfo('xsize'),
       note: 'A record, not a tip sheet: no alerts until a venue and size passes at 50 graded (checks/xsize-2026-10-24/PREREGISTERED.md).' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -7237,13 +7306,13 @@ app.get('/api/exchange-size', async (req, res) => {
 // Research: no alerts, no orders. KALSHI_MAKER=off stops it.
 const kmaker = require('./kmaker');
 const kmakerOn = () => !/^(off|0|false|no)$/i.test(String(process.env.KALSHI_MAKER || '').trim());
-const kmakerStore = resultsBackup.wrap('kalshiMaker', createEvStoreFromEnv(process.env, { table: 'kalshi_maker_bids', fileVar: 'KALSHI_MAKER_FILE', file: 'kalshi-maker-bids.json' }));
+const kmakerStore = recordStore('kalshiMaker', { table: 'kalshi_maker_bids', fileVar: 'KALSHI_MAKER_FILE', file: 'kalshi-maker-bids.json' });
 const kmakerTracker = kmaker.createMakerTracker({ store: kmakerStore, http: { get: (url, cfg) => axios.get(url, cfg) } });
 kmakerTracker.ready().catch(e => console.error('Kalshi maker: store failed to initialise:', e.message));
 const kmakerBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'kalshi-maker-backtest.json'), 'utf8')); } catch { return null; } })();
 let kmakerRunning = false;
 async function scanKalshiMaker() {
-  if (!kmakerOn() || kmakerRunning || !licences.isOn('kalshi') || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  if (!kmakerOn() || cold.closed('kalshiMaker') || kmakerRunning || !licences.isOn('kalshi') || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
   if (!(Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS)) return;
   kmakerRunning = true;
   try { await kmakerTracker.scan({ games: freeBooksState.games, pinGames: freeBooksState.pinGames || [], kalshiRows: kalshiGameRows.rows }); }
@@ -7269,7 +7338,7 @@ app.get('/api/kalshi-maker', async (req, res) => {
     const done = all.filter(b => b.status === 'graded' || b.status === 'unfilled' || b.status === 'filled');
     const recent = (hasPro(req) ? all : done).slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(kmakerSlim);
     const bt = kmakerBacktest;
-    res.json({ label: 'research', kind: kmaker.KIND, note: KMAKER_NOTE, edge: kmaker.EDGE, makerRate: kmaker.MAKER_RATE, kalshi: !!lic.kalshi,
+    res.json({ label: 'research', closed: cold.closedInfo('kalshiMaker'), kind: kmaker.KIND, note: KMAKER_NOTE, edge: kmaker.EDGE, makerRate: kmaker.MAKER_RATE, kalshi: !!lic.kalshi,
       kinds: kmaker.byKind(all), kindsAtBid: kmaker.byKind(all, { fill: 'atBid' }),
       record: kmaker.summarize(all.filter(b => (b.kind || kmaker.kindOf(b)) === kmaker.KIND)), atBid: kmaker.summarize(all.filter(b => (b.kind || kmaker.kindOf(b)) === kmaker.KIND), { fill: 'atBid' }), bySport: kmaker.summarizeBy(all, b => b.sport),
       board, boardAt: kmakerTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(kmakerTracker.state), recent,
@@ -7287,13 +7356,13 @@ app.get('/api/kalshi-maker', async (req, res) => {
 // orders. EXCHANGE_PROPS=off stops it.
 const exprops = require('./exprops');
 const expropsOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_PROPS || '').trim());
-const expropsStore = resultsBackup.wrap('exchangeProps', createEvStoreFromEnv(process.env, { table: 'exchange_props', fileVar: 'EXCHANGE_PROPS_FILE', file: 'exchange-props.json' }));
+const expropsStore = recordStore('exchangeProps', { table: 'exchange_props', fileVar: 'EXCHANGE_PROPS_FILE', file: 'exchange-props.json' });
 const expropsTracker = exprops.createExchangePropsTracker({ store: expropsStore, http: { get: (url, cfg) => axios.get(url, cfg) } });
 expropsTracker.ready().catch(e => console.error('Exchange props: store failed to initialise:', e.message));
 const expropsBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'exchange-props-backtest.json'), 'utf8')); } catch { return null; } })();
 let expropsRunning = false;
 async function scanExchangeProps() {
-  if (!expropsOn() || expropsRunning || !licences.isOn('kalshi') || !licences.isOn('pinnacle')) return;
+  if (!expropsOn() || cold.closed('exchangeProps') || expropsRunning || !licences.isOn('kalshi') || !licences.isOn('pinnacle')) return;
   // both reads fresh: Kalshi's ladders (5 min) and Pinnacle's props (2 min)
   if (!kpropsState.rungs || Date.now() - Date.parse(kpropsState.updated || 0) > 12 * 60e3 || Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) return;
   expropsRunning = true;
@@ -7320,7 +7389,7 @@ app.get('/api/exchange-props', async (req, res) => {
       .sort((a, b) => b.best - a.best || Date.parse(a.start) - Date.parse(b.start)).slice(0, 300);
     const done = all.filter(b => b.status === 'graded' || b.status === 'unfilled' || b.status === 'filled');
     const recent = (hasPro(req) ? all : done).filter(b => exprops.counts(b) || b.status === 'unfilled').slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(expropsSlim);
-    res.json({ label: 'research', note: EXPROPS_NOTE, edge: exprops.EDGE, of: exprops.MIN_N, takerRate: exprops.TAKER_RATE, makerRate: exprops.MAKER_RATE, kalshi: !!lic.kalshi, pinnacle: !!lic.pinnacle,
+    res.json({ label: 'research', closed: cold.closedInfo('exchangeProps'), note: EXPROPS_NOTE, edge: exprops.EDGE, of: exprops.MIN_N, takerRate: exprops.TAKER_RATE, makerRate: exprops.MAKER_RATE, kalshi: !!lic.kalshi, pinnacle: !!lic.pinnacle,
       kinds: exprops.byKind(all), board, boardAt: expropsTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(expropsTracker.state), recent,
       backtest: expropsBacktest });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -7580,7 +7649,7 @@ function observeOddsHistory() {
 // number to the start, then graded from ESPN's final. Rows hold the line, never
 // the user, the price or the stake.
 const lineBets = require('./linebets').createLineBets({
-  store: resultsBackup.wrap('lineBets', createEvStoreFromEnv(process.env, { table: 'line_bets', fileVar: 'LINE_BETS_FILE', file: 'line-bets.json' })),
+  store: resultsBackup.wrap('lineBets', createEvStoreFromEnv(process.env, { table: 'line_bets', fileVar: 'LINE_BETS_FILE', file: 'line-bets.json', user: true })),
 });
 lineBets.ready().catch(e => console.error('Line bets: store failed to initialise:', e.message));
 // MATCHUPS' esports series bets (esbets.js): a team logged from a MATCHUPS card
@@ -7589,7 +7658,7 @@ lineBets.ready().catch(e => console.error('Line bets: store failed to initialise
 // otherwise) and graded from the engine's finished series.
 const esBetsLib = require('./esbets');
 const esBets = esBetsLib.createEsBets({
-  store: resultsBackup.wrap('esBets', createEvStoreFromEnv(process.env, { table: 'es_bets', fileVar: 'ES_BETS_FILE', file: 'es-bets.json' })),
+  store: resultsBackup.wrap('esBets', createEvStoreFromEnv(process.env, { table: 'es_bets', fileVar: 'ES_BETS_FILE', file: 'es-bets.json', user: true })),
 });
 esBets.ready().catch(e => console.error('Esports bets: store failed to initialise:', e.message));
 // the engine's own series (start, teams, state); every viewer sees the same board for this
@@ -8715,7 +8784,7 @@ app.get('/api/props/shop/scorecard', async (req, res) => {
 // (checks/promos-2026-10-25). Not a bet until a kind clears 50 graded live.
 const promos = require('./promos');
 // PROMO_RECORD=off stops recording the promo legs (on by default: alerts are off either way)
-const PROMO_RECORD = String(process.env.PROMO_RECORD || 'on').toLowerCase() !== 'off';
+const PROMO_RECORD = String(process.env.PROMO_RECORD || 'on').toLowerCase() !== 'off' && !cold.closed('promoLegs');
 const promoRowsSeen = new Map();
 let promoCache = { at: 0, src: null, rows: [], counts: null };
 // every promo leg the readers hold now (PrizePicks only while its pulls are fresh, like its board lines)
@@ -8790,7 +8859,7 @@ let promoRecordCache = { at: 0, body: null };
 app.get('/api/props/promos/record', async (req, res) => {
   try {
     if (!promoRecordCache.body || Date.now() - promoRecordCache.at > 60e3) promoRecordCache = { at: Date.now(), body: promos.recordSummary(await promoTracker.list({ limit: 1e6 })) };
-    res.json({ ...promoRecordCache.body, recording: PROMO_RECORD, preregistered: 'checks/promos-2026-10-25/PREREGISTERED.md' });
+    res.json({ ...promoRecordCache.body, recording: PROMO_RECORD, closed: cold.closedInfo('promoLegs'), preregistered: 'checks/promos-2026-10-25/PREREGISTERED.md' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -9055,7 +9124,7 @@ app.get('/api/owls-odds/:sport', async (req, res) => {
 app.get('/api/sharp-moves', (req, res) => {
   res.json({ moves: cache.sharpMoves.slice(0, parseInt(req.query.limit)||100), count: cache.sharpMoves.length, updated: new Date().toISOString() });
 });
-app.delete('/api/sharp-moves', (req, res) => { cache.sharpMoves = []; res.json({ ok: true }); });
+app.delete('/api/sharp-moves', requireAdmin, (req, res) => { cache.sharpMoves = []; res.json({ ok: true }); });
 
 app.get('/api/splits/:sport', async (req, res) => res.json(await fetchOwlsSplits(req.params.sport) || {}));
 app.get('/api/odds/:sport', async (req, res) => res.json(await fetchOddsForSport(req.params.sport)));
@@ -9244,16 +9313,18 @@ function legsFromBoard(input) {
 }
 
 app.post('/api/esports/slip', requirePro, (req, res) => {
-  const legs = legsFromBoard(req.body?.legs);
-  const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
+  const specs = Array.isArray(req.body?.legs) ? req.body.legs.slice(0, 12) : null;
+  if (!specs || specs.some(l => !l || typeof l !== 'object' || Array.isArray(l))) return res.status(400).json({ error: 'legs: a list of { player, market, side }' });
+  const legs = legsFromBoard(specs);
+  const missing = specs.filter((_, i) => !legs[i]);
   if (missing.length) return res.status(400).json({ error: 'Not on the board or not priced yet', missing: missing.map(m => m.player) });
   if (legs.length < 2) return res.status(400).json({ error: 'A slip needs at least 2 legs' });
   // the same slip on each book's own lines and payouts (slipbuild.js)
   const board = esportsCache.picks || [];
-  const picks = (req.body?.legs || []).map(spec => board.find(p =>
+  const picks = specs.map(spec => board.find(p =>
     normalizeName(p.player) === normalizeName(spec.player) &&
     (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market))) || null);
-  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks, (req.body?.legs || []).map(l => (l?.side === 'OVER' || l?.side === 'UNDER' ? l.side : null))) });
+  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks, specs.map(l => (l?.side === 'OVER' || l?.side === 'UNDER' ? l.side : null))) });
 });
 
 app.get('/api/esports/best-slips', requirePro, (req, res) => {
@@ -9478,15 +9549,15 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.222.0',
+  version: VERSION,
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),
-  exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
-  kalshiMaker: { on: kmakerOn(), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
-  exchangeProps: { on: expropsOn(), ...(({ board: _b, ...st }) => st)(expropsTracker.state) },
+  exchangeSize: { on: xsizeOn() && !cold.closed('xsize'), closed: cold.closedInfo('xsize'), ...xsizeTracker.state },
+  kalshiMaker: { on: kmakerOn() && !cold.closed('kalshiMaker'), closed: cold.closedInfo('kalshiMaker'), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
+  exchangeProps: { on: expropsOn() && !cold.closed('exchangeProps'), closed: cold.closedInfo('exchangeProps'), ...(({ board: _b, ...st }) => st)(expropsTracker.state) },
   exchangeOutrights: { on: outrightsOn(), ...(({ board: _b, ...st }) => st)(outrightsTracker.state), feed: { pinAt: outrightsFeed.state.pinAt, kalshiAt: outrightsFeed.state.kalshiAt, pmusAt: outrightsFeed.state.pmusAt, reads: outrightsFeed.state.reads, errors: outrightsFeed.state.errors } },
   shopDepth: { on: shopDepthOn(), ...shopDepth.state, budget: depthBook.READ_BUDGET },
   resultsBackup: resultsBackup.status(),
@@ -9620,6 +9691,7 @@ schedule('*/5 * * * *', async () => {
     trackerHealth.esSlipLegs = { locked: await esSlipTracker.lockStarted(), ...(await esSlipTracker.gradeDue()) };
     trackerHealth.mapUnders = { locked: await mapUndersTracker.lockStarted(), ...(await mapUndersTracker.gradeDue()) };
     trackerHealth.mapUndersModel = { locked: await mapUndersModelTracker.lockStarted(), ...(await mapUndersModelTracker.gradeDue()) };
+    trackerHealth.mapUndersDup = await voidMapUnderDupes();
     trackerHealth.pinTotals = await gradePinTotals().catch(e => ({ error: e.message }));
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;
@@ -9664,7 +9736,7 @@ function statusProbe() {
     { key: 'backup', name: 'Results backup (saved every 20 min)', group: 'recorder', enabled: bk.state !== 'off', okAt: bk.lastExportAt || bk.snapshotAt, error: bk.state === 'ready' ? null : bk.note || `backup ${bk.state}`, staleMs: 45 * 60e3 },
   ];
 }
-const statusBoard = statusPage.createStatusBoard({ probe: statusProbe, version: () => require('./package.json').version });
+const statusBoard = statusPage.createStatusBoard({ probe: statusProbe, version: () => VERSION });
 let statusBooted = false;
 const statusStore = resultsBackup.wrap('statusHistory', {
   init: async () => {}, all: async () => (statusBooted ? statusBoard.dump() : []),
@@ -9685,7 +9757,7 @@ app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html
 const publicApi = require('./publicapi');
 const embeds = require('./embeds');
 const shareCards = require('./sharecards');
-const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json' })) });
+const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json', user: true })) });
 apiKeys.init().catch(e => console.warn('API keys: store failed to initialise:', e.message));
 const apiLimiter = publicApi.createLimiter();
 const widgetLimiter = publicApi.createLimiter({ perMinute: publicApi.WIDGET_PER_MINUTE, perDay: 0 });
@@ -9874,7 +9946,7 @@ const v1Route = fn => async (req, res) => {
 app.get('/api/v1', (req, res) => publicApi.sendCached(req, res, { version: publicApi.VERSION, docs: '/developers', auth: 'X-API-Key header (or ?key=)', limits: publicApi.LIMITS,
   plans: PAYWALL ? Object.fromEntries(plans.PLAN_IDS.map(id => [id, v1Limits(id)])) : null, pricing: '/pricing',
   endpoints: publicApi.ENDPOINTS.map(e => ({ path: e.path, title: e.title, params: Object.fromEntries(e.params) })), widgets: ['/embed/best-price', '/embed/line-move', '/embed/record', '/embed.js'],
-  feed: { status: 'GET /api/v1/feed', connect: 'PUT /api/v1/feed/discord with {"url": "<Discord webhook URL>"}', disconnect: 'DELETE /api/v1/feed/discord', docs: '/developers#feed' },
+  feed: { status: 'GET /api/v1/feed', connect: 'PUT /api/v1/feed/discord with {"url": "<Discord webhook URL>"}', records: 'PUT /api/v1/feed/records with {"handles": ["<handle>"], "results": true}', disconnect: 'DELETE /api/v1/feed/discord', docs: '/developers#feed' },
   bot: { status: 'GET /api/v1/bot', connect: 'PUT /api/v1/bot/discord with {"appId", "publicKey", "botToken"}', disconnect: 'DELETE /api/v1/bot/discord', commands: discordBot.COMMANDS.map(c => `/${c.name}`), docs: '/developers#bot',
     telegram: { connect: 'PUT /api/v1/bot/telegram with {"botToken": "<token from @BotFather>"}', disconnect: 'DELETE /api/v1/bot/telegram', commands: ['/odds', '/props', '/moves', '/record', '/lines', '/settings', '/help'] } } }, { scope: 'public', maxAge: 300 }));
 app.post('/api/v1/keys', async (req, res) => {
@@ -9953,6 +10025,12 @@ app.get('/api/v1/lines/prop', v1Auth, (req, res) => {
   v1LineSend(req, res, lineProp(key, { pro: v1FullTier(), kalshi: !!webhookLicence().kalshi, days }), days);
 });
 app.get('/api/v1/status', v1Auth, v1Route(() => v1.status()));
+app.get('/api/v1/records/:handle', v1Auth, v1Route(async req => {
+  const c = pubRecord.cleanHandle(req.params.handle);
+  const v = c.handle ? await pubView(c.handle, 1) : null;
+  if (!v) throw new V1Error(404, 'not_found', 'No published bettor record with that handle.');
+  return pubRecord.bettorCard(v);
+}));
 // the app's SEARCH box: games, esports series, players, markets and leagues the site holds now
 app.get('/api/v1/search', v1Auth, v1Route(req => {
   if (searchLib.cleanQ(req.query.q).length < 2) throw new V1Error(400, 'bad_parameter', 'q: two or more letters, e.g. q=lakers');
@@ -9998,8 +10076,15 @@ app.get('/embed/line-move', widgetGate, (req, res) => {
   } catch (e) { widgetError(res, e); }
 });
 app.get('/embed/record', widgetGate, async (req, res) => {
-  try { sendWidget(req, res, embeds.recordWidget(publicApi.recordCard(await v1.record({})), { origin: siteOrigin(req), id: widgetId(req) })); }
-  catch (e) { widgetError(res, e); }
+  try {
+    // ?handle=: a bettor's own published record (pubrecord.js), the same card as /api/v1/records/<handle>
+    if (req.query.handle != null) {
+      const c = pubRecord.cleanHandle(req.query.handle);
+      const v = c.handle ? await pubView(c.handle, 1) : null;
+      return sendWidget(req, res, embeds.bettorWidget(pubRecord.bettorCard(v || { handle: c.handle || null, status: 'missing' }), { origin: siteOrigin(req), id: widgetId(req) }));
+    }
+    sendWidget(req, res, embeds.recordWidget(publicApi.recordCard(await v1.record({})), { origin: siteOrigin(req), id: widgetId(req) }));
+  } catch (e) { widgetError(res, e); }
 });
 app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/javascript').send(embeds.embedScript(siteOrigin(req))));
 
@@ -10184,7 +10269,7 @@ app.get('/results', widgetGate, (req, res) => sendSharePage(req, res, 'record', 
 // only its SHA-256 is kept. Kept across deploys by the results backup.
 const pubRecord = require('./pubrecord');
 const leaderboard = require('./leaderboard');
-const pubRecords = pubRecord.createRecordStore({ store: resultsBackup.wrap('pubRecords', createEvStoreFromEnv(process.env, { table: 'pub_records', fileVar: 'PUB_RECORDS_FILE', file: 'pub-records.json' })),
+const pubRecords = pubRecord.createRecordStore({ store: resultsBackup.wrap('pubRecords', createEvStoreFromEnv(process.env, { table: 'pub_records', fileVar: 'PUB_RECORDS_FILE', file: 'pub-records.json', user: true })),
   perHour: parseInt(process.env.PUB_RECORDS_PER_HOUR, 10) || undefined });
 pubRecords.init().catch(e => console.warn('Public records: store failed to initialise:', e.message));
 const pubRecordState = { lastRun: null, lastMs: null, legs: 0, changed: 0, error: null, running: false };
@@ -10192,8 +10277,10 @@ const pubRecordState = { lastRun: null, lastMs: null, legs: 0, changed: 0, error
 // each record gets up to 300 legs a pass (its newest first), records taken in
 // turn from pass to pass so one big imported history can't starve the rest
 let pubRecordTurn = 0;
+// a record that sends slips while a pass runs is graded (and its feed read) right after it
+const pubRecordAgain = new Set();
 async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
-  if (pubRecordState.running) return pubRecordState;
+  if (pubRecordState.running) { if (only) pubRecordAgain.add(only); return pubRecordState; }
   pubRecordState.running = true;
   const t0 = Date.now();
   let legsN = 0, changed = 0;
@@ -10217,6 +10304,10 @@ async function gradePubRecords({ only = null, maxLegs = 900 } = {}) {
     Object.assign(pubRecordState, { lastRun: new Date().toISOString(), lastMs: Date.now() - t0, legs: legsN, changed, error: null });
   } catch (e) { pubRecordState.error = e.message; console.warn('Public records: grading:', e.message); }
   finally { pubRecordState.running = false; }
+  // each record's own feed: new picks logged before the start, new results (outfeed.js)
+  await feedBettors({ only }).catch(e => { bettorFeedState.error = e.message; console.warn('Record feed:', e.message); });
+  const next = [...pubRecordAgain][0];
+  if (next) { pubRecordAgain.delete(next); setImmediate(() => gradePubRecords({ only: next, maxLegs: 600 }).then(() => pubForget(next)).catch(() => {})); }
   return pubRecordState;
 }
 schedule('7,17,27,37,47,57 * * * *', () => gradePubRecords().catch(() => {}));
@@ -10402,14 +10493,17 @@ async function developerExamples() {
   await add('/api/v1/states', '/api/v1/states', () => v1.states(), 3);
   await add('/api/v1/states/{state}', '/api/v1/states/TX', () => v1.states('TX'), 2);
   await add('/api/v1/status', '/api/v1/status', () => v1.status());
+  const top = (await pubIndex().catch(() => null))?.rows?.[0]?.handle;
+  if (top) await add('/api/v1/records/{handle}', `/api/v1/records/${top}`, async () => pubRecord.bettorCard(await pubView(top, 1)), 3);
   return ex;
 }
 const devMemo = require('./ops').createMemo({ ttlMs: 60e3 });
 app.get('/developers', async (req, res) => {
   try {
     const examples = await devMemo('examples', developerExamples);
+    const idx = await pubIndex().catch(() => null);
     res.set('Cache-Control', 'public, max-age=60').type('html').send(embeds.developersPage({ origin: siteOrigin(req), endpoints: publicApi.ENDPOINTS, examples,
-      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence(), planLimits: PAYWALL ? plans.LIMITS : null }));
+      limits: publicApi.LIMITS, widgetLimit: publicApi.WIDGET_PER_MINUTE, keyCreate: publicApi.KEY_CREATE, licences: webhookLicence(), planLimits: PAYWALL ? plans.LIMITS : null, bettor: idx?.rows?.[0]?.handle || null, feedHandles: publicApi.FEED_HANDLES }));
   } catch (e) { console.warn('Developers page:', e.message); res.status(500).type('text').send('The developers page could not be built. Try again in a minute.'); }
 });
 // ─── OUTBOUND FEED: DISCORD AND TELEGRAM (outfeed.js) ────────────────────────
@@ -10422,7 +10516,13 @@ app.get('/developers', async (req, res) => {
 const outFeed = require('./outfeed');
 const outFeedOwner = outFeed.ownerDestinations(process.env);
 for (const p of outFeedOwner.problems) console.warn(`Feed: ${p}`);
-const outFeedSeal = outFeed.sealer(process.env.FEED_SECRET ? require('crypto').createHash('sha256').update(`line-reaper-feed|${process.env.FEED_SECRET}`).digest() : require('./backup').keyFromEnv(process.env));
+// sealed with FEED_SECRET, else the results backup key; every backup key this
+// server can make still opens what was sealed before either changed
+const outFeedSeal = (() => {
+  const backupKeys = require('./backup').keysFromEnv(process.env);
+  const feedKey = process.env.FEED_SECRET ? require('crypto').createHash('sha256').update(`line-reaper-feed|${process.env.FEED_SECRET}`).digest() : backupKeys[0] || null;
+  return outFeed.sealer(feedKey, backupKeys);
+})();
 const outFeedStore = resultsBackup.wrap('outFeed', createEvStoreFromEnv(process.env, { table: 'out_feed', fileVar: 'OUT_FEED_FILE', file: 'out-feed.json' }), { appendOnly: false });
 const outFeedReady = outFeedStore.init().catch(e => console.warn('Feed store:', e.message));
 const outFeedState = { record: { checkedAt: null, rows: 0, posted: null, error: null }, moves: { last: null, error: null }, digest: { last: null, error: null }, ownerCheck: null, connects: new Map() };
@@ -10432,14 +10532,18 @@ async function feedSubscribers() {
   const out = [];
   for (const { keyId, feed, userId } of apiKeys.feeds()) {
     if (!plans.limitsOf(await planOfUserId(userId)).discordFeed) continue;
+    if (feed.results === false) continue;   // a channel that asked for bettor records only
     const url = outFeedSeal.open(feed.sealed);
     if (url) out.push({ kind: 'discord', id: `key-${keyId}`, keyId, url });
   }
   return out;
 }
 const outFeedSender = outFeed.createFeed({ owner: outFeedOwner.dests, subscribers: feedSubscribers,
-  onResult: (d, r) => { if (d.keyId) apiKeys.markFeed(d.keyId, r).catch(e => console.warn('Feed: status save failed:', e.message)); } });
-const feedOn = () => outFeedOwner.dests.length > 0 || apiKeys.feeds().length > 0;
+  onResult: (d, r) => {
+    if (d.keyId) apiKeys.markFeed(d.keyId, r).catch(e => console.warn('Feed: status save failed:', e.message));
+    else if (d.recordHandle) pubRecords.markFeed(d.recordHandle, d.kind, r).catch(e => console.warn('Record feed: status save failed:', e.message));
+  } });
+const feedOn = () => outFeedOwner.dests.length > 0 || apiKeys.feeds().some(x => x.feed.results !== false);
 async function feedDoc(id) { await outFeedReady; return (await outFeedStore.all()).find(d => d.id === id) || null; }
 const feedBackupOk = () => { const bk = process.env.DATABASE_URL ? 'ready' : resultsBackup.status().state; return bk === 'ready' || bk === 'off'; };
 // the Monday digest, from publishDigest once the week is frozen
@@ -10496,20 +10600,143 @@ async function feedOwnerCheck() {
 function outFeedStatus() {
   const s = outFeedSender.stats();
   return { on: feedOn(), owner: { discord: outFeedOwner.dests.filter(d => d.kind === 'discord').length, telegram: outFeedOwner.dests.filter(d => d.kind === 'telegram').length, problems: outFeedOwner.problems },
-    customers: apiKeys.feeds().length, sealed: outFeedSeal.on, schedule: { digest: 'Monday 13:00 UTC', record: 'hourly at :30, a change posts once it holds two reads', moves: 'daily 21:00 UTC' },
+    customers: apiKeys.feeds().length, sealed: outFeedSeal.on,
+    records: { owners: pubRecords.liveHandles().filter(h => { const f = pubRecords.feedOf(h); return !!(f && ((f.discord && !f.discord.deadAt) || (f.telegram && !f.telegram.deadAt))); }).length,
+      subscribed: apiKeys.feeds().filter(x => (x.feed.handles || []).length).length, lastRun: bettorFeedState.lastRun, handles: bettorFeedState.handles, last: bettorFeedState.last, error: bettorFeedState.error }, schedule: { digest: 'Monday 13:00 UTC', record: 'hourly at :30, a change posts once it holds two reads', moves: 'daily 21:00 UTC' },
     ownerCheck: outFeedState.ownerCheck, record: outFeedState.record, moves: outFeedState.moves, digest: outFeedState.digest,
     sent: s.sent, failed: s.failed, posts: s.posts, lastAt: s.lastAt, lastError: s.lastError, recent: s.recent };
 }
+// ── a bettor's own record feed (pubrecord.js + outfeed.js) ──
+// Each published record's picks logged before their start post at log time
+// (once the graders match them to a game), with the server's stamp and the
+// price, and their graded results after. They go to the record owner's own
+// Discord or Telegram (connected with the record key from MY SLIPS) and to
+// every customer channel that added the handle on /developers. The same post
+// for every channel; no stake, units, profit or sizing; nothing placed. A pick
+// logged late never posts. TAKE OFF THE LIST only touches the /r index.
+const bettorFeedState = { lastRun: null, handles: 0, picks: 0, results: 0, sent: 0, failed: 0, error: null, running: false, last: null };
+async function bettorDests(h) {
+  const out = [];
+  const f = pubRecords.feedOf(h) || {};
+  if (f.discord && !f.discord.deadAt) { const url = outFeedSeal.open(f.discord.sealed); if (url) out.push({ kind: 'discord', id: `rec-${h}-discord`, url, recordHandle: h }); }
+  if (f.telegram && !f.telegram.deadAt) { const token = outFeedSeal.open(f.telegram.sealed); if (token) out.push({ kind: 'telegram', id: `rec-${h}-telegram`, token, chat: f.telegram.chat, recordHandle: h }); }
+  // a customer's channel follows the same plan rule as its RESULTS posts (the owner's own channels are free)
+  for (const { keyId, feed, userId } of apiKeys.feedsFor(h)) {
+    if (!plans.limitsOf(await planOfUserId(userId)).discordFeed) continue;
+    const url = outFeedSeal.open(feed.sealed);
+    if (url) out.push({ kind: 'discord', id: `key-${keyId}`, keyId, url });
+  }
+  return out;
+}
+async function feedBettors({ only = null, now = Date.now() } = {}) {
+  if (bettorFeedState.running || !feedBackupOk()) return bettorFeedState;
+  bettorFeedState.running = true;
+  let handles = 0, picks = 0, results = 0, sent = 0, failed = 0;
+  try {
+    await pubRecords.init();
+    for (const h of only ? [only] : pubRecords.liveHandles()) {
+      const dests = await bettorDests(h);
+      const id = `rf|${h}`;
+      const prev = await feedDoc(id);
+      if (!dests.length) { if (prev?.active) await outFeedStore.put({ id, ...outFeed.idleBettorFeed(prev) }); continue; }
+      handles++;
+      const meta = pubRecords.get(h);
+      const v = pubRecord.recordView(meta, pubRecords.slipsOf(h), { tables: pubTables(), perPage: 1e6, bets: pubRecords.betsOf(h), now });
+      const plan = outFeed.planBettorFeed(prev, pubRecord.feedItems(v), { now });
+      // the marks are saved before anything is sent: a crash costs a post, never a double post
+      await outFeedStore.put({ id, ...plan.state });
+      const o = digestOrigin();
+      for (const p of [outFeed.bettorPickPost(h, plan.picks, { origin: o, now }), outFeed.bettorResultPost(h, plan.results, pubRecord.bettorCard(v), { origin: o, now })]) {
+        if (!p) continue;
+        const r = await outFeedSender.send(p, { to: dests });
+        sent += r.sent; failed += r.failed;
+      }
+      picks += plan.picks.length; results += plan.results.length;
+      if (plan.picks.length || plan.results.length) bettorFeedState.last = { at: new Date(now).toISOString(), handle: h, picks: plan.picks.length, results: plan.results.length, to: dests.length };
+    }
+    Object.assign(bettorFeedState, { lastRun: new Date(now).toISOString(), handles, picks, results, sent, failed, error: null });
+  } finally { bettorFeedState.running = false; }
+  return bettorFeedState;
+}
+// the owner's channels, as the app shows them (never a URL or a token)
+function recordFeedView(f) {
+  const one = (x, kind) => (!x ? { connected: false } : { connected: !x.deadAt, kind, where: kind === 'discord' ? `webhook …${String(x.hookId).slice(-4)}${x.name ? ` ("${x.name}")` : ''}` : `chat ${x.chat}`,
+    addedAt: x.addedAt, lastOkAt: x.lastOkAt || null, lastError: x.lastError || null, stoppedAt: x.deadAt || null,
+    stoppedWhy: x.deadAt ? `${kind === 'discord' ? 'Discord' : 'Telegram'} said the channel is gone, or 5 posts in a row failed. Connect it again to restart.` : null });
+  return { discord: one(f?.discord, 'discord'), telegram: one(f?.telegram, 'telegram') };
+}
+const recordFeedConnects = new Map();
+function recordOwner(req) {
+  const h = pubRecord.cleanHandle(req.params.handle).handle;
+  const r = h && pubRecords.get(h);
+  if (!r || r.status !== 'live') throw Object.assign(new Error('No published record with that handle.'), { status: 404 });
+  if (!pubRecords.owns(h, recordKey(req))) throw Object.assign(new Error('That key does not manage this record.'), { status: 403 });
+  return h;
+}
+const RECORD_FEED_ABOUT = 'Each pick logged before its start posts the moment the server matches it to its game, with the server\'s time stamp and the price; its graded result posts after the game. The same words every channel gets: no stake, units, profit or sizing, and nothing is placed. A pick logged late never posts.';
+app.get('/api/records/:handle/feed', async (req, res) => {
+  try { await pubRecords.init(); const h = recordOwner(req); res.set('Cache-Control', 'no-store').json({ handle: h, ...recordFeedView(pubRecords.feedOf(h)), subscribers: apiKeys.feedsFor(h).length, about: RECORD_FEED_ABOUT }); }
+  catch (e) { sendErr(res, e); }
+});
+// body: { discord: "<webhook URL>" } or { telegram: { token, chat } }
+app.put('/api/records/:handle/feed', async (req, res) => {
+  try {
+    await pubRecords.init();
+    const h = recordOwner(req);
+    const t = Date.now(), seen = (recordFeedConnects.get(h) || []).filter(x => t - x < 3600e3);
+    if (seen.length >= 5) throw Object.assign(new Error('At most 5 connects an hour for one record. Try again later.'), { status: 429 });
+    recordFeedConnects.set(h, [...seen, t]);
+    if (recordFeedConnects.size > 5000) recordFeedConnects.clear();
+    const welcome = outFeed.bettorWelcomePost(h, { origin: digestOrigin() });
+    let kind, feed;
+    if (req.body?.telegram) {
+      const d = outFeed.parseTelegram(req.body.telegram.token, req.body.telegram.chat);
+      if (d.error) throw Object.assign(new Error(d.error), { status: 400 });
+      const sent = await outFeedSender.sendTo({ ...d, id: 'connect' }, welcome);
+      if (!sent.ok) throw Object.assign(new Error(`Telegram turned the first post away: ${sent.why}. Add the bot to the chat (as an admin in a channel) and try again.`), { status: 400 });
+      kind = 'telegram';
+      feed = { botId: d.botId, chat: d.chat, sealed: outFeedSeal.seal(d.token), addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null };
+    } else {
+      const hook = outFeed.parseDiscord(req.body?.discord);
+      if (!hook) throw Object.assign(new Error('That is not a Discord webhook URL. It starts https://discord.com/api/webhooks/ (Server Settings > Integrations > Webhooks > Copy Webhook URL).'), { status: 400 });
+      let info;
+      try { info = (await require('axios').get(hook.url, { timeout: 8000 })).data || {}; } catch (e) {
+        const st = e?.response?.status;
+        throw Object.assign(new Error(st === 401 || st === 404 ? 'Discord says that webhook does not exist (deleted, or the URL is cut short). Copy it again.' : 'Could not reach Discord to check the webhook. Try again in a minute.'), { status: 400 });
+      }
+      const sent = await outFeedSender.sendTo({ kind: 'discord', id: 'connect', url: hook.url }, welcome);
+      if (!sent.ok) throw Object.assign(new Error(`Discord turned the first post away: ${sent.why}`), { status: 400 });
+      kind = 'discord';
+      feed = { hookId: hook.id, sealed: outFeedSeal.seal(hook.url), name: outFeed.clean(info.name || '').slice(0, 40) || null, addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null };
+    }
+    const f = await pubRecords.setFeed(h, recordKey(req), kind, feed);
+    res.set('Cache-Control', 'no-store').json({ handle: h, ...recordFeedView(f), note: `Connected. A welcome post is in the ${kind === 'discord' ? 'Discord channel' : 'Telegram chat'} now; picks post from the next one you log.`, about: RECORD_FEED_ABOUT });
+  } catch (e) { sendErr(res, e); }
+});
+// ?kind=discord|telegram
+app.delete('/api/records/:handle/feed', async (req, res) => {
+  try {
+    await pubRecords.init();
+    const h = recordOwner(req);
+    const kind = String(req.query.kind || req.body?.kind || '');
+    if (!pubRecord.FEED_KINDS.includes(kind)) throw Object.assign(new Error('kind is discord or telegram'), { status: 400 });
+    const f = await pubRecords.setFeed(h, recordKey(req), kind, null);
+    res.set('Cache-Control', 'no-store').json({ handle: h, ...recordFeedView(f), note: `Disconnected: no more posts go to that ${kind === 'discord' ? 'webhook' : 'chat'}.` });
+  } catch (e) { sendErr(res, e); }
+});
+
 // ── self-serve: a customer connects their own Discord webhook with their API key ──
 const FEED_MAX = 5000;
 function feedView(doc) {
   const f = doc?.feed;
   if (!f) return { connected: false };
   return { connected: !f.deadAt, webhook: `…${String(f.hookId).slice(-4)}`, name: f.name || null, addedAt: f.addedAt, lastOkAt: f.lastOkAt || null,
+    records: { handles: f.handles || [], results: f.results !== false },
     lastFailAt: f.lastFailAt || null, lastError: f.lastError || null, stoppedAt: f.deadAt || null,
     stoppedWhy: f.deadAt ? 'Discord said the webhook is gone, or 5 posts in a row failed. Connect it again to restart.' : null };
 }
-const FEED_ABOUT = { posts: ['weekly record digest, Mondays 13:00 UTC', 'record changes on RESULTS, checked hourly', "today's biggest line moves, daily 21:00 UTC"], same: 'Every channel gets the same posts. Nothing is sized or picked per person.' };
+const FEED_ABOUT = { posts: ['weekly record digest, Mondays 13:00 UTC', 'record changes on RESULTS, checked hourly', "today's biggest line moves, daily 21:00 UTC",
+  `each pick logged before its start and its graded result, for up to ${publicApi.FEED_HANDLES} bettor records you add (PUT /api/v1/feed/records)`], same: 'Every channel gets the same posts. Nothing is sized or picked per person.' };
 const feedPlanNote = plan => (plans.limitsOf(plan).discordFeed ? null : 'The Discord feed is a Pro feature: a connected channel gets no posts on the Free plan. See /pricing.');
 app.get('/api/v1/feed', v1Auth, (req, res) => res.set('Cache-Control', 'no-store').json({ discord: feedView(req.apiKey), plan: req.apiPlan, planNote: feedPlanNote(req.apiPlan), ...FEED_ABOUT }));
 app.put('/api/v1/feed/discord', v1Auth, async (req, res) => {
@@ -10532,9 +10759,33 @@ app.put('/api/v1/feed/discord', v1Auth, async (req, res) => {
     }
     const sent = await outFeedSender.sendTo({ kind: 'discord', id: 'connect', url: hook.url }, outFeed.welcomePost({ origin: digestOrigin() }));
     if (!sent.ok) throw new V1Error(400, 'bad_webhook', `Discord turned the first post away: ${sent.why}`);
-    const feed = { hookId: hook.id, sealed: outFeedSeal.seal(hook.url), name: outFeed.clean(info.name || '').slice(0, 40) || null, addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null };
+    const was = req.apiKey.feed;
+    const feed = { hookId: hook.id, sealed: outFeedSeal.seal(hook.url), name: outFeed.clean(info.name || '').slice(0, 40) || null, addedAt: new Date().toISOString(), lastOkAt: new Date().toISOString(), fails: 0, deadAt: null,
+      ...(was?.handles ? { handles: was.handles, results: was.results !== false } : {}) };
     const doc = await apiKeys.setFeed(v1KeyOf(req), feed);
     res.set('Cache-Control', 'no-store').json({ discord: feedView(doc), note: 'Connected. A welcome post with the record card is in the channel now.', ...FEED_ABOUT });
+  } catch (e) { v1Fail(res, e); }
+});
+// the bettor records this key's Discord feed also gets. body: { handles: [..] | "a, b", results: true|false }
+app.put('/api/v1/feed/records', v1Auth, async (req, res) => {
+  try {
+    const f = req.apiKey.feed;
+    if (!f || f.deadAt) throw new V1Error(409, 'no_feed', 'Connect a Discord webhook first (PUT /api/v1/feed/discord): bettor records ride on it.');
+    const raw = Array.isArray(req.body?.handles) ? req.body.handles : String(req.body?.handles ?? '').split(/[\s,]+/);
+    const list = [...new Set(raw.map(x => String(x ?? '').trim()).filter(Boolean))];
+    if (list.length > publicApi.FEED_HANDLES) throw new V1Error(400, 'bad_parameter', `At most ${publicApi.FEED_HANDLES} bettor records on one feed.`);
+    await pubRecords.init();
+    const handles = [];
+    for (const x of list) {
+      const c = pubRecord.cleanHandle(x);
+      if (!c.handle) throw new V1Error(400, 'bad_parameter', `"${String(x).slice(0, 24)}": ${c.error}`);
+      if (pubRecords.get(c.handle)?.status !== 'live') throw new V1Error(404, 'not_found', `No published record @${c.handle}.`);
+      handles.push(c.handle);
+    }
+    const doc = await apiKeys.setFeedRecords(v1KeyOf(req), { handles, results: req.body?.results !== false });
+    // each new handle starts from where its record stands now (no flood of history)
+    for (const h of handles) feedBettors({ only: h }).catch(() => {});
+    res.set('Cache-Control', 'no-store').json({ discord: feedView(doc), note: handles.length ? `Saved. New picks from @${handles.join(', @')} post from now on.` : 'Saved: no bettor records on this feed.', ...FEED_ABOUT });
   } catch (e) { v1Fail(res, e); }
 });
 app.delete('/api/v1/feed/discord', v1Auth, async (req, res) => {
@@ -10965,16 +11216,22 @@ schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => {
 // New leaderboard wallets to score, every 6 hours (and once at startup)
 schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
+// bad JSON, a body over the limit, or an error a route let through: short JSON, no stack
+app.use(security.jsonErrors());
+{ const r = security.readiness(); if (r.paywall && !r.ready) for (const m of r.missing) console.warn(`Security: PAYWALL is on but ${m}`); }
+
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
   ops.mark('modules loaded');
   resultsBackup.load().then(() => ops.mark('backup read'), () => {});
   const server = app.listen(PORT, async () => {
     ops.mark('listening');
-    console.log(`Line Reaper v${require('./package.json').version} on port ${PORT} (${ops.state().boot.map(b => `${b.mark} ${b.ms} ms`).join(', ')})`);
+    // read the app and start compressing its script now, so the first visitor gets brotli
+    if (loadApp()) appBundle.packed.ready.then(() => ops.mark('app compressed'));
+    console.log(`Line Reaper v${VERSION} on port ${PORT} (${ops.state().boot.map(b => `${b.mark} ${b.ms} ms`).join(', ')})`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v${require('./package.json').version} is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v${VERSION} is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
@@ -11023,11 +11280,23 @@ if (require.main === module || process.env.LR_DESKTOP) {
   };
   process.once('SIGTERM', () => shutdown('SIGTERM'));
   process.once('SIGINT', () => shutdown('SIGINT'));
+  // A promise rejection nothing caught (a feed's parse, a fire-and-forget
+  // write) used to stop the whole server, and every board and in-memory state
+  // with it. It is logged and counted under /api/ops faults instead.
+  process.on('unhandledRejection', e => ops.fault('unhandledRejection', e));
+  // A thrown error nothing caught leaves the process in an unknown state: log
+  // it, put pending record writes on disk, and exit so Railway restarts us.
+  process.once('uncaughtException', e => {
+    ops.fault('uncaughtException', e);
+    setTimeout(() => process.exit(1), 5000).unref();
+    require('./jsonstore').flushAll().catch(() => {}).finally(() => process.exit(1));
+  });
 }
 
 module.exports = {
+  appBundleReady: () => (loadApp(), appBundle ? appBundle.packed.ready : Promise.resolve()),
   alertLog, tgConnectOwner, webhook, xvalueTracker, runMapUnders, mapUndersState, mapUndersTracker, mapUndersModelTracker, esBooksState, closeBoardFor,
-  app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, feedRecordCheck, feedMoves, feedOwnerCheck, outFeedStatus, feedBettors, pubRecords, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
