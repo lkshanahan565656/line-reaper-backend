@@ -1051,14 +1051,21 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
       expect(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)), 'the search box scrolls the page sideways');
       // Enter opens the first hit: the game, outlined on ODDS SCREEN
       if (game) {
+        // the outline lasts 2.6 s of page time and settle() runs the page clock while requests are open,
+        // so watch for it being put on rather than hoping to catch it still there
+        await page.evaluate(sel => {
+          window.__gsFlashed = false;
+          new MutationObserver(ms => { if (ms.some(m => m.target.classList?.contains('gs-flash') && m.target.matches(sel))) window.__gsFlashed = true; })
+            .observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        }, `#page-odds [data-sid="g:${game.id}"]`);
         await page.keyboard.press('Enter');
         await settle(page, w, opts, 400);
         expect(!(await page.locator('#gsModal.open').count()), 'Enter did not close the search box');
         expect(await page.locator('#page-odds.active').count() === 1, 'the game hit did not open ODDS SCREEN');
         const row = page.locator(`#page-odds [data-sid="g:${game.id}"]`);
         await row.waitFor({ timeout: 6000 });
-        for (let i = 0; i < 12 && !(await row.evaluate(el => el.classList.contains('gs-flash'))); i++) await settle(page, w, opts, 150);
-        expect(await row.evaluate(el => el.classList.contains('gs-flash')), 'the game row was not outlined');
+        for (let i = 0; i < 12 && !(await page.evaluate(() => window.__gsFlashed)); i++) await settle(page, w, opts, 150);
+        expect(await page.evaluate(() => window.__gsFlashed), 'the game row was not outlined');
         expect(await page.inputValue('#osSearch') === String(game.home).toLowerCase(), 'ODDS SCREEN was not filtered to the team');
         await page.locator('#osSearch').fill('');
         await page.evaluate(() => { osUi.q = ''; renderOdds(); });
@@ -1091,12 +1098,14 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     const active = () => page.locator('.tab.active').first().evaluate(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1] || '');
     const bar = await page.locator('.tab-row > .tab:not(.tab-end)').evaluateAll(bs => bs.map(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1]).filter(Boolean));
     await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    const before = await active();
     await page.keyboard.press('Shift+Slash');
     await page.locator('#kbdModal.open').waitFor({ timeout: 4000 });
     expect(/Previous or next tab/.test(await text(page, '#kbdList')), 'the ? list is empty');
     await page.keyboard.press('2');
     await settle(page, w, opts, 60);
-    expect(await active() !== bar[1] || bar.length < 2, 'a number key switched tabs under the ? list');
+    // the tab must not change (an earlier flow may have left bar[1] open already)
+    expect(await active() === before, `a number key switched tabs under the ? list (${before} to ${await active()})`);
     await page.keyboard.press('Escape');
     await settle(page, w, opts, 60);
     expect(!(await page.locator('#kbdModal.open').count()), 'Escape did not close the ? list');

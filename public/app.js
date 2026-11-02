@@ -4276,8 +4276,16 @@ function gsReveal(sel, what) {
     const el = document.querySelector(`.page.active ${sel}`);
     if (el && el.offsetParent !== null) {
       el.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      el.classList.add('gs-flash');
-      setTimeout(() => el.classList.remove('gs-flash'), 2600);
+      // the screen's data can land a moment later and redraw the row: the outline moves to the new one
+      const until = Date.now() + 2600;
+      let cur = el;
+      cur.classList.add('gs-flash');
+      const keep = () => {
+        if (Date.now() >= until) { cur.classList.remove('gs-flash'); return; }
+        if (!cur.isConnected) { const nx = document.querySelector(`.page.active ${sel}`); if (nx) { cur = nx; cur.classList.add('gs-flash'); } }
+        setTimeout(keep, 150);
+      };
+      setTimeout(keep, 150);
       return;
     }
     if (Date.now() - t0 < 9000) setTimeout(tick, 250);
