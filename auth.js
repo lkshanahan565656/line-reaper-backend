@@ -164,7 +164,19 @@ function publicUser(u) {
     id: u.id, email: u.email, createdAt: u.createdAt,
     plan: u.plan || 'free', planStatus: u.planStatus || null,
     currentPeriodEnd: u.currentPeriodEnd || null, isPro: isPro(u),
+    // the plan they have right now: 'free', 'plus' or 'pro' (isPro: any paid plan)
+    tier: tierOf(u), interval: u.planInterval || null,
   };
+}
+
+// 'free', 'plus' or 'pro'. A paid account (isPro) is on the tier its Stripe
+// price says (user.plan, written by the webhook); an account that paid before
+// tiers existed, or one comped by the owner, is Pro.
+const TIERS = ['free', 'plus', 'pro'];
+function tierOf(u, now = Date.now()) {
+  if (!u || !isPro(u, now)) return 'free';
+  if (u.comp) return 'pro';
+  return u.plan === 'plus' ? 'plus' : 'pro';
 }
 
 // Comped; active / trialing / past_due (Stripe still retrying) within the
@@ -260,6 +272,6 @@ function httpError(status, message) {
 }
 
 module.exports = {
-  hashPassword, verifyPassword, hashPasswordAsync, verifyPasswordAsync, PASSWORD_MAX, signToken, verifyToken, createAuth, publicUser, isPro, httpError,
+  hashPassword, verifyPassword, hashPasswordAsync, verifyPasswordAsync, PASSWORD_MAX, signToken, verifyToken, createAuth, publicUser, isPro, tierOf, TIERS, httpError,
   createMemoryUserStore, createFileUserStore, createPgUserStore, createUserStoreFromEnv, TOKEN_TTL_MS,
 };
