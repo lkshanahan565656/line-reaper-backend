@@ -1,0 +1,46 @@
+NFL Sunday 20261101: 4321 legs, 1120 not graded yet, 302 void (player not in the box)
+
+Pre-registered 10-24:
+sleeper|pin-same-over                          350  164-186      46.9% vs  53.5%  z -2.51   -45.91u  clv -0.07pt (337)
+sleeper|pin-same-under                         350  186-164      53.1% vs  59.2%  z -2.32   -35.23u  clv 0.07pt (337)
+underdog|pin-same-over                         243  116-127      47.7% vs  55.6%  z  -2.5    -33.6u  clv -0.08pt (237)
+underdog|pin-same-under                        216  110-106      50.9% vs  58.8%  z -2.36   -27.06u  clv 0.08pt (210)
+prizepicks|pin-same-over                       210  96-114       45.7% vs  55.0%  z -2.71   -35.55u  clv -0.03pt (189)
+prizepicks|pin-same-under                      210  114-96       54.3% vs  55.0%  z -0.22    -2.84u  clv 0.03pt (189)
+pick6|pin-same-over                             70  29-41        41.4% vs  55.1%  z  -2.3   -16.21u  clv -0.12pt (46)
+pick6|pin-same-under                            70  41-29        58.6% vs  55.6%  z  0.51     5.05u  clv 0.12pt (46)
+prizepicks|pp-qb-pass-over                       7  2-5          28.6% vs  55.0%  z -1.41    -3.37u  clv -0.11pt (4)
+NFL PP QB pass Over + own receiver Over: 9 of 37 pairs (24.3%) on 7 games vs 33.3% for a 2-pick at 3x, z -1.16 (payout cut for same-team picks not applied)
+
+Per app and kind (graded at bet time, an hour before the start; units at 1u a leg at the break-even price):
+underdog|all                                  1841  889-952      48.3% vs  55.8%  z -6.58  -232.68u  clv 0pt (447)
+sleeper|all                                   1640  820-820      50.0% vs  56.3%  z -5.17  -190.86u  clv 0pt (674)
+prizepicks|all                                1554  777-777-24   50.0% vs  55.0%  z -3.99  -142.04u  clv 0pt (378)
+underdog|over                                  979  441-538      45.1% vs  53.4%  z -5.37  -139.26u  clv -0.08pt (237)
+underdog|under                                 862  448-414      52.0% vs  58.5%  z -3.89   -93.42u  clv 0.08pt (210)
+sleeper|over                                   820  390-430      47.6% vs  54.6%  z  -4.1  -112.43u  clv -0.07pt (337)
+sleeper|under                                  820  430-390      52.4% vs  57.9%  z  -3.2   -78.43u  clv 0.07pt (337)
+prizepicks|over                                777  371-406-12   47.8% vs  55.0%  z -4.08  -102.82u  clv -0.03pt (189)
+prizepicks|under                               777  406-371-12   52.3% vs  55.0%  z -1.56   -39.22u  clv 0.03pt (189)
+pick6|all                                      622  311-311      50.0% vs  55.3%  z -2.65   -55.76u  clv 0pt (92)
+pick6|over                                     311  147-164      47.3% vs  55.3%  z -2.86   -43.69u  clv -0.12pt (46)
+pick6|under                                    311  164-147      52.7% vs  55.2%  z -0.89   -12.07u  clv 0.12pt (46)
+sleeper|pin-coinflip                           294  147-147      50.0% vs  56.2%  z -2.13   -31.28u  clv 0pt (278)
+prizepicks|pin-coinflip                        278  139-139      50.0% vs  55.0%  z -1.69   -25.41u  clv 0pt (248)
+underdog|pin-coinflip                          163  82-81        50.3% vs  56.5%  z -1.59   -17.13u  clv 0pt (155)
+pick6|better-number-than-pin                   163  90-73        55.2% vs  55.0%  z  0.05     0.55u  clv -
+underdog|better-number-than-pin                144  84-60        58.3% vs  61.9%  z -0.89    -8.06u  clv -
+sleeper|better-number-than-pin                 143  78-65        54.5% vs  57.4%  z -0.69    -7.66u  clv -
+prizepicks|better-number-than-pin              122  63-59-5      51.6% vs  55.0%  z -0.75    -7.52u  clv -
+pick6|pin-coinflip                             110  55-55        50.0% vs  55.0%  z -1.06   -10.05u  clv 0pt (66)
+prizepicks|pin-backed                           11  5-6          45.5% vs  55.0%  z -0.64    -1.91u  clv -0.22pt (10)
+prizepicks|pin-backed-2                          3  2-1          66.7% vs  55.0%  z  0.41     0.63u  clv -0.24pt (3)
+pick6|pin-backed                                 2  2-0         100.0% vs  55.0%  z  1.28     1.63u  clv 0.49pt (1)
+underdog|pin-backed                              1  1-0         100.0% vs  56.2%  z  0.88     0.78u  clv 0pt (1)
+underdog|pin-backed-2                            1  1-0         100.0% vs  56.2%  z  0.88     0.78u  clv 0pt (1)
+
+Break-evens:
+{"prizepicks":{"6-pick flex":0.5421,"5-pick flex":0.5425,"6-pick power":0.5466,"5-pick power":0.5493,"3-pick power":0.5503,"4-pick flex":0.5503,"4-pick power":0.5623,"2-pick power":0.5774,"3-pick flex":0.5774},"pick6":{"3-pick":0.5503,"8-pick (pays a miss)":0.5507,"6-pick (pays a miss)":0.5611,"4-pick":0.5623,"7-pick (pays a miss)":0.571,"5-pick (pays a miss)":0.5768,"2-pick":0.5774},"underdog":{"1x leg (3-pick standard)":0.5623,"other legs":"UD_IMPLIED / multiplier, or 1 / decimal price"},"sleeper":{"every leg":"1 / its multiplier"}}
+
+why not graded: {"not final":1120,"no grader: NFL rush_tds":6,"no grader: NFL passer_rating":24,"no grader: NFL completion_percentage":26,"no grader: NFL longest_comp":90,"no grader: NFL rush_yards_in_first_5_attempts":22,"no grader: NFL fantasy_score":208,"void: not in box":302,"no grader: NFL rush_yards_per_carry":22,"no grader: NFL punts":13,"no grader: NFL pass_+_rush_+_rec_tds":4,"no grader: NFL sacks_taken":13,"no grader: NFL sacks":308,"no grader: NFL punts_inside_20":8,"no grader: NFL tackles_+_ast":86,"no grader: NFL yards_on_first_reception":18,"no grader: NFL completions_in_first_10_pass_attempts":2,"no grader: NFL consecutive_pass_completions":2,"no grader: NFL 1q|rush_yds":92,"no grader: NFL first_td_scorer":237,"no grader: NFL last_td_scorer":74,"no grader: NFL 1q|rush_+_rec_tds":241,"no grader: NFL 1q|rec_yds":211,"no grader: NFL 1q|receptions":211,"no grader: NFL 1h|rush_+_rec_tds":323,"no grader: NFL 1h|rush_yds":92,"no grader: NFL 1h|rec_yds":211,"no grader: NFL 1h|receptions":211,"no grader: NFL fantasy_points":348,"no grader: NFL fumbles_lost":153,"no grader: NFL 1q|pass_yds":32,"no grader: NFL 1q|pass_tds":32,"no grader: NFL 1h|pass_yds":32,"no grader: NFL 1h|pass_tds":32,"no grader: NFL xp_made":58,"no grader: NFL tackles_+_assists":315,"no grader: NFL assists":315,"no grader: NFL solo_tackles":193,"no grader: NFL defensive_ints":163,"no grader: NFL tackles":123,"no grader: NFL tackles_and_assists":122,"no grader: NFL first_touchdown":1,"no grader: NFL passing_+_rushing_yards":3}
+sources (keys seen): {"pinnacle":701,"underdog":5089,"sleeper":1755,"fanduel":521,"betrivers":578,"pick6":469,"prizepicks":1688}
