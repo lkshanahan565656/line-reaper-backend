@@ -1,0 +1,78 @@
+Esports board 20261108: 1413 legs, 533 graded, 195 not graded yet, 177 void, 508 with no grader (R6, CoD, fantasy, first bloods, deaths); 53 graded legs from players with two or more matches that day
+
+Pre-registered 10-24 (before any result):
+a-consensus                                 88  47-41        53.4% vs  58.3%  z -0.94    -6.81u  line move 0.03  clv -
+a-consensus-2                               38  24-14        63.2% vs  58.6%  z  0.58     3.66u  line move 0  clv -
+  a-consensus|underdog                      33  21-12        63.6% vs  56.1%  z  0.87     4.44u  line move 0.06  clv -
+  a-consensus|sleeper                       29  14-15        48.3% vs  63.8%  z -1.74    -7.05u  line move 0  clv -
+  a-consensus|prizepicks                    26  12-14        46.2% vs  55.0%  z -0.91    -4.19u  line move 0.04  clv -
+  a-consensus-2|prizepicks                  15  10-5         66.7% vs  55.0%  z  0.91     3.17u  line move 0.07  clv -
+  a-consensus-2|sleeper                     12  7-5          58.3% vs  65.2%  z  -0.5    -0.96u  line move 0  clv -
+  a-consensus-2|underdog                    11  7-4          63.6% vs  56.2%  z   0.5     1.45u  line move -0.09  clv -
+(b) same-match 6-pick stacks: 1 swept of 50 graded (30 waiting, 132 void or push); break-even needs 1.45 sweeps at standard payouts, 4.25 if repriced; the link model expects 2.28; units -12.5 at standard, -32.6 if repriced
+  CS|underdog|Over             0 of 12, needs 0.34 (std) / 1.11 (repriced), units -12 / -12
+  CS|underdog|Under            0 of 12, needs 0.34 (std) / 0.9 (repriced), units -12 / -12
+  CS|sleeper|Over              0 of 5, needs 0.17 (std) / 0.68 (repriced), units -5 / -5
+  CS|sleeper|Under             0 of 5, needs 0.14 (std) / 0.43 (repriced), units -5 / -5
+  CS|prizepicks|Over           0 of 3, needs 0.08 (std) / 0.27 (repriced), units -3 / -3
+  CS|prizepicks|Under          0 of 3, needs 0.08 (std) / 0.22 (repriced), units -3 / -3
+  LOL|underdog|Over            0 of 3, needs 0.1 (std) / 0.29 (repriced), units -3 / -3
+  LOL|prizepicks|Over          1 of 2, needs 0.05 (std) / 0.12 (repriced), units 35.5 / 15.4
+  LOL|prizepicks|Under         0 of 2, needs 0.05 (std) / 0.1 (repriced), units -2 / -2
+  LOL|underdog|Under           0 of 2, needs 0.05 (std) / 0.1 (repriced), units -2 / -2
+  DOTA|underdog|Over           0 of 1, needs 0.03 (std) / 0.04 (repriced), units -1 / -1
+  R6|prizepicks|Over           0 of 0, needs 0 (std) / 0 (repriced), units 0 / 0
+  R6|prizepicks|Under          0 of 0, needs 0 (std) / 0 (repriced), units 0 / 0
+  COD|prizepicks|Over          0 of 0, needs 0 (std) / 0 (repriced), units 0 / 0
+  COD|prizepicks|Under         0 of 0, needs 0 (std) / 0 (repriced), units 0 / 0
+
+DK Pick6 (pre-registered 10-25, before any result): 0 legs on 0 matches {}; 0 on another app's same player, stat and match (0 on two or more; {}), 0 a full line off them; 0 with a Kalshi or Polymarket US match price (0 kill legs of a 70%+ team, 0 of a 30%- team)
+  p6-consensus                               0  0-0              - vs      -  z     -        0u  line move -  clv -
+  p6-consensus-2                             0  0-0              - vs      -  z     -        0u  line move -  clv -
+  p6-fav-over                                0  0-0              - vs      -  z     -        0u  line move -  clv -
+  p6-dog-under                               0  0-0              - vs      -  z     -        0u  line move -  clv -
+  p6-stack: 0 swept and 0 five-of-six of 0 graded (0 waiting, 0 void or push); table {"5":1.5,"6":25}; the link model expects 0 sweeps; units 0 at the table, 0 repriced (the link model expects 0 repriced)
+
+Per app and side:
+underdog|Over                              282  121-161      42.9% vs  56.4%  z -4.58   -67.58u  line move 0.04  clv -
+underdog|Under                             222  127-95       57.2% vs  56.2%  z  0.29     3.72u  line move -0.04  clv -
+prizepicks|Over                            132  55-77-5      41.7% vs  55.0%  z -3.09   -32.05u  line move 0.01  clv 0.55pt (2)
+prizepicks|Under                           132  77-55-5      58.3% vs  55.0%  z  0.76     7.92u  line move -0.01  clv -0.55pt (2)
+sleeper|Over                               114  44-70        38.6% vs  57.6%  z -4.12   -37.19u  line move 0  clv -
+sleeper|Under                              114  70-44        61.4% vs  54.8%  z  1.41     14.5u  line move 0  clv -
+
+Per game, stat, app and side (units at 1u a leg at the break-even price):
+CS|kills|underdog|Over                     119  48-71        40.3% vs  56.3%  z -3.51   -33.64u  line move 0.03  clv -
+CS|kills|underdog|Under                    119  71-48        59.7% vs  56.3%  z  0.75      7.2u  line move -0.03  clv -
+CS|headshots|underdog|Over                  87  36-51        41.4% vs  56.4%  z -2.83   -22.98u  line move 0.03  clv -
+CS|headshots|underdog|Under                 87  51-36        58.6% vs  56.2%  z  0.46     3.88u  line move -0.03  clv -
+CS|kills|sleeper|Over                       72  27-45        37.5% vs  57.4%  z -3.44   -24.59u  line move 0  clv -
+CS|kills|sleeper|Under                      72  45-27        62.5% vs  55.0%  z  1.29    10.66u  line move 0  clv -
+CS|kills|prizepicks|Over                    50  22-28-2      44.0% vs  55.0%  z -1.57   -10.02u  line move 0.02  clv 0.55pt (2)
+CS|kills|prizepicks|Under                   50  28-22-2      56.0% vs  55.0%  z  0.14     0.88u  line move -0.02  clv -0.55pt (2)
+CS|headshots|prizepicks|Over                45  15-30        33.3% vs  55.0%  z -2.93   -17.74u  line move 0.01  clv -
+CS|headshots|prizepicks|Under               45  30-15        66.7% vs  55.0%  z  1.57     9.52u  line move -0.01  clv -
+CS|headshots|sleeper|Over                   42  17-25        40.5% vs  57.8%  z -2.29    -12.6u  line move 0  clv -
+CS|headshots|sleeper|Under                  42  25-17        59.5% vs  54.6%  z  0.65     3.84u  line move 0  clv -
+DOTA|kills|underdog|Over                    38  14-24        36.8% vs  56.2%  z -2.41    -13.1u  line move 0.03  clv -
+LOL|kills|prizepicks|Over                   21  14-7-3       66.7% vs  55.0%  z  1.07     4.44u  line move 0  clv -
+LOL|kills|prizepicks|Under                  21  7-14-3       33.3% vs  55.0%  z    -2    -8.28u  line move 0  clv -
+LOL|kills|underdog|Over                     19  12-7         63.2% vs  58.2%  z  0.44     1.58u  line move 0.11  clv -
+LOL|assists|underdog|Over                   19  11-8         57.9% vs  56.2%  z  0.15     0.56u  line move 0  clv -
+DOTA|kills|prizepicks|Over                  16  4-12         25.0% vs  55.0%  z -2.41    -8.73u  line move 0  clv -
+DOTA|kills|prizepicks|Under                 16  12-4         75.0% vs  55.0%  z  1.61     5.81u  line move 0  clv -
+LOL|kills|underdog|Under                    16  5-11         31.3% vs  56.5%  z -2.05    -7.36u  line move -0.13  clv -
+
+BetRivers player kill ladders at the app's exact number (the only sharp on a player stat):
+br-player-priced|prizepicks                  4  2-2          50.0% vs  55.0%  z  -0.2    -0.37u  line move 0  clv 0pt (4)
+
+Coverage per game (legs; player stat priced by a sharp; match priced only; no sharp at all; Pinnacle, its Map 1 total, Kalshi, Polymarket US, BetRivers):
+CS    {"legs":678,"playerSharp":2,"matchOnly":623,"noSharp":53,"pinnacle":326,"kalshi":607,"pmus":625,"betrivers":110,"pinMap1":164}
+LOL   {"legs":147,"playerSharp":0,"matchOnly":147,"noSharp":0,"pinnacle":90,"kalshi":147,"pmus":101,"betrivers":75,"pinMap1":60}
+DOTA  {"legs":179,"playerSharp":0,"matchOnly":169,"noSharp":10,"pinnacle":118,"kalshi":47,"pmus":151,"betrivers":0,"pinMap1":83}
+R6    {"legs":180,"playerSharp":0,"matchOnly":180,"noSharp":0,"pinnacle":150,"kalshi":140,"pmus":170,"betrivers":0,"pinMap1":0}
+COD   {"legs":229,"playerSharp":0,"matchOnly":55,"noSharp":174,"pinnacle":12,"kalshi":39,"pmus":55,"betrivers":0,"pinMap1":0}
+
+why: {"settled earlier":700,"waiting for results":33,"no grader: R6 k|1":120,"no grader: COD k|5":104,"no grader: COD k|2":94,"grader error DOTA":1,"no grader: COD x:serieskd|1":31,"not over yet":162,"no grader: R6 k|1-2":40,"void":10,"no grader: R6 k|3":20,"no grader: LOL fp|1-3":30,"grader error LOL":2,"no grader: DOTA fp|1-2":69}
+lineup guard voided: 0
+sources (keys seen): {"pinnacle-es":73,"underdog":551,"kalshi-es":238,"betrivers-es":4,"betrivers":110,"pmus-es":230,"sleeper":132,"prizepicks":730}
